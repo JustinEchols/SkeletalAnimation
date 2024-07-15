@@ -1,4 +1,4 @@
-#if !defined(SKELETAL_PLATFORM_H)
+#if !defined(PLATFORM_H)
 
 #include <stdint.h>
 
@@ -114,5 +114,5 @@ U64TruncateToU32(u64 U64)
 	return(Result);
 }
 
-#define SKELETAL_PLATFORM_H
+#define PLATFORM_H
 #endif
