@@ -204,7 +204,7 @@ Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
 			GetClientRect(Window, &ClientR);
 			Win32GlobalWindowWidth = ClientR.right - ClientR.left;
 			Win32GlobalWindowHeight = ClientR.bottom - ClientR.top;
-			glViewport(0.0f, 0.0f, Win32GlobalWindowWidth, Win32GlobalWindowHeight);
+			glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
 		} break;
 		case WM_MOVE:
 		{
@@ -463,7 +463,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		f32 ZFar = 100.0f;
 		mat4 PerspectiveTransform = Mat4Perspective(FOV, Aspect, ZNear, ZFar);
 
-		glViewport(0.0f, 0.0f, Win32GlobalWindowWidth, Win32GlobalWindowHeight);
+		glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
 
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
@@ -554,14 +554,8 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			MSG Message = {};
 			while(PeekMessage(&Message, Window, 0, 0, PM_REMOVE))
 			{
-				switch(Message.message)
-				{
-					default:
-					{
-						TranslateMessage(&Message);
-						DispatchMessage(&Message);
-					};
-				}
+				TranslateMessage(&Message);
+				DispatchMessage(&Message);
 			}
 
 			HDC WindowDC = GetDC(Window);
