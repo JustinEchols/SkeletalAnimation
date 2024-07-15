@@ -17,7 +17,7 @@
  )
 
 set MainFile=win32_main.cpp
-set CommonCompilerFlags=-Od -MTd -fp:fast -Oi -Zi
+set CommonCompilerFlags=-O2 -MTd -fp:fast -Oi -Zi
 set CommonLinkerFlags=-incremental:no user32.lib gdi32.lib opengl32.lib
 
 if not exist ..\build mkdir ..\build
