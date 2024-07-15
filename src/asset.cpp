@@ -372,7 +372,6 @@ ModelLoad(memory_arena *Arena, char *FileName)
 			}
 
 			Line = Line->Next;
-			Line = Line->Next;
 			Assert(DoneProcessingMesh(Line));
 
 			mat4 I = Mat4Identity();
