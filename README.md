@@ -5,4 +5,7 @@ Skeletal animation example.
 None
 
 ## Build
-Call build.bat
+SkeletalAnimation\src>build.bat
+
+## Run
+SkeletalAnimation\src>..\build\win32_main.exe
