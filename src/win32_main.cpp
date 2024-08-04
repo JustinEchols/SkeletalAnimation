@@ -134,6 +134,7 @@ global_varible int Win32GlobalWindowHeight;
 #include "strings.cpp"
 #include "mesh.h"
 #include "mesh.cpp"
+#include "animation.cpp"
 
 internal void
 Win32FileFree(void *Memory)
@@ -417,6 +418,10 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 						0);
 	if(Window)
 	{
+		LARGE_INTEGER TicksPerSecond;
+		QueryPerformanceFrequency(&TicksPerSecond);
+		Win32GlobalTicksPerSecond = TicksPerSecond.QuadPart;
+
 		s32 MonitorRefreshRate = GetDeviceCaps(GetDC(Window), VREFRESH);
 		s32 GameUpdateHz = 0;
 		if(MonitorRefreshRate > 1)
@@ -426,6 +431,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		f32 TargetSecondsPerFrame = 1.0f / (f32)MonitorRefreshRate;
 
+
 		HGLRC OpenGLRC = Win32OpenGLInit(GetDC(Window));
 
 		void *Memory = VirtualAlloc(0, Megabyte(256), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
@@ -434,19 +440,43 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		ArenaInitialize(&Arena_, (u8 *)Memory, Megabyte(256));
 		memory_arena *Arena = &Arena_;
 
-		model Model = ModelLoad(Arena, "..\\data\\XBot.mesh");
-		Model.AnimationsInfo = AnimationInfoLoad(Arena, "..\\data\\XBot_IdleShiftWeight.animation");
+		model *Models[3] = {};
+		Models[0] = PushStruct(Arena, model);
+		*Models[0] = ModelLoad(Arena, "..\\data\\XBot.mesh");
 
-		Model.Basis.O = V3(0.0f, -80.0f, -350.0f);
-		Model.Basis.X = XAxis();
-		Model.Basis.Y = YAxis();
-		Model.Basis.Z = ZAxis();
+		char *AnimationFiles[] =
+		{
+			"..\\data\\XBot_ActionIdle.animation",
+			"..\\data\\XBot_RightTurn.animation",
+			"..\\data\\XBot_LeftTurn.animation",
+			"..\\data\\XBot_RunningToTurn.animation",
+			"..\\data\\XBot_RunningChangeDirection.animation",
+			"..\\data\\XBot_IdleToSprint.animation",
+			"..\\data\\XBot_ActionIdleToStandingIdle.animation",
+			"..\\data\\XBot_IdleLookAround.animation",
+			"..\\data\\XBot_FemaleWalk.animation",
+			"..\\data\\XBot_PushingStart.animation",
+			"..\\data\\XBot_Pushing.animation",
+			"..\\data\\XBot_PushingStop.animation",
+		};
+
+		Models[0]->Animations.Count = ArrayCount(AnimationFiles);
+		Models[0]->Animations.Info = PushArray(Arena, Models[0]->Animations.Count, animation_info);
+		for(u32 AnimIndex = 0; AnimIndex < ArrayCount(AnimationFiles); ++AnimIndex)
+		{
+			animation_info *Info = Models[0]->Animations.Info + AnimIndex;
+			*Info = AnimationInfoLoad(Arena, AnimationFiles[AnimIndex]);
+		}
+		
+		Models[0]->Basis.O = V3(0.0f, -80.0f, -400.0f);
+		Models[0]->Basis.X = XAxis();
+		Models[0]->Basis.Y = YAxis();
+		Models[0]->Basis.Z = ZAxis();
+		mat4 Scale = Mat4Identity();
 
 		//
 		// NOTE(Justin): Transformations
 		//
-
-		mat4 ModelTransform = Mat4Translate(Model.Basis.O);
 
 		v3 CameraP = V3(0.0f, 5.0f, 3.0f);
 		v3 Direction = V3(0.0f, 0.0f, -1.0f);
@@ -479,76 +509,41 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		// NOTE(Justin): Opengl info initialization
 		//
 
-		u32 ShaderProgram = GLProgramCreate(BasicVsSrc, BasicFsSrc);
-
-		for(u32 MeshIndex = 0; MeshIndex < Model.MeshCount; ++MeshIndex)
+		u32 Shaders[2];
+		Shaders[0] = GLProgramCreate(BasicVsSrc, BasicFsSrc);
+		for(u32 ModelIndex = 0; ModelIndex < ArrayCount(Models); ++ModelIndex)
 		{
-			s32 ExpectedAttributeCount = 0;
-
-			mesh *Mesh = Model.Meshes + MeshIndex;
-
-			glGenVertexArrays(1, &Model.VA[MeshIndex]);
-			glBindVertexArray(Model.VA[MeshIndex]);
-
-			glGenBuffers(1, &Model.PosVB[MeshIndex]);
-			glBindBuffer(GL_ARRAY_BUFFER, Model.PosVB[MeshIndex]);
-			glBufferData(GL_ARRAY_BUFFER, Mesh->PositionsCount * sizeof(f32), Mesh->Positions, GL_STATIC_DRAW);
-			glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, 0);
-			glEnableVertexAttribArray(0);
-			ExpectedAttributeCount++;
-
-			glGenBuffers(1, &Model.NormVB[MeshIndex]);
-			glBindBuffer(GL_ARRAY_BUFFER, Model.NormVB[MeshIndex]);
-			glBufferData(GL_ARRAY_BUFFER, Mesh->NormalsCount * sizeof(f32), Mesh->Normals, GL_STATIC_DRAW);
-			glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, 0);
-			glEnableVertexAttribArray(1);
-			ExpectedAttributeCount++;
-
-			glGenBuffers(1, &Model.JointInfoVB[MeshIndex]);
-			glBindBuffer(GL_ARRAY_BUFFER, Model.JointInfoVB[MeshIndex]);
-			glBufferData(GL_ARRAY_BUFFER, Mesh->JointInfoCount * sizeof(joint_info), Mesh->JointsInfo, GL_STATIC_DRAW);
-
-			glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(joint_info), 0);
-			glVertexAttribIPointer(3, 3, GL_UNSIGNED_INT, sizeof(joint_info), (void *)(1 * sizeof(u32)));
-			glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(joint_info), (void *)(4 * sizeof(u32)));
-
-			glEnableVertexAttribArray(2);
-			glEnableVertexAttribArray(3);
-			glEnableVertexAttribArray(4);
-			ExpectedAttributeCount += 3;
-
-			GLIBOInit(&Model.IBO[MeshIndex], Mesh->Indices, Mesh->IndicesCount);
-			glBindVertexArray(0);
-
-			s32 AttrCount;
-			glGetProgramiv(ShaderProgram, GL_ACTIVE_ATTRIBUTES, &AttrCount);
-			Assert(ExpectedAttributeCount == AttrCount);
-
-			char Buff[256];
-			char Name[256];
-			s32 Size = 0;
-			GLsizei NameLength = 0;
-			GLenum Type;
-			for(s32 i = 0; i < AttrCount; ++i)
+			model *Model = Models[ModelIndex];
+			if(Model)
 			{
-				glGetActiveAttrib(ShaderProgram, i, sizeof(Name), &NameLength, &Size, &Type, Name);
-				wsprintf(Buff, "Attribute:%d\nName:%s\nSize:%d\n\n", i, Name, Size);
-				OutputDebugStringA(Buff);
+				if(Model->HasSkeleton)
+				{
+					OpenGLAllocateAnimatedModel(Models[ModelIndex], Shaders[0]);
+					glUseProgram(Shaders[0]);
+					UniformMatrixSet(Shaders[0], "View", CameraTransform);
+					UniformMatrixSet(Shaders[0], "Projection", PerspectiveTransform);
+					UniformV3Set(Shaders[0], "CameraP", CameraP);
+
+				}
+				else
+				{
+					OpenGLAllocateModel(Models[ModelIndex], Shaders[1]);
+					glUseProgram(Shaders[1]);
+					UniformMatrixSet(Shaders[1], "View", CameraTransform);
+					UniformMatrixSet(Shaders[1], "Projection", PerspectiveTransform);
+				}
 			}
 		}
-
-		glUseProgram(ShaderProgram);
-		UniformMatrixSet(ShaderProgram, "Model", ModelTransform);
-		UniformMatrixSet(ShaderProgram, "View", CameraTransform);
-		UniformMatrixSet(ShaderProgram, "Projection", PerspectiveTransform);
-		UniformV3Set(ShaderProgram, "CameraP", CameraP);
-
-		Model.AnimationsInfo.CurrentTime = 0.0f;
-		Model.AnimationsInfo.KeyFrameIndex = 0;
-		f32 Angle = 0.0f;
-		f32 DtForFrame = TargetSecondsPerFrame;
-
+		
 		Win32GlobalRunning = true;
+		f32 Angle = 0.0f;
+		f32 DtForFrame = 0.0f;
+
+
+
+		LARGE_INTEGER QueryTickCount;
+		QueryPerformanceCounter(&QueryTickCount);
+		s64 TickCountStart = QueryTickCount.QuadPart;
 		while(Win32GlobalRunning)
 		{
 			MSG Message = {};
@@ -564,55 +559,14 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			// NOTE(Justin): HACKED animation.
 			//
 
-			animation_info *AnimInfo = &Model.AnimationsInfo;
-			AnimInfo->CurrentTime += DtForFrame;
-			if(AnimInfo->CurrentTime > 0.03f)
+			for(u32 ModelIndex = 0; ModelIndex < ArrayCount(Models); ++ModelIndex)
 			{
-				AnimInfo->KeyFrameIndex += 1;
-				if(AnimInfo->KeyFrameIndex >= AnimInfo->TimeCount)
+				model *Model = Models[ModelIndex];
+				if(Model)
 				{
-					AnimInfo->KeyFrameIndex = 0;
-				}
-
-				AnimInfo->CurrentTime = 0.0f;
-			}
-
-			for(u32 MeshIndex = 0; MeshIndex < Model.MeshCount; ++MeshIndex)
-			{
-				mesh Mesh = Model.Meshes[MeshIndex];
-				if(Mesh.JointInfoCount != 0)
-				{
-					mat4 Bind = Mesh.BindTransform;
-
-					joint RootJoint = Mesh.Joints[0];
-					mat4 RootJointT = RootJoint.Transform;
-					mat4 RootInvBind = Mesh.InvBindTransforms[0];
-
-					s32 JointIndex = JointIndexGet(AnimInfo->JointNames, AnimInfo->JointCount, RootJoint.Name);
-					if(JointIndex != -1)
+					if(Model->HasSkeleton)
 					{
-						RootJointT = AnimInfo->Transforms[JointIndex][AnimInfo->KeyFrameIndex];
-					}
-
-					Mesh.JointTransforms[0] = RootJointT;
-					Mesh.ModelSpaceTransforms[0] = RootJointT * RootInvBind * Bind;
-					for(u32 Index = 1; Index < Mesh.JointCount; ++Index)
-					{
-						joint *Joint = Mesh.Joints + Index;
-						mat4 JointTransform = Joint->Transform;
-
-						JointIndex = JointIndexGet(AnimInfo->JointNames, AnimInfo->JointCount, Joint->Name);
-						if(JointIndex != -1)
-						{
-							JointTransform = AnimInfo->Transforms[JointIndex][AnimInfo->KeyFrameIndex];
-						}
-
-						mat4 ParentTransform = Mesh.JointTransforms[Joint->ParentIndex];
-						JointTransform = ParentTransform * JointTransform;
-						mat4 InvBind = Mesh.InvBindTransforms[Index];
-
-						Mesh.JointTransforms[Index] = JointTransform;
-						Mesh.ModelSpaceTransforms[Index] = JointTransform * InvBind * Bind;
+						AnimationUpdate(Model, DtForFrame);
 					}
 				}
 			}
@@ -621,32 +575,40 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			// NOTE(Justin): Render.
 			//
 
+
 			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-			glUseProgram(ShaderProgram);
-
-			Angle += DtForFrame;
-			UniformV3Set(ShaderProgram, "LightDir", V3(2.0f * cosf(Angle), 0.0f, 2.0f * sinf(Angle)));
-
-			glBindVertexArray(Model.VA[0]);
-			UniformMatrixArraySet(ShaderProgram, "Transforms", Model.Meshes[0].ModelSpaceTransforms, Model.Meshes[0].JointCount);
-			UniformV4Set(ShaderProgram, "Diffuse", Model.Meshes[0].MaterialSpec.Diffuse);
-			UniformV4Set(ShaderProgram, "Specular", Model.Meshes[0].MaterialSpec.Specular);
-			UniformF32Set(ShaderProgram, "Shininess", Model.Meshes[0].MaterialSpec.Shininess);
-			glDrawElements(GL_TRIANGLES, Model.Meshes[0].IndicesCount, GL_UNSIGNED_INT, 0);
-			glBindVertexArray(0);
-
-			glBindVertexArray(Model.VA[1]);
-			UniformMatrixArraySet(ShaderProgram, "Transforms", Model.Meshes[1].ModelSpaceTransforms, Model.Meshes[1].JointCount);
-			UniformV4Set(ShaderProgram, "Diffuse", Model.Meshes[1].MaterialSpec.Diffuse);
-			UniformV4Set(ShaderProgram, "Specular", Model.Meshes[1].MaterialSpec.Specular);
-			UniformF32Set(ShaderProgram, "Shininess", Model.Meshes[1].MaterialSpec.Shininess);
-			glDrawElements(GL_TRIANGLES, Model.Meshes[1].IndicesCount, GL_UNSIGNED_INT, 0);
-			glBindVertexArray(0);
+			for(u32 ModelIndex = 0; ModelIndex < ArrayCount(Models); ++ModelIndex)
+			{
+				model *Model = Models[ModelIndex];
+				if(Model)
+				{
+					if(Model->HasSkeleton)
+					{
+						glUseProgram(Shaders[0]);
+						UniformV3Set(Shaders[0], "LightDir", V3(2.0f * cosf(Angle), 0.0f, 2.0f * sinf(Angle)));
+						OpenGLDrawAnimatedModel(Models[ModelIndex], Shaders[0]);
+					}
+					else
+					{
+						glUseProgram(Shaders[1]);
+						f32 A = 20.0f * Angle;
+						mat4 R = Mat4YRotation(DegreeToRad(A));
+						UniformMatrixSet(Shaders[1], "Model", Mat4Translate(Models[ModelIndex]->Basis.O) * R * Scale);
+						OpenGLDrawModel(Models[ModelIndex], Shaders[1]);
+					}
+				}
+			}
 
 			SwapBuffers(WindowDC);
 			ReleaseDC(Window, WindowDC);
+
+			QueryPerformanceCounter(&QueryTickCount);
+			s64 TickCountEnd = QueryTickCount.QuadPart;
+
+			DtForFrame = (f32)(((f64)TickCountEnd - (f64)TickCountStart) / (f64)Win32GlobalTicksPerSecond);
+			TickCountStart = TickCountEnd;
 		}
 	}
 

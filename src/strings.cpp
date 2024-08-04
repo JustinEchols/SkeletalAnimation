@@ -1,9 +1,47 @@
 
-b32 IsNewLine(char *S)
+inline b32
+IsNewLine(char *S)
 {
 	b32 Result = ((*S == '\n') || (*S == '\r'));
 	return(Result);
 }
+
+inline b32 
+IsNewLine(u8 *S)
+{
+	b32 Result = ((*S == '\n') || (*S == '\r'));
+	return(Result);
+}
+
+inline b32 
+IsSpace(u8 *S)
+{
+	b32 Result = ((*S == ' '));
+	return(Result);
+}
+
+inline void
+EatSpaces(u8 **Buff)
+{
+	while(**Buff == ' ')
+	{
+		(*Buff)++;
+	}
+}
+
+inline void
+BufferNextWord(u8 **C, u8 *Buff)
+{
+	u32 Index = 0;
+	while(!IsNewLine(*C) && !IsSpace(*C))
+	{
+		Buff[Index++] = **C;
+		(*C)++;
+
+	}
+	Buff[Index] = 0;
+}
+
 
 internal string
 StringFromRange(u8 *First, u8 *Last)
@@ -83,6 +121,13 @@ StringsAreSame(string S1, char *Str2)
 
 	b32 Result = StringsAreSame(S1, S2);
 
+	return(Result);
+}
+
+internal b32
+StringsAreSame(u8 *S1, char *S2)
+{
+	b32 Result = StringsAreSame(String(S1), String((u8 *)S2));
 	return(Result);
 }
 
@@ -307,6 +352,14 @@ StringAllocAndCopy(memory_arena *Arena, char *Cstr)
 	string Result = StringAllocAndCopy(Arena, String((u8 *)Cstr));
 	return(Result);
 }
+
+internal string
+StringAllocAndCopy(memory_arena *Arena, u8 *Str)
+{
+	string Result = StringAllocAndCopy(Arena, String(Str));
+	return(Result);
+}
+
 
 internal void
 ParseStringArray(memory_arena *Arena, string *Dest, u32 DestCount, string Str)

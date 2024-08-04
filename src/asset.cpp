@@ -92,301 +92,428 @@ ModelLoad(memory_arena *Arena, char *FileName)
 	if(File.Size != 0)
 	{
 		u8 *Content = (u8 *)File.Content;
-		Content[File.Size] = 0;
-		string Data = String(Content);
 
-		u8 Delimeters[] = "\n";
-		u8 LineDelimeters[] = " \n\r";
-		string Count = {};
-
-		string_list Lines = StringSplit(Arena, Data, Delimeters, 1);
-		string_node *Line = Lines.First;
-
-		Model.MeshCount = MeshHeaderNumberGet(Arena, Line, LineDelimeters, 3);
-		Model.Meshes = PushArray(Arena, Model.MeshCount, mesh);
-
-		for(u32 MeshIndex = 0; MeshIndex < Model.MeshCount; ++MeshIndex)
+		if(Content)
 		{
-			mesh *Mesh = Model.Meshes + MeshIndex;
+			Content[File.Size] = 0;
+			string Data = String(Content);
 
-			Line = Line->Next;
-			string_list LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			string_node *Node = LineData.First;
-			string Header = Node->String;
-			Header.Data[Header.Size] = 0;
-			Assert(StringsAreSame(Header, "MESH:"));
+			u8 Delimeters[] = "\n";
+			u8 LineDelimeters[] = " \n\r";
+			string Count = {};
+			string Float = {};
 
-			Node = Node->Next;
-			string MeshName = Node->String;
-			MeshName.Data[MeshName.Size] = 0;
-			Mesh->Name = MeshName;
+			string_list Lines = StringSplit(Arena, Data, Delimeters, 1);
+			string_node *Line = Lines.First;
 
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Node = LineData.First;
-			Header = Node->String;
-			Header.Data[Header.Size] = 0;
-			Assert(StringsAreSame(Header, "LIGHTING:"));
+			Model.HasSkeleton = false;
+			Model.MeshCount = MeshHeaderNumberGet(Arena, Line, LineDelimeters, 3);
+			Model.Meshes = PushArray(Arena, Model.MeshCount, mesh);
 
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Assert(LineData.Count == 4);
-			Node = LineData.First;
-
-			for(u32 Index = 0; Index < 4; ++Index)
+			for(u32 MeshIndex = 0; MeshIndex < Model.MeshCount; ++MeshIndex)
 			{
-				string Float = Node->String;
-				Float.Data[Float.Size] = 0;
-				Mesh->MaterialSpec.Ambient.E[Index] = F32FromASCII(Float);
+				mesh *Mesh = Model.Meshes + MeshIndex;
+
+				Line = Line->Next;
+				string_list LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+				string_node *Node = LineData.First;
+				string Header = Node->String;
+				Header.Data[Header.Size] = 0;
+				Assert(StringsAreSame(Header, "MESH:"));
+
 				Node = Node->Next;
-			}
+				string MeshName = Node->String;
+				MeshName.Data[MeshName.Size] = 0;
+				Mesh->Name = MeshName;
 
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Assert(LineData.Count == 4);
-			Node = LineData.First;
+				Line = Line->Next;
+				LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+				Node = LineData.First;
+				Header = Node->String;
+				Header.Data[Header.Size] = 0;
+				Assert(StringsAreSame(Header, "LIGHTING:"));
 
-			for(u32 Index = 0; Index < 4; ++Index)
-			{
-				string Float = Node->String;
-				Float.Data[Float.Size] = 0;
-				Mesh->MaterialSpec.Diffuse.E[Index] = F32FromASCII(Float);
 				Node = Node->Next;
-			}
+				string Phong = Node->String;
+				Phong.Data[Phong.Size] = 0;
+				if(StringsAreSame(Phong, "Phong"))
+				{
+					Line = Line->Next;
+					LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+					if(LineData.Count == 4)
+					{
+						Node = LineData.First;
+						for(u32 Index = 0; Index < 4; ++Index)
+						{
+							Float = Node->String;
+							Float.Data[Float.Size] = 0;
+							Mesh->MaterialSpec.Ambient.E[Index] = F32FromASCII(Float);
+							Node = Node->Next;
+						}
 
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Assert(LineData.Count == 4);
-			Node = LineData.First;
+						Line = Line->Next;
+						LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+						Assert(LineData.Count == 4);
+						Node = LineData.First;
 
-			for(u32 Index = 0; Index < 4; ++Index)
-			{
-				string Float = Node->String;
-				Float.Data[Float.Size] = 0;
-				Mesh->MaterialSpec.Specular.E[Index] = F32FromASCII(Float);
-				Node = Node->Next;
-			}
+						for(u32 Index = 0; Index < 4; ++Index)
+						{
+							Float = Node->String;
+							Float.Data[Float.Size] = 0;
+							Mesh->MaterialSpec.Diffuse.E[Index] = F32FromASCII(Float);
+							Node = Node->Next;
+						}
 
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Assert(LineData.Count == 1);
-			Node = LineData.First;
-			string Float = Node->String;
-			Float.Data[Float.Size] = 0;
-			Mesh->MaterialSpec.Shininess = F32FromASCII(Float);
+						Line = Line->Next;
+						LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+						Assert(LineData.Count == 4);
+						Node = LineData.First;
 
-			Line = Line->Next;
-			ParseMeshU32Array(Arena, &Mesh->Indices, &Mesh->IndicesCount, Line, LineDelimeters, 3, "INDICES:");
+						for(u32 Index = 0; Index < 4; ++Index)
+						{
+							Float = Node->String;
+							Float.Data[Float.Size] = 0;
+							Mesh->MaterialSpec.Specular.E[Index] = F32FromASCII(Float);
+							Node = Node->Next;
+						}
 
-			Line = Line->Next;
-
-			Line = Line->Next;
-			Line = Line->Next;
-			ParseMeshF32Array(Arena, &Mesh->Positions, &Mesh->PositionsCount, Line, LineDelimeters, 3, "POSITIONS:");
-
-			Line = Line->Next;
-			Line = Line->Next;
-			ParseMeshF32Array(Arena, &Mesh->Normals, &Mesh->NormalsCount, Line, LineDelimeters, 3, "NORMALS:");
-
-			Line = Line->Next;
-			Line = Line->Next;
-			ParseMeshF32Array(Arena, &Mesh->UV, &Mesh->UVCount, Line, LineDelimeters, 3, "UVS:");
-
-			Line = Line->Next;
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Node = LineData.First;
-			Header = Node->String;
-			Header.Data[Header.Size] = 0;
-			Assert(StringsAreSame(Header, "JOINT_INFO:"));
-
-			Node = Node->Next;
-			Count = Node->String;
-			Count.Data[Count.Size] = 0;
-
-			Mesh->JointInfoCount = U32FromASCII(Count);
-			Mesh->JointsInfo = PushArray(Arena, Mesh->JointInfoCount, joint_info);
-			for(u32 Index = 0; Index < Mesh->JointInfoCount; ++Index)
-			{
-				joint_info *Info = Mesh->JointsInfo + Index;
+						Line = Line->Next;
+						LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+						Assert(LineData.Count == 1);
+						Node = LineData.First;
+						Float = Node->String;
+						Float.Data[Float.Size] = 0;
+						Mesh->MaterialSpec.Shininess = F32FromASCII(Float);
+					}
+				}
 
 				Line = Line->Next;
 
-				Count = Line->String;
+				u32 IndicesCount = 0;
+				u32 *Indices;
+				ParseMeshU32Array(Arena, &Indices, &IndicesCount, Line, LineDelimeters, 3, "INDICES:");
+
+				Line = Line->Next;
+				Line = Line->Next;
+				u32 PositionsCount;
+				f32 *Positions;
+				ParseMeshF32Array(Arena, &Positions, &PositionsCount, Line, LineDelimeters, 3, "POSITIONS:");
+
+				Line = Line->Next;
+				Line = Line->Next;
+				u32 NormalsCount;
+				f32 *Normals;
+				ParseMeshF32Array(Arena, &Normals, &NormalsCount, Line, LineDelimeters, 3, "NORMALS:");
+
+				Line = Line->Next;
+				Line = Line->Next;
+				u32 UVCount;
+				f32 *UV;
+				ParseMeshF32Array(Arena, &UV, &UVCount, Line, LineDelimeters, 3, "UVS:");
+
+				Line = Line->Next;
+				Line = Line->Next;
+				// TODO(Justin): Colors
+
+				Line = Line->Next;
+				LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+				Node = LineData.First;
+				Header = Node->String;
+				Header.Data[Header.Size] = 0;
+				Assert(StringsAreSame(Header, "JOINT_INFO:"));
+
+				Node = Node->Next;
+				Count = Node->String;
 				Count.Data[Count.Size] = 0;
 
-				Info->Count = U32FromASCII(Count);
+				// TODO(Justin): This is ugly... find something better?
 
-				Line = Line->Next;
-				string_list IndicesList = StringSplit(Arena, Line->String, LineDelimeters, 3);
+				u32 JointInfoCount = U32FromASCII(Count);
+				joint_info *JointInfo = PushArray(Arena, JointInfoCount, joint_info);
 
-				Node = IndicesList.First;
-				string StrIndex = Node->String;
-				StrIndex.Data[StrIndex.Size] = 0;
-				Info->JointIndex[0] = U32FromASCII(StrIndex);
-
-				Node = Node->Next;
-				StrIndex = Node->String;
-				StrIndex.Data[StrIndex.Size] = 0;
-				Info->JointIndex[1] = U32FromASCII(StrIndex);
-
-				Node = Node->Next;
-				StrIndex = Node->String;
-				StrIndex.Data[StrIndex.Size] = 0;
-				Info->JointIndex[2] = U32FromASCII(StrIndex);
-
-				Line = Line->Next;
-				string_list WeightsList = StringSplit(Arena, Line->String, LineDelimeters, 3);
-
-				Node = WeightsList.First;
-				string Weight = Node->String;
-				Weight.Data[Weight.Size] = 0;
-				Info->Weights[0] = F32FromASCII(Weight);
-
-				Node = Node->Next;
-				Weight = Node->String;
-				Weight.Data[Weight.Size] = 0;
-				Info->Weights[1] = F32FromASCII(Weight);
-
-				Node = Node->Next;
-				Weight = Node->String;
-				Weight.Data[Weight.Size] = 0;
-				Info->Weights[2] = F32FromASCII(Weight);
-			}
-
-			Line = Line->Next;
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Node = LineData.First;
-			Header = Node->String;
-			Header.Data[Header.Size] = 0;
-			Assert(StringsAreSame(Header, "JOINTS:"));
-
-			Node = Node->Next;
-			Count = Node->String;
-			Count.Data[Count.Size] = 0;
-
-			Mesh->JointCount = U32FromASCII(Count);
-			Mesh->Joints = PushArray(Arena, Mesh->JointCount, joint);
-			Mesh->JointNames = PushArray(Arena, Mesh->JointCount, string);
-			Mesh->JointTransforms = PushArray(Arena, Mesh->JointCount, mat4);
-			Mesh->ModelSpaceTransforms = PushArray(Arena, Mesh->JointCount, mat4);
-
-			Line = Line->Next;
-			string RootJointName = Line->String;
-			RootJointName.Data[RootJointName.Size] = 0;
-
-			Mesh->Joints[0].Name = RootJointName;
-			Mesh->Joints[0].ParentIndex = -1;
-
-			Line = Line->Next;
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Node = LineData.First;
-			f32 *T = &Mesh->Joints[0].Transform.E[0][0];
-			for(u32 Index = 0; Index < 16; Index++)
-			{
-				Float = Node->String;
-				Float.Data[Float.Size] = 0;
-				T[Index] = F32FromASCII(Float);
-				Node = Node->Next;
-			}
-
-			for(u32 Index = 1; Index < Mesh->JointCount; ++Index)
-			{
-				Line = Line->Next;
-
-				joint *Joint = Mesh->Joints + Index;
-
-				string JointName = Line->String;
-				JointName.Data[JointName.Size] = 0;
-				Joint->Name = JointName;
-
-				Line = Line->Next;
-				string ParentIndex = Line->String;
-				ParentIndex.Data[ParentIndex.Size] = 0;
-				Joint->ParentIndex = U32FromASCII(ParentIndex);
-
-				Line = Line->Next;
-				LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-				Node = LineData.First;
-				T = &Joint->Transform.E[0][0];
-				for(u32 k = 0; k < 16; k++)
+				if(JointInfoCount != 0)
 				{
-					Float = Node->String;
-					Float.Data[Float.Size] = 0;
-					T[k] = F32FromASCII(Float);
-					Node = Node->Next;
+					Model.HasSkeleton = true;
 				}
-			}
 
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Node = LineData.First;
-			Header = Node->String;
-			Header.Data[Header.Size] = 0;
-			Assert(StringsAreSame(Header, "BIND:"));
-
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Node = LineData.First;
-			f32 *BindT = &Mesh->BindTransform.E[0][0];
-			for(u32 Index = 0; Index < 16; Index++)
-			{
-				Float = Node->String;
-				Float.Data[Float.Size] = 0;
-				BindT[Index] = F32FromASCII(Float);
-				Node = Node->Next;
-			}
-
-			Line = Line->Next;
-			LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-			Node = LineData.First;
-			Header = Node->String;
-			Header.Data[Header.Size] = 0;
-			Assert(StringsAreSame(Header, "INV_BIND:"));
-
-			Node = Node->Next;
-			Count = Node->String;
-			Count.Data[Count.Size] = 0;
-			u32 InvBindTCount = U32FromASCII(Count);
-			Assert(InvBindTCount == (Mesh->JointCount * 16));
-
-			Mesh->InvBindTransforms = PushArray(Arena, Mesh->JointCount, mat4);
-			for(u32 Index = 0; Index < Mesh->JointCount; ++Index)
-			{
-				Line = Line->Next;
-				LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
-				Node = LineData.First;
-
-				mat4 *InvBindT = Mesh->InvBindTransforms + Index;
-				T = &InvBindT->E[0][0];
-
-				for(u32 k = 0; k < 16; k++)
+				for(u32 Index = 0; Index < JointInfoCount; ++Index)
 				{
-					Float = Node->String;
-					Float.Data[Float.Size] = 0;
-					T[k] = F32FromASCII(Float);
+					joint_info *Info = JointInfo + Index;
+
+					Line = Line->Next;
+
+					Count = Line->String;
+					Count.Data[Count.Size] = 0;
+
+					Info->Count = U32FromASCII(Count);
+
+					Line = Line->Next;
+					string_list IndicesList = StringSplit(Arena, Line->String, LineDelimeters, 3);
+
+					Node = IndicesList.First;
+					string StrIndex = Node->String;
+					StrIndex.Data[StrIndex.Size] = 0;
+					Info->JointIndex[0] = U32FromASCII(StrIndex);
+
 					Node = Node->Next;
+					StrIndex = Node->String;
+					StrIndex.Data[StrIndex.Size] = 0;
+					Info->JointIndex[1] = U32FromASCII(StrIndex);
+
+					Node = Node->Next;
+					StrIndex = Node->String;
+					StrIndex.Data[StrIndex.Size] = 0;
+					Info->JointIndex[2] = U32FromASCII(StrIndex);
+
+					Line = Line->Next;
+					string_list WeightsList = StringSplit(Arena, Line->String, LineDelimeters, 3);
+
+					Node = WeightsList.First;
+					string Weight = Node->String;
+					Weight.Data[Weight.Size] = 0;
+					Info->Weights[0] = F32FromASCII(Weight);
+
+					Node = Node->Next;
+					Weight = Node->String;
+					Weight.Data[Weight.Size] = 0;
+					Info->Weights[1] = F32FromASCII(Weight);
+
+					Node = Node->Next;
+					Weight = Node->String;
+					Weight.Data[Weight.Size] = 0;
+					Info->Weights[2] = F32FromASCII(Weight);
 				}
-			}
 
-			Line = Line->Next;
-			Assert(DoneProcessingMesh(Line));
+				Mesh->VertexCount = IndicesCount/3;
+				Mesh->Vertices = PushArray(Arena, Mesh->VertexCount, vertex_list);
+				Mesh->IndicesCount = IndicesCount/3;
+				Mesh->Indices = PushArray(Arena, Mesh->IndicesCount, u32);
 
-			mat4 I = Mat4Identity();
-			for(u32 Index = 0; Index < Mesh->JointCount; ++Index)
-			{
-				joint *Joint = Mesh->Joints + Index;
+				u32 Stride3 = 3;
+				u32 Stride2 = 2;
+				if(JointInfoCount == 0)
+				{
+					for(u32 VertexIndex = 0; VertexIndex < Mesh->VertexCount; ++VertexIndex)
+					{
+						Mesh->Indices[VertexIndex] = VertexIndex;
+						vertex_list *Vertex = Mesh->Vertices + VertexIndex;
 
-				Mesh->JointNames[Index] = Joint->Name;
-				Mesh->JointTransforms[Index] = I;
-				Mesh->ModelSpaceTransforms[Index] = I;
+						u32 IndexP = Indices[3 * VertexIndex + 0];
+						u32 IndexN = Indices[3 * VertexIndex + 1];
+						u32 IndexUV = Indices[3 * VertexIndex + 2];
+
+						Vertex->P.x = Positions[Stride3 * IndexP + 0];
+						Vertex->P.y = Positions[Stride3 * IndexP + 1];
+						Vertex->P.z = Positions[Stride3 * IndexP + 2];
+
+						Vertex->N.x = Normals[Stride3 * IndexN + 0];
+						Vertex->N.y = Normals[Stride3 * IndexN + 1];
+						Vertex->N.z = Normals[Stride3 * IndexN + 2];
+
+						Vertex->UV.x = UV[Stride2 * IndexUV + 0];
+						Vertex->UV.y = UV[Stride2 * IndexUV + 1];
+					}
+				}
+				else
+				{
+					for(u32 VertexIndex = 0; VertexIndex < Mesh->VertexCount; ++VertexIndex)
+					{
+						Mesh->Indices[VertexIndex] = VertexIndex;
+						vertex_list *Vertex = Mesh->Vertices + VertexIndex;
+
+						u32 IndexP = Indices[3 * VertexIndex + 0];
+						u32 IndexN = Indices[3 * VertexIndex + 1];
+						u32 IndexUV = Indices[3 * VertexIndex + 2];
+
+						Vertex->P.x = Positions[Stride3 * IndexP + 0];
+						Vertex->P.y = Positions[Stride3 * IndexP + 1];
+						Vertex->P.z = Positions[Stride3 * IndexP + 2];
+
+						Vertex->N.x = Normals[Stride3 * IndexN + 0];
+						Vertex->N.y = Normals[Stride3 * IndexN + 1];
+						Vertex->N.z = Normals[Stride3 * IndexN + 2];
+
+						Vertex->UV.x = UV[Stride2 * IndexUV + 0];
+						Vertex->UV.y = UV[Stride2 * IndexUV + 1];
+
+						Vertex->JointInfo = JointInfo[IndexP];
+
+					}
+				}
+
+				if(JointInfoCount != 0)
+				{
+					Line = Line->Next;
+					Line = Line->Next;
+					LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+					Node = LineData.First;
+					Header = Node->String;
+					Header.Data[Header.Size] = 0;
+					Assert(StringsAreSame(Header, "JOINTS:"));
+
+					Node = Node->Next;
+					Count = Node->String;
+					Count.Data[Count.Size] = 0;
+
+					Mesh->JointCount = U32FromASCII(Count);
+					Mesh->Joints = PushArray(Arena, Mesh->JointCount, joint);
+					Mesh->JointNames = PushArray(Arena, Mesh->JointCount, string);
+					Mesh->JointTransforms = PushArray(Arena, Mesh->JointCount, mat4);
+					Mesh->ModelSpaceTransforms = PushArray(Arena, Mesh->JointCount, mat4);
+
+					Line = Line->Next;
+					string RootJointName = Line->String;
+
+					// TODO(Justin): This is not ok, probably has to do with the
+					// way the file is enoded?
+					RootJointName.Data[RootJointName.Size - 1] = 0;
+					RootJointName.Size--;
+
+					Mesh->Joints[0].Name = RootJointName;
+					Mesh->Joints[0].ParentIndex = -1;
+
+					Line = Line->Next;
+					Line = Line->Next;
+					LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+					Node = LineData.First;
+					f32 *T = &Mesh->Joints[0].Transform.E[0][0];
+					for(u32 Index = 0; Index < 16; Index++)
+					{
+						Float = Node->String;
+						Float.Data[Float.Size] = 0;
+						T[Index] = F32FromASCII(Float);
+						Node = Node->Next;
+					}
+
+					for(u32 Index = 1; Index < Mesh->JointCount; ++Index)
+					{
+						Line = Line->Next;
+
+						joint *Joint = Mesh->Joints + Index;
+
+						// TODO(Justin): This is not ok, probably has to do with the
+						// way the file is enoded?
+						string JointName = Line->String;
+						JointName.Data[JointName.Size - 1] = 0;
+						JointName.Size--;
+						Joint->Name = JointName;
+
+						Line = Line->Next;
+						string ParentIndex = Line->String;
+						ParentIndex.Data[ParentIndex.Size] = 0;
+						Joint->ParentIndex = U32FromASCII(ParentIndex);
+
+						Line = Line->Next;
+						LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+						Node = LineData.First;
+						T = &Joint->Transform.E[0][0];
+						for(u32 k = 0; k < 16; k++)
+						{
+							Float = Node->String;
+							Float.Data[Float.Size] = 0;
+							T[k] = F32FromASCII(Float);
+							Node = Node->Next;
+						}
+					}
+
+					Line = Line->Next;
+					LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+					Node = LineData.First;
+					Header = Node->String;
+					Header.Data[Header.Size] = 0;
+					Assert(StringsAreSame(Header, "BIND:"));
+
+					Line = Line->Next;
+					LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+					Node = LineData.First;
+					f32 *BindT = &Mesh->BindTransform.E[0][0];
+					for(u32 Index = 0; Index < 16; Index++)
+					{
+						Float = Node->String;
+						Float.Data[Float.Size] = 0;
+						BindT[Index] = F32FromASCII(Float);
+						Node = Node->Next;
+					}
+
+					Line = Line->Next;
+					LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+					Node = LineData.First;
+					Header = Node->String;
+					Header.Data[Header.Size] = 0;
+					Assert(StringsAreSame(Header, "INV_BIND:"));
+
+					Node = Node->Next;
+					Count = Node->String;
+					Count.Data[Count.Size] = 0;
+					u32 InvBindTCount = U32FromASCII(Count);
+					Assert(InvBindTCount == (Mesh->JointCount * 16));
+
+					Mesh->InvBindTransforms = PushArray(Arena, Mesh->JointCount, mat4);
+					for(u32 Index = 0; Index < Mesh->JointCount; ++Index)
+					{
+						Line = Line->Next;
+						LineData = StringSplit(Arena, Line->String, LineDelimeters, 3);
+						Node = LineData.First;
+
+						mat4 *InvBindT = Mesh->InvBindTransforms + Index;
+						T = &InvBindT->E[0][0];
+
+						for(u32 k = 0; k < 16; k++)
+						{
+							Float = Node->String;
+							Float.Data[Float.Size] = 0;
+							T[k] = F32FromASCII(Float);
+							Node = Node->Next;
+						}
+					}
+
+					Line = Line->Next;
+					Line = Line->Next;
+					Assert(DoneProcessingMesh(Line));
+
+					mat4 I = Mat4Identity();
+					for(u32 Index = 0; Index < Mesh->JointCount; ++Index)
+					{
+						joint *Joint = Mesh->Joints + Index;
+
+						Mesh->JointNames[Index] = Joint->Name;
+						Mesh->JointTransforms[Index] = I;
+						Mesh->ModelSpaceTransforms[Index] = I;
+					}
+				}
 			}
 		}
 	}
 
 	return(Model);
+}
+
+enum animation_header
+{
+	AnimationHeader_Invalid,
+	AnimationHeader_Joints,
+	AnimationHeader_Times,
+	AnimationHeader_KeyFrame,
+};
+
+inline animation_header
+AnimationHeaderGet(u8 *Buff)
+{
+	animation_header Result = AnimationHeader_Invalid;
+	if(StringsAreSame(Buff, "JOINTS:"))
+	{
+		Result = AnimationHeader_Joints;
+	}
+	if(StringsAreSame(Buff, "TIMES:"))
+	{
+		Result = AnimationHeader_Times;
+	}
+	if(StringsAreSame(Buff, "KEY_FRAME:"))
+	{
+		Result = AnimationHeader_KeyFrame;
+	}
+
+	return(Result);
 }
 
 internal animation_info
@@ -397,103 +524,129 @@ AnimationInfoLoad(memory_arena *Arena, char *FileName)
 	if(File.Size != 0)
 	{
 		u8 *Content = (u8 *)File.Content;
-		Content[File.Size] = 0;
-		string Data = String(Content);
-		string Header = {};
-		string Count = {};
-
-		char Delimeters[] = "\n\r";
-		char LineDelimeters[] = " \n\r";
-
-		string_list Lines = StringSplit(Arena, Data,(u8 *)Delimeters, 1);
-		string_node *Line = Lines.First;
-
-		string_list LineData = StringSplit(Arena, Line->String,(u8 *)LineDelimeters, 3);
-		string_node *Node = LineData.First;
-		Header = Node->String;
-		Header.Data[Header.Size] = 0;
-		Assert(StringsAreSame(Header, "JOINTS:"));
-
-		Node = Node->Next;
-		Count = Node->String;
-		Count.Data[Count.Size] = 0;
-
-		Info.JointCount = U32FromASCII(Count);
-
-		Line = Line->Next;
-		LineData = StringSplit(Arena, Line->String,(u8 *)LineDelimeters, 3);
-		Node = LineData.First;
-		Header = Node->String;
-		Header.Data[Header.Size] = 0;
-		Assert(StringsAreSame(Header, "TIMES:"));
-
-		Node = Node->Next;
-		Count = Node->String;
-		Count.Data[Count.Size] = 0;
-
-		Info.TimeCount = U32FromASCII(Count);
-
-		Line = Line->Next;
-		LineData = StringSplit(Arena, Line->String,(u8 *)LineDelimeters, 3);
-		Node = LineData.First;
-		Header = Node->String;
-		Header.Data[Header.Size] = 0;
-		Assert(StringsAreSame(Header, "TRANSFORMS:"));
-
-		Node = Node->Next;
-		Count = Node->String;
-		Count.Data[Count.Size] = 0;
-
-		Info.TransformCount = U32FromASCII(Count);
-		Assert(Info.TimeCount == Info.TransformCount);
-
-		Line = Line->Next;
-		Assert(Line->String.Data[0] == '*');
-
-		Info.JointNames = PushArray(Arena, Info.JointCount, string);
-		Info.Times = PushArray(Arena, Info.JointCount, f32 *);
-		Info.Transforms = PushArray(Arena, Info.JointCount, mat4 *);
-
-		for(u32 JointIndex = 0; JointIndex < Info.JointCount; ++JointIndex)
+		if(Content)
 		{
-			Info.Times[JointIndex] = PushArray(Arena, Info.TimeCount, f32);
-			Info.Transforms[JointIndex] = PushArray(Arena, Info.TimeCount, mat4);
+			Content[File.Size] = 0;
+			string Data = String(Content);
 
-			Line = Line->Next;
-			string JointName = Line->String;
-			//JointName.Data[JointName.Size - 1] = 0;
-			//JointName.Size--;
-			Info.JointNames[JointIndex] = JointName;
+			u8 Buff[512];
+			u8 Delimeters[] = "\r\n";
 
-			Line = Line->Next;
-			string_array StrTimes = StringSplitIntoArray(Arena, Line->String,(u8 *)LineDelimeters, 3);
-
-			Line = Line->Next;
-			string_array StrTransforms = StringSplitIntoArray(Arena, Line->String,(u8 *)LineDelimeters, 3);
-
-			for(u32 TimeIndex = 0; TimeIndex < Info.TimeCount; ++TimeIndex)
+			string_list Lines = StringSplit(Arena, Data, Delimeters, ArrayCount(Delimeters));
+			string_node *Line = Lines.First;
+			for(u32 Index = 0; Line && Line->Next; Line = Line->Next, ++Index)
 			{
-				string Time = StrTimes.Strings[TimeIndex];
-				Info.Times[JointIndex][TimeIndex] = F32FromASCII(Time);
-			}
-
-			for(u32 MatrixIndex = 0; MatrixIndex < Info.TransformCount; ++MatrixIndex)
-			{
-				mat4 *M = &Info.Transforms[JointIndex][MatrixIndex];
-				f32 *Float = &M->E[0][0];
-				for(u32 FloatIndex = 0; FloatIndex < 16; ++FloatIndex)
+				if(Info.KeyFrameCount != 0)
 				{
-					string StrFloat = StrTransforms.Strings[16 * MatrixIndex + FloatIndex];
-					Float[FloatIndex] = F32FromASCII(StrFloat);
+					// TODO(Justin): Figure out why we continue to have data
+					// to process!!?!
+					break;
+				}
+
+				u8 *C = Line->String.Data;
+				BufferNextWord(&C, Buff);
+				animation_header Header = AnimationHeaderGet(Buff);
+				switch(Header)
+				{
+					case AnimationHeader_Joints:
+					{
+						EatSpaces(&C);
+						BufferNextWord(&C, Buff);
+						Info.JointCount = U32FromASCII(Buff);
+						Info.JointNames = PushArray(Arena, Info.JointCount, string);
+
+						for(u32 NameIndex = 0; NameIndex < Info.JointCount; ++NameIndex)
+						{
+							Line = Line->Next;
+							C = Line->String.Data;
+							BufferNextWord(&C, Buff);
+							Info.JointNames[NameIndex] = StringAllocAndCopy(Arena, Buff);
+						}
+
+					} break;
+					case AnimationHeader_Times:
+					{
+						EatSpaces(&C);
+						BufferNextWord(&C, Buff);
+						Info.TimeCount = U32FromASCII(Buff);
+						Info.Times = PushArray(Arena, Info.TimeCount, f32);
+
+						Line = Line->Next;
+						C = Line->String.Data;
+						for(u32 TimeIndex = 0; TimeIndex < Info.TimeCount; ++TimeIndex)
+						{
+							BufferNextWord(&C, Buff);
+							Info.Times[TimeIndex] = F32FromASCII(Buff);
+							EatSpaces(&C);
+						}
+					} break;
+					case AnimationHeader_KeyFrame:
+					{
+						Info.KeyFrameCount = Info.TimeCount;
+						Info.KeyFrames = PushArray(Arena, Info.KeyFrameCount, key_frame);
+						for(u32 KeyFrameIndex = 0; KeyFrameIndex < Info.KeyFrameCount; ++KeyFrameIndex)
+						{
+							Info.KeyFrames[KeyFrameIndex].Positions = PushArray(Arena, Info.JointCount, v3);
+							Info.KeyFrames[KeyFrameIndex].Quaternions = PushArray(Arena, Info.JointCount, quaternion);
+							Info.KeyFrames[KeyFrameIndex].Scales = PushArray(Arena, Info.JointCount, v3);
+						}
+
+						for(u32 KeyFrameIndex = 0; KeyFrameIndex < Info.KeyFrameCount; ++KeyFrameIndex)
+						{
+							key_frame *KeyFrame = Info.KeyFrames + KeyFrameIndex;
+							for(u32 JointIndex = 0; JointIndex < Info.JointCount; ++JointIndex)
+							{
+								v3 *P = KeyFrame->Positions + JointIndex;
+								quaternion *Q = KeyFrame->Quaternions + JointIndex;
+								v3 *Scale = KeyFrame->Scales + JointIndex;
+
+								Line = Line->Next;
+								C = Line->String.Data;
+								f32 *F32 = (f32 *)P;
+								for(u32 FloatIndex = 0; FloatIndex < 3; ++FloatIndex)
+								{
+									BufferNextWord(&C, Buff);
+									F32[FloatIndex] = F32FromASCII(Buff);
+									EatSpaces(&C);
+								}
+
+								Line = Line->Next;
+								C = Line->String.Data;
+								F32 = (f32 *)Q;
+								for(u32 FloatIndex = 0; FloatIndex < 4; ++FloatIndex)
+								{
+									BufferNextWord(&C, Buff);
+									F32[FloatIndex] = F32FromASCII(Buff);
+									EatSpaces(&C);
+								}
+
+								Line = Line->Next;
+								C = Line->String.Data;
+								F32 = (f32 *)Scale;
+								for(u32 FloatIndex = 0; FloatIndex < 3; ++FloatIndex)
+								{
+									BufferNextWord(&C, Buff);
+									F32[FloatIndex] = F32FromASCII(Buff);
+									EatSpaces(&C);
+								}
+							}
+
+#if 1
+							if(Line->Next)
+							{
+								Line = Line->Next;
+							}
+							else
+							{
+								break;
+							}
+#endif
+						}
+					} break;
 				}
 			}
 		}
 	}
-	else
-	{
-		printf("Error could not read %s\n", FileName);
-		perror("");
-	}
-
 	return(Info);
 }
+

@@ -10,66 +10,54 @@
 !_TAG_PROGRAM_URL	https://ctags.io/	/official site/
 !_TAG_PROGRAM_VERSION	5.9.0	/80ee839/
 Ambient	mesh.h	/^	v4 Ambient;$/;"	m	struct:material_spec	typeref:typename:v4
-AnimationInfoGet	mesh.cpp	/^AnimationInfoGet(memory_arena *Arena, xml_node *Root, animation_info *AnimationInfo)$/;"	f	typeref:typename:internal void
-AnimationInfoLoad	win32_main.cpp	/^AnimationInfoLoad(memory_arena *Arena, char *FileName)$/;"	f	typeref:typename:internal animation_info
-AnimationsInfo	mesh.h	/^	animation_info AnimationsInfo;$/;"	m	struct:model	typeref:typename:animation_info
-ArenaInitialize	main.cpp	/^ArenaInitialize(memory_arena *Arena, u8 *Base, memory_index Size)$/;"	f	typeref:typename:internal void
-ArenaInitialize	skeletal_platform.h	/^ArenaInitialize(memory_arena *Arena, u8 *Base, memory_index Size)$/;"	f	typeref:typename:internal void
-ArrayCopy	main.cpp	/^#define ArrayCopy(/;"	d	file:
-ArrayCopy	skeletal_platform.h	/^#define ArrayCopy(/;"	d
-ArrayCount	main.cpp	/^#define ArrayCount(/;"	d	file:
-ArrayCount	skeletal_platform.h	/^#define ArrayCount(/;"	d
-Assert	main.cpp	/^#define Assert(/;"	d	file:
-Assert	skeletal_platform.h	/^#define Assert(/;"	d
-AttributeCount	xml.h	/^	s32 AttributeCount;$/;"	m	struct:xml_node	typeref:typename:s32
-AttributeCountMax	xml.h	/^	s32 AttributeCountMax;$/;"	m	struct:xml_node	typeref:typename:s32
-Attributes	xml.h	/^	xml_attribute *Attributes;$/;"	m	struct:xml_node	typeref:typename:xml_attribute *
-Base	main.cpp	/^	u8 *Base;$/;"	m	struct:memory_arena	typeref:typename:u8 *	file:
-Base	skeletal_platform.h	/^	u8 *Base;$/;"	m	struct:memory_arena	typeref:typename:u8 *
-BasicFsSrc	main.cpp	/^char *BasicFsSrc = R"($/;"	v	typeref:typename:char *
+AnimationHeaderGet	asset.cpp	/^AnimationHeaderGet(u8 *Buff)$/;"	f	typeref:typename:animation_header
+AnimationHeader_Invalid	asset.cpp	/^	AnimationHeader_Invalid,$/;"	e	enum:animation_header	file:
+AnimationHeader_Joints	asset.cpp	/^	AnimationHeader_Joints,$/;"	e	enum:animation_header	file:
+AnimationHeader_KeyFrame	asset.cpp	/^	AnimationHeader_KeyFrame,$/;"	e	enum:animation_header	file:
+AnimationHeader_Times	asset.cpp	/^	AnimationHeader_Times,$/;"	e	enum:animation_header	file:
+AnimationInfoLoad	asset.cpp	/^AnimationInfoLoad(memory_arena *Arena, char *FileName)$/;"	f	typeref:typename:internal animation_info
+AnimationUpdate	animation.cpp	/^AnimationUpdate(model *Model, f32 dT)$/;"	f	typeref:typename:internal void
+Animations	mesh.h	/^	animations Animations;$/;"	m	struct:model	typeref:typename:animations
+ArenaInitialize	platform.h	/^ArenaInitialize(memory_arena *Arena, u8 *Base, memory_index Size)$/;"	f	typeref:typename:internal void
+ArrayCopy	platform.h	/^#define ArrayCopy(/;"	d
+ArrayCount	platform.h	/^#define ArrayCount(/;"	d
+Assert	platform.h	/^#define Assert(/;"	d
+Base	platform.h	/^	u8 *Base;$/;"	m	struct:memory_arena	typeref:typename:u8 *
 BasicFsSrc	opengl.cpp	/^char *BasicFsSrc = R"($/;"	v	typeref:typename:char *
-BasicVsSrc	main.cpp	/^char *BasicVsSrc = R"($/;"	v	typeref:typename:char *
 BasicVsSrc	opengl.cpp	/^char *BasicVsSrc = R"($/;"	v	typeref:typename:char *
 Basis	mesh.h	/^	basis Basis;$/;"	m	struct:model	typeref:typename:basis
 BindTransform	mesh.h	/^	mat4 BindTransform;$/;"	m	struct:mesh	typeref:typename:mat4
-COLLADA_ATTRIBUTE_MAX_COUNT	main.cpp	/^#define COLLADA_ATTRIBUTE_MAX_COUNT /;"	d	file:
-COLLADA_ATTRIBUTE_MAX_COUNT	skeletal_platform.h	/^#define COLLADA_ATTRIBUTE_MAX_COUNT /;"	d
-COLLADA_NODE_CHILDREN_MAX_COUNT	main.cpp	/^#define COLLADA_NODE_CHILDREN_MAX_COUNT /;"	d	file:
-COLLADA_NODE_CHILDREN_MAX_COUNT	skeletal_platform.h	/^#define COLLADA_NODE_CHILDREN_MAX_COUNT /;"	d
-ChildNodeAdd	xml.cpp	/^ChildNodeAdd(memory_arena *Arena, xml_node *Parent)$/;"	f	typeref:typename:internal xml_node *
-Children	xml.h	/^	xml_node **Children;$/;"	m	struct:xml_node	typeref:typename:xml_node **
-ChildrenCount	xml.h	/^	s32 ChildrenCount;$/;"	m	struct:xml_node	typeref:typename:s32
-ChildrenMaxCount	xml.h	/^	s32 ChildrenMaxCount;$/;"	m	struct:xml_node	typeref:typename:s32
-ColladaFileLoad	main.cpp	/^ColladaFileLoad(memory_arena *Arena, char *FileName)$/;"	f	typeref:typename:internal loaded_dae
-CommonCompilerFlags	build.bat	/^set CommonCompilerFlags=-Od -MTd -fp:fast -Oi -Zi$/;"	v
+BufferNextWord	strings.cpp	/^BufferNextWord(u8 **C, u8 *Buff)$/;"	f	typeref:typename:void
+COLLADA_ATTRIBUTE_MAX_COUNT	platform.h	/^#define COLLADA_ATTRIBUTE_MAX_COUNT /;"	d
+COLLADA_NODE_CHILDREN_MAX_COUNT	platform.h	/^#define COLLADA_NODE_CHILDREN_MAX_COUNT /;"	d
+CommonCompilerFlags	build.bat	/^set CommonCompilerFlags=-Od -MTd -fp:fast -W4 -wd4201 -wd4100 -wd4505 -wd4189 -Oi -Z7$/;"	v
 CommonLinkerFlags	build.bat	/^set CommonLinkerFlags=-incremental:no user32.lib gdi32.lib opengl32.lib$/;"	v
-Content	skeletal_platform.h	/^	void *Content;$/;"	m	struct:debug_file	typeref:typename:void *
+Conjugate	math_util.h	/^Conjugate(quaternion Q)$/;"	f	typeref:typename:quaternion
+Content	platform.h	/^	void *Content;$/;"	m	struct:debug_file	typeref:typename:void *
+Count	mesh.h	/^	u32 Count;$/;"	m	struct:animations	typeref:typename:u32
 Count	mesh.h	/^	u32 Count;$/;"	m	struct:joint_info	typeref:typename:u32
 Count	strings.h	/^	u32 Count;$/;"	m	struct:string_array	typeref:typename:u32
 Count	strings.h	/^	u64 Count;$/;"	m	struct:string_list	typeref:typename:u64
 Cross	math_util.h	/^Cross(v3 A, v3 B)$/;"	f	typeref:typename:v3
+Cross	math_util.h	/^Cross(v4 A, v4 B)$/;"	f	typeref:typename:v4
 CurrentTime	mesh.h	/^	f32 CurrentTime;$/;"	m	struct:animation_info	typeref:typename:f32
 Data	strings.h	/^	u8 *Data;$/;"	m	struct:string	typeref:typename:u8 *
-DegreeToRad	main.cpp	/^#define DegreeToRad(/;"	d	file:
-DegreeToRad	skeletal_platform.h	/^#define DegreeToRad(/;"	d
+DegreeToRad	platform.h	/^#define DegreeToRad(/;"	d
 Diffuse	mesh.h	/^	v4 Diffuse;$/;"	m	struct:material_spec	typeref:typename:v4
-DoneProcessingMesh	win32_main.cpp	/^DoneProcessingMesh(string_node *Line)$/;"	f	typeref:typename:internal b32
+DoneProcessingMesh	asset.cpp	/^DoneProcessingMesh(string_node *Line)$/;"	f	typeref:typename:internal b32
+Dot	math_util.h	/^Dot(quaternion Q1, quaternion Q2)$/;"	f	typeref:typename:f32
 Dot	math_util.h	/^Dot(v3 A, v3 B)$/;"	f	typeref:typename:f32
+Dot	math_util.h	/^Dot(v4 A, v4 B)$/;"	f	typeref:typename:f32
 E	math_util.h	/^	f32 E[2];$/;"	m	union:v2	typeref:typename:f32[2]
 E	math_util.h	/^	f32 E[3];$/;"	m	union:v3	typeref:typename:f32[3]
 E	math_util.h	/^	f32 E[4];$/;"	m	union:v4	typeref:typename:f32[4]
 E	math_util.h	/^	f32 E[4][4];$/;"	m	struct:mat4	typeref:typename:f32[4][4]
+EatSpaces	strings.cpp	/^EatSpaces(u8 **Buff)$/;"	f	typeref:typename:void
 Extensions	opengl.cpp	/^	char *Extensions;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
 F32FromASCII	strings.cpp	/^F32FromASCII(string S)$/;"	f	typeref:typename:f32
 F32FromASCII	strings.cpp	/^F32FromASCII(u8 *S)$/;"	f	typeref:typename:f32
-FileClose	main.cpp	/^FileClose(FILE *OpenFile)$/;"	f	typeref:typename:internal b32
-FileReadEntireAndNullTerminate	main.cpp	/^FileReadEntireAndNullTerminate(u8 *Dest, s32 Size, FILE *OpenFile)$/;"	f	typeref:typename:internal void
-FileSizeGet	main.cpp	/^FileSizeGet(FILE *OpenFile)$/;"	f	typeref:typename:internal s32
 First	strings.h	/^	string_node *First;$/;"	m	struct:string_list	typeref:typename:string_node *
-FullPath	xml.h	/^	string FullPath;$/;"	m	struct:loaded_dae	typeref:typename:string
-GLIBOInit	gl_util.cpp	/^GLIBOInit(u32 *IBO, u32 *Indices, u32 IndicesCount)$/;"	f	typeref:typename:internal void
 GLIBOInit	opengl.cpp	/^GLIBOInit(u32 *IBO, u32 *Indices, u32 IndicesCount)$/;"	f	typeref:typename:internal void
-GLProgramCreate	gl_util.cpp	/^GLProgramCreate(char *VS, char *FS)$/;"	f	typeref:typename:internal u32
 GLProgramCreate	opengl.cpp	/^GLProgramCreate(char *VS, char *FS)$/;"	f	typeref:typename:internal u32
 GL_ACTIVE_ATTRIBUTES	opengl.cpp	/^#define GL_ACTIVE_ATTRIBUTES /;"	d	file:
 GL_ARRAY_BUFFER	opengl.cpp	/^#define GL_ARRAY_BUFFER /;"	d	file:
@@ -94,39 +82,45 @@ GL_TRUE	opengl.cpp	/^#define GL_TRUE /;"	d	file:
 GL_VERTEX_SHADER	opengl.cpp	/^#define GL_VERTEX_SHADER /;"	d	file:
 GLchar	win32_main.cpp	/^typedef char GLchar;$/;"	t	typeref:typename:char	file:
 GLsizeiptr	win32_main.cpp	/^typedef uintptr_t GLsizeiptr;$/;"	t	typeref:typename:uintptr_t	file:
-Height	win32_main.cpp	/^	f32 Width, Height;$/;"	m	struct:win32_client_rect	typeref:typename:f32	file:
+HasSkeleton	mesh.h	/^	b32 HasSkeleton;$/;"	m	struct:model	typeref:typename:b32
 IBO	mesh.h	/^	u32 IBO[2];$/;"	m	struct:model	typeref:typename:u32[2]
-Index	mesh.h	/^	s32 Index;$/;"	m	struct:joint	typeref:typename:s32
+Index	mesh.h	/^	u32 Index;$/;"	m	struct:animations	typeref:typename:u32
 Indices	mesh.h	/^	u32 *Indices;$/;"	m	struct:mesh	typeref:typename:u32 *
 IndicesCount	mesh.h	/^	u32 IndicesCount;$/;"	m	struct:mesh	typeref:typename:u32
-InnerText	xml.h	/^	string InnerText;$/;"	m	struct:xml_node	typeref:typename:string
+Info	mesh.h	/^	animation_info *Info;$/;"	m	struct:animations	typeref:typename:animation_info *
 InvBindTransforms	mesh.h	/^	mat4 *InvBindTransforms;$/;"	m	struct:mesh	typeref:typename:mat4 *
+IsNewLine	strings.cpp	/^IsNewLine(u8 *S)$/;"	f	typeref:typename:b32
 IsNewLine	strings.cpp	/^b32 IsNewLine(char *S)$/;"	f	typeref:typename:b32
+IsSpace	strings.cpp	/^IsSpace(u8 *S)$/;"	f	typeref:typename:b32
 JointCount	mesh.h	/^	u32 JointCount;$/;"	m	struct:animation_info	typeref:typename:u32
 JointCount	mesh.h	/^	u32 JointCount;$/;"	m	struct:mesh	typeref:typename:u32
 JointIndex	mesh.h	/^	u32 JointIndex[3];$/;"	m	struct:joint_info	typeref:typename:u32[3]
 JointIndexGet	mesh.cpp	/^JointIndexGet(string *JointNames, u32 JointCount, string JointName)$/;"	f	typeref:typename:internal s32
-JointInfoCount	mesh.h	/^	u32 JointInfoCount;$/;"	m	struct:mesh	typeref:typename:u32
-JointInfoVB	mesh.h	/^	u32 PosVB[2], NormVB[2], JointInfoVB[2];$/;"	m	struct:model	typeref:typename:u32[2]
+JointInfo	mesh.h	/^	joint_info JointInfo;$/;"	m	struct:vertex_list	typeref:typename:joint_info
 JointNames	mesh.h	/^	string *JointNames;$/;"	m	struct:animation_info	typeref:typename:string *
 JointNames	mesh.h	/^	string *JointNames;$/;"	m	struct:mesh	typeref:typename:string *
 JointTransforms	mesh.h	/^	mat4 *JointTransforms;$/;"	m	struct:mesh	typeref:typename:mat4 *
 Joints	mesh.h	/^	joint *Joints;$/;"	m	struct:mesh	typeref:typename:joint *
-JointsGet	mesh.cpp	/^JointsGet(memory_arena *Arena, xml_node *Root, string *JointNames, u32 JointCount, joint *Joints/;"	f	typeref:typename:internal void
-JointsInfo	mesh.h	/^	joint_info *JointsInfo;$/;"	m	struct:mesh	typeref:typename:joint_info *
-Key	xml.h	/^	string Key;$/;"	m	struct:xml_attribute	typeref:typename:string
+KeyFrameCount	mesh.h	/^	u32 KeyFrameCount;$/;"	m	struct:animation_info	typeref:typename:u32
+KeyFrameDeltaTime	animation.cpp	/^KeyFrameDeltaTime(f32 *Times, u32 KeyFrameIndex)$/;"	f	typeref:typename:f32
 KeyFrameIndex	mesh.h	/^	u32 KeyFrameIndex;$/;"	m	struct:animation_info	typeref:typename:u32
-Kilobyte	main.cpp	/^#define Kilobyte(/;"	d	file:
-Kilobyte	skeletal_platform.h	/^#define Kilobyte(/;"	d
+KeyFrameInterpolatedTransform	animation.cpp	/^KeyFrameInterpolatedTransform(key_frame *Current, f32 t, key_frame *Next, u32 JointIndex)$/;"	f	typeref:typename:mat4
+KeyFrames	mesh.h	/^	key_frame *KeyFrames;$/;"	m	struct:animation_info	typeref:typename:key_frame *
+Kilobyte	platform.h	/^#define Kilobyte(/;"	d
 Last	strings.h	/^	string_node *Last;$/;"	m	struct:string_list	typeref:typename:string_node *
 Length	math_util.h	/^Length(v3 A)$/;"	f	typeref:typename:f32
+Lerp	math_util.h	/^Lerp(quaternion A, f32 t, quaternion B)$/;"	f	typeref:typename:quaternion
+Lerp	math_util.h	/^Lerp(v3 A, f32 t, v3 B)$/;"	f	typeref:typename:v3
+LerpShortest	math_util.h	/^LerpShortest(quaternion A, f32 t, quaternion B)$/;"	f	typeref:typename:quaternion
 MATH_UTIL_H	math_util.h	/^#define MATH_UTIL_H /;"	d
 MESH_H	mesh.h	/^#define MESH_H$/;"	d
 MainFile	build.bat	/^set MainFile=win32_main.cpp$/;"	v
-Mat4	math_util.h	/^Mat4(v3 X, v3 Y, v3 Z)$/;"	f	typeref:typename:internal mat4
+Mat4	math_util.h	/^Mat4(v3 X, v3 Y, v3 Z)$/;"	f	typeref:typename:mat4
+Mat4	math_util.h	/^Mat4(v3 X, v3 Y, v3 Z, v3 W)$/;"	f	typeref:typename:mat4
 Mat4Camera	math_util.h	/^Mat4Camera(v3 P, v3 Target)$/;"	f	typeref:typename:internal mat4
-Mat4Column	math_util.h	/^Mat4Column(mat4 A, u32 ColIndex)$/;"	f	typeref:typename:internal v4
-Mat4Identity	math_util.h	/^Mat4Identity()$/;"	f	typeref:typename:internal mat4
+Mat4ColumnGet	math_util.h	/^Mat4ColumnGet(mat4 M, u32 ColIndex)$/;"	f	typeref:typename:internal v3
+Mat4ColumnSet	math_util.h	/^Mat4ColumnSet(mat4 M, v4 V, u32 ColIndex)$/;"	f	typeref:typename:internal mat4
+Mat4Identity	math_util.h	/^Mat4Identity()$/;"	f	typeref:typename:mat4
 Mat4Multiply	math_util.h	/^Mat4Multiply(mat4 A, mat4 B)$/;"	f	typeref:typename:internal mat4
 Mat4Perspective	math_util.h	/^Mat4Perspective(f32 FOV, f32 AspectRatio, f32 ZNear, f32 ZFar)$/;"	f	typeref:typename:internal mat4
 Mat4Scale	math_util.h	/^Mat4Scale(f32 C)$/;"	f	typeref:typename:internal mat4
@@ -136,80 +130,68 @@ Mat4Transpose	math_util.h	/^Mat4Transpose(mat4 T)$/;"	f	typeref:typename:interna
 Mat4TransposeMat3	math_util.h	/^Mat4TransposeMat3(mat4 T)$/;"	f	typeref:typename:internal mat4
 Mat4YRotation	math_util.h	/^Mat4YRotation(f32 Angle)$/;"	f	typeref:typename:internal mat4
 MaterialSpec	mesh.h	/^	material_spec MaterialSpec;$/;"	m	struct:mesh	typeref:typename:material_spec
-Megabyte	main.cpp	/^#define Megabyte(/;"	d	file:
-Megabyte	skeletal_platform.h	/^#define Megabyte(/;"	d
-MemoryCopy	main.cpp	/^MemoryCopy(memory_index Size, void *SrcInit, void *DestInit)$/;"	f	typeref:typename:internal void *
-MemoryCopy	skeletal_platform.h	/^MemoryCopy(memory_index Size, void *SrcInit, void *DestInit)$/;"	f	typeref:typename:internal void *
-MemoryZero	main.cpp	/^MemoryZero(memory_index Size, void *Src)$/;"	f	typeref:typename:internal void
-MemoryZero	skeletal_platform.h	/^MemoryZero(memory_index Size, void *Src)$/;"	f	typeref:typename:internal void
+Megabyte	platform.h	/^#define Megabyte(/;"	d
+MemoryCopy	platform.h	/^MemoryCopy(memory_index Size, void *SrcInit, void *DestInit)$/;"	f	typeref:typename:internal void *
+MemoryZero	platform.h	/^MemoryZero(memory_index Size, void *Src)$/;"	f	typeref:typename:internal void
 MeshCount	mesh.h	/^	u32 MeshCount;$/;"	m	struct:model	typeref:typename:u32
-MeshHeaderNumberGet	win32_main.cpp	/^MeshHeaderNumberGet(memory_arena *Arena, string_node *Line, u8 *LineDelimeters, u32 DelimCount)$/;"	f	typeref:typename:internal u32
+MeshHeaderNumberGet	asset.cpp	/^MeshHeaderNumberGet(memory_arena *Arena, string_node *Line, u8 *LineDelimeters, u32 DelimCount)$/;"	f	typeref:typename:internal u32
 Meshes	mesh.h	/^	mesh *Meshes;$/;"	m	struct:model	typeref:typename:mesh *
-ModelInitFromCollada	mesh.cpp	/^ModelInitFromCollada(memory_arena *Arena, loaded_dae DaeFile)$/;"	f	typeref:typename:internal model
-ModelLoad	win32_main.cpp	/^ModelLoad(memory_arena *Arena, char *FileName)$/;"	f	typeref:typename:internal model
+ModelLoad	asset.cpp	/^ModelLoad(memory_arena *Arena, char *FileName)$/;"	f	typeref:typename:internal model
 ModelSpaceTransforms	mesh.h	/^	mat4 *ModelSpaceTransforms;$/;"	m	struct:mesh	typeref:typename:mat4 *
 ModelTransformFromBasis	math_util.h	/^ModelTransformFromBasis(basis *B)$/;"	f	typeref:typename:internal mat4
+N	mesh.h	/^	v3 N;$/;"	m	struct:vertex_list	typeref:typename:v3
 Name	mesh.h	/^	string Name;$/;"	m	struct:joint	typeref:typename:string
 Name	mesh.h	/^	string Name;$/;"	m	struct:mesh	typeref:typename:string
 Next	strings.h	/^	string_node *Next;$/;"	m	struct:string_node	typeref:typename:string_node *
-NodeAttributeGet	xml.cpp	/^NodeAttributeGet(xml_node *Node, char *AttrName)$/;"	f	typeref:typename:internal xml_attribute
-NodeAttributeValueGet	xml.cpp	/^NodeAttributeValueGet(xml_node *Node, char *AttrName)$/;"	f	typeref:typename:internal string
-NodeGet	xml.cpp	/^NodeGet(xml_node *Root, xml_node *N, char *TagName, char *ID = 0)$/;"	f	typeref:typename:internal void
-NodeHasKeysValues	xml.cpp	/^NodeHasKeysValues(string Str)$/;"	f	typeref:typename:internal b32
-NodeProcessKeysValues	xml.cpp	/^NodeProcessKeysValues(memory_arena *Arena, xml_node *Node, string Token, char Delimeters[], u32 /;"	f	typeref:typename:internal void
-NodeSourceGet	xml.cpp	/^NodeSourceGet(xml_node *Root, char *TagName, char *ID)$/;"	f	typeref:typename:internal xml_node
-NormVB	mesh.h	/^	u32 PosVB[2], NormVB[2], JointInfoVB[2];$/;"	m	struct:model	typeref:typename:u32[2]
+Normalize	math_util.h	/^Normalize(quaternion Q)$/;"	f	typeref:typename:quaternion
 Normalize	math_util.h	/^Normalize(v3 V)$/;"	f	typeref:typename:v3
-Normals	mesh.h	/^	f32 *Normals;$/;"	m	struct:mesh	typeref:typename:f32 *
-NormalsCount	mesh.h	/^	u32 NormalsCount;$/;"	m	struct:mesh	typeref:typename:u32
 O	math_util.h	/^	v3 O;$/;"	m	struct:basis	typeref:typename:v3
+OpenGLAllocateAnimatedModel	opengl.cpp	/^OpenGLAllocateAnimatedModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
+OpenGLAllocateModel	opengl.cpp	/^OpenGLAllocateModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
 OpenGLAttribList	win32_main.cpp	/^int OpenGLAttribList[] =$/;"	v	typeref:typename:int[]
-PI32	main.cpp	/^#define PI32 /;"	d	file:
-PI32	skeletal_platform.h	/^#define PI32 /;"	d
-Parent	xml.h	/^	xml_node *Parent;$/;"	m	struct:xml_node	typeref:typename:xml_node *
+OpenGLDrawAnimatedModel	opengl.cpp	/^OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
+OpenGLDrawModel	opengl.cpp	/^OpenGLDrawModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
+P	mesh.h	/^	v3 P;$/;"	m	struct:vertex_list	typeref:typename:v3
+PI32	platform.h	/^#define PI32 /;"	d
+PLATFORM_H	platform.h	/^#define PLATFORM_H$/;"	d
 ParentIndex	mesh.h	/^	s32 ParentIndex;$/;"	m	struct:joint	typeref:typename:s32
-ParseColladaFloatArray	xml.cpp	/^ParseColladaFloatArray(memory_arena *Arena, xml_node *Root, f32 **Dest, u32 *DestCount, char *Ta/;"	f	typeref:typename:internal void
-ParseColladaStringArray	xml.cpp	/^ParseColladaStringArray(memory_arena *Arena, xml_node *Root, string **Dest, u32 *DestCount, char/;"	f	typeref:typename:internal void
-ParseColladaU32Array	xml.cpp	/^ParseColladaU32Array(memory_arena *Arena, xml_node *Root, u32 **Dest, u32 DestCount, char *U32Ar/;"	f	typeref:typename:internal void
 ParseF32Array	strings.cpp	/^ParseF32Array(f32 *Dest, u32 DestCount, string Str)$/;"	f	typeref:typename:internal void
 ParseF32Array	strings.cpp	/^ParseF32Array(memory_arena *Arena, f32 *Dest, u32 DestCount, string Str)$/;"	f	typeref:typename:internal void
-ParseMeshF32Array	win32_main.cpp	/^ParseMeshF32Array(memory_arena *Arena, f32 **F32, u32 *Count, string_node *Line, u8 *Delimeters,/;"	f	typeref:typename:internal void
-ParseMeshU32Array	win32_main.cpp	/^ParseMeshU32Array(memory_arena *Arena, u32 **U32, u32 *Count, string_node *Line, u8 *Delimeters,/;"	f	typeref:typename:internal void
+ParseMeshF32Array	asset.cpp	/^ParseMeshF32Array(memory_arena *Arena, f32 **F32, u32 *Count, string_node *Line, u8 *Delimeters,/;"	f	typeref:typename:internal void
+ParseMeshU32Array	asset.cpp	/^ParseMeshU32Array(memory_arena *Arena, u32 **U32, u32 *Count, string_node *Line, u8 *Delimeters,/;"	f	typeref:typename:internal void
 ParseStringArray	strings.cpp	/^ParseStringArray(memory_arena *Arena, string *Dest, u32 DestCount, string Str)$/;"	f	typeref:typename:internal void
 ParseU32Array	strings.cpp	/^ParseU32Array(u32 *Dest, u32 DestCount, string Str)$/;"	f	typeref:typename:internal void
-PosVB	mesh.h	/^	u32 PosVB[2], NormVB[2], JointInfoVB[2];$/;"	m	struct:model	typeref:typename:u32[2]
-Positions	mesh.h	/^	f32 *Positions;$/;"	m	struct:mesh	typeref:typename:f32 *
-PositionsCount	mesh.h	/^	u32 PositionsCount;$/;"	m	struct:mesh	typeref:typename:u32
-PushArray	main.cpp	/^#define PushArray(/;"	d	file:
-PushArray	skeletal_platform.h	/^#define PushArray(/;"	d
-PushSize_	main.cpp	/^PushSize_(memory_arena *Arena, memory_index Size)$/;"	f	typeref:typename:internal void *
-PushSize_	skeletal_platform.h	/^PushSize_(memory_arena *Arena, memory_index Size)$/;"	f	typeref:typename:internal void *
-PushStruct	main.cpp	/^#define PushStruct(/;"	d	file:
-PushStruct	skeletal_platform.h	/^#define PushStruct(/;"	d
-PushXMLNode	xml.cpp	/^PushXMLNode(memory_arena *Arena, xml_node *Parent)$/;"	f	typeref:typename:internal xml_node *
+Positions	mesh.h	/^	v3 *Positions;$/;"	m	struct:key_frame	typeref:typename:v3 *
+PushArray	platform.h	/^#define PushArray(/;"	d
+PushSize_	platform.h	/^PushSize_(memory_arena *Arena, memory_index Size)$/;"	f	typeref:typename:internal void *
+PushStruct	platform.h	/^#define PushStruct(/;"	d
+Quaternion	math_util.h	/^Quaternion()$/;"	f	typeref:typename:quaternion
+Quaternion	math_util.h	/^Quaternion(v3 Axis, f32 Angle)$/;"	f	typeref:typename:quaternion
+Quaternion	math_util.h	/^Quaternion(v3 V)$/;"	f	typeref:typename:quaternion
+QuaternionToMat4	math_util.h	/^QuaternionToMat4(quaternion Q)$/;"	f	typeref:typename:mat4
+Quaternions	mesh.h	/^	quaternion *Quaternions;$/;"	m	struct:key_frame	typeref:typename:quaternion *
 Renderer	opengl.cpp	/^	char *Renderer;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
-Root	xml.h	/^	xml_node *Root;$/;"	m	struct:loaded_dae	typeref:typename:xml_node *
+Rotate	math_util.h	/^Rotate(v3 V, quaternion Q)$/;"	f	typeref:typename:v3
+Rotate	math_util.h	/^Rotate(v4 V, quaternion Q)$/;"	f	typeref:typename:v4
+RotationToQuaternion	math_util.h	/^RotationToQuaternion(mat4 Mat)$/;"	f	typeref:typename:quaternion
 S32FromASCII	strings.cpp	/^S32FromASCII(u8 *S)$/;"	f	typeref:typename:s32
-SKELETAL_PLATFORM_H	skeletal_platform.h	/^#define SKELETAL_PLATFORM_H$/;"	d
-SLLQueuePush	main.cpp	/^#define SLLQueuePush(/;"	d	file:
-SLLQueuePush	skeletal_platform.h	/^#define SLLQueuePush(/;"	d
-SLLQueuePush_N	main.cpp	/^#define SLLQueuePush_N(/;"	d	file:
-SLLQueuePush_N	skeletal_platform.h	/^#define SLLQueuePush_N(/;"	d
+SLLQueuePush	platform.h	/^#define SLLQueuePush(/;"	d
+SLLQueuePush_N	platform.h	/^#define SLLQueuePush_N(/;"	d
 STRINGS_H	strings.h	/^#define STRINGS_H$/;"	d
+Scales	mesh.h	/^	v3 *Scales;$/;"	m	struct:key_frame	typeref:typename:v3 *
 ShadingLanguageVersion	opengl.cpp	/^	char *ShadingLanguageVersion;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
 Shininess	mesh.h	/^	f32 Shininess;$/;"	m	struct:material_spec	typeref:typename:f32
-SignCopy	math_util.h	/^SignCopy(f32 X, f32 PlusMinusOne)$/;"	f	typeref:typename:f32
-SignOf	math_util.h	/^SignOf(f32 X)$/;"	f	typeref:typename:f32
-Size	main.cpp	/^	memory_index Size;$/;"	m	struct:memory_arena	typeref:typename:memory_index	file:
-Size	skeletal_platform.h	/^	memory_index Size;$/;"	m	struct:memory_arena	typeref:typename:memory_index
-Size	skeletal_platform.h	/^	u32 Size;$/;"	m	struct:debug_file	typeref:typename:u32
+Size	platform.h	/^	memory_index Size;$/;"	m	struct:memory_arena	typeref:typename:memory_index
+Size	platform.h	/^	u32 Size;$/;"	m	struct:debug_file	typeref:typename:u32
 Size	strings.h	/^	u64 Size;$/;"	m	struct:string	typeref:typename:u64
 Size	strings.h	/^	u64 Size;$/;"	m	struct:string_list	typeref:typename:u64
 Specular	mesh.h	/^	v4 Specular;$/;"	m	struct:material_spec	typeref:typename:v4
+Square	math_util.h	/^Square(f32 X)$/;"	f	typeref:typename:f32
 String	strings.cpp	/^String(u8 *Cstr)$/;"	f	typeref:typename:internal string
 String	strings.h	/^	string String;$/;"	m	struct:string_node	typeref:typename:string
 StringAllocAndCopy	strings.cpp	/^StringAllocAndCopy(memory_arena *Arena, char *Cstr)$/;"	f	typeref:typename:internal string
 StringAllocAndCopy	strings.cpp	/^StringAllocAndCopy(memory_arena *Arena, string Str)$/;"	f	typeref:typename:internal string
+StringAllocAndCopy	strings.cpp	/^StringAllocAndCopy(memory_arena *Arena, u8 *Str)$/;"	f	typeref:typename:internal string
 StringEndsWith	strings.cpp	/^StringEndsWith(string S, char C)$/;"	f	typeref:typename:internal b32
 StringFromRange	strings.cpp	/^StringFromRange(u8 *First, u8 *Last)$/;"	f	typeref:typename:internal string
 StringLen	strings.cpp	/^StringLen(char *S)$/;"	f	typeref:typename:internal u32
@@ -222,44 +204,37 @@ Strings	strings.h	/^	string *Strings;$/;"	m	struct:string_array	typeref:typename
 StringsAreSame	strings.cpp	/^StringsAreSame(char *Str1, char *Str2)$/;"	f	typeref:typename:internal b32
 StringsAreSame	strings.cpp	/^StringsAreSame(string S1, char *Str2)$/;"	f	typeref:typename:internal b32
 StringsAreSame	strings.cpp	/^StringsAreSame(string S1, string S2)$/;"	f	typeref:typename:internal b32
+StringsAreSame	strings.cpp	/^StringsAreSame(u8 *S1, char *S2)$/;"	f	typeref:typename:internal b32
 SubStringExists	strings.cpp	/^SubStringExists(char *HayStack, char *Needle)$/;"	f	typeref:typename:internal b32
 SubStringExists	strings.cpp	/^SubStringExists(string HayStack, char *Needle)$/;"	f	typeref:typename:internal b32
-Tag	xml.h	/^	string Tag;$/;"	m	struct:xml_node	typeref:typename:string
+TextureHandle	mesh.h	/^	u32 TextureHandle;$/;"	m	struct:mesh	typeref:typename:u32
 TimeCount	mesh.h	/^	u32 TimeCount;$/;"	m	struct:animation_info	typeref:typename:u32
-Times	mesh.h	/^	f32 **Times;$/;"	m	struct:animation_info	typeref:typename:f32 **
+Times	mesh.h	/^	f32 *Times;$/;"	m	struct:animation_info	typeref:typename:f32 *
 Transform	mesh.h	/^	mat4 Transform;$/;"	m	struct:joint	typeref:typename:mat4
-TransformCount	mesh.h	/^	u32 TransformCount;$/;"	m	struct:animation_info	typeref:typename:u32
-Transforms	mesh.h	/^	mat4 **Transforms;$/;"	m	struct:animation_info	typeref:typename:mat4 **
-U32ArraySum	main.cpp	/^U32ArraySum(u32 *A, u32 Count)$/;"	f	typeref:typename:internal u32
-U32ArraySum	skeletal_platform.h	/^U32ArraySum(u32 *A, u32 Count)$/;"	f	typeref:typename:internal u32
+U32ArraySum	platform.h	/^U32ArraySum(u32 *A, u32 Count)$/;"	f	typeref:typename:internal u32
 U32FromASCII	strings.cpp	/^U32FromASCII(string S)$/;"	f	typeref:typename:u32
 U32FromASCII	strings.cpp	/^U32FromASCII(u8 *S)$/;"	f	typeref:typename:u32
-U32FromAttributeValue	xml.cpp	/^U32FromAttributeValue(xml_node *Node)$/;"	f	typeref:typename:internal u32
-U64TruncateToU32	skeletal_platform.h	/^U64TruncateToU32(u64 U64)$/;"	f	typeref:typename:u32
-UV	mesh.h	/^	f32 *UV;$/;"	m	struct:mesh	typeref:typename:f32 *
-UVCount	mesh.h	/^	u32 UVCount;$/;"	m	struct:mesh	typeref:typename:u32
-UniformF32Set	gl_util.cpp	/^UniformF32Set(u32 ShaderProgram, char *UniformName, f32 F32)$/;"	f	typeref:typename:internal void
+U64TruncateToU32	platform.h	/^U64TruncateToU32(u64 U64)$/;"	f	typeref:typename:u32
+UV	mesh.h	/^	v2 UV;$/;"	m	struct:vertex_list	typeref:typename:v2
 UniformF32Set	opengl.cpp	/^UniformF32Set(u32 ShaderProgram, char *UniformName, f32 F32)$/;"	f	typeref:typename:internal void
-UniformMatrixArraySet	gl_util.cpp	/^UniformMatrixArraySet(u32 ShaderProgram, char *UniformName, mat4 *M, u32 Count)$/;"	f	typeref:typename:internal void
 UniformMatrixArraySet	opengl.cpp	/^UniformMatrixArraySet(u32 ShaderProgram, char *UniformName, mat4 *M, u32 Count)$/;"	f	typeref:typename:internal void
-UniformMatrixSet	gl_util.cpp	/^UniformMatrixSet(u32 ShaderProgram, char *UniformName, mat4 M)$/;"	f	typeref:typename:internal void
 UniformMatrixSet	opengl.cpp	/^UniformMatrixSet(u32 ShaderProgram, char *UniformName, mat4 M)$/;"	f	typeref:typename:internal void
-UniformU32Set	gl_util.cpp	/^UniformU32Set(u32 ShaderProgram, char *UniformName, u32 U32)$/;"	f	typeref:typename:internal void
 UniformU32Set	opengl.cpp	/^UniformU32Set(u32 ShaderProgram, char *UniformName, u32 U32)$/;"	f	typeref:typename:internal void
-UniformV3Set	gl_util.cpp	/^UniformV3Set(u32 ShaderProgram, char *UniformName, v3 V)$/;"	f	typeref:typename:internal void
 UniformV3Set	opengl.cpp	/^UniformV3Set(u32 ShaderProgram, char *UniformName, v3 V)$/;"	f	typeref:typename:internal void
-UniformV4Set	gl_util.cpp	/^UniformV4Set(u32 ShaderProgram, char *UniformName, v4 V)$/;"	f	typeref:typename:internal void
 UniformV4Set	opengl.cpp	/^UniformV4Set(u32 ShaderProgram, char *UniformName, v4 V)$/;"	f	typeref:typename:internal void
-Used	main.cpp	/^	memory_index Used;$/;"	m	struct:memory_arena	typeref:typename:memory_index	file:
-Used	skeletal_platform.h	/^	memory_index Used;$/;"	m	struct:memory_arena	typeref:typename:memory_index
+Used	platform.h	/^	memory_index Used;$/;"	m	struct:memory_arena	typeref:typename:memory_index
 V2	math_util.h	/^V2(f32 X, f32 Y)$/;"	f	typeref:typename:v2
 V3	math_util.h	/^V3(f32 C)$/;"	f	typeref:typename:v3
 V3	math_util.h	/^V3(f32 X, f32 Y, f32 Z)$/;"	f	typeref:typename:v3
+V4	math_util.h	/^V4(f32 X, f32 Y, f32 Z)$/;"	f	typeref:typename:v4
+V4	math_util.h	/^V4(f32 X, f32 Y, f32 Z, f32 W)$/;"	f	typeref:typename:v4
 V4	math_util.h	/^V4(v3 V, f32 C)$/;"	f	typeref:typename:v4
 VA	mesh.h	/^	u32 VA[2];$/;"	m	struct:model	typeref:typename:u32[2]
-Value	xml.h	/^	string Value;$/;"	m	struct:xml_attribute	typeref:typename:string
+VB	mesh.h	/^	u32 VB[2];$/;"	m	struct:model	typeref:typename:u32[2]
 Vendor	opengl.cpp	/^	char *Vendor;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
 Version	opengl.cpp	/^	char *Version;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
+VertexCount	mesh.h	/^	u32 VertexCount;$/;"	m	struct:mesh	typeref:typename:u32
+Vertices	mesh.h	/^	vertex_list *Vertices;$/;"	m	struct:mesh	typeref:typename:vertex_list *
 WGL_ACCELERATION_ARB	win32_main.cpp	/^#define WGL_ACCELERATION_ARB /;"	d	file:
 WGL_ALPHA_BITS_ARB	win32_main.cpp	/^#define WGL_ALPHA_BITS_ARB /;"	d	file:
 WGL_BLUE_BITS_ARB	win32_main.cpp	/^#define WGL_BLUE_BITS_ARB /;"	d	file:
@@ -284,11 +259,7 @@ WGL_STENCIL_BITS_ARB	win32_main.cpp	/^#define WGL_STENCIL_BITS_ARB /;"	d	file:
 WGL_SUPPORT_OPENGL_ARB	win32_main.cpp	/^#define WGL_SUPPORT_OPENGL_ARB /;"	d	file:
 WGL_TYPE_RGBA_ARB	win32_main.cpp	/^#define WGL_TYPE_RGBA_ARB /;"	d	file:
 WIN32_MAIN_H	win32_main.h	/^#define WIN32_MAIN_H$/;"	d
-WeightCount	mesh.h	/^	u32 WeightCount;$/;"	m	struct:mesh	typeref:typename:u32
-Weights	mesh.h	/^	f32 *Weights;$/;"	m	struct:mesh	typeref:typename:f32 *
 Weights	mesh.h	/^	f32 Weights[3];$/;"	m	struct:joint_info	typeref:typename:f32[3]
-Width	win32_main.cpp	/^	f32 Width, Height;$/;"	m	struct:win32_client_rect	typeref:typename:f32	file:
-Win32ClientRect	win32_main.cpp	/^global_varible win32_client_rect Win32ClientRect;$/;"	v	typeref:typename:global_varible win32_client_rect
 Win32FileFree	win32_main.cpp	/^Win32FileFree(void *Memory)$/;"	f	typeref:typename:internal void
 Win32FileReadEntire	win32_main.cpp	/^Win32FileReadEntire(char *FileName)$/;"	f	typeref:typename:internal debug_file
 Win32GlobalRunning	win32_main.cpp	/^global_varible b32 Win32GlobalRunning;$/;"	v	typeref:typename:global_varible b32
@@ -302,26 +273,25 @@ Win32WindowCallBack	win32_main.cpp	/^Win32WindowCallBack(HWND Window, UINT Messa
 WinMain	win32_main.cpp	/^WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)$/;"	f	typeref:typename:int WINAPI
 X	math_util.h	/^	v3 X;$/;"	m	struct:basis	typeref:typename:v3
 XAxis	math_util.h	/^XAxis()$/;"	f	typeref:typename:v3
-XML_H	xml.h	/^#define XML_H$/;"	d
 Y	math_util.h	/^	v3 Y;$/;"	m	struct:basis	typeref:typename:v3
 YAxis	math_util.h	/^YAxis()$/;"	f	typeref:typename:v3
 Z	math_util.h	/^	v3 Z;$/;"	m	struct:basis	typeref:typename:v3
 ZAxis	math_util.h	/^ZAxis()$/;"	f	typeref:typename:v3
-__VSCMD_ARG_NO_LOGO	build.bat	/^REM   set __VSCMD_ARG_NO_LOGO=1$/;"	v
+__VSCMD_ARG_NO_LOGO	build.bat	/^  set __VSCMD_ARG_NO_LOGO=1$/;"	v
 __anona93c3f220108	math_util.h	/^	{$/;"	s	union:v2
 __anona93c3f220208	math_util.h	/^	{$/;"	s	union:v3
 __anona93c3f220308	math_util.h	/^	{$/;"	s	union:v4
 __anona93c3f220408	math_util.h	/^	{$/;"	s	union:v4
 __anona93c3f22050a	math_util.h	/^		{$/;"	u	struct:v4::__anona93c3f220408
 __anona93c3f220608	math_util.h	/^			{$/;"	s	union:v4::__anona93c3f220408::__anona93c3f22050a
+animation_header	asset.cpp	/^enum animation_header$/;"	g	file:
 animation_info	mesh.h	/^struct animation_info$/;"	s
-b32	main.cpp	/^typedef s32 b32;$/;"	t	typeref:typename:s32	file:
-b32	skeletal_platform.h	/^typedef s32 b32;$/;"	t	typeref:typename:s32
+animations	mesh.h	/^struct animations$/;"	s
+b32	platform.h	/^typedef s32 b32;$/;"	t	typeref:typename:s32
 basis	math_util.h	/^struct basis$/;"	s
-debug_file	skeletal_platform.h	/^struct debug_file$/;"	s
-f32	main.cpp	/^typedef float f32;$/;"	t	typeref:typename:float	file:
-f32	skeletal_platform.h	/^typedef float f32;$/;"	t	typeref:typename:float
-f64	skeletal_platform.h	/^typedef double f64;$/;"	t	typeref:typename:double
+debug_file	platform.h	/^struct debug_file$/;"	s
+f32	platform.h	/^typedef float f32;$/;"	t	typeref:typename:float
+f64	platform.h	/^typedef double f64;$/;"	t	typeref:typename:double
 glAttachShader	win32_main.cpp	/^global_varible gl_attach_shader                 *glAttachShader;$/;"	v	typeref:typename:global_varible gl_attach_shader *
 glBindBuffer	win32_main.cpp	/^global_varible gl_bind_buffer					*glBindBuffer;$/;"	v	typeref:typename:global_varible gl_bind_buffer *
 glBindVertexArray	win32_main.cpp	/^global_varible gl_bind_vertex_array				*glBindVertexArray;$/;"	v	typeref:typename:global_varible gl_bind_vertex_array *
@@ -380,53 +350,51 @@ gl_use_program	win32_main.cpp	/^typedef void 	WINAPI gl_use_program(GLuint progr
 gl_validate_program	win32_main.cpp	/^typedef void 	WINAPI gl_validate_program(GLuint program);$/;"	t	typeref:typename:void WINAPI ()(GLuint program)	file:
 gl_vertex_attrib_pointer	win32_main.cpp	/^typedef void 	WINAPI gl_vertex_attrib_pointer(GLuint index, GLint size, GLenum type, GLboolean n/;"	t	typeref:typename:void WINAPI ()(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei stride,const void * pointer)	file:
 gl_vertex_attribi_pointer	win32_main.cpp	/^typedef void 	WINAPI gl_vertex_attribi_pointer(GLuint index, GLint size, GLenum type, GLsizei st/;"	t	typeref:typename:void WINAPI ()(GLuint index,GLint size,GLenum type,GLsizei stride,const void * pointer)	file:
-global_varible	skeletal_platform.h	/^#define global_varible /;"	d
-internal	main.cpp	/^#define internal /;"	d	file:
-internal	skeletal_platform.h	/^#define internal /;"	d
+global_varible	platform.h	/^#define global_varible /;"	d
+internal	platform.h	/^#define internal /;"	d
 joint	mesh.h	/^struct joint$/;"	s
 joint_info	mesh.h	/^struct joint_info$/;"	s
-loaded_dae	xml.h	/^struct loaded_dae $/;"	s
-local_persist	skeletal_platform.h	/^#define local_persist /;"	d
-main	main.cpp	/^int main(int Argc, char **Argv)$/;"	f	typeref:typename:int
+key_frame	mesh.h	/^struct key_frame$/;"	s
+local_persist	platform.h	/^#define local_persist /;"	d
 mat4	math_util.h	/^struct mat4$/;"	s
 material_spec	mesh.h	/^struct material_spec$/;"	s
-memory_arena	main.cpp	/^struct memory_arena$/;"	s	file:
-memory_arena	skeletal_platform.h	/^struct memory_arena$/;"	s
-memory_index	main.cpp	/^typedef size_t memory_index;$/;"	t	typeref:typename:size_t	file:
-memory_index	skeletal_platform.h	/^typedef size_t memory_index;$/;"	t	typeref:typename:size_t
+memory_arena	platform.h	/^struct memory_arena$/;"	s
+memory_index	platform.h	/^typedef size_t memory_index;$/;"	t	typeref:typename:size_t
 mesh	mesh.h	/^struct mesh$/;"	s
 model	mesh.h	/^struct model$/;"	s
 opengl_info	opengl.cpp	/^struct opengl_info$/;"	s	file:
 operator *	math_util.h	/^operator *(f32 C, v3 V)$/;"	f	typeref:typename:v3
 operator *	math_util.h	/^operator *(v3 V, f32 C)$/;"	f	typeref:typename:v3
+operator *	math_util.h	/^operator*(f32 C, quaternion Q)$/;"	f	typeref:typename:quaternion
+operator *	math_util.h	/^operator*(f32 C, v4 A)$/;"	f	typeref:typename:v4
 operator *	math_util.h	/^operator*(mat4 A, mat4 B)$/;"	f	typeref:typename:mat4
 operator *	math_util.h	/^operator*(mat4 T, v3 V)$/;"	f	typeref:typename:v3
+operator *	math_util.h	/^operator*(quaternion Q1, quaternion Q2)$/;"	f	typeref:typename:quaternion
+operator *	math_util.h	/^operator*(v4 A, f32 C)$/;"	f	typeref:typename:v4
+operator *=	math_util.h	/^operator*=(quaternion &Q1, quaternion Q2)$/;"	f	typeref:typename:void
 operator +	math_util.h	/^operator +(v3 A, v3 B)$/;"	f	typeref:typename:v3
+operator +	math_util.h	/^operator+(quaternion Q1, quaternion Q2)$/;"	f	typeref:typename:quaternion
+operator +	math_util.h	/^operator+(v4 A, v4 B)$/;"	f	typeref:typename:v4
+operator +=	math_util.h	/^operator+=(v4 &A, v4 &B)$/;"	f	typeref:typename:void
 operator -	math_util.h	/^operator -(v3 A, v3 B)$/;"	f	typeref:typename:v3
+operator -	math_util.h	/^operator-(v4 A, v4 B)$/;"	f	typeref:typename:v4
 quaternion	math_util.h	/^struct quaternion$/;"	s
-s16	main.cpp	/^typedef int16_t s16;$/;"	t	typeref:typename:int16_t	file:
-s16	skeletal_platform.h	/^typedef int16_t s16;$/;"	t	typeref:typename:int16_t
-s32	main.cpp	/^typedef int32_t s32;$/;"	t	typeref:typename:int32_t	file:
-s32	skeletal_platform.h	/^typedef int32_t s32;$/;"	t	typeref:typename:int32_t
-s64	main.cpp	/^typedef int64_t s64;$/;"	t	typeref:typename:int64_t	file:
-s64	skeletal_platform.h	/^typedef int64_t s64;$/;"	t	typeref:typename:int64_t
-s8	main.cpp	/^typedef int8_t s8;$/;"	t	typeref:typename:int8_t	file:
-s8	skeletal_platform.h	/^typedef int8_t s8;$/;"	t	typeref:typename:int8_t
+s16	platform.h	/^typedef int16_t s16;$/;"	t	typeref:typename:int16_t
+s32	platform.h	/^typedef int32_t s32;$/;"	t	typeref:typename:int32_t
+s64	platform.h	/^typedef int64_t s64;$/;"	t	typeref:typename:int64_t
+s8	platform.h	/^typedef int8_t s8;$/;"	t	typeref:typename:int8_t
 string	strings.h	/^struct string$/;"	s
 string_array	strings.h	/^struct string_array$/;"	s
 string_list	strings.h	/^struct string_list$/;"	s
 string_node	strings.h	/^struct string_node$/;"	s
-u16	main.cpp	/^typedef uint16_t u16;$/;"	t	typeref:typename:uint16_t	file:
-u16	skeletal_platform.h	/^typedef uint16_t u16;$/;"	t	typeref:typename:uint16_t
-u32	main.cpp	/^typedef uint32_t u32;$/;"	t	typeref:typename:uint32_t	file:
-u32	skeletal_platform.h	/^typedef uint32_t u32;$/;"	t	typeref:typename:uint32_t
-u64	main.cpp	/^typedef uint64_t u64;$/;"	t	typeref:typename:uint64_t	file:
-u64	skeletal_platform.h	/^typedef uint64_t u64;$/;"	t	typeref:typename:uint64_t
-u8	main.cpp	/^typedef uint8_t u8;$/;"	t	typeref:typename:uint8_t	file:
-u8	skeletal_platform.h	/^typedef uint8_t u8;$/;"	t	typeref:typename:uint8_t
+u16	platform.h	/^typedef uint16_t u16;$/;"	t	typeref:typename:uint16_t
+u32	platform.h	/^typedef uint32_t u32;$/;"	t	typeref:typename:uint32_t
+u64	platform.h	/^typedef uint64_t u64;$/;"	t	typeref:typename:uint64_t
+u8	platform.h	/^typedef uint8_t u8;$/;"	t	typeref:typename:uint8_t
 v2	math_util.h	/^union v2$/;"	u
 v3	math_util.h	/^union v3$/;"	u
 v4	math_util.h	/^union v4$/;"	u
+vertex_list	mesh.h	/^struct vertex_list$/;"	s
 w	math_util.h	/^		f32 w;$/;"	m	struct:v4::__anona93c3f220408	typeref:typename:f32
 w	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32
 w	math_util.h	/^	f32 w;$/;"	m	struct:quaternion	typeref:typename:f32
@@ -440,14 +408,11 @@ wgl_get_extensions_string_ext	win32_main.cpp	/^typedef const char * WINAPI wgl_g
 wgl_get_pixel_format_attrib_fv_arb	win32_main.cpp	/^typedef BOOL WINAPI wgl_get_pixel_format_attrib_fv_arb(HDC hdc,$/;"	t	typeref:typename:BOOL WINAPI ()(HDC hdc,int iPixelFormat,int iLayerPlane,UINT nAttributes,const int * piAttributes,FLOAT * pfValues)	file:
 wgl_get_pixel_format_attrib_iv_arb	win32_main.cpp	/^typedef BOOL WINAPI wgl_get_pixel_format_attrib_iv_arb(HDC hdc,$/;"	t	typeref:typename:BOOL WINAPI ()(HDC hdc,int iPixelFormat,int iLayerPlane,UINT nAttributes,const int * piAttributes,int * piValues)	file:
 wgl_swap_interval_ext	win32_main.cpp	/^typedef BOOL WINAPI wgl_swap_interval_ext(int interval);$/;"	t	typeref:typename:BOOL WINAPI ()(int interval)	file:
-win32_client_rect	win32_main.cpp	/^struct win32_client_rect$/;"	s	file:
 x	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220408::__anona93c3f22050a::__anona93c3f220608	typeref:typename:f32
 x	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32
 x	math_util.h	/^		f32 x, y, z;$/;"	m	struct:v3::__anona93c3f220208	typeref:typename:f32
 x	math_util.h	/^		f32 x, y;$/;"	m	struct:v2::__anona93c3f220108	typeref:typename:f32
 x	math_util.h	/^	f32 x;$/;"	m	struct:quaternion	typeref:typename:f32
-xml_attribute	xml.h	/^struct xml_attribute$/;"	s
-xml_node	xml.h	/^struct xml_node$/;"	s
 xyz	math_util.h	/^			v3 xyz;$/;"	m	union:v4::__anona93c3f220408::__anona93c3f22050a	typeref:typename:v3
 y	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220408::__anona93c3f22050a::__anona93c3f220608	typeref:typename:f32
 y	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32

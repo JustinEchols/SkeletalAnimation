@@ -17,7 +17,7 @@ if "%VSCMD_ARG_TGT_ARCH%" neq "x64" (
 )
 
 set MainFile=win32_main.cpp
-set CommonCompilerFlags=-O2 -MTd -fp:fast -W4 -wd4201 -wd4100 -wd4505 -wd4189 -Oi -Z7
+set CommonCompilerFlags=-Od -MTd -fp:fast -W4 -wd4201 -wd4100 -wd4505 -wd4189 -Oi -Z7
 set CommonLinkerFlags=-incremental:no user32.lib gdi32.lib opengl32.lib
 
 if not exist ..\build mkdir ..\build
