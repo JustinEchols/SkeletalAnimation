@@ -23,9 +23,9 @@ KeyFrameInterpolatedTransform(key_frame *Current, f32 t, key_frame *Next, u32 Jo
 	v3 Scale = Lerp(Scale1, t, Scale2);
 
 	mat4 R = QuaternionToMat4(Q);
-	v3 Rx = Scale1.x * Mat4ColumnGet(R, 0);
-	v3 Ry = Scale1.y * Mat4ColumnGet(R, 1);
-	v3 Rz = Scale1.z * Mat4ColumnGet(R, 2);
+	v3 Rx = Scale.x * Mat4ColumnGet(R, 0);
+	v3 Ry = Scale.y * Mat4ColumnGet(R, 1);
+	v3 Rz = Scale.z * Mat4ColumnGet(R, 2);
 
 	Result = Mat4(Rx, Ry, Rz, P);
 	return(Result);
