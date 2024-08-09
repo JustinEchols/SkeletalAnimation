@@ -46,16 +46,19 @@ AnimationUpdate(model *Model, f32 dT)
 		if(AnimInfo->KeyFrameIndex >= (AnimInfo->KeyFrameCount - 1))
 		{
 			AnimInfo->KeyFrameIndex = 0;
-			AnimInfo->CurrentTime = dT;
+			AnimInfo->CurrentTime = AnimInfo->CurrentTime - AnimInfo->Times[AnimInfo->KeyFrameCount - 1];
 
+
+#if 1
 			Model->Animations.Index += 1;
 			if(Model->Animations.Index >= Model->Animations.Count)
 			{
 				Model->Animations.Index = 0;
 			}
+#endif
 		}
 
-		t = (AnimInfo->CurrentTime - AnimInfo->Times[KeyFrameIndex]) / KeyFrameDeltaTime(AnimInfo->Times, AnimInfo->KeyFrameIndex);
+		t = (AnimInfo->CurrentTime - AnimInfo->Times[AnimInfo->KeyFrameIndex]) / KeyFrameDeltaTime(AnimInfo->Times, AnimInfo->KeyFrameIndex);
 	}
 
 	key_frame *KeyFrame = AnimInfo->KeyFrames + AnimInfo->KeyFrameIndex;

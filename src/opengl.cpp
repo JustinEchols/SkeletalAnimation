@@ -73,7 +73,7 @@ void main()
 	}
 
 	gl_Position = Projection * View * Model * Pos;
-	N = vec3(transpose(inverse(Model)) * vec4(Normal, 1.0));
+	N = mat3(transpose(inverse(Model))) * Normal;
 })";
 
 char *BasicFsSrc = R"(
@@ -93,7 +93,7 @@ void main()
 {
 	vec3 LightColor = vec3(1.0);
 	vec3 Normal = normalize(N);
-	bool FacingTowards = dot(Normal, LightDir) > 0.0;
+	bool FacingTowards = dot(Normal, LightDir) > 0.05;
 
 	vec3 Diff = vec3(0.0);
 	vec3 Spec = vec3(0.0);

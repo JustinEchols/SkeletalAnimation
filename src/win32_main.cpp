@@ -447,17 +447,17 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		char *AnimationFiles[] =
 		{
 			"..\\data\\XBot_ActionIdle.animation",
+			"..\\data\\XBot_IdleLookAround.animation",
 			"..\\data\\XBot_RightTurn.animation",
 			"..\\data\\XBot_LeftTurn.animation",
-			"..\\data\\XBot_RunningToTurn.animation",
-			"..\\data\\XBot_RunningChangeDirection.animation",
-			"..\\data\\XBot_IdleToSprint.animation",
-			"..\\data\\XBot_ActionIdleToStandingIdle.animation",
-			"..\\data\\XBot_IdleLookAround.animation",
-			"..\\data\\XBot_FemaleWalk.animation",
 			"..\\data\\XBot_PushingStart.animation",
 			"..\\data\\XBot_Pushing.animation",
 			"..\\data\\XBot_PushingStop.animation",
+			"..\\data\\XBot_ActionIdleToStandingIdle.animation",
+			"..\\data\\XBot_RunningToTurn.animation",
+			"..\\data\\XBot_RunningChangeDirection.animation",
+			"..\\data\\XBot_IdleToSprint.animation",
+			"..\\data\\XBot_FemaleWalk.animation",
 		};
 
 		Models[0]->Animations.Count = ArrayCount(AnimationFiles);
@@ -538,9 +538,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		Win32GlobalRunning = true;
 		f32 Angle = 0.0f;
 		f32 DtForFrame = 0.0f;
-
-
-
 		LARGE_INTEGER QueryTickCount;
 		QueryPerformanceCounter(&QueryTickCount);
 		s64 TickCountStart = QueryTickCount.QuadPart;
@@ -579,6 +576,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+			Angle += DtForFrame;
 			for(u32 ModelIndex = 0; ModelIndex < ArrayCount(Models); ++ModelIndex)
 			{
 				model *Model = Models[ModelIndex];
