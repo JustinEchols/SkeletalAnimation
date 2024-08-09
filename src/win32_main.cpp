@@ -552,10 +552,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 			HDC WindowDC = GetDC(Window);
 
-			//
-			// NOTE(Justin): HACKED animation.
-			//
-
 			for(u32 ModelIndex = 0; ModelIndex < ArrayCount(Models); ++ModelIndex)
 			{
 				model *Model = Models[ModelIndex];
