@@ -6,7 +6,7 @@ KeyFrameDeltaTime(f32 *Times, u32 KeyFrameIndex)
 }
 
 inline mat4
-KeyFrameInterpolatedTransform(key_frame *Current, f32 t, key_frame *Next, u32 JointIndex)
+JointTransformInterpolated(key_frame *Current, f32 t, key_frame *Next, u32 JointIndex)
 {
 	mat4 Result = Mat4Identity();
 
@@ -48,14 +48,12 @@ AnimationUpdate(model *Model, f32 dT)
 			AnimInfo->KeyFrameIndex = 0;
 			AnimInfo->CurrentTime = AnimInfo->CurrentTime - AnimInfo->Times[AnimInfo->KeyFrameCount - 1];
 
-
-#if 1
+			// NOTE(Justin): Debug code to cycle through animations.
 			Model->Animations.Index += 1;
 			if(Model->Animations.Index >= Model->Animations.Count)
 			{
 				Model->Animations.Index = 0;
 			}
-#endif
 		}
 
 		t = (AnimInfo->CurrentTime - AnimInfo->Times[AnimInfo->KeyFrameIndex]) / KeyFrameDeltaTime(AnimInfo->Times, AnimInfo->KeyFrameIndex);
@@ -73,7 +71,7 @@ AnimationUpdate(model *Model, f32 dT)
 		u32 JointIndex = JointIndexGet(AnimInfo->JointNames, AnimInfo->JointCount, RootJoint.Name);
 		if(JointIndex != -1)
 		{
-			RootJointT = KeyFrameInterpolatedTransform(KeyFrame, t, NextKeyFrame, JointIndex);
+			RootJointT = JointTransformInterpolated(KeyFrame, t, NextKeyFrame, JointIndex);
 		}
 
 		Mesh->JointTransforms[0] = RootJointT;
@@ -86,7 +84,7 @@ AnimationUpdate(model *Model, f32 dT)
 			JointIndex = JointIndexGet(AnimInfo->JointNames, AnimInfo->JointCount, Joint->Name);
 			if(JointIndex != -1)
 			{
-				JointTransform = KeyFrameInterpolatedTransform(KeyFrame, t, NextKeyFrame, JointIndex);
+				JointTransform = JointTransformInterpolated(KeyFrame, t, NextKeyFrame, JointIndex);
 			}
 
 			mat4 ParentTransform = Mesh->JointTransforms[Joint->ParentIndex];
