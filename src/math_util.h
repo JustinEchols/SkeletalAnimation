@@ -191,6 +191,50 @@ Square(f32 C)
 	return(Result);
 }
 
+inline f32
+Clamp(f32 Min, f32 X, f32 Max)
+{
+	f32 Result = X;
+
+	if(Result < Min)
+	{
+		Result = Min;
+	}
+	else if(Result > Max)
+	{
+		Result = Max;
+	}
+
+	return(Result);
+}
+
+inline f32
+Clamp01(f32 X)
+{
+	f32 Result = Clamp(0.0f, X, 1.0f);
+	return(Result);
+}
+
+inline u32
+Clamp(u32 Min, u32 X, u32 Max)
+{
+	u32 Result = X;
+
+	if(Result < Min)
+	{
+		Result = Min;
+	}
+	else if(Result > Max)
+	{
+		Result = Max;
+	}
+
+	return(Result);
+}
+
+//
+// NOTE(Justin): v3 operations
+//
 
 inline v3
 operator +(v3 A, v3 B)

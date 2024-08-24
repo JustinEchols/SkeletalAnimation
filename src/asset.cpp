@@ -531,6 +531,7 @@ AnimationInfoLoad(memory_arena *Arena, char *FileName)
 
 			u8 Buff[512];
 			u8 Delimeters[] = "\r\n";
+			u32 TimeCount = 0;
 
 			string_list Lines = StringSplit(Arena, Data, Delimeters, ArrayCount(Delimeters));
 			string_node *Line = Lines.First;
@@ -562,32 +563,34 @@ AnimationInfoLoad(memory_arena *Arena, char *FileName)
 							BufferNextWord(&C, Buff);
 							Info.JointNames[NameIndex] = StringAllocAndCopy(Arena, Buff);
 						}
-
 					} break;
 					case AnimationHeader_Times:
 					{
 						EatSpaces(&C);
 						BufferNextWord(&C, Buff);
-						Info.TimeCount = U32FromASCII(Buff);
-						Info.Times = PushArray(Arena, Info.TimeCount, f32);
+						TimeCount = U32FromASCII(Buff);
+						f32 *Times = PushArray(Arena, TimeCount, f32);
 
 						Line = Line->Next;
 						C = Line->String.Data;
-						for(u32 TimeIndex = 0; TimeIndex < Info.TimeCount; ++TimeIndex)
+						for(u32 TimeIndex = 0; TimeIndex < TimeCount; ++TimeIndex)
 						{
 							BufferNextWord(&C, Buff);
-							Info.Times[TimeIndex] = F32FromASCII(Buff);
+							Times[TimeIndex] = F32FromASCII(Buff);
 							EatSpaces(&C);
 						}
+
+						Info.Duration = Times[TimeCount - 1];
+						Info.FrameRate = Info.Duration / (f32)TimeCount;
 					} break;
 					case AnimationHeader_KeyFrame:
 					{
-						Info.KeyFrameCount = Info.TimeCount;
+						Info.KeyFrameCount = TimeCount;
 						Info.KeyFrames = PushArray(Arena, Info.KeyFrameCount, key_frame);
 						for(u32 KeyFrameIndex = 0; KeyFrameIndex < Info.KeyFrameCount; ++KeyFrameIndex)
 						{
 							Info.KeyFrames[KeyFrameIndex].Positions = PushArray(Arena, Info.JointCount, v3);
-							Info.KeyFrames[KeyFrameIndex].Quaternions = PushArray(Arena, Info.JointCount, quaternion);
+							Info.KeyFrames[KeyFrameIndex].Orientations = PushArray(Arena, Info.JointCount, quaternion);
 							Info.KeyFrames[KeyFrameIndex].Scales = PushArray(Arena, Info.JointCount, v3);
 						}
 
@@ -597,7 +600,7 @@ AnimationInfoLoad(memory_arena *Arena, char *FileName)
 							for(u32 JointIndex = 0; JointIndex < Info.JointCount; ++JointIndex)
 							{
 								v3 *P = KeyFrame->Positions + JointIndex;
-								quaternion *Q = KeyFrame->Quaternions + JointIndex;
+								quaternion *Q = KeyFrame->Orientations + JointIndex;
 								v3 *Scale = KeyFrame->Scales + JointIndex;
 
 								Line = Line->Next;

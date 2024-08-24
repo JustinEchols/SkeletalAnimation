@@ -11,11 +11,11 @@ JointTransformInterpolated(key_frame *Current, f32 t, key_frame *Next, u32 Joint
 	mat4 Result = Mat4Identity();
 
 	v3 P1 = Current->Positions[JointIndex];
-	quaternion Q1 = Current->Quaternions[JointIndex];
+	quaternion Q1 = Current->Orientations[JointIndex];
 	v3 Scale1 = Current->Scales[JointIndex];
 
 	v3 P2 = Next->Positions[JointIndex];
-	quaternion Q2 = Next->Quaternions[JointIndex];
+	quaternion Q2 = Next->Orientations[JointIndex];
 	v3 Scale2 = Next->Scales[JointIndex];
 
 	v3 P = Lerp(P1, t, P2);
@@ -37,30 +37,34 @@ AnimationUpdate(model *Model, f32 dT)
 	animation_info *AnimInfo = Model->Animations.Info + Model->Animations.Index;
 
 	AnimInfo->CurrentTime += dT;
-	u32 KeyFrameIndex = AnimInfo->KeyFrameIndex;
-	f32 KeyFrameDt = KeyFrameDeltaTime(AnimInfo->Times, KeyFrameIndex);
-	f32 t = (AnimInfo->CurrentTime - AnimInfo->Times[KeyFrameIndex]) / KeyFrameDt;
-	if(t >= 1.0f)
+
+	f32 CurrentTime = AnimInfo->CurrentTime;
+	f32 Duration = AnimInfo->Duration;
+	f32 tNormalized = CurrentTime / Duration;
+
+	u32 KeyFrameIndexLast = AnimInfo->KeyFrameCount - 1;
+	u32 KeyFrameIndex = F32RoundToU32(tNormalized * KeyFrameIndexLast);
+	KeyFrameIndex = Clamp(0, KeyFrameIndex, KeyFrameIndexLast);
+
+	if(KeyFrameIndex >= KeyFrameIndexLast)
 	{
-		AnimInfo->KeyFrameIndex += 1;
-		if(AnimInfo->KeyFrameIndex >= (AnimInfo->KeyFrameCount - 1))
+		KeyFrameIndex = 0;
+		AnimInfo->CurrentTime = AnimInfo->CurrentTime - AnimInfo->Duration;
+
+		Model->Animations.Index += 1;
+		if(Model->Animations.Index >= Model->Animations.Count)
 		{
-			AnimInfo->KeyFrameIndex = 0;
-			AnimInfo->CurrentTime = AnimInfo->CurrentTime - AnimInfo->Times[AnimInfo->KeyFrameCount - 1];
-
-			// NOTE(Justin): Debug code to cycle through animations.
-			Model->Animations.Index += 1;
-			if(Model->Animations.Index >= Model->Animations.Count)
-			{
-				Model->Animations.Index = 0;
-			}
+			Model->Animations.Index = 0;
 		}
-
-		t = (AnimInfo->CurrentTime - AnimInfo->Times[AnimInfo->KeyFrameIndex]) / KeyFrameDeltaTime(AnimInfo->Times, AnimInfo->KeyFrameIndex);
 	}
 
-	key_frame *KeyFrame = AnimInfo->KeyFrames + AnimInfo->KeyFrameIndex;
-	key_frame *NextKeyFrame = AnimInfo->KeyFrames + (AnimInfo->KeyFrameIndex + 1);
+	f32 DtPerKeyFrame = Duration / (f32)KeyFrameIndexLast;
+	f32 KeyFrameTime = DtPerKeyFrame * (f32)KeyFrameIndex;
+	f32 t = (CurrentTime - KeyFrameTime) / DtPerKeyFrame;
+	t = Clamp01(t);
+
+	key_frame *KeyFrame = AnimInfo->KeyFrames + KeyFrameIndex;
+	key_frame *NextKeyFrame = AnimInfo->KeyFrames + (KeyFrameIndex + 1);
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 	{
 		mesh *Mesh = Model->Meshes + MeshIndex;

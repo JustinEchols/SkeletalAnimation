@@ -17,20 +17,20 @@ struct joint
 struct key_frame
 {
 	v3 *Positions;
-	quaternion *Quaternions;
+	quaternion *Orientations;
 	v3 *Scales;
 };
 
 struct animation_info
 {
 	u32 JointCount;
-	u32 TimeCount;
 	u32 KeyFrameCount;
-	u32 KeyFrameIndex;
+
 	f32 CurrentTime;
+	f32 Duration;
+	f32 FrameRate;
 
 	string *JointNames;
-	f32 *Times;
 	key_frame *KeyFrames;
 };
 

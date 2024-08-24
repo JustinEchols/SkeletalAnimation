@@ -129,6 +129,7 @@ global_varible wgl_get_extensions_string_ext	*wglGetExtensionsStringEXT;
 global_varible int Win32GlobalWindowWidth;
 global_varible int Win32GlobalWindowHeight;
 
+#include "intrinsics.h"
 #include "math_util.h"
 #include "strings.h"
 #include "strings.cpp"
