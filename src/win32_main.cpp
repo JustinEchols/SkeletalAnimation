@@ -41,7 +41,6 @@ char *AnimationFiles[] =
 	"..\\data\\XBot_FemaleWalk.animation",
 };
 
-//#include "asset.cpp"
 #include "opengl.cpp"
 //#include "game.h"
 //#include "game.cpp"
@@ -240,7 +239,6 @@ Win32OpenGLInit(HDC WindowDC)
 		glUniform3fv 				= (gl_uniform_3fv *)wglGetProcAddress("glUniform3fv");
 		glUniform4fv 				= (gl_uniform_4fv *)wglGetProcAddress("glUniform4fv");
 		glUniformMatrix4fv 			= (gl_uniform_matrix_4fv *)wglGetProcAddress("glUniformMatrix4fv");
-
 	}
 
 	if(wglSwapIntervalEXT)
@@ -355,19 +353,14 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		f32 ZFar = 100.0f;
 		mat4 PerspectiveTransform = Mat4Perspective(FOV, Aspect, ZNear, ZFar);
 
-#if 1
 		glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
-
 		glEnable(GL_DEPTH_TEST);
 		glDepthFunc(GL_LESS);
-
 		glFrontFace(GL_CCW);
 		glEnable(GL_CULL_FACE);
 		glCullFace(GL_BACK);
-
 		glEnable(GL_MULTISAMPLE);
 		glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-#endif
 
 		//
 		// NOTE(Justin): Opengl info initialization
@@ -466,7 +459,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 				}
 			}
 #endif
-
 			SwapBuffers(WindowDC);
 			ReleaseDC(Window, WindowDC);
 
