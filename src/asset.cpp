@@ -5,13 +5,9 @@ ModelLoad(memory_arena *Arena, char *FileName)
 	model Model = {};
 
 	debug_file File = Win32FileReadEntire(FileName);
-	//FILE *File = fopen(FileName, "rb");
-	//s32 Size = FileSizeGet(File);
 	if(File.Size != 0)
 	{
 		u8 *Content = (u8 *)File.Content;
-		//u8 *Content = (u8 *)PushSize_(Arena, Size);
-		//FileReadEntire(Content, Size, File);
 
 		asset_model_header *Header = (asset_model_header *)Content;
 		Assert(Header->MagicNumber == MODEL_FILE_MAGIC_NUMBER);
@@ -75,13 +71,9 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 	animation_info Info = {};
 
 	debug_file File = Win32FileReadEntire(FileName);
-	//FILE *File = fopen(FileName, "rb");
-	//s32 Size = FileSizeGet(File);
 	if(File.Size != 0)
 	{
 		u8 *Content = (u8 *)File.Content;
-		//u8 *Content = (u8 *)PushSize_(Arena, Size);
-		//FileReadEntire(Content, Size, File);
 
 		asset_animation_header *Header = (asset_animation_header *)Content;
 		Assert(Header->MagicNumber == ANIMATION_FILE_MAGIC_NUMBER);
