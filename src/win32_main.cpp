@@ -24,8 +24,6 @@ global_varible s64 Win32GlobalTicksPerSecond;
 global_varible int Win32GlobalWindowWidth;
 global_varible int Win32GlobalWindowHeight;
 
-
-
 char *AnimationFiles[] =
 {
 	"..\\data\\XBot_IdleToSprint.animation",
