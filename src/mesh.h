@@ -14,12 +14,14 @@ struct joint
 	mat4 Transform;
 };
 
+#if 0
 struct key_frame
 {
 	v3 *Positions;
 	quaternion *Orientations;
 	v3 *Scales;
 };
+
 
 struct animation_info
 {
@@ -34,12 +36,13 @@ struct animation_info
 	key_frame *KeyFrames;
 };
 
-struct animations
+struct animation
 {
 	u32 Count;
 	u32 Index;
 	animation_info *Info;
 };
+#endif
 
 struct material_spec
 {
@@ -50,7 +53,7 @@ struct material_spec
 	f32 Shininess;
 };
 
-struct vertex_list
+struct vertex 
 {
 	v3 P;
 	v3 N;
@@ -68,7 +71,7 @@ struct mesh
 	u32 JointCount;
 
 	u32 *Indices;
-	vertex_list *Vertices;
+	vertex *Vertices;
 
 	string *JointNames;
 	joint *Joints;
@@ -97,7 +100,7 @@ struct model
 	u32 VB[2];
 	u32 IBO[2];
 
-	animations Animations;
+	//animations Animations;
 };
 
 #define MESH_H

@@ -71,6 +71,13 @@ union quaternion
 	f32 E[4];
 };
 
+struct sqt
+{
+	v3 Position;
+	quaternion Orientation;
+	v3 Scale;
+};
+
 inline v2
 V2(f32 X, f32 Y)
 {
@@ -325,6 +332,20 @@ Lerp(v3 A, f32 t, v3 B)
 	v3 Result = (1 - t) * A + t * B;
 	return(Result);
 }
+
+inline b32
+Equal(v3 A, v3 B, f32 Tolerance = SMALL_NUMBER)
+{
+	b32 Result = ((AbsVal(A.x - B.x) <= Tolerance) &&
+				  (AbsVal(A.y - B.y) <= Tolerance) &&
+				  (AbsVal(A.z - B.z) <= Tolerance));
+
+	return(Result);
+}
+
+//
+// NOTE(Justin): v4 operations
+//
 
 inline v4
 operator*(f32 C, v4 A)

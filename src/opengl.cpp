@@ -198,13 +198,13 @@ OpenGLAllocateAnimatedModel(model *Model, u32 ShaderProgram)
 
 		glGenBuffers(1, &Model->VB[MeshIndex]);
 		glBindBuffer(GL_ARRAY_BUFFER, Model->VB[MeshIndex]);
-		glBufferData(GL_ARRAY_BUFFER, Mesh->VertexCount * sizeof(vertex_list), Mesh->Vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, Mesh->VertexCount * sizeof(vertex), Mesh->Vertices, GL_STATIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_list), 0);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_list), (void *)(3 * sizeof(f32)));
-		glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(vertex_list), (void *)(8 * sizeof(f32)));
-		glVertexAttribIPointer(3, 3, GL_UNSIGNED_INT, sizeof(vertex_list), (void *)(9 * sizeof(u32)));
-		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_list), (void *)(12 * sizeof(u32)));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(3 * sizeof(f32)));
+		glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(vertex), (void *)(8 * sizeof(f32)));
+		glVertexAttribIPointer(3, 3, GL_UNSIGNED_INT, sizeof(vertex), (void *)(9 * sizeof(u32)));
+		glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(12 * sizeof(u32)));
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);
@@ -247,11 +247,11 @@ OpenGLAllocateModel(model *Model, u32 ShaderProgram)
 
 		glGenBuffers(1, &Model->VB[MeshIndex]);
 		glBindBuffer(GL_ARRAY_BUFFER, Model->VB[MeshIndex]);
-		glBufferData(GL_ARRAY_BUFFER, Mesh->VertexCount * sizeof(vertex_list), Mesh->Vertices, GL_STATIC_DRAW);
+		glBufferData(GL_ARRAY_BUFFER, Mesh->VertexCount * sizeof(vertex), Mesh->Vertices, GL_STATIC_DRAW);
 
-		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_list), 0);
-		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex_list), (void *)(3 * sizeof(f32)));
-		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex_list), (void *)(6 * sizeof(f32)));
+		glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
+		glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(3 * sizeof(f32)));
+		glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(6 * sizeof(f32)));
 
 		glEnableVertexAttribArray(0);
 		glEnableVertexAttribArray(1);

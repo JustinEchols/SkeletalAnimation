@@ -3,192 +3,50 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <math.h>
 #include <gl/gl.h>
 
-global_varible b32 Win32GlobalRunning;
-global_varible s64 Win32GlobalTicksPerSecond;
-
-#define WGL_DRAW_TO_WINDOW_ARB                  0x2001
-#define WGL_ACCELERATION_ARB                    0x2003
-#define WGL_SUPPORT_OPENGL_ARB                  0x2010
-#define WGL_DOUBLE_BUFFER_ARB                   0x2011
-#define WGL_PIXEL_TYPE_ARB                      0x2013
-
-#define WGL_TYPE_RGBA_ARB                       0x202B
-#define WGL_FULL_ACCELERATION_ARB               0x2027
-
-#define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB        0x20A9
-
-#define WGL_RED_BITS_ARB                        0x2015
-#define WGL_GREEN_BITS_ARB                      0x2017
-#define WGL_BLUE_BITS_ARB                       0x2019
-#define WGL_ALPHA_BITS_ARB                      0x201B
-#define WGL_DEPTH_BITS_ARB                      0x2022
-#define WGL_STENCIL_BITS_ARB                    0x2023
-#define WGL_SAMPLES_ARB							0x2042
-
-typedef HGLRC WINAPI wgl_create_context_attribs_arb(HDC hDC, HGLRC hShareContext, const int *attribList);
-
-typedef BOOL WINAPI wgl_get_pixel_format_attrib_iv_arb(HDC hdc,
-    int iPixelFormat,
-    int iLayerPlane,
-    UINT nAttributes,
-    const int *piAttributes,
-    int *piValues);
-
-typedef BOOL WINAPI wgl_get_pixel_format_attrib_fv_arb(HDC hdc,
-    int iPixelFormat,
-    int iLayerPlane,
-    UINT nAttributes,
-    const int *piAttributes,
-    FLOAT *pfValues);
-
-typedef BOOL WINAPI wgl_choose_pixel_format_arb(HDC hdc,
-    const int *piAttribIList,
-    const FLOAT *pfAttribFList,
-    UINT nMaxFormats,
-    int *piFormats,
-    UINT *nNumFormats);
-
-typedef BOOL WINAPI wgl_swap_interval_ext(int interval);
-typedef const char * WINAPI wgl_get_extensions_string_ext(void);
-
-typedef char GLchar;
-typedef uintptr_t GLsizeiptr;
-
-typedef void 	WINAPI gl_attach_shader(GLuint program, GLuint shader);
-typedef void 	WINAPI gl_compile_shader(GLuint shader);
-typedef GLuint	WINAPI gl_create_program(void);
-typedef GLuint	WINAPI gl_create_shader(GLenum type);
-typedef void	WINAPI gl_delete_program(GLuint program);
-typedef void 	WINAPI gl_delete_shader(GLuint shader);
-typedef void 	WINAPI gl_enable_vertex_attrib_array(GLuint index);
-typedef void 	WINAPI gl_get_active_attrib(GLuint program, GLuint index, GLsizei bufSize, GLsizei *length, GLint *size, GLenum *type, GLchar *name);
-typedef void 	WINAPI gl_get_programiv(GLuint program, GLenum pname, GLint *params);
-typedef void 	WINAPI gl_get_program_info_log(GLuint program, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
-typedef void 	WINAPI gl_get_shaderiv(GLuint shader, GLenum pname, GLint *params);
-typedef void 	WINAPI gl_get_shader_info_log(GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
-typedef GLint	WINAPI gl_get_uniform_location(GLuint program, const GLchar *name);
-typedef void	WINAPI gl_bind_vertex_array(GLuint array);
-typedef void 	WINAPI gl_gen_vertex_arrays(GLsizei n, GLuint *arrays);
-typedef void 	WINAPI gl_bind_buffer(GLenum target, GLuint buffer);
-typedef void 	WINAPI gl_gen_buffers(GLsizei n, GLuint *buffers);
-typedef void 	WINAPI gl_vertex_attrib_pointer(GLuint index, GLint size, GLenum type, GLboolean normalized, GLsizei stride, const void *pointer);
-typedef void 	WINAPI gl_vertex_attribi_pointer(GLuint index, GLint size, GLenum type, GLsizei stride, const void *pointer);
-typedef void 	WINAPI gl_buffer_data(GLenum target, GLsizeiptr size, const void *data, GLenum usage);
-typedef void 	WINAPI gl_link_program(GLuint program);
-typedef void 	WINAPI gl_shader_source(GLuint shader, GLsizei count, const GLchar *const*string, const GLint *length);
-typedef void 	WINAPI gl_use_program(GLuint program);
-typedef void 	WINAPI gl_validate_program(GLuint program);
-typedef void 	WINAPI gl_uniform_1ui(GLint location, GLuint v0);
-typedef void 	WINAPI gl_uniform_1f(GLint location, GLfloat v0);
-typedef void 	WINAPI gl_uniform_3fv(GLint location, GLsizei count, const GLfloat *value);
-typedef void 	WINAPI gl_uniform_4fv(GLint location, GLsizei count, const GLfloat *value);
-typedef void 	WINAPI gl_uniform_matrix_4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
-
-global_varible gl_attach_shader                 *glAttachShader;
-global_varible gl_compile_shader                *glCompileShader;
-global_varible gl_create_program                *glCreateProgram;
-global_varible gl_create_shader                 *glCreateShader;
-global_varible gl_delete_program                *glDeleteProgram;
-global_varible gl_delete_shader                 *glDeleteShader;
-global_varible gl_enable_vertex_attrib_array    *glEnableVertexAttribArray;
-global_varible gl_get_active_attrib             *glGetActiveAttrib;
-global_varible gl_get_programiv                 *glGetProgramiv;
-global_varible gl_get_program_info_log          *glGetProgramInfoLog;
-global_varible gl_get_shaderiv                  *glGetShaderiv;
-global_varible gl_get_shader_info_log           *glGetShaderInfoLog;
-global_varible gl_get_uniform_location          *glGetUniformLocation;
-
-global_varible gl_bind_vertex_array				*glBindVertexArray;
-global_varible gl_gen_vertex_arrays				*glGenVertexArrays;
-global_varible gl_bind_buffer					*glBindBuffer;
-global_varible gl_gen_buffers					*glGenBuffers;
-global_varible gl_buffer_data					*glBufferData;
-
-global_varible gl_vertex_attrib_pointer			*glVertexAttribPointer;
-global_varible gl_vertex_attribi_pointer		*glVertexAttribIPointer;
-
-global_varible gl_link_program					*glLinkProgram;
-global_varible gl_shader_source					*glShaderSource;
-global_varible gl_use_program					*glUseProgram;
-global_varible gl_validate_program				*glValidateProgram;
-
-global_varible gl_uniform_1ui					*glUniform1ui;
-global_varible gl_uniform_1f					*glUniform1f;
-global_varible gl_uniform_3fv					*glUniform3fv;
-global_varible gl_uniform_4fv					*glUniform4fv;
-global_varible gl_uniform_matrix_4fv			*glUniformMatrix4fv;
-
-
-global_varible wgl_create_context_attribs_arb	*wglCreateContextAttribsARB;
-global_varible wgl_choose_pixel_format_arb		*wglChoosePixelFormatARB;
-global_varible wgl_swap_interval_ext			*wglSwapIntervalEXT;
-global_varible wgl_get_extensions_string_ext	*wglGetExtensionsStringEXT;
-
-global_varible int Win32GlobalWindowWidth;
-global_varible int Win32GlobalWindowHeight;
-
+#include "win32_fileio.cpp"
+#include "win32_opengl.h"
 #include "intrinsics.h"
 #include "math_util.h"
 #include "strings.h"
 #include "strings.cpp"
 #include "mesh.h"
 #include "mesh.cpp"
+#include "animation.h"
 #include "animation.cpp"
-
-internal void
-Win32FileFree(void *Memory)
-{
-	if(Memory)
-	{
-		VirtualFree(Memory, 0, MEM_RELEASE);
-	}
-}
-
-internal debug_file
-Win32FileReadEntire(char *FileName)
-{
-	debug_file Result = {};
-	HANDLE FileHandle = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
-	if(FileHandle != INVALID_HANDLE_VALUE)
-	{
-		LARGE_INTEGER FileSize;
-		if(GetFileSizeEx(FileHandle, &FileSize))
-		{
-			u32 FileSize32 = U64TruncateToU32(FileSize.QuadPart);
-			Result.Content = VirtualAlloc(0, FileSize32, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-			if(Result.Content)
-			{
-				DWORD BytesRead;
-				if(ReadFile(FileHandle, Result.Content, FileSize32, &BytesRead, 0) && (BytesRead == FileSize32))
-				{
-					Result.Size = FileSize32;
-				}
-				else
-				{
-					Win32FileFree(Result.Content);
-					Result.Content = 0;
-				}
-			}
-			else
-			{
-			}
-		}
-		else
-		{
-		}
-		CloseHandle(FileHandle);
-	}
-	else
-	{
-	}
-
-	return(Result);
-}
-
+#include "asset.h"
 #include "asset.cpp"
+
+global_varible b32 Win32GlobalRunning;
+global_varible s64 Win32GlobalTicksPerSecond;
+global_varible int Win32GlobalWindowWidth;
+global_varible int Win32GlobalWindowHeight;
+
+
+
+char *AnimationFiles[] =
+{
+	"..\\data\\XBot_IdleToSprint.animation",
+	"..\\data\\XBot_Running.animation",
+	"..\\data\\XBot_ActionIdle.animation",
+	"..\\data\\XBot_IdleLookAround.animation",
+	"..\\data\\XBot_RightTurn.animation",
+	"..\\data\\XBot_LeftTurn.animation",
+	"..\\data\\XBot_PushingStart.animation",
+	"..\\data\\XBot_Pushing.animation",
+	"..\\data\\XBot_PushingStop.animation",
+	"..\\data\\XBot_ActionIdleToStandingIdle.animation",
+	"..\\data\\XBot_RunningToTurn.animation",
+	"..\\data\\XBot_RunningChangeDirection.animation",
+	"..\\data\\XBot_FemaleWalk.animation",
+};
+
+//#include "asset.cpp"
 #include "opengl.cpp"
+//#include "game.h"
+//#include "game.cpp"
 
 LRESULT CALLBACK
 Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
@@ -432,52 +290,57 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		f32 TargetSecondsPerFrame = 1.0f / (f32)MonitorRefreshRate;
 
-
 		HGLRC OpenGLRC = Win32OpenGLInit(GetDC(Window));
 
-		void *Memory = VirtualAlloc(0, Megabyte(256), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+		void *Memory = VirtualAlloc(0, Megabyte(512), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+#if 0
+		game_memory GameMemory = {};
+		GameMemory.IsInitialized = false;
+		GameMemory.PermanentStorageSize = Megabyte(512);
+		GameMemory.PermanentStorage = VirtualAlloc(0, GameMemory.PermanentStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+		GameMemory.TemporaryStorageSize = Megabyte(512);
+		GameMemory.TemporaryStorage = VirtualAlloc(0, GameMemory.TemporaryStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+#endif
 
 		memory_arena Arena_;
 		ArenaInitialize(&Arena_, (u8 *)Memory, Megabyte(256));
 		memory_arena *Arena = &Arena_;
 
+		memory_arena TempArena_;
+		ArenaInitialize(&TempArena_, (u8 *)(Arena->Base + Arena->Size), Megabyte(64));
+		memory_arena *TempArena = &TempArena_;
+
 		model *Models[3] = {};
+
 		Models[0] = PushStruct(Arena, model);
 		*Models[0] = ModelLoad(Arena, "..\\data\\XBot.mesh");
-
-		char *AnimationFiles[] =
-		{
-			"..\\data\\XBot_ActionIdle.animation",
-			"..\\data\\XBot_IdleLookAround.animation",
-			"..\\data\\XBot_RightTurn.animation",
-			"..\\data\\XBot_LeftTurn.animation",
-			"..\\data\\XBot_PushingStart.animation",
-			"..\\data\\XBot_Pushing.animation",
-			"..\\data\\XBot_PushingStop.animation",
-			"..\\data\\XBot_ActionIdleToStandingIdle.animation",
-			"..\\data\\XBot_RunningToTurn.animation",
-			"..\\data\\XBot_RunningChangeDirection.animation",
-			"..\\data\\XBot_IdleToSprint.animation",
-			"..\\data\\XBot_FemaleWalk.animation",
-		};
-
-		Models[0]->Animations.Count = ArrayCount(AnimationFiles);
-		Models[0]->Animations.Info = PushArray(Arena, Models[0]->Animations.Count, animation_info);
-		for(u32 AnimIndex = 0; AnimIndex < ArrayCount(AnimationFiles); ++AnimIndex)
-		{
-			animation_info *Info = Models[0]->Animations.Info + AnimIndex;
-			*Info = AnimationInfoLoad(Arena, AnimationFiles[AnimIndex]);
-		}
-		
 		Models[0]->Basis.O = V3(0.0f, -80.0f, -400.0f);
 		Models[0]->Basis.X = XAxis();
 		Models[0]->Basis.Y = YAxis();
 		Models[0]->Basis.Z = ZAxis();
 		mat4 Scale = Mat4Identity();
 
-		//
-		// NOTE(Justin): Transformations
-		//
+		animation_player AnimationPlayer = {};
+		AnimationPlayerInitialize(&AnimationPlayer, Models[0], Arena);
+
+		animation_info *AnimationInfos = PushArray(Arena, ArrayCount(AnimationFiles), animation_info);
+		animation *Animations = PushArray(Arena, ArrayCount(AnimationFiles), animation);
+		for(u32 AnimIndex = 0; AnimIndex < ArrayCount(AnimationFiles); ++AnimIndex)
+		{
+			animation_info *Info = AnimationInfos + AnimIndex;
+			animation *Animation = Animations + AnimIndex;
+
+			*Info = AnimationLoad(Arena, AnimationFiles[AnimIndex]);
+			if(Info)
+			{
+				Animation->ID.Value = AnimIndex;
+				Animation->Info = Info;
+			}
+		}
+
+		//NOTE(Justin): Transformations
+
 
 		v3 CameraP = V3(0.0f, 5.0f, 3.0f);
 		v3 Direction = V3(0.0f, 0.0f, -1.0f);
@@ -494,6 +357,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		f32 ZFar = 100.0f;
 		mat4 PerspectiveTransform = Mat4Perspective(FOV, Aspect, ZNear, ZFar);
 
+#if 1
 		glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
 
 		glEnable(GL_DEPTH_TEST);
@@ -505,11 +369,13 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		glEnable(GL_MULTISAMPLE);
 		glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
+#endif
 
 		//
 		// NOTE(Justin): Opengl info initialization
 		//
 
+#if 1
 		u32 Shaders[2];
 		Shaders[0] = GLProgramCreate(BasicVsSrc, BasicFsSrc);
 		for(u32 ModelIndex = 0; ModelIndex < ArrayCount(Models); ++ModelIndex)
@@ -535,7 +401,8 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 				}
 			}
 		}
-		
+#endif
+
 		Win32GlobalRunning = true;
 		f32 Angle = 0.0f;
 		f32 DtForFrame = 0.0f;
@@ -553,6 +420,9 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 			HDC WindowDC = GetDC(Window);
 
+			//GameUpdateAndRender(&GameMemory, DtForFrame);
+
+#if 1
 			for(u32 ModelIndex = 0; ModelIndex < ArrayCount(Models); ++ModelIndex)
 			{
 				model *Model = Models[ModelIndex];
@@ -560,7 +430,9 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 				{
 					if(Model->HasSkeleton)
 					{
-						AnimationUpdate(Model, DtForFrame);
+						AnimationPlay(&AnimationPlayer, &Animations[0], true, false);
+						AnimationPlayerUpdate(&AnimationPlayer, TempArena, DtForFrame);
+						ModelUpdate(&AnimationPlayer);
 					}
 				}
 			}
@@ -595,6 +467,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 					}
 				}
 			}
+#endif
 
 			SwapBuffers(WindowDC);
 			ReleaseDC(Window, WindowDC);

@@ -9,54 +9,95 @@
 !_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
 !_TAG_PROGRAM_URL	https://ctags.io/	/official site/
 !_TAG_PROGRAM_VERSION	5.9.0	/80ee839/
+ANIMATION_H	animation.h	/^#define ANIMATION_H$/;"	d
+AbsVal	intrinsics.h	/^AbsVal(f32 X)$/;"	f	typeref:typename:f32
+ActiveCount	animation.h	/^	u32 ActiveCount;$/;"	m	struct:animation_player	typeref:typename:u32
 Ambient	mesh.h	/^	v4 Ambient;$/;"	m	struct:material_spec	typeref:typename:v4
+Angle	game.h	/^	f32 Angle;$/;"	m	struct:game_state	typeref:typename:f32
+AnimationFiles	game.cpp	/^char *AnimationFiles[] =$/;"	v	typeref:typename:char * []
 AnimationHeaderGet	asset.cpp	/^AnimationHeaderGet(u8 *Buff)$/;"	f	typeref:typename:animation_header
 AnimationHeader_Invalid	asset.cpp	/^	AnimationHeader_Invalid,$/;"	e	enum:animation_header	file:
 AnimationHeader_Joints	asset.cpp	/^	AnimationHeader_Joints,$/;"	e	enum:animation_header	file:
 AnimationHeader_KeyFrame	asset.cpp	/^	AnimationHeader_KeyFrame,$/;"	e	enum:animation_header	file:
 AnimationHeader_Times	asset.cpp	/^	AnimationHeader_Times,$/;"	e	enum:animation_header	file:
 AnimationInfoLoad	asset.cpp	/^AnimationInfoLoad(memory_arena *Arena, char *FileName)$/;"	f	typeref:typename:internal animation_info
-AnimationUpdate	animation.cpp	/^AnimationUpdate(model *Model, f32 dT)$/;"	f	typeref:typename:internal void
-Animations	mesh.h	/^	animations Animations;$/;"	m	struct:model	typeref:typename:animations
+AnimationInfos	game.h	/^	animation_info *AnimationInfos;$/;"	m	struct:game_state	typeref:typename:animation_info *
+AnimationPlay	animation.cpp	/^AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation\/*animation_id ID*\/, b/;"	f	typeref:typename:internal void
+AnimationPlayer	game.h	/^	animation_player AnimationPlayer;$/;"	m	struct:game_state	typeref:typename:animation_player
+AnimationPlayerInitialize	animation.cpp	/^AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memory_arena *PermAre/;"	f	typeref:typename:internal void
+AnimationPlayerUpdate	animation.cpp	/^AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena, f32 dt)$/;"	f	typeref:typename:internal void
+AnimationPreviouslyAdded	animation.h	/^	animation *AnimationPreviouslyAdded;$/;"	m	struct:animation_player	typeref:typename:animation *
+AnimationPreviouslyFreed	animation.h	/^	animation *AnimationPreviouslyFreed;$/;"	m	struct:animation_player	typeref:typename:animation *
+Animations	game.h	/^	animation *Animations;$/;"	m	struct:game_state	typeref:typename:animation *
+Arena	game.h	/^	memory_arena Arena;$/;"	m	struct:game_state	typeref:typename:memory_arena
+Arena	platform.h	/^	memory_arena *Arena;$/;"	m	struct:temporary_memory	typeref:typename:memory_arena *
 ArenaInitialize	platform.h	/^ArenaInitialize(memory_arena *Arena, u8 *Base, memory_index Size)$/;"	f	typeref:typename:internal void
 ArrayCopy	platform.h	/^#define ArrayCopy(/;"	d
 ArrayCount	platform.h	/^#define ArrayCount(/;"	d
+Aspect	game.h	/^	f32 Aspect;\/\/ = (f32)Win32GlobalWindowWidth \/ Win32GlobalWindowHeight;$/;"	m	struct:game_state	typeref:typename:f32
 Assert	platform.h	/^#define Assert(/;"	d
 Base	platform.h	/^	u8 *Base;$/;"	m	struct:memory_arena	typeref:typename:u8 *
 BasicFsSrc	opengl.cpp	/^char *BasicFsSrc = R"($/;"	v	typeref:typename:char *
 BasicVsSrc	opengl.cpp	/^char *BasicVsSrc = R"($/;"	v	typeref:typename:char *
 Basis	mesh.h	/^	basis Basis;$/;"	m	struct:model	typeref:typename:basis
 BindTransform	mesh.h	/^	mat4 BindTransform;$/;"	m	struct:mesh	typeref:typename:mat4
+BlendCurrentTime	animation.h	/^	f32 BlendCurrentTime;$/;"	m	struct:animation	typeref:typename:f32
+BlendDuration	animation.h	/^	f32 BlendDuration;$/;"	m	struct:animation	typeref:typename:f32
+BlendFactorLast	animation.h	/^	f32 BlendFactorLast;$/;"	m	struct:animation	typeref:typename:f32
+BlendedAnimations	animation.h	/^	key_frame *BlendedAnimations;$/;"	m	struct:animation_player	typeref:typename:key_frame *
+BlendingIn	animation.h	/^	b32 BlendingIn;$/;"	m	struct:animation	typeref:typename:b32
+BlendingOut	animation.h	/^	b32 BlendingOut;$/;"	m	struct:animation	typeref:typename:b32
 BufferNextWord	strings.cpp	/^BufferNextWord(u8 **C, u8 *Buff)$/;"	f	typeref:typename:void
 COLLADA_ATTRIBUTE_MAX_COUNT	platform.h	/^#define COLLADA_ATTRIBUTE_MAX_COUNT /;"	d
 COLLADA_NODE_CHILDREN_MAX_COUNT	platform.h	/^#define COLLADA_NODE_CHILDREN_MAX_COUNT /;"	d
+CameraP	game.h	/^	v3 CameraP;$/;"	m	struct:game_state	typeref:typename:v3
+CameraTransform	game.h	/^	mat4 CameraTransform;$/;"	m	struct:game_state	typeref:typename:mat4
+Clamp	math_util.h	/^Clamp(f32 Min, f32 X, f32 Max)$/;"	f	typeref:typename:f32
+Clamp	math_util.h	/^Clamp(u32 Min, u32 X, u32 Max)$/;"	f	typeref:typename:u32
+Clamp01	math_util.h	/^Clamp01(f32 X)$/;"	f	typeref:typename:f32
 CommonCompilerFlags	build.bat	/^set CommonCompilerFlags=-Od -MTd -fp:fast -W4 -wd4201 -wd4100 -wd4505 -wd4189 -Oi -Z7$/;"	v
 CommonLinkerFlags	build.bat	/^set CommonLinkerFlags=-incremental:no user32.lib gdi32.lib opengl32.lib$/;"	v
 Conjugate	math_util.h	/^Conjugate(quaternion Q)$/;"	f	typeref:typename:quaternion
 Content	platform.h	/^	void *Content;$/;"	m	struct:debug_file	typeref:typename:void *
-Count	mesh.h	/^	u32 Count;$/;"	m	struct:animations	typeref:typename:u32
 Count	mesh.h	/^	u32 Count;$/;"	m	struct:joint_info	typeref:typename:u32
 Count	strings.h	/^	u32 Count;$/;"	m	struct:string_array	typeref:typename:u32
 Count	strings.h	/^	u64 Count;$/;"	m	struct:string_list	typeref:typename:u64
 Cross	math_util.h	/^Cross(v3 A, v3 B)$/;"	f	typeref:typename:v3
 Cross	math_util.h	/^Cross(v4 A, v4 B)$/;"	f	typeref:typename:v4
-CurrentTime	mesh.h	/^	f32 CurrentTime;$/;"	m	struct:animation_info	typeref:typename:f32
+CurrentTime	animation.h	/^	f32 CurrentTime; $/;"	m	struct:animation	typeref:typename:f32
+CurrentTime	animation.h	/^	f32 CurrentTime;$/;"	m	struct:animation_info	typeref:typename:f32
+CurrentTime	animation.h	/^	f32 CurrentTime;$/;"	m	struct:animation_player	typeref:typename:f32
+Cx	math_util.h	/^	f32 Cx;$/;"	m	struct:affine_decomposition	typeref:typename:f32
+Cy	math_util.h	/^	f32 Cy;$/;"	m	struct:affine_decomposition	typeref:typename:f32
+Cz	math_util.h	/^	f32 Cz;$/;"	m	struct:affine_decomposition	typeref:typename:f32
 Data	strings.h	/^	u8 *Data;$/;"	m	struct:string	typeref:typename:u8 *
 DegreeToRad	platform.h	/^#define DegreeToRad(/;"	d
 Diffuse	mesh.h	/^	v4 Diffuse;$/;"	m	struct:material_spec	typeref:typename:v4
+Direction	game.h	/^	v3 Direction;$/;"	m	struct:game_state	typeref:typename:v3
 DoneProcessingMesh	asset.cpp	/^DoneProcessingMesh(string_node *Line)$/;"	f	typeref:typename:internal b32
 Dot	math_util.h	/^Dot(quaternion Q1, quaternion Q2)$/;"	f	typeref:typename:f32
 Dot	math_util.h	/^Dot(v3 A, v3 B)$/;"	f	typeref:typename:f32
 Dot	math_util.h	/^Dot(v4 A, v4 B)$/;"	f	typeref:typename:f32
+Duration	animation.h	/^	f32 Duration;$/;"	m	struct:animation	typeref:typename:f32
+Duration	animation.h	/^	f32 Duration;$/;"	m	struct:animation_info	typeref:typename:f32
 E	math_util.h	/^	f32 E[2];$/;"	m	union:v2	typeref:typename:f32[2]
 E	math_util.h	/^	f32 E[3];$/;"	m	union:v3	typeref:typename:f32[3]
+E	math_util.h	/^	f32 E[3][3];$/;"	m	struct:mat3	typeref:typename:f32[3][3]
+E	math_util.h	/^	f32 E[4];$/;"	m	union:quaternion	typeref:typename:f32[4]
 E	math_util.h	/^	f32 E[4];$/;"	m	union:v4	typeref:typename:f32[4]
 E	math_util.h	/^	f32 E[4][4];$/;"	m	struct:mat4	typeref:typename:f32[4][4]
 EatSpaces	strings.cpp	/^EatSpaces(u8 **Buff)$/;"	f	typeref:typename:void
+Equal	math_util.h	/^Equal(v3 A, v3 B, f32 Tolerance = SMALL_NUMBER)$/;"	f	typeref:typename:b32
 Extensions	opengl.cpp	/^	char *Extensions;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
 F32FromASCII	strings.cpp	/^F32FromASCII(string S)$/;"	f	typeref:typename:f32
 F32FromASCII	strings.cpp	/^F32FromASCII(u8 *S)$/;"	f	typeref:typename:f32
+F32RoundToU32	intrinsics.h	/^F32RoundToU32(f32 X)$/;"	f	typeref:typename:u32
+F32TruncateToS32	intrinsics.h	/^F32TruncateToS32(f32 X)$/;"	f	typeref:typename:s32
+FOV	game.h	/^	f32 FOV;\/\/ = DegreeToRad(45.0f);$/;"	m	struct:game_state	typeref:typename:f32
+Finished	animation.h	/^	b32 Finished;$/;"	m	struct:animation	typeref:typename:b32
 First	strings.h	/^	string_node *First;$/;"	m	struct:string_list	typeref:typename:string_node *
+FrameRate	animation.h	/^	f32 FrameRate;$/;"	m	struct:animation_info	typeref:typename:f32
+GAME_H	game.h	/^#define GAME_H$/;"	d
 GLIBOInit	opengl.cpp	/^GLIBOInit(u32 *IBO, u32 *Indices, u32 IndicesCount)$/;"	f	typeref:typename:internal void
 GLProgramCreate	opengl.cpp	/^GLProgramCreate(char *VS, char *FS)$/;"	f	typeref:typename:internal u32
 GL_ACTIVE_ATTRIBUTES	opengl.cpp	/^#define GL_ACTIVE_ATTRIBUTES /;"	d	file:
@@ -82,45 +123,53 @@ GL_TRUE	opengl.cpp	/^#define GL_TRUE /;"	d	file:
 GL_VERTEX_SHADER	opengl.cpp	/^#define GL_VERTEX_SHADER /;"	d	file:
 GLchar	win32_main.cpp	/^typedef char GLchar;$/;"	t	typeref:typename:char	file:
 GLsizeiptr	win32_main.cpp	/^typedef uintptr_t GLsizeiptr;$/;"	t	typeref:typename:uintptr_t	file:
+GameUpdateAndRender	game.cpp	/^GameUpdateAndRender(game_memory *GameMemory, f32 DtForFrame)$/;"	f	typeref:typename:internal void
+Gigabyte	platform.h	/^#define Gigabyte(/;"	d
 HasSkeleton	mesh.h	/^	b32 HasSkeleton;$/;"	m	struct:model	typeref:typename:b32
 IBO	mesh.h	/^	u32 IBO[2];$/;"	m	struct:model	typeref:typename:u32[2]
-Index	mesh.h	/^	u32 Index;$/;"	m	struct:animations	typeref:typename:u32
+ID	animation.h	/^	animation_id ID;$/;"	m	struct:animation	typeref:typename:animation_id
+INTRINSICS_H	intrinsics.h	/^#define INTRINSICS_H$/;"	d
 Indices	mesh.h	/^	u32 *Indices;$/;"	m	struct:mesh	typeref:typename:u32 *
 IndicesCount	mesh.h	/^	u32 IndicesCount;$/;"	m	struct:mesh	typeref:typename:u32
-Info	mesh.h	/^	animation_info *Info;$/;"	m	struct:animations	typeref:typename:animation_info *
+Info	animation.h	/^	animation_info *Info;$/;"	m	struct:animation	typeref:typename:animation_info *
 InvBindTransforms	mesh.h	/^	mat4 *InvBindTransforms;$/;"	m	struct:mesh	typeref:typename:mat4 *
+IsInitialized	animation.h	/^	b32 IsInitialized;$/;"	m	struct:animation_player	typeref:typename:b32
+IsInitialized	platform.h	/^	b32 IsInitialized;$/;"	m	struct:game_memory	typeref:typename:b32
+IsNewLine	strings.cpp	/^IsNewLine(char *S)$/;"	f	typeref:typename:b32
 IsNewLine	strings.cpp	/^IsNewLine(u8 *S)$/;"	f	typeref:typename:b32
-IsNewLine	strings.cpp	/^b32 IsNewLine(char *S)$/;"	f	typeref:typename:b32
 IsSpace	strings.cpp	/^IsSpace(u8 *S)$/;"	f	typeref:typename:b32
-JointCount	mesh.h	/^	u32 JointCount;$/;"	m	struct:animation_info	typeref:typename:u32
+JointCount	animation.h	/^	u32 JointCount;$/;"	m	struct:animation_info	typeref:typename:u32
 JointCount	mesh.h	/^	u32 JointCount;$/;"	m	struct:mesh	typeref:typename:u32
 JointIndex	mesh.h	/^	u32 JointIndex[3];$/;"	m	struct:joint_info	typeref:typename:u32[3]
 JointIndexGet	mesh.cpp	/^JointIndexGet(string *JointNames, u32 JointCount, string JointName)$/;"	f	typeref:typename:internal s32
 JointInfo	mesh.h	/^	joint_info JointInfo;$/;"	m	struct:vertex_list	typeref:typename:joint_info
-JointNames	mesh.h	/^	string *JointNames;$/;"	m	struct:animation_info	typeref:typename:string *
+JointNames	animation.h	/^	string *JointNames;$/;"	m	struct:animation_info	typeref:typename:string *
 JointNames	mesh.h	/^	string *JointNames;$/;"	m	struct:mesh	typeref:typename:string *
+JointTransformFromSQT	animation.cpp	/^JointTransformFromSQT(sqt SQT)$/;"	f	typeref:typename:mat4
+JointTransformInterpolatedSQT	animation.cpp	/^JointTransformInterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 JointIndex)$/;"	f	typeref:typename:sqt
 JointTransforms	mesh.h	/^	mat4 *JointTransforms;$/;"	m	struct:mesh	typeref:typename:mat4 *
 Joints	mesh.h	/^	joint *Joints;$/;"	m	struct:mesh	typeref:typename:joint *
-KeyFrameCount	mesh.h	/^	u32 KeyFrameCount;$/;"	m	struct:animation_info	typeref:typename:u32
-KeyFrameDeltaTime	animation.cpp	/^KeyFrameDeltaTime(f32 *Times, u32 KeyFrameIndex)$/;"	f	typeref:typename:f32
-KeyFrameIndex	mesh.h	/^	u32 KeyFrameIndex;$/;"	m	struct:animation_info	typeref:typename:u32
-KeyFrameInterpolatedTransform	animation.cpp	/^KeyFrameInterpolatedTransform(key_frame *Current, f32 t, key_frame *Next, u32 JointIndex)$/;"	f	typeref:typename:mat4
-KeyFrames	mesh.h	/^	key_frame *KeyFrames;$/;"	m	struct:animation_info	typeref:typename:key_frame *
+KeyFrameCount	animation.h	/^	u32 KeyFrameCount;$/;"	m	struct:animation_info	typeref:typename:u32
+KeyFrames	animation.h	/^	key_frame *KeyFrames;$/;"	m	struct:animation_info	typeref:typename:key_frame *
 Kilobyte	platform.h	/^#define Kilobyte(/;"	d
 Last	strings.h	/^	string_node *Last;$/;"	m	struct:string_list	typeref:typename:string_node *
-Length	math_util.h	/^Length(v3 A)$/;"	f	typeref:typename:f32
+Length	math_util.h	/^Length(v3 V)$/;"	f	typeref:typename:f32
+Lerp	math_util.h	/^Lerp(f32 A, f32 t, f32 B)$/;"	f	typeref:typename:f32
 Lerp	math_util.h	/^Lerp(quaternion A, f32 t, quaternion B)$/;"	f	typeref:typename:quaternion
 Lerp	math_util.h	/^Lerp(v3 A, f32 t, v3 B)$/;"	f	typeref:typename:v3
 LerpShortest	math_util.h	/^LerpShortest(quaternion A, f32 t, quaternion B)$/;"	f	typeref:typename:quaternion
+Looping	animation.h	/^	b32 Looping;$/;"	m	struct:animation	typeref:typename:b32
 MATH_UTIL_H	math_util.h	/^#define MATH_UTIL_H /;"	d
 MESH_H	mesh.h	/^#define MESH_H$/;"	d
 MainFile	build.bat	/^set MainFile=win32_main.cpp$/;"	v
-Mat4	math_util.h	/^Mat4(v3 X, v3 Y, v3 Z)$/;"	f	typeref:typename:mat4
-Mat4	math_util.h	/^Mat4(v3 X, v3 Y, v3 Z, v3 W)$/;"	f	typeref:typename:mat4
+Mat3	math_util.h	/^Mat3(v3 X, v3 Y, v3 Z)$/;"	f	typeref:typename:mat3
+Mat4	math_util.h	/^Mat4(v3 X, v3 Y, v3 Z)$/;"	f	typeref:typename:internal mat4
+Mat4	math_util.h	/^Mat4(v3 X, v3 Y, v3 Z, v3 W)$/;"	f	typeref:typename:internal mat4
+Mat4AffineDecomposition	math_util.h	/^Mat4AffineDecomposition(mat4 M)$/;"	f	typeref:typename:affine_decomposition
 Mat4Camera	math_util.h	/^Mat4Camera(v3 P, v3 Target)$/;"	f	typeref:typename:internal mat4
 Mat4ColumnGet	math_util.h	/^Mat4ColumnGet(mat4 M, u32 ColIndex)$/;"	f	typeref:typename:internal v3
 Mat4ColumnSet	math_util.h	/^Mat4ColumnSet(mat4 M, v4 V, u32 ColIndex)$/;"	f	typeref:typename:internal mat4
-Mat4Identity	math_util.h	/^Mat4Identity()$/;"	f	typeref:typename:mat4
+Mat4Identity	math_util.h	/^Mat4Identity()$/;"	f	typeref:typename:internal mat4
 Mat4Multiply	math_util.h	/^Mat4Multiply(mat4 A, mat4 B)$/;"	f	typeref:typename:internal mat4
 Mat4Perspective	math_util.h	/^Mat4Perspective(f32 FOV, f32 AspectRatio, f32 ZNear, f32 ZFar)$/;"	f	typeref:typename:internal mat4
 Mat4Scale	math_util.h	/^Mat4Scale(f32 C)$/;"	f	typeref:typename:internal mat4
@@ -136,21 +185,29 @@ MemoryZero	platform.h	/^MemoryZero(memory_index Size, void *Src)$/;"	f	typeref:t
 MeshCount	mesh.h	/^	u32 MeshCount;$/;"	m	struct:model	typeref:typename:u32
 MeshHeaderNumberGet	asset.cpp	/^MeshHeaderNumberGet(memory_arena *Arena, string_node *Line, u8 *LineDelimeters, u32 DelimCount)$/;"	f	typeref:typename:internal u32
 Meshes	mesh.h	/^	mesh *Meshes;$/;"	m	struct:model	typeref:typename:mesh *
+Model	animation.h	/^	model *Model; $/;"	m	struct:animation_player	typeref:typename:model *
+Model	game.h	/^	model *Model;$/;"	m	struct:game_state	typeref:typename:model *
 ModelLoad	asset.cpp	/^ModelLoad(memory_arena *Arena, char *FileName)$/;"	f	typeref:typename:internal model
 ModelSpaceTransforms	mesh.h	/^	mat4 *ModelSpaceTransforms;$/;"	m	struct:mesh	typeref:typename:mat4 *
 ModelTransformFromBasis	math_util.h	/^ModelTransformFromBasis(basis *B)$/;"	f	typeref:typename:internal mat4
+ModelUpdate	win32_main.cpp	/^ModelUpdate(animation_player *AnimationPlayer)$/;"	f	typeref:typename:internal void
 N	mesh.h	/^	v3 N;$/;"	m	struct:vertex_list	typeref:typename:v3
 Name	mesh.h	/^	string Name;$/;"	m	struct:joint	typeref:typename:string
 Name	mesh.h	/^	string Name;$/;"	m	struct:mesh	typeref:typename:string
+Next	animation.h	/^	animation *Next;$/;"	m	struct:animation	typeref:typename:animation *
 Next	strings.h	/^	string_node *Next;$/;"	m	struct:string_node	typeref:typename:string_node *
 Normalize	math_util.h	/^Normalize(quaternion Q)$/;"	f	typeref:typename:quaternion
 Normalize	math_util.h	/^Normalize(v3 V)$/;"	f	typeref:typename:v3
 O	math_util.h	/^	v3 O;$/;"	m	struct:basis	typeref:typename:v3
+OldTime	animation.h	/^	f32 OldTime; $/;"	m	struct:animation	typeref:typename:f32
 OpenGLAllocateAnimatedModel	opengl.cpp	/^OpenGLAllocateAnimatedModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
 OpenGLAllocateModel	opengl.cpp	/^OpenGLAllocateModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
 OpenGLAttribList	win32_main.cpp	/^int OpenGLAttribList[] =$/;"	v	typeref:typename:int[]
 OpenGLDrawAnimatedModel	opengl.cpp	/^OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
 OpenGLDrawModel	opengl.cpp	/^OpenGLDrawModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
+Orientation	math_util.h	/^	quaternion Orientation;$/;"	m	struct:sqt	typeref:typename:quaternion
+Orientations	animation.h	/^	quaternion *Orientations;$/;"	m	struct:key_frame	typeref:typename:quaternion *
+P	math_util.h	/^	v3 P;$/;"	m	struct:affine_decomposition	typeref:typename:v3
 P	mesh.h	/^	v3 P;$/;"	m	struct:vertex_list	typeref:typename:v3
 PI32	platform.h	/^#define PI32 /;"	d
 PLATFORM_H	platform.h	/^#define PLATFORM_H$/;"	d
@@ -161,7 +218,12 @@ ParseMeshF32Array	asset.cpp	/^ParseMeshF32Array(memory_arena *Arena, f32 **F32, 
 ParseMeshU32Array	asset.cpp	/^ParseMeshU32Array(memory_arena *Arena, u32 **U32, u32 *Count, string_node *Line, u8 *Delimeters,/;"	f	typeref:typename:internal void
 ParseStringArray	strings.cpp	/^ParseStringArray(memory_arena *Arena, string *Dest, u32 DestCount, string Str)$/;"	f	typeref:typename:internal void
 ParseU32Array	strings.cpp	/^ParseU32Array(u32 *Dest, u32 DestCount, string Str)$/;"	f	typeref:typename:internal void
-Positions	mesh.h	/^	v3 *Positions;$/;"	m	struct:key_frame	typeref:typename:v3 *
+PermArena	animation.h	/^	memory_arena *PermArena;$/;"	m	struct:animation_player	typeref:typename:memory_arena *
+PermanentStorage	platform.h	/^	void *PermanentStorage;$/;"	m	struct:game_memory	typeref:typename:void *
+PermanentStorageSize	platform.h	/^	u64 PermanentStorageSize;$/;"	m	struct:game_memory	typeref:typename:u64
+PerspectiveTransform	game.h	/^	mat4 PerspectiveTransform;\/\/ = Mat4Perspective(FOV, Aspect, ZNear, ZFar);$/;"	m	struct:game_state	typeref:typename:mat4
+Position	math_util.h	/^	v3 Position;$/;"	m	struct:sqt	typeref:typename:v3
+Positions	animation.h	/^	v3 *Positions;$/;"	m	struct:key_frame	typeref:typename:v3 *
 PushArray	platform.h	/^#define PushArray(/;"	d
 PushSize_	platform.h	/^PushSize_(memory_arena *Arena, memory_index Size)$/;"	f	typeref:typename:internal void *
 PushStruct	platform.h	/^#define PushStruct(/;"	d
@@ -169,16 +231,21 @@ Quaternion	math_util.h	/^Quaternion()$/;"	f	typeref:typename:quaternion
 Quaternion	math_util.h	/^Quaternion(v3 Axis, f32 Angle)$/;"	f	typeref:typename:quaternion
 Quaternion	math_util.h	/^Quaternion(v3 V)$/;"	f	typeref:typename:quaternion
 QuaternionToMat4	math_util.h	/^QuaternionToMat4(quaternion Q)$/;"	f	typeref:typename:mat4
-Quaternions	mesh.h	/^	quaternion *Quaternions;$/;"	m	struct:key_frame	typeref:typename:quaternion *
+R	math_util.h	/^	mat4 R;$/;"	m	struct:affine_decomposition	typeref:typename:mat4
+RemoveLocomotion	animation.h	/^	b32 RemoveLocomotion;$/;"	m	struct:animation	typeref:typename:b32
 Renderer	opengl.cpp	/^	char *Renderer;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
+RetiredCount	animation.h	/^	u32 RetiredCount;$/;"	m	struct:animation_player	typeref:typename:u32
 Rotate	math_util.h	/^Rotate(v3 V, quaternion Q)$/;"	f	typeref:typename:v3
 Rotate	math_util.h	/^Rotate(v4 V, quaternion Q)$/;"	f	typeref:typename:v4
 RotationToQuaternion	math_util.h	/^RotationToQuaternion(mat4 Mat)$/;"	f	typeref:typename:quaternion
 S32FromASCII	strings.cpp	/^S32FromASCII(u8 *S)$/;"	f	typeref:typename:s32
 SLLQueuePush	platform.h	/^#define SLLQueuePush(/;"	d
 SLLQueuePush_N	platform.h	/^#define SLLQueuePush_N(/;"	d
+SMALL_NUMBER	platform.h	/^#define SMALL_NUMBER /;"	d
 STRINGS_H	strings.h	/^#define STRINGS_H$/;"	d
-Scales	mesh.h	/^	v3 *Scales;$/;"	m	struct:key_frame	typeref:typename:v3 *
+Scale	math_util.h	/^	v3 Scale;$/;"	m	struct:sqt	typeref:typename:v3
+Scales	animation.h	/^	v3 *Scales;$/;"	m	struct:key_frame	typeref:typename:v3 *
+Shaders	game.h	/^	u32 Shaders[2];$/;"	m	struct:game_state	typeref:typename:u32[2]
 ShadingLanguageVersion	opengl.cpp	/^	char *ShadingLanguageVersion;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
 Shininess	mesh.h	/^	f32 Shininess;$/;"	m	struct:material_spec	typeref:typename:f32
 Size	platform.h	/^	memory_index Size;$/;"	m	struct:memory_arena	typeref:typename:memory_index
@@ -186,7 +253,7 @@ Size	platform.h	/^	u32 Size;$/;"	m	struct:debug_file	typeref:typename:u32
 Size	strings.h	/^	u64 Size;$/;"	m	struct:string	typeref:typename:u64
 Size	strings.h	/^	u64 Size;$/;"	m	struct:string_list	typeref:typename:u64
 Specular	mesh.h	/^	v4 Specular;$/;"	m	struct:material_spec	typeref:typename:v4
-Square	math_util.h	/^Square(f32 X)$/;"	f	typeref:typename:f32
+Square	math_util.h	/^Square(f32 C)$/;"	f	typeref:typename:f32
 String	strings.cpp	/^String(u8 *Cstr)$/;"	f	typeref:typename:internal string
 String	strings.h	/^	string String;$/;"	m	struct:string_node	typeref:typename:string
 StringAllocAndCopy	strings.cpp	/^StringAllocAndCopy(memory_arena *Arena, char *Cstr)$/;"	f	typeref:typename:internal string
@@ -207,9 +274,15 @@ StringsAreSame	strings.cpp	/^StringsAreSame(string S1, string S2)$/;"	f	typeref:
 StringsAreSame	strings.cpp	/^StringsAreSame(u8 *S1, char *S2)$/;"	f	typeref:typename:internal b32
 SubStringExists	strings.cpp	/^SubStringExists(char *HayStack, char *Needle)$/;"	f	typeref:typename:internal b32
 SubStringExists	strings.cpp	/^SubStringExists(string HayStack, char *Needle)$/;"	f	typeref:typename:internal b32
+TempArena	game.h	/^	memory_arena TempArena;$/;"	m	struct:game_state	typeref:typename:memory_arena
+TempCount	platform.h	/^	s32 TempCount;$/;"	m	struct:memory_arena	typeref:typename:s32
+TemporaryMemoryBegin	platform.h	/^TemporaryMemoryBegin(memory_arena *Arena)$/;"	f	typeref:typename:temporary_memory
+TemporaryMemoryEnd	platform.h	/^TemporaryMemoryEnd(temporary_memory TempMemory)$/;"	f	typeref:typename:void
+TemporaryStorage	platform.h	/^	void *TemporaryStorage;$/;"	m	struct:game_memory	typeref:typename:void *
+TemporaryStorageSize	platform.h	/^	u64 TemporaryStorageSize;$/;"	m	struct:game_memory	typeref:typename:u64
 TextureHandle	mesh.h	/^	u32 TextureHandle;$/;"	m	struct:mesh	typeref:typename:u32
-TimeCount	mesh.h	/^	u32 TimeCount;$/;"	m	struct:animation_info	typeref:typename:u32
-Times	mesh.h	/^	f32 *Times;$/;"	m	struct:animation_info	typeref:typename:f32 *
+TimeScale	animation.h	/^	f32 TimeScale; $/;"	m	struct:animation	typeref:typename:f32
+Trace	math_util.h	/^Trace(mat3 M)$/;"	f	typeref:typename:f32
 Transform	mesh.h	/^	mat4 Transform;$/;"	m	struct:joint	typeref:typename:mat4
 U32ArraySum	platform.h	/^U32ArraySum(u32 *A, u32 Count)$/;"	f	typeref:typename:internal u32
 U32FromASCII	strings.cpp	/^U32FromASCII(string S)$/;"	f	typeref:typename:u32
@@ -223,14 +296,19 @@ UniformU32Set	opengl.cpp	/^UniformU32Set(u32 ShaderProgram, char *UniformName, u
 UniformV3Set	opengl.cpp	/^UniformV3Set(u32 ShaderProgram, char *UniformName, v3 V)$/;"	f	typeref:typename:internal void
 UniformV4Set	opengl.cpp	/^UniformV4Set(u32 ShaderProgram, char *UniformName, v4 V)$/;"	f	typeref:typename:internal void
 Used	platform.h	/^	memory_index Used;$/;"	m	struct:memory_arena	typeref:typename:memory_index
+Used	platform.h	/^	memory_index Used;$/;"	m	struct:temporary_memory	typeref:typename:memory_index
 V2	math_util.h	/^V2(f32 X, f32 Y)$/;"	f	typeref:typename:v2
 V3	math_util.h	/^V3(f32 C)$/;"	f	typeref:typename:v3
 V3	math_util.h	/^V3(f32 X, f32 Y, f32 Z)$/;"	f	typeref:typename:v3
+V3FromMat4	math_util.h	/^V3FromMat4(mat4 M, u32 ColIndex)$/;"	f	typeref:typename:internal v3
+V4	math_util.h	/^V4(f32 C)$/;"	f	typeref:typename:v4
 V4	math_util.h	/^V4(f32 X, f32 Y, f32 Z)$/;"	f	typeref:typename:v4
 V4	math_util.h	/^V4(f32 X, f32 Y, f32 Z, f32 W)$/;"	f	typeref:typename:v4
 V4	math_util.h	/^V4(v3 V, f32 C)$/;"	f	typeref:typename:v4
+V4FromMat4	math_util.h	/^V4FromMat4(mat4 M, u32 ColIndex)$/;"	f	typeref:typename:internal v4
 VA	mesh.h	/^	u32 VA[2];$/;"	m	struct:model	typeref:typename:u32[2]
 VB	mesh.h	/^	u32 VB[2];$/;"	m	struct:model	typeref:typename:u32[2]
+Value	animation.h	/^	u32 Value;$/;"	m	struct:animation_id	typeref:typename:u32
 Vendor	opengl.cpp	/^	char *Vendor;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
 Version	opengl.cpp	/^	char *Version;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
 VertexCount	mesh.h	/^	u32 VertexCount;$/;"	m	struct:mesh	typeref:typename:u32
@@ -277,6 +355,8 @@ Y	math_util.h	/^	v3 Y;$/;"	m	struct:basis	typeref:typename:v3
 YAxis	math_util.h	/^YAxis()$/;"	f	typeref:typename:v3
 Z	math_util.h	/^	v3 Z;$/;"	m	struct:basis	typeref:typename:v3
 ZAxis	math_util.h	/^ZAxis()$/;"	f	typeref:typename:v3
+ZFar	game.h	/^	f32 ZFar;\/\/ = 100.0f;$/;"	m	struct:game_state	typeref:typename:f32
+ZNear	game.h	/^	f32 ZNear;\/\/ = 0.1f;$/;"	m	struct:game_state	typeref:typename:f32
 __VSCMD_ARG_NO_LOGO	build.bat	/^  set __VSCMD_ARG_NO_LOGO=1$/;"	v
 __anona93c3f220108	math_util.h	/^	{$/;"	s	union:v2
 __anona93c3f220208	math_util.h	/^	{$/;"	s	union:v3
@@ -284,14 +364,21 @@ __anona93c3f220308	math_util.h	/^	{$/;"	s	union:v4
 __anona93c3f220408	math_util.h	/^	{$/;"	s	union:v4
 __anona93c3f22050a	math_util.h	/^		{$/;"	u	struct:v4::__anona93c3f220408
 __anona93c3f220608	math_util.h	/^			{$/;"	s	union:v4::__anona93c3f220408::__anona93c3f22050a
+__anona93c3f220708	math_util.h	/^	{$/;"	s	union:quaternion
+affine_decomposition	math_util.h	/^struct affine_decomposition$/;"	s
+animation	animation.h	/^struct animation$/;"	s
 animation_header	asset.cpp	/^enum animation_header$/;"	g	file:
-animation_info	mesh.h	/^struct animation_info$/;"	s
-animations	mesh.h	/^struct animations$/;"	s
+animation_id	animation.h	/^struct animation_id$/;"	s
+animation_info	animation.h	/^struct animation_info$/;"	s
+animation_player	animation.h	/^struct animation_player$/;"	s
 b32	platform.h	/^typedef s32 b32;$/;"	t	typeref:typename:s32
 basis	math_util.h	/^struct basis$/;"	s
 debug_file	platform.h	/^struct debug_file$/;"	s
+dt	animation.h	/^	f32 dt;$/;"	m	struct:animation_player	typeref:typename:f32
 f32	platform.h	/^typedef float f32;$/;"	t	typeref:typename:float
 f64	platform.h	/^typedef double f64;$/;"	t	typeref:typename:double
+game_memory	platform.h	/^struct game_memory$/;"	s
+game_state	game.h	/^struct game_state$/;"	s
 glAttachShader	win32_main.cpp	/^global_varible gl_attach_shader                 *glAttachShader;$/;"	v	typeref:typename:global_varible gl_attach_shader *
 glBindBuffer	win32_main.cpp	/^global_varible gl_bind_buffer					*glBindBuffer;$/;"	v	typeref:typename:global_varible gl_bind_buffer *
 glBindVertexArray	win32_main.cpp	/^global_varible gl_bind_vertex_array				*glBindVertexArray;$/;"	v	typeref:typename:global_varible gl_bind_vertex_array *
@@ -354,8 +441,9 @@ global_varible	platform.h	/^#define global_varible /;"	d
 internal	platform.h	/^#define internal /;"	d
 joint	mesh.h	/^struct joint$/;"	s
 joint_info	mesh.h	/^struct joint_info$/;"	s
-key_frame	mesh.h	/^struct key_frame$/;"	s
+key_frame	animation.h	/^struct key_frame$/;"	s
 local_persist	platform.h	/^#define local_persist /;"	d
+mat3	math_util.h	/^struct mat3$/;"	s
 mat4	math_util.h	/^struct mat4$/;"	s
 material_spec	mesh.h	/^struct material_spec$/;"	s
 memory_arena	platform.h	/^struct memory_arena$/;"	s
@@ -378,15 +466,17 @@ operator +	math_util.h	/^operator+(v4 A, v4 B)$/;"	f	typeref:typename:v4
 operator +=	math_util.h	/^operator+=(v4 &A, v4 &B)$/;"	f	typeref:typename:void
 operator -	math_util.h	/^operator -(v3 A, v3 B)$/;"	f	typeref:typename:v3
 operator -	math_util.h	/^operator-(v4 A, v4 B)$/;"	f	typeref:typename:v4
-quaternion	math_util.h	/^struct quaternion$/;"	s
+quaternion	math_util.h	/^union quaternion$/;"	u
 s16	platform.h	/^typedef int16_t s16;$/;"	t	typeref:typename:int16_t
 s32	platform.h	/^typedef int32_t s32;$/;"	t	typeref:typename:int32_t
 s64	platform.h	/^typedef int64_t s64;$/;"	t	typeref:typename:int64_t
 s8	platform.h	/^typedef int8_t s8;$/;"	t	typeref:typename:int8_t
+sqt	math_util.h	/^struct sqt$/;"	s
 string	strings.h	/^struct string$/;"	s
 string_array	strings.h	/^struct string_array$/;"	s
 string_list	strings.h	/^struct string_list$/;"	s
 string_node	strings.h	/^struct string_node$/;"	s
+temporary_memory	platform.h	/^struct temporary_memory$/;"	s
 u16	platform.h	/^typedef uint16_t u16;$/;"	t	typeref:typename:uint16_t
 u32	platform.h	/^typedef uint32_t u32;$/;"	t	typeref:typename:uint32_t
 u64	platform.h	/^typedef uint64_t u64;$/;"	t	typeref:typename:uint64_t
@@ -395,9 +485,9 @@ v2	math_util.h	/^union v2$/;"	u
 v3	math_util.h	/^union v3$/;"	u
 v4	math_util.h	/^union v4$/;"	u
 vertex_list	mesh.h	/^struct vertex_list$/;"	s
+w	math_util.h	/^		f32 w;$/;"	m	struct:quaternion::__anona93c3f220708	typeref:typename:f32
 w	math_util.h	/^		f32 w;$/;"	m	struct:v4::__anona93c3f220408	typeref:typename:f32
 w	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32
-w	math_util.h	/^	f32 w;$/;"	m	struct:quaternion	typeref:typename:f32
 wglChoosePixelFormatARB	win32_main.cpp	/^global_varible wgl_choose_pixel_format_arb		*wglChoosePixelFormatARB;$/;"	v	typeref:typename:global_varible wgl_choose_pixel_format_arb *
 wglCreateContextAttribsARB	win32_main.cpp	/^global_varible wgl_create_context_attribs_arb	*wglCreateContextAttribsARB;$/;"	v	typeref:typename:global_varible wgl_create_context_attribs_arb *
 wglGetExtensionsStringEXT	win32_main.cpp	/^global_varible wgl_get_extensions_string_ext	*wglGetExtensionsStringEXT;$/;"	v	typeref:typename:global_varible wgl_get_extensions_string_ext *
@@ -412,14 +502,14 @@ x	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220408::__anona93c
 x	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32
 x	math_util.h	/^		f32 x, y, z;$/;"	m	struct:v3::__anona93c3f220208	typeref:typename:f32
 x	math_util.h	/^		f32 x, y;$/;"	m	struct:v2::__anona93c3f220108	typeref:typename:f32
-x	math_util.h	/^	f32 x;$/;"	m	struct:quaternion	typeref:typename:f32
+x	math_util.h	/^		f32 x;$/;"	m	struct:quaternion::__anona93c3f220708	typeref:typename:f32
 xyz	math_util.h	/^			v3 xyz;$/;"	m	union:v4::__anona93c3f220408::__anona93c3f22050a	typeref:typename:v3
 y	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220408::__anona93c3f22050a::__anona93c3f220608	typeref:typename:f32
 y	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32
 y	math_util.h	/^		f32 x, y, z;$/;"	m	struct:v3::__anona93c3f220208	typeref:typename:f32
 y	math_util.h	/^		f32 x, y;$/;"	m	struct:v2::__anona93c3f220108	typeref:typename:f32
-y	math_util.h	/^	f32 y;$/;"	m	struct:quaternion	typeref:typename:f32
+y	math_util.h	/^		f32 y;$/;"	m	struct:quaternion::__anona93c3f220708	typeref:typename:f32
 z	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220408::__anona93c3f22050a::__anona93c3f220608	typeref:typename:f32
 z	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32
 z	math_util.h	/^		f32 x, y, z;$/;"	m	struct:v3::__anona93c3f220208	typeref:typename:f32
-z	math_util.h	/^	f32 z;$/;"	m	struct:quaternion	typeref:typename:f32
+z	math_util.h	/^		f32 z;$/;"	m	struct:quaternion::__anona93c3f220708	typeref:typename:f32

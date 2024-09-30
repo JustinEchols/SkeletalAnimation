@@ -26,9 +26,12 @@ typedef size_t memory_index;
 #define ArrayCount(A) sizeof(A) / sizeof((A)[0])
 #define Kilobyte(Count) (1024 * Count)
 #define Megabyte(Count) (1024 * Kilobyte(Count))
+#define Gigabyte(Count) (1024 * Megabyte(Count))
 
 #define PI32 3.1415926535897f
+#define SMALL_NUMBER (1.e-8f)
 #define DegreeToRad(Degrees) ((Degrees) * (PI32 / 180.0f))
+
 
 #define COLLADA_ATTRIBUTE_MAX_COUNT 10
 #define COLLADA_NODE_CHILDREN_MAX_COUNT 75
@@ -48,6 +51,14 @@ struct memory_arena
 	u8 *Base;
 	memory_index Size;
 	memory_index Used;
+
+	s32 TempCount;
+};
+
+struct temporary_memory
+{
+	memory_arena *Arena;
+	memory_index Used;
 };
 
 internal void
@@ -56,6 +67,7 @@ ArenaInitialize(memory_arena *Arena, u8 *Base, memory_index Size)
 	Arena->Base = Base;
 	Arena->Size = Size;
 	Arena->Used = 0;
+	Arena->TempCount = 0;
 }
 
 internal void *
@@ -89,6 +101,30 @@ MemoryZero(memory_index Size, void *Src)
 	}
 }
 
+inline temporary_memory
+TemporaryMemoryBegin(memory_arena *Arena)
+{
+	temporary_memory Result;
+
+	Result.Arena = Arena;
+	Result.Used = Arena->Used;
+
+	Arena->TempCount++;
+
+	return(Result);
+}
+
+inline void
+TemporaryMemoryEnd(temporary_memory TempMemory)
+{
+	memory_arena *Arena = TempMemory.Arena;
+	Assert(Arena->Used >= TempMemory.Used);
+	Arena->Used = TempMemory.Used;
+	Assert(Arena->TempCount > 0);
+	Arena->TempCount--;
+}
+
+
 internal u32
 U32ArraySum(u32 *A, u32 Count)
 {
@@ -113,6 +149,19 @@ U64TruncateToU32(u64 U64)
 	u32 Result = (u32)U64;
 	return(Result);
 }
+
+struct game_memory
+{
+	b32 IsInitialized;
+
+	u64 PermanentStorageSize;
+	void *PermanentStorage;
+
+
+	u64 TemporaryStorageSize;
+	void *TemporaryStorage;
+
+};
 
 #define PLATFORM_H
 #endif
