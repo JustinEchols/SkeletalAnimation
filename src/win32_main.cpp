@@ -8,42 +8,14 @@
 
 #include "win32_fileio.cpp"
 #include "win32_opengl.h"
-#include "intrinsics.h"
-#include "math_util.h"
-#include "strings.h"
-#include "strings.cpp"
-#include "mesh.h"
-#include "mesh.cpp"
-#include "animation.h"
-#include "animation.cpp"
-#include "asset.h"
-#include "asset.cpp"
 
 global_varible b32 Win32GlobalRunning;
 global_varible s64 Win32GlobalTicksPerSecond;
 global_varible int Win32GlobalWindowWidth;
 global_varible int Win32GlobalWindowHeight;
 
-char *AnimationFiles[] =
-{
-	"..\\data\\XBot_IdleToSprint.animation",
-	"..\\data\\XBot_Running.animation",
-	"..\\data\\XBot_ActionIdle.animation",
-	"..\\data\\XBot_IdleLookAround.animation",
-	"..\\data\\XBot_RightTurn.animation",
-	"..\\data\\XBot_LeftTurn.animation",
-	"..\\data\\XBot_PushingStart.animation",
-	"..\\data\\XBot_Pushing.animation",
-	"..\\data\\XBot_PushingStop.animation",
-	"..\\data\\XBot_ActionIdleToStandingIdle.animation",
-	"..\\data\\XBot_RunningToTurn.animation",
-	"..\\data\\XBot_RunningChangeDirection.animation",
-	"..\\data\\XBot_FemaleWalk.animation",
-};
-
-#include "opengl.cpp"
-//#include "game.h"
-//#include "game.cpp"
+#include "game.h"
+#include "game.cpp"
 
 LRESULT CALLBACK
 Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
@@ -261,16 +233,15 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
     RegisterClass(&WindowClass);
 
-    HWND Window = CreateWindowExA(
-						0,
-						WindowClass.lpszClassName,
-						"Skeletal Animation",
-						WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-						CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-						0,
-						0,
-						Instance,
-						0);
+    HWND Window = CreateWindowExA(0,
+								  WindowClass.lpszClassName,
+								  "Skeletal Animation",
+								  WS_OVERLAPPEDWINDOW | WS_VISIBLE,
+								  CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
+								  0,
+								  0,
+								  Instance,
+								  0);
 	if(Window)
 	{
 		LARGE_INTEGER TicksPerSecond;
@@ -288,111 +259,16 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		HGLRC OpenGLRC = Win32OpenGLInit(GetDC(Window));
 
-		void *Memory = VirtualAlloc(0, Megabyte(512), MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-
-#if 0
 		game_memory GameMemory = {};
 		GameMemory.IsInitialized = false;
 		GameMemory.PermanentStorageSize = Megabyte(512);
 		GameMemory.PermanentStorage = VirtualAlloc(0, GameMemory.PermanentStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 		GameMemory.TemporaryStorageSize = Megabyte(512);
 		GameMemory.TemporaryStorage = VirtualAlloc(0, GameMemory.TemporaryStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-#endif
 
-		memory_arena Arena_;
-		ArenaInitialize(&Arena_, (u8 *)Memory, Megabyte(256));
-		memory_arena *Arena = &Arena_;
-
-		memory_arena TempArena_;
-		ArenaInitialize(&TempArena_, (u8 *)(Arena->Base + Arena->Size), Megabyte(64));
-		memory_arena *TempArena = &TempArena_;
-
-		model *Models[3] = {};
-
-		Models[0] = PushStruct(Arena, model);
-		*Models[0] = ModelLoad(Arena, "..\\data\\XBot.mesh");
-		Models[0]->Basis.O = V3(0.0f, -80.0f, -400.0f);
-		Models[0]->Basis.X = XAxis();
-		Models[0]->Basis.Y = YAxis();
-		Models[0]->Basis.Z = ZAxis();
-		mat4 Scale = Mat4Identity();
-
-		animation_player AnimationPlayer = {};
-		AnimationPlayerInitialize(&AnimationPlayer, Models[0], Arena);
-
-		animation_info *AnimationInfos = PushArray(Arena, ArrayCount(AnimationFiles), animation_info);
-		animation *Animations = PushArray(Arena, ArrayCount(AnimationFiles), animation);
-		for(u32 AnimIndex = 0; AnimIndex < ArrayCount(AnimationFiles); ++AnimIndex)
-		{
-			animation_info *Info = AnimationInfos + AnimIndex;
-			animation *Animation = Animations + AnimIndex;
-
-			*Info = AnimationLoad(Arena, AnimationFiles[AnimIndex]);
-			if(Info)
-			{
-				Animation->ID.Value = AnimIndex;
-				Animation->Info = Info;
-			}
-		}
-
-		//NOTE(Justin): Transformations
-
-
-		v3 CameraP = V3(0.0f, 5.0f, 3.0f);
-		v3 Direction = V3(0.0f, 0.0f, -1.0f);
-		mat4 CameraTransform = Mat4Camera(CameraP, CameraP + Direction);
-
-		RECT ClientR = {};
-		GetClientRect(Window, &ClientR);
-		Win32GlobalWindowWidth = ClientR.right - ClientR.left;
-		Win32GlobalWindowHeight = ClientR.bottom - ClientR.top;
-
-		f32 FOV = DegreeToRad(45.0f);
-		f32 Aspect = (f32)Win32GlobalWindowWidth / Win32GlobalWindowHeight;
-		f32 ZNear = 0.1f;
-		f32 ZFar = 100.0f;
-		mat4 PerspectiveTransform = Mat4Perspective(FOV, Aspect, ZNear, ZFar);
-
-		glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
-		glEnable(GL_DEPTH_TEST);
-		glDepthFunc(GL_LESS);
-		glFrontFace(GL_CCW);
-		glEnable(GL_CULL_FACE);
-		glCullFace(GL_BACK);
-		glEnable(GL_MULTISAMPLE);
-		glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-
-		//
-		// NOTE(Justin): Opengl info initialization
-		//
-
-#if 1
-		u32 Shaders[2];
-		Shaders[0] = GLProgramCreate(BasicVsSrc, BasicFsSrc);
-		for(u32 ModelIndex = 0; ModelIndex < ArrayCount(Models); ++ModelIndex)
-		{
-			model *Model = Models[ModelIndex];
-			if(Model)
-			{
-				if(Model->HasSkeleton)
-				{
-					OpenGLAllocateAnimatedModel(Models[ModelIndex], Shaders[0]);
-					glUseProgram(Shaders[0]);
-					UniformMatrixSet(Shaders[0], "View", CameraTransform);
-					UniformMatrixSet(Shaders[0], "Projection", PerspectiveTransform);
-					UniformV3Set(Shaders[0], "CameraP", CameraP);
-
-				}
-				else
-				{
-					OpenGLAllocateModel(Models[ModelIndex], Shaders[1]);
-					glUseProgram(Shaders[1]);
-					UniformMatrixSet(Shaders[1], "View", CameraTransform);
-					UniformMatrixSet(Shaders[1], "Projection", PerspectiveTransform);
-				}
-			}
-		}
-#endif
+		game_input GameInput[2] = {};
+		game_input *OldInput = &GameInput[0];
+		game_input *NewInput = &GameInput[1];
 
 		Win32GlobalRunning = true;
 		f32 Angle = 0.0f;
@@ -402,63 +278,70 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		s64 TickCountStart = QueryTickCount.QuadPart;
 		while(Win32GlobalRunning)
 		{
+			NewInput->DtForFrame = TargetSecondsPerFrame;
+			game_keyboard *OldKeyboard = &OldInput->Keyboard;
+			game_keyboard *NewKeyboard = &NewInput->Keyboard;
+			*NewKeyboard = {};
+			for(u32 ButtonIndex = 0; ButtonIndex < ArrayCount(NewKeyboard->Buttons); ++ButtonIndex)
+			{
+				NewKeyboard->Buttons[ButtonIndex].IsDown =
+					OldKeyboard->Buttons[ButtonIndex].IsDown;
+			}
+
 			MSG Message = {};
 			while(PeekMessage(&Message, Window, 0, 0, PM_REMOVE))
 			{
-				TranslateMessage(&Message);
-				DispatchMessage(&Message);
+				//UINT MessageType = Message.message;
+				switch(Message.message)
+				{
+					// NOTE(Justin): ALL THESE CASES ARE BUNDLED TOGETHER!!!! 
+					case WM_SYSKEYDOWN:
+					case WM_SYSKEYUP:
+					case WM_KEYDOWN:
+					case WM_KEYUP:
+					{
+						u32 KeyCode = (u32)Message.wParam;
+						b32 WasDown = ((Message.lParam & (1 << 30)) != 0);
+						b32 IsDown = ((Message.lParam & (1 << 31)) == 0);
+						if(WasDown != IsDown)
+						{
+							if(KeyCode == 'W')
+							{
+								if(NewKeyboard->W.IsDown != IsDown)
+								{
+									NewKeyboard->W.IsDown = IsDown;
+									NewKeyboard->W.HalfTransitionCount++;
+								}
+							}
+							else if(KeyCode == 'A')
+							{
+								NewKeyboard->Buttons[Key_A].IsDown = IsDown;
+								NewKeyboard->Buttons[Key_A].HalfTransitionCount++;
+							}
+							else if(KeyCode == 'S')
+							{
+								NewKeyboard->Buttons[Key_S].IsDown = IsDown;
+								NewKeyboard->Buttons[Key_S].HalfTransitionCount++;
+							}
+							else if(KeyCode == 'D')
+							{
+								NewKeyboard->Buttons[Key_D].IsDown = IsDown;
+								NewKeyboard->Buttons[Key_D].HalfTransitionCount++;
+							}
+						}
+					} break;
+					default:
+					{
+						TranslateMessage(&Message);
+						DispatchMessage(&Message);
+					} break;
+				};
 			}
 
 			HDC WindowDC = GetDC(Window);
 
-			//GameUpdateAndRender(&GameMemory, DtForFrame);
+			GameUpdateAndRender(&GameMemory, NewInput);
 
-#if 1
-			for(u32 ModelIndex = 0; ModelIndex < ArrayCount(Models); ++ModelIndex)
-			{
-				model *Model = Models[ModelIndex];
-				if(Model)
-				{
-					if(Model->HasSkeleton)
-					{
-						AnimationPlay(&AnimationPlayer, &Animations[0], true, false);
-						AnimationPlayerUpdate(&AnimationPlayer, TempArena, DtForFrame);
-						ModelUpdate(&AnimationPlayer);
-					}
-				}
-			}
-
-			//
-			// NOTE(Justin): Render.
-			//
-
-
-			glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
-			Angle += DtForFrame;
-			for(u32 ModelIndex = 0; ModelIndex < ArrayCount(Models); ++ModelIndex)
-			{
-				model *Model = Models[ModelIndex];
-				if(Model)
-				{
-					if(Model->HasSkeleton)
-					{
-						glUseProgram(Shaders[0]);
-						UniformV3Set(Shaders[0], "LightDir", V3(2.0f * cosf(Angle), 0.0f, 2.0f * sinf(Angle)));
-						OpenGLDrawAnimatedModel(Models[ModelIndex], Shaders[0]);
-					}
-					else
-					{
-						glUseProgram(Shaders[1]);
-						f32 A = 20.0f * Angle;
-						mat4 R = Mat4YRotation(DegreeToRad(A));
-						UniformMatrixSet(Shaders[1], "Model", Mat4Translate(Models[ModelIndex]->Basis.O) * R * Scale);
-						OpenGLDrawModel(Models[ModelIndex], Shaders[1]);
-					}
-				}
-			}
-#endif
 			SwapBuffers(WindowDC);
 			ReleaseDC(Window, WindowDC);
 
@@ -467,10 +350,14 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 			DtForFrame = (f32)(((f64)TickCountEnd - (f64)TickCountStart) / (f64)Win32GlobalTicksPerSecond);
 			TickCountStart = TickCountEnd;
+
+			game_input *Temp = NewInput;
+			NewInput = OldInput;
+			OldInput = Temp;
 		}
 	}
 
-    return 0;
+    return(0);
 }
 
 

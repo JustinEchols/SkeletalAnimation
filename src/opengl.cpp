@@ -41,7 +41,7 @@ struct opengl_info
 	char *Extensions;
 };
 
-char *BasicVsSrc = R"(
+char *MainVS = R"(
 #version 430 core
 layout (location = 0) in vec3 P;
 layout (location = 1) in vec3 Normal;
@@ -76,7 +76,7 @@ void main()
 	N = mat3(transpose(inverse(Model))) * Normal;
 })";
 
-char *BasicFsSrc = R"(
+char *MainFS= R"(
 #version 430 core
 
 in vec3 N;
@@ -150,7 +150,7 @@ GLProgramCreate(char *VS, char *FS)
 	if(!VSIsValid)
 	{
 		glGetShaderInfoLog(VSHandle, 512, 0, Buffer);
-		//printf("ERROR: Vertex Shader Compile Failed\n %s", Buffer);
+		OutputDebugStringA("ERROR: Vertex Shader Compile Failed\n");
 	}
 
 	glCompileShader(FSHandle);
@@ -158,7 +158,7 @@ GLProgramCreate(char *VS, char *FS)
 	if(!FSIsValid)
 	{
 		glGetShaderInfoLog(FSHandle, 512, 0, Buffer);
-		//printf("ERROR: Fragment Shader Compile Failed\n %s", Buffer);
+		OutputDebugStringA("ERROR: Fragment Shader Compile Failed\n");
 	}
 
 	u32 Program;
@@ -173,7 +173,7 @@ GLProgramCreate(char *VS, char *FS)
 	if(!ProgramIsValid)
 	{
 		glGetProgramInfoLog(Program, 512, 0, Buffer);
-		//printf("ERROR: Program link failed\n %s", Buffer);
+		OutputDebugStringA("ERROR: Program link failed\n");
 	}
 
 	glDeleteShader(VSHandle);
@@ -278,7 +278,6 @@ OpenGLAllocateModel(model *Model, u32 ShaderProgram)
 	}
 }
 
-
 internal void
 UniformU32Set(u32 ShaderProgram, char *UniformName, u32 U32)
 {
@@ -320,8 +319,6 @@ UniformMatrixSet(u32 ShaderProgram, char *UniformName, mat4 M)
 	glUniformMatrix4fv(UniformLocation, 1, GL_TRUE, &M.E[0][0]);
 }
 
-
-
 internal void
 OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram)
 {
@@ -353,5 +350,3 @@ OpenGLDrawModel(model *Model, u32 ShaderProgram)
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 }
-
-

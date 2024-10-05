@@ -14,36 +14,6 @@ struct joint
 	mat4 Transform;
 };
 
-#if 0
-struct key_frame
-{
-	v3 *Positions;
-	quaternion *Orientations;
-	v3 *Scales;
-};
-
-
-struct animation_info
-{
-	u32 JointCount;
-	u32 KeyFrameCount;
-
-	f32 CurrentTime;
-	f32 Duration;
-	f32 FrameRate;
-
-	string *JointNames;
-	key_frame *KeyFrames;
-};
-
-struct animation
-{
-	u32 Count;
-	u32 Index;
-	animation_info *Info;
-};
-#endif
-
 struct material_spec
 {
 	v4 Ambient;
@@ -73,7 +43,6 @@ struct mesh
 	u32 *Indices;
 	vertex *Vertices;
 
-	string *JointNames;
 	joint *Joints;
 
 	mat4 BindTransform;
@@ -86,6 +55,7 @@ struct mesh
 	u32 TextureHandle;
 };
 
+// NOTE(Justin): Should the model have a basis?
 struct model
 {
 	basis Basis;
@@ -99,8 +69,6 @@ struct model
 	u32 VA[2];
 	u32 VB[2];
 	u32 IBO[2];
-
-	//animations Animations;
 };
 
 #define MESH_H
