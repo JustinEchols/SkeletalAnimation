@@ -23,7 +23,7 @@ PlayerAdd(game_state *GameState)
 	Entity->P = V3(0.0f, -80.0f, -400.0f);
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
-	Entity->Orientation = Quaternion();
+	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
 }
 
 internal void
@@ -33,8 +33,22 @@ CubeAdd(game_state *GameState, v3 P)
 	Entity->P = P;
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
-	Entity->Orientation = Quaternion();
+	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
 }
+
+inline mat4
+EntityTransform(entity *Entity)
+{
+	mat4 Result = Mat4Identity();
+
+	mat4 T = Mat4Translate(Entity->P);
+	mat4 R = QuaternionToMat4(Entity->Orientation);
+	mat4 S = Mat4Scale(1.0f);
+
+	Result = S * R * T;
+	return(Result);
+}
+
 
 internal void
 GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
@@ -58,9 +72,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		CubeAdd(GameState, V3(-50.0f, 0.0f, -100.0f));
 
 		model *Model = GameState->XBot;
-		Model->Basis.X = XAxis();
-		Model->Basis.Y = YAxis();
-		Model->Basis.Z = ZAxis();
 
 		AnimationPlayerInitialize(&GameState->AnimationPlayer, Model, Arena);
 		GameState->AnimationInfos = PushArray(Arena, ArrayCount(AnimationFiles), animation_info);
@@ -92,24 +103,17 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		GameState->Shaders[0] = GLProgramCreate(MainVS, MainFS);
 		u32 Shader = GameState->Shaders[0];
 		u32 Shader1 = GameState->Shaders[1];
-		if(Model)
-		{
-			if(Model->HasSkeleton)
-			{
-				OpenGLAllocateAnimatedModel(Model, Shader);
-				glUseProgram(Shader);
-				UniformMatrixSet(Shader, "View", GameState->CameraTransform);
-				UniformMatrixSet(Shader, "Projection", GameState->PerspectiveTransform);
-				UniformV3Set(Shader, "CameraP", GameState->CameraP);
-			}
-			else
-			{
-				OpenGLAllocateModel(Model, Shader1);
-				glUseProgram(Shader1);
-				UniformMatrixSet(Shader1, "View", GameState->CameraTransform);
-				UniformMatrixSet(Shader1, "Projection", GameState->PerspectiveTransform);
-			}
-		}
+
+		OpenGLAllocateAnimatedModel(GameState->XBot, Shader);
+		glUseProgram(Shader);
+		UniformMatrixSet(Shader, "View", GameState->CameraTransform);
+		UniformMatrixSet(Shader, "Projection", GameState->PerspectiveTransform);
+		UniformV3Set(Shader, "CameraP", GameState->CameraP);
+
+		OpenGLAllocateModel(GameState->Cube, Shader1);
+		glUseProgram(Shader1);
+		UniformMatrixSet(Shader1, "View", GameState->CameraTransform);
+		UniformMatrixSet(Shader1, "Projection", GameState->PerspectiveTransform);
 
 		GameMemory->IsInitialized = true;
 	}
@@ -141,7 +145,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	{
 	}
 
-	f32 DtForFrame = GameInput->DtForFrame;
+	f32 dt = GameInput->DtForFrame;
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
 		entity *Entity = GameState->Entities + EntityIndex;
@@ -149,7 +153,34 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		{
 			case EntityType_Player:
 			{
-				Entity->P += ddP;
+				u32 Flags = 0;
+				if(!Equal(ddP, V3(0.0f)))
+				{
+#if 0
+					ddP = 100.0f * ddP;
+					Entity->ddP = ddP;
+
+					v3 OldP = Entity->P;
+
+					v3 dP = Entity->dP + dt * ddP;
+					v3 P =  Entity->P + 0.5f * dt * dt * ddP + dt * Entity->dP;
+
+
+					//Entity->P += ddP;
+					Entity->P = P;
+					Entity->dP = dP;
+#else
+					Entity->P += ddP;
+#endif
+
+					Flags = AnimationFlags_RemoveLocomotion;
+					AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[2], Flags);
+				}
+				else
+				{
+					Flags = AnimationFlags_Looping;
+					AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[0], Flags);
+				}
 			} break;
 		};
 	}
@@ -177,14 +208,13 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		{
 			case EntityType_Player:
 			{
-				AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[0], true, false);
-				AnimationPlayerUpdate(&GameState->AnimationPlayer, &GameState->TempArena, DtForFrame);
+				AnimationPlayerUpdate(&GameState->AnimationPlayer, &GameState->TempArena, dt);
 				ModelUpdate(&GameState->AnimationPlayer);
+				mat4 Transform = EntityTransform(Entity);
 				model *Model = GameState->XBot;
-				Model->Basis.O = Entity->P;
 				glUseProgram(GameState->Shaders[0]);
 				UniformV3Set(GameState->Shaders[0], "LightDir", V3(2.0f * cosf(Angle), 0.0f, 2.0f * sinf(Angle)));
-				OpenGLDrawAnimatedModel(Model, GameState->Shaders[0]);
+				OpenGLDrawAnimatedModel(Model, GameState->Shaders[0], Transform);
 			} break;
 			case EntityType_Cube:
 			{

@@ -320,10 +320,9 @@ UniformMatrixSet(u32 ShaderProgram, char *UniformName, mat4 M)
 }
 
 internal void
-OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram)
+OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram, mat4 Transform)
 {
-	mat4 M = Mat4Translate(Model->Basis.O) * Mat4(Model->Basis.X, Model->Basis.Y, Model->Basis.Z);
-	UniformMatrixSet(ShaderProgram, "Model", M);
+	UniformMatrixSet(ShaderProgram, "Model", Transform);
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 	{
 		mesh *Mesh = Model->Meshes + MeshIndex;

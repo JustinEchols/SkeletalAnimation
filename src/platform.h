@@ -42,8 +42,6 @@ typedef size_t memory_index;
 (Node)->Next=0)
 #define SLLQueuePush(First,Last,Node) SLLQueuePush_N(First,Last,Node,Next)
 
-
-
 struct debug_file
 {
 	void *Content;

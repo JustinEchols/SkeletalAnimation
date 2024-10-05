@@ -97,29 +97,6 @@ U32ArraySum(u32 *A, u32 Count)
 #include "animation.h"
 #include "asset.h"
 
-char *AnimationFiles[] =
-{
-	"..\\data\\XBot_ActionIdle.animation",
-	"..\\data\\XBot_IdleToSprint.animation",
-	"..\\data\\XBot_Running.animation",
-	"..\\data\\XBot_IdleLookAround.animation",
-	"..\\data\\XBot_RightTurn.animation",
-	"..\\data\\XBot_LeftTurn.animation",
-	"..\\data\\XBot_PushingStart.animation",
-	"..\\data\\XBot_Pushing.animation",
-	"..\\data\\XBot_PushingStop.animation",
-	"..\\data\\XBot_ActionIdleToStandingIdle.animation",
-	"..\\data\\XBot_RunningToTurn.animation",
-	"..\\data\\XBot_RunningChangeDirection.animation",
-	"..\\data\\XBot_FemaleWalk.animation",
-};
-
-enum animation_state
-{
-	AnimationState_Idle = 0x0,
-	AnimationState_Running = 0x1,
-};
-
 enum entity_type
 {
 	EntityType_Invalid,

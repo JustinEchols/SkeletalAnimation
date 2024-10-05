@@ -1,4 +1,17 @@
 
+inline void
+FlagAdd(animation *Animation, u32 Flag)
+{
+	Animation->Flags |= Flag;
+}
+
+inline b32 
+FlagIsSet(animation *Animation, u32 Flag)
+{
+	b32 Result = ((Animation->Flags & Flag) != 0);
+	return(Result);
+}
+
 inline mat4
 JointTransformFromSQT(sqt SQT)
 {
@@ -42,9 +55,9 @@ JointTransformInterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 Jo
 internal void
 AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memory_arena *PermArena)
 {
-	//model *Model = ModelGet(Manager, ID);
 	if(Model)
 	{
+		AnimationPlayer->State = AnimationState_Idle;
 		AnimationPlayer->PermArena = PermArena;
 		AnimationPlayer->AnimationPreviouslyAdded = 0;
 		AnimationPlayer->AnimationPreviouslyFreed = 0;
@@ -53,6 +66,8 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 		AnimationPlayer->dt = 0.0f;
 
 		// TODO(Justin): Skeleton reference...
+		// The blended animations array is an array of key_frames. One key_frame for each mesh. Each key_frame is a blend of all the currently playing
+		// animations for that mesh.
 		AnimationPlayer->BlendedAnimations = PushArray(AnimationPlayer->PermArena, Model->MeshCount, key_frame);
 		for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 		{
@@ -69,7 +84,7 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 }
 
 internal void
-AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation/*animation_id ID*/, b32 Looping, b32 RemoveLocomotion)
+AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, u32 Flags)
 {
 	Assert(AnimationPlayer->IsInitialized);
 	for(animation *Current = AnimationPlayer->AnimationPreviouslyAdded;
@@ -102,9 +117,9 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation/*animat
 	animation *Animation = AnimationPlayer->AnimationPreviouslyFreed;
 	AnimationPlayer->AnimationPreviouslyFreed = Animation->Next;
 
-	Animation->Looping = Looping;
-	Animation->Finished = false;
-	Animation->RemoveLocomotion = RemoveLocomotion;
+	Animation->Flags = 0;
+	FlagAdd(Animation, Flags);
+
 	Animation->CurrentTime = 0.0f;
 	Animation->OldTime = 0.0f;
 	Animation->TimeScale = 1.0f;
@@ -119,7 +134,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation/*animat
 	Animation->Info = NewAnimation->Info;
 	Animation->Next = AnimationPlayer->AnimationPreviouslyAdded;
 	AnimationPlayer->AnimationPreviouslyAdded = Animation;
-	AnimationPlayer->ActiveCount++;
+	AnimationPlayer->PlayingCount++;
 }
 
 internal void
@@ -129,7 +144,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 
 	// Init temporary memory. Used for an array of interpolated poses for each key frame.
 	temporary_memory AnimationMemory = TemporaryMemoryBegin(TempArena);
-	key_frame *BlendedPoses = PushArray(TempArena, AnimationPlayer->ActiveCount, key_frame);
+	key_frame *BlendedPoses = PushArray(TempArena, AnimationPlayer->PlayingCount, key_frame);
 	u32 BlendedPoseIndex = 0;
 
 	for(animation **AnimationPtr = &AnimationPlayer->AnimationPreviouslyAdded; *AnimationPtr;)
@@ -145,9 +160,9 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			if((Animation->OldTime != Animation->CurrentTime) &&
 			   (Animation->CurrentTime >= Info->Duration))
 			{
-				if(!Animation->Looping)
+				if(!FlagIsSet(Animation, AnimationFlags_Looping))
 				{
-					Animation->Finished = true;
+					FlagAdd(Animation, AnimationFlags_Finished);
 					Animation->CurrentTime = Info->Duration;
 				}
 
@@ -159,14 +174,14 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 				Animation->BlendCurrentTime += dt;
 				if((Animation->BlendCurrentTime > Animation->BlendDuration) && (Animation->BlendingOut))
 				{
-					Animation->Finished = true;
+					FlagAdd(Animation, AnimationFlags_Finished);
 				}
 			}
 
 			AnimationPlayer->CurrentTime += dt;
 			AnimationPlayer->dt = dt;
 
-			if(!Animation->Finished)
+			if(!FlagIsSet(Animation, AnimationFlags_Finished))
 			{
 				// Allocate JointCount number of elements for the blended pose.
 				key_frame *BlendedPose = BlendedPoses + BlendedPoseIndex++;
@@ -188,7 +203,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 				key_frame *NextKeyFrame = Info->KeyFrames + (KeyFrameIndex + 1);
 
 				sqt RootTransform;
-				if(Animation->RemoveLocomotion)
+				if(FlagIsSet(Animation, AnimationFlags_RemoveLocomotion))
 				{
 					RootTransform = JointTransformInterpolatedSQT(KeyFrame, t, NextKeyFrame, 0);
 
@@ -221,13 +236,13 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			// TODO(Justin): Stream in animation.
 		}
 
-		if(Animation->Finished)
+		if(FlagIsSet(Animation, AnimationFlags_Finished))
 		{
 			*AnimationPtr = Animation->Next;
 			Animation->Next = AnimationPlayer->AnimationPreviouslyFreed;
 			AnimationPlayer->AnimationPreviouslyFreed = Animation;
 			AnimationPlayer->RetiredCount++;
-			AnimationPlayer->ActiveCount--;
+			AnimationPlayer->PlayingCount--;
 		}
 		else
 		{
@@ -235,7 +250,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		}
 	}
 
-	Assert(BlendedPoseIndex == AnimationPlayer->ActiveCount);
+	Assert(BlendedPoseIndex == AnimationPlayer->PlayingCount);
 
 	// TODO(Justin): Can we not just do this in the loop above???
 	// NOTE(Justin): Update blend coefficients.
@@ -342,9 +357,9 @@ internal void
 ModelUpdate(animation_player *AnimationPlayer)
 {
 	model *Model = AnimationPlayer->Model;
-	animation *Animation = AnimationPlayer->AnimationPreviouslyAdded;
+	//animation *Animation = AnimationPlayer->AnimationPreviouslyAdded;
 	//animation_info *Info = AnimationGet(Manager, Animation->ID);
-	if(Model && Animation)
+	if(Model)
 	{
 		for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 		{
@@ -355,14 +370,15 @@ ModelUpdate(animation_player *AnimationPlayer)
 			mat4 RootJointT = RootJoint.Transform;
 			mat4 RootInvBind = Mesh->InvBindTransforms[0];
 
-			sqt A;
-			A.Position = BlendedAnimation->Positions[0];
-			A.Orientation = BlendedAnimation->Orientations[0];
-			A.Scale = BlendedAnimation->Scales[0];
+			sqt Xform;
+			Xform.Position = BlendedAnimation->Positions[0];
+			Xform.Orientation = BlendedAnimation->Orientations[0];
+			Xform.Scale = BlendedAnimation->Scales[0];
 
-			if(!Equal(A.Position, V3(0.0f)) && !Equal(A.Scale, V3(0.0f)))
+			if(!Equal(Xform.Position, V3(0.0f)) &&
+			   !Equal(Xform.Scale, V3(0.0f)))
 			{
-				RootJointT = JointTransformFromSQT(A);
+				RootJointT = JointTransformFromSQT(Xform);
 			}
 
 			Mesh->JointTransforms[0] = RootJointT;
@@ -373,13 +389,14 @@ ModelUpdate(animation_player *AnimationPlayer)
 				joint *Joint = Mesh->Joints + Index;
 				mat4 JointTransform = Joint->Transform;
 
-				A.Position = BlendedAnimation->Positions[Index];
-				A.Orientation = BlendedAnimation->Orientations[Index];
-				A.Scale = BlendedAnimation->Scales[Index];
+				Xform.Position = BlendedAnimation->Positions[Index];
+				Xform.Orientation = BlendedAnimation->Orientations[Index];
+				Xform.Scale = BlendedAnimation->Scales[Index];
 
-				if(!Equal(A.Position, V3(0.0f)) && !Equal(A.Scale, V3(0.0f)))
+				if(!Equal(Xform.Position, V3(0.0f)) &&
+				   !Equal(Xform.Scale, V3(0.0f)))
 				{
-					JointTransform = JointTransformFromSQT(A);
+					JointTransform = JointTransformFromSQT(Xform);
 				}
 
 				mat4 ParentTransform = Mesh->JointTransforms[Joint->ParentIndex];

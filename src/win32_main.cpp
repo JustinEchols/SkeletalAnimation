@@ -6,7 +6,7 @@
 #include <math.h>
 #include <gl/gl.h>
 
-#include "win32_fileio.cpp"
+#include "win32_file_io.cpp"
 #include "win32_opengl.h"
 
 global_varible b32 Win32GlobalRunning;
