@@ -78,6 +78,10 @@ typedef void 	WINAPI gl_uniform_3fv(GLint location, GLsizei count, const GLfloat
 typedef void 	WINAPI gl_uniform_4fv(GLint location, GLsizei count, const GLfloat *value);
 typedef void 	WINAPI gl_uniform_matrix_4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
 
+#define GL_DEBUG_CALLBACK(Name) void WINAPI Name(GLenum Source, GLenum Type, GLuint ID, GLenum Severity, GLsizei Length, const GLchar *Message, const void *UserParam)
+typedef GL_DEBUG_CALLBACK(GLDEBUGPROC);
+typedef void WINAPI gl_debug_message_callback(GLDEBUGPROC *callback, const void *userParam);
+
 global_varible gl_attach_shader                 *glAttachShader;
 global_varible gl_compile_shader                *glCompileShader;
 global_varible gl_create_program                *glCreateProgram;
@@ -112,11 +116,11 @@ global_varible gl_uniform_3fv					*glUniform3fv;
 global_varible gl_uniform_4fv					*glUniform4fv;
 global_varible gl_uniform_matrix_4fv			*glUniformMatrix4fv;
 
-
 global_varible wgl_create_context_attribs_arb	*wglCreateContextAttribsARB;
 global_varible wgl_choose_pixel_format_arb		*wglChoosePixelFormatARB;
 global_varible wgl_swap_interval_ext			*wglSwapIntervalEXT;
 global_varible wgl_get_extensions_string_ext	*wglGetExtensionsStringEXT;
 
+global_varible gl_debug_message_callback		*glDebugMessageCallback;
 #define WIN32_OPENGL_H
 #endif

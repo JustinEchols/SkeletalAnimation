@@ -41,14 +41,14 @@ EntityTransform(entity *Entity)
 {
 	mat4 Result = Mat4Identity();
 
-	mat4 T = Mat4Translate(Entity->P);
 	mat4 R = QuaternionToMat4(Entity->Orientation);
-	mat4 S = Mat4Scale(1.0f);
+	Result = Mat4(Mat4ColumnGet(R, 0),
+				  Mat4ColumnGet(R, 1),
+				  Mat4ColumnGet(R, 2),
+				  Entity->P);
 
-	Result = S * R * T;
 	return(Result);
 }
-
 
 internal void
 GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
@@ -76,6 +76,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		AnimationPlayerInitialize(&GameState->AnimationPlayer, Model, Arena);
 		GameState->AnimationInfos = PushArray(Arena, ArrayCount(AnimationFiles), animation_info);
 		GameState->Animations = PushArray(Arena, ArrayCount(AnimationFiles), animation);
+#if 1
 		for(u32 AnimIndex = 0; AnimIndex < ArrayCount(AnimationFiles); ++AnimIndex)
 		{
 			GameState->AnimationInfos[AnimIndex] = AnimationLoad(Arena, AnimationFiles[AnimIndex]);
@@ -89,6 +90,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				Animation->Info = Info;
 			}
 		}
+#endif
 
 		GameState->CameraP = V3(0.0f, 5.0f, 3.0f);
 		GameState->Direction = V3(0.0f, 0.0f, -1.0f);
@@ -156,8 +158,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				u32 Flags = 0;
 				if(!Equal(ddP, V3(0.0f)))
 				{
-#if 0
-					ddP = 100.0f * ddP;
+					ddP = 1.0f * ddP;
 					Entity->ddP = ddP;
 
 					v3 OldP = Entity->P;
@@ -165,13 +166,15 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 					v3 dP = Entity->dP + dt * ddP;
 					v3 P =  Entity->P + 0.5f * dt * dt * ddP + dt * Entity->dP;
 
-
-					//Entity->P += ddP;
 					Entity->P = P;
 					Entity->dP = dP;
-#else
-					Entity->P += ddP;
-#endif
+
+					quaternion Orientation = Entity->Orientation;
+					v3 FacingDirection = Entity->ddP;
+					FacingDirection.z *= -1.0f;
+					f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
+					quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
+					Entity->Orientation = RotateTowards(Orientation, Target, dt, 100.0f);
 
 					Flags = AnimationFlags_RemoveLocomotion;
 					AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[2], Flags);
@@ -181,7 +184,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 					Flags = AnimationFlags_Looping;
 					AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[0], Flags);
 				}
-			} break;
+			}
 		};
 	}
 
@@ -208,29 +211,20 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		{
 			case EntityType_Player:
 			{
+				glUseProgram(GameState->Shaders[0]);
+				UniformV3Set(GameState->Shaders[0], "Ambient", V3(0.1f));
+				UniformV3Set(GameState->Shaders[0], "CameraP", GameState->CameraP);
 				AnimationPlayerUpdate(&GameState->AnimationPlayer, &GameState->TempArena, dt);
 				ModelUpdate(&GameState->AnimationPlayer);
 				mat4 Transform = EntityTransform(Entity);
 				model *Model = GameState->XBot;
-				glUseProgram(GameState->Shaders[0]);
-				UniformV3Set(GameState->Shaders[0], "LightDir", V3(2.0f * cosf(Angle), 0.0f, 2.0f * sinf(Angle)));
 				OpenGLDrawAnimatedModel(Model, GameState->Shaders[0], Transform);
 			} break;
 			case EntityType_Cube:
 			{
-#if 0
-				model *Model = GameState->XBot;
-				Model->Basis.O = Entity->P;
-				Model->Basis.X = XAxis();
-				Model->Basis.Y = YAxis();
-				Model->Basis.Z = ZAxis();
-
-				glUseProgram(GameState->Shaders[1]);
-				mat4 R = Mat4YRotation(DegreeToRad(Angle));
-				mat4 Scale = Mat4Identity();
-				UniformMatrixSet(GameState->Shaders[0], "Model", Mat4Translate(Model->Basis.O) * R * Scale);
-				OpenGLDrawModel(Model, GameState->Shaders[0]);
-#endif
+				//model *Model = GameState->XBot;
+				//mat4 Transform = EntityTransform(Entity);
+				//OpenGLDrawModel(Model, GameState->Shaders[0], Transform);
 			} break;
 		};
 	}

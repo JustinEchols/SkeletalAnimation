@@ -91,6 +91,7 @@ struct game_input
 {
 	game_keyboard Keyboard;
 	f32 DtForFrame;
+	//v3 MouseP;
 };
 
 struct game_memory

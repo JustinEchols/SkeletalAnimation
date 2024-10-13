@@ -17,6 +17,10 @@ union v3
 	{
 		f32 x, y, z;
 	};
+	struct
+	{
+		f32 pitch, yaw, roll;
+	};
 	f32 E[3];
 };
 
@@ -1012,6 +1016,65 @@ LerpShortest(quaternion A, f32 t, quaternion B)
 
 	return(Lerp(A, t, B));
 }
+
+inline v3
+DirectionToEuler(v3 V)
+{
+	v3 Result;
+
+    Result.pitch = ATan2(V.yaw, Sqrt(V.roll*V.roll + V.pitch*V.pitch));
+    Result.yaw   = ATan2(V.pitch, V.roll);
+    Result.roll  = 0.0f;
+
+	return(Result);
+
+}
+
+// NOTE(Justin): Angular distance between two quaternions
+inline f32
+AngleBetween(quaternion A, quaternion B)
+{
+	f32 Inner = Dot(A, B);
+	f32 Theta = Clamp(-1.0f, ((2.0f * Inner * Inner) - 1.0f), 1.0f);
+	f32 Result = ACos(Theta);
+
+	return(Result);
+}
+
+inline b32
+Equal(quaternion A, quaternion B, f32 Tolerance = SMALL_NUMBER)
+{
+	b32 Result = ((AbsVal(A.x - B.x) <= Tolerance) &&
+				  (AbsVal(A.y - B.y) <= Tolerance) &&
+				  (AbsVal(A.z - B.z) <= Tolerance) &&
+				  (AbsVal(A.w - B.w) <= Tolerance));
+
+	return(Result);
+}
+
+inline quaternion
+RotateTowards(quaternion Current, quaternion Target, f32 dt, f32 AngularSpeed)
+{
+	if(AngularSpeed <= 0.0f)
+	{
+		return(Target);
+	}
+
+	if(Equal(Current, Target))
+	{
+		return(Target);
+	}
+
+	f32 dSpeed = Clamp01(dt * AngularSpeed);
+	f32 dTheta = Max(AngleBetween(Current, Target), SMALL_NUMBER);
+	f32 tAlpha = Clamp01(dSpeed / dTheta);
+	
+	// TODO(Justin): Slerp?
+	quaternion Result = LerpShortest(Current, tAlpha, Target);
+
+	return(Result);
+}
+
 
 #define MATH_UTIL_H 
 #endif

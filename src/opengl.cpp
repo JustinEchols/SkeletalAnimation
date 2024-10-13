@@ -56,33 +56,40 @@ uniform mat4 Projection;
 #define MAX_JOINT_COUNT 70
 uniform mat4 Transforms[MAX_JOINT_COUNT];
 
-out vec3 N;
+out vec3 SurfaceP;
+out vec3 SurfaceN;
 
 void main()
 {
 	vec4 Pos = vec4(0.0);
+	vec4 Norm = vec4(0.0);
 	for(uint i = 0; i < 3; ++i)
 	{
 		if(i < JointCount)
 		{
-			uint JIndex = JointTransformIndices[i];
-			float W = Weights[i];
-			mat4 T = Transforms[JIndex];
-			Pos += W * T * vec4(P, 1.0);
+			uint JointIndex = JointTransformIndices[i];
+			float Weight = Weights[i];
+			mat4 Xform = Transforms[JointIndex];
+			Pos += Weight * Xform * vec4(P, 1.0);
+			Norm += Weight * Xform * vec4(Normal, 0.0);
 		}
 	}
 
 	gl_Position = Projection * View * Model * Pos;
-	N = mat3(transpose(inverse(Model))) * Normal;
+	SurfaceP = vec3(Model * Pos);
+	SurfaceN = vec3(transpose(inverse(Model)) * Norm);
 })";
 
 char *MainFS= R"(
 #version 430 core
 
-in vec3 N;
+in vec3 SurfaceP;
+in vec3 SurfaceN;
 
+uniform vec3 Ambient;
 uniform vec4 Diffuse;
 uniform vec4 Specular;
+
 uniform float Shininess;
 
 uniform vec3 LightDir;
@@ -92,34 +99,28 @@ out vec4 Result;
 void main()
 {
 	vec3 LightColor = vec3(1.0);
-	vec3 Normal = normalize(N);
-	bool FacingTowards = dot(Normal, LightDir) > 0.05;
+	vec3 SurfaceToCamera = CameraP - SurfaceP;
 
-	vec3 Diff = vec3(0.0);
-	vec3 Spec = vec3(0.0);
-	if(FacingTowards)
-	{
-		float D = max(dot(Normal, LightDir), 0.0);
-		Diff = LightColor * D * Diffuse.xyz;
+	vec3 Normal = normalize(SurfaceN);
+	vec3 SurfaceToCameraNormalized = normalize(SurfaceToCamera);
+	vec3 ReflectedDirection = reflect(Normal, SurfaceToCameraNormalized);
 
-		vec3 ViewDir = normalize(CameraP);
-		vec3 R = reflect(LightDir, Normal);
-		float S = pow(max(dot(ViewDir, R), 0.0), Shininess);
-		Spec = LightColor * S * Specular.xyz;
-	}
+	float D = max(dot(-LightDir, Normal), 0.0);
+	float S = pow(max(dot(ReflectedDirection, Normal), 0.0), Shininess);
 
-	Result = vec4(Diff + Spec, 1.0);
+	vec3 Diff = D * LightColor * Diffuse.xyz;
+	vec3 Spec = S * LightColor * Specular.xyz;
+
+	Result = vec4(Ambient + Diff + Spec, 1.0);
 })";
 
 
-#if 0
-internal void GLAPIENTRY
-GLDebugCallback(GLenum Source, GLenum Type, GLuint ID, GLenum Severity, GLsizei Length,
-		const GLchar *Message, const void *UserParam)
+
+internal void 
+GLDebugCallback(GLenum Source, GLenum Type, GLuint ID, GLenum Severity, GLsizei Length, const GLchar *Message, const void *UserParam)
 {
 	printf("OpenGL Debug Callback: %s\n", Message);
 }
-#endif
 
 internal void
 GLIBOInit(u32 *IBO, u32 *Indices, u32 IndicesCount)
@@ -322,6 +323,8 @@ UniformMatrixSet(u32 ShaderProgram, char *UniformName, mat4 M)
 internal void
 OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram, mat4 Transform)
 {
+	glUseProgram(ShaderProgram);
+	UniformV3Set(ShaderProgram, "LightDir", V3(1.0f, 0.0f, 0.0f));
 	UniformMatrixSet(ShaderProgram, "Model", Transform);
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 	{
@@ -337,8 +340,10 @@ OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram, mat4 Transform)
 }
 
 internal void
-OpenGLDrawModel(model *Model, u32 ShaderProgram)
+OpenGLDrawModel(model *Model, u32 ShaderProgram, mat4 Transform)
 {
+	glUseProgram(ShaderProgram);
+	UniformMatrixSet(ShaderProgram, "Model", Transform);
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 	{
 		mesh *Mesh = Model->Meshes + MeshIndex;

@@ -21,5 +21,34 @@ AbsVal(f32 X)
 	return(Result);
 }
 
+inline f32
+Sqrt(f32 X)
+{
+	f32 Result = sqrtf(X);
+	return(Result);
+}
+
+inline f32
+ATan2(f32 Y, f32 X)
+{
+	f32 Result = (f32)atan2(Y, X);
+	return(Result);
+}
+
+inline f32
+ACos(f32 X)
+{
+	f32 Result = (f32)acos(X);
+	return(Result);
+
+}
+
+inline f32
+Max(f32 X, f32 Y)
+{
+	f32 Result = max(X, Y);
+	return(Result);
+}
+
 #define INTRINSICS_H
 #endif

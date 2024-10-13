@@ -132,6 +132,13 @@ StringsAreSame(u8 *S1, char *S2)
 }
 
 internal b32
+StringsAreSame(char *S1, u8 *S2)
+{
+	b32 Result = StringsAreSame(S2, S1);
+	return(Result);
+}
+
+internal b32
 SubStringExists(char *HayStack, char *Needle)
 {
 	b32 Result = false;

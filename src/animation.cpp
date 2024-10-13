@@ -192,7 +192,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 				f32 tNormalized = Animation->CurrentTime / Info->Duration;
 				u32 LastKeyFrameIndex = Info->KeyFrameCount - 1;
 				u32 KeyFrameIndex = F32TruncateToS32(tNormalized * (f32)LastKeyFrameIndex);
-				//Assert(KeyFrameIndex < LastKeyFrameIndex);
 
 				f32 DtPerKeyFrame = Info->Duration / (f32)LastKeyFrameIndex;
 				f32 KeyFrameTime = KeyFrameIndex * DtPerKeyFrame;
@@ -384,14 +383,14 @@ ModelUpdate(animation_player *AnimationPlayer)
 			Mesh->JointTransforms[0] = RootJointT;
 			Mesh->ModelSpaceTransforms[0] = RootJointT * RootInvBind;
 
-			for(u32 Index = 1; Index < Mesh->JointCount; ++Index)
+			for(u32 JointIndex = 1; JointIndex < Mesh->JointCount; ++JointIndex)
 			{
-				joint *Joint = Mesh->Joints + Index;
+				joint *Joint = Mesh->Joints + JointIndex;
 				mat4 JointTransform = Joint->Transform;
 
-				Xform.Position = BlendedAnimation->Positions[Index];
-				Xform.Orientation = BlendedAnimation->Orientations[Index];
-				Xform.Scale = BlendedAnimation->Scales[Index];
+				Xform.Position = BlendedAnimation->Positions[JointIndex];
+				Xform.Orientation = BlendedAnimation->Orientations[JointIndex];
+				Xform.Scale = BlendedAnimation->Scales[JointIndex];
 
 				if(!Equal(Xform.Position, V3(0.0f)) &&
 				   !Equal(Xform.Scale, V3(0.0f)))
@@ -401,10 +400,10 @@ ModelUpdate(animation_player *AnimationPlayer)
 
 				mat4 ParentTransform = Mesh->JointTransforms[Joint->ParentIndex];
 				JointTransform = ParentTransform * JointTransform;
-				mat4 InvBind = Mesh->InvBindTransforms[Index];
+				mat4 InvBind = Mesh->InvBindTransforms[JointIndex];
 
-				Mesh->JointTransforms[Index] = JointTransform;
-				Mesh->ModelSpaceTransforms[Index] = JointTransform * InvBind;
+				Mesh->JointTransforms[JointIndex] = JointTransform;
+				Mesh->ModelSpaceTransforms[JointIndex] = JointTransform * InvBind;
 			}
 		}
 	}

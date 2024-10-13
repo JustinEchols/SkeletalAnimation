@@ -64,16 +64,6 @@ struct asset_animation_header
 	u64 OffsetToNames;
 	u64 OffsetToAnimationInfo;
 };
-
-struct asset
-{
-	union
-	{
-		asset_mesh_info MeshInfo;
-		asset_animation_info AnimationInfo;
-	};
-};
-
 #pragma pack(pop)
 
 #define ASSET_H

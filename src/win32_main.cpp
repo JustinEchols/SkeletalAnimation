@@ -211,6 +211,7 @@ Win32OpenGLInit(HDC WindowDC)
 		glUniform3fv 				= (gl_uniform_3fv *)wglGetProcAddress("glUniform3fv");
 		glUniform4fv 				= (gl_uniform_4fv *)wglGetProcAddress("glUniform4fv");
 		glUniformMatrix4fv 			= (gl_uniform_matrix_4fv *)wglGetProcAddress("glUniformMatrix4fv");
+		glDebugMessageCallback		= (gl_debug_message_callback *)wglGetProcAddress("glDebugMessageCallback");
 	}
 
 	if(wglSwapIntervalEXT)
@@ -271,7 +272,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		game_input *NewInput = &GameInput[1];
 
 		Win32GlobalRunning = true;
-		f32 Angle = 0.0f;
 		f32 DtForFrame = 0.0f;
 		LARGE_INTEGER QueryTickCount;
 		QueryPerformanceCounter(&QueryTickCount);
