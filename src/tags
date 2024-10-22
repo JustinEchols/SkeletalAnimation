@@ -9,37 +9,42 @@
 !_TAG_PROGRAM_NAME	Universal Ctags	/Derived from Exuberant Ctags/
 !_TAG_PROGRAM_URL	https://ctags.io/	/official site/
 !_TAG_PROGRAM_VERSION	5.9.0	/80ee839/
+A	platform.h	/^			game_button A;$/;"	m	struct:game_keyboard::__anon7b296420020a::__anon7b2964200308	typeref:typename:game_button
+ACos	intrinsics.h	/^ACos(f32 X)$/;"	f	typeref:typename:f32
+ANIMATION_FILE_MAGIC_NUMBER	asset.h	/^#define ANIMATION_FILE_MAGIC_NUMBER /;"	d
+ANIMATION_FILE_VERSION	asset.h	/^#define ANIMATION_FILE_VERSION /;"	d
 ANIMATION_H	animation.h	/^#define ANIMATION_H$/;"	d
+ASSET_H	asset.h	/^#define ASSET_H$/;"	d
+ATan2	intrinsics.h	/^ATan2(f32 Y, f32 X)$/;"	f	typeref:typename:f32
 AbsVal	intrinsics.h	/^AbsVal(f32 X)$/;"	f	typeref:typename:f32
-ActiveCount	animation.h	/^	u32 ActiveCount;$/;"	m	struct:animation_player	typeref:typename:u32
+Advance	font.h	/^	f32 Advance[128];$/;"	m	struct:font	typeref:typename:f32[128]
 Ambient	mesh.h	/^	v4 Ambient;$/;"	m	struct:material_spec	typeref:typename:v4
 Angle	game.h	/^	f32 Angle;$/;"	m	struct:game_state	typeref:typename:f32
-AnimationFiles	game.cpp	/^char *AnimationFiles[] =$/;"	v	typeref:typename:char * []
-AnimationHeaderGet	asset.cpp	/^AnimationHeaderGet(u8 *Buff)$/;"	f	typeref:typename:animation_header
-AnimationHeader_Invalid	asset.cpp	/^	AnimationHeader_Invalid,$/;"	e	enum:animation_header	file:
-AnimationHeader_Joints	asset.cpp	/^	AnimationHeader_Joints,$/;"	e	enum:animation_header	file:
-AnimationHeader_KeyFrame	asset.cpp	/^	AnimationHeader_KeyFrame,$/;"	e	enum:animation_header	file:
-AnimationHeader_Times	asset.cpp	/^	AnimationHeader_Times,$/;"	e	enum:animation_header	file:
-AnimationInfoLoad	asset.cpp	/^AnimationInfoLoad(memory_arena *Arena, char *FileName)$/;"	f	typeref:typename:internal animation_info
+AngleBetween	math_util.h	/^AngleBetween(quaternion A, quaternion B)$/;"	f	typeref:typename:f32
+AnimationFiles	animation.h	/^char *AnimationFiles[] =$/;"	v	typeref:typename:char * []
+AnimationFlags_Finished	animation.h	/^	AnimationFlags_Finished = (1 << 3),$/;"	e	enum:animation_flags
+AnimationFlags_Looping	animation.h	/^	AnimationFlags_Looping = (1 << 1),$/;"	e	enum:animation_flags
+AnimationFlags_RemoveLocomotion	animation.h	/^	AnimationFlags_RemoveLocomotion = (1 << 2),$/;"	e	enum:animation_flags
 AnimationInfos	game.h	/^	animation_info *AnimationInfos;$/;"	m	struct:game_state	typeref:typename:animation_info *
-AnimationPlay	animation.cpp	/^AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation\/*animation_id ID*\/, b/;"	f	typeref:typename:internal void
+AnimationLoad	asset.cpp	/^AnimationLoad(memory_arena *Arena, char *FileName)$/;"	f	typeref:typename:internal animation_info
+AnimationPlay	animation.cpp	/^AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, u32 Flags)$/;"	f	typeref:typename:internal void
 AnimationPlayer	game.h	/^	animation_player AnimationPlayer;$/;"	m	struct:game_state	typeref:typename:animation_player
 AnimationPlayerInitialize	animation.cpp	/^AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memory_arena *PermAre/;"	f	typeref:typename:internal void
 AnimationPlayerUpdate	animation.cpp	/^AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena, f32 dt)$/;"	f	typeref:typename:internal void
 AnimationPreviouslyAdded	animation.h	/^	animation *AnimationPreviouslyAdded;$/;"	m	struct:animation_player	typeref:typename:animation *
 AnimationPreviouslyFreed	animation.h	/^	animation *AnimationPreviouslyFreed;$/;"	m	struct:animation_player	typeref:typename:animation *
+AnimationState_Idle	animation.h	/^	AnimationState_Idle = 0x0,$/;"	e	enum:animation_state
+AnimationState_Running	animation.h	/^	AnimationState_Running = 0x1,$/;"	e	enum:animation_state
 Animations	game.h	/^	animation *Animations;$/;"	m	struct:game_state	typeref:typename:animation *
+Arena	game.h	/^	memory_arena *Arena;$/;"	m	struct:temporary_memory	typeref:typename:memory_arena *
 Arena	game.h	/^	memory_arena Arena;$/;"	m	struct:game_state	typeref:typename:memory_arena
-Arena	platform.h	/^	memory_arena *Arena;$/;"	m	struct:temporary_memory	typeref:typename:memory_arena *
-ArenaInitialize	platform.h	/^ArenaInitialize(memory_arena *Arena, u8 *Base, memory_index Size)$/;"	f	typeref:typename:internal void
+ArenaInitialize	game.h	/^ArenaInitialize(memory_arena *Arena, u8 *Base, memory_index Size)$/;"	f	typeref:typename:internal void
 ArrayCopy	platform.h	/^#define ArrayCopy(/;"	d
 ArrayCount	platform.h	/^#define ArrayCount(/;"	d
-Aspect	game.h	/^	f32 Aspect;\/\/ = (f32)Win32GlobalWindowWidth \/ Win32GlobalWindowHeight;$/;"	m	struct:game_state	typeref:typename:f32
+Aspect	game.h	/^	f32 Aspect;$/;"	m	struct:game_state	typeref:typename:f32
 Assert	platform.h	/^#define Assert(/;"	d
-Base	platform.h	/^	u8 *Base;$/;"	m	struct:memory_arena	typeref:typename:u8 *
-BasicFsSrc	opengl.cpp	/^char *BasicFsSrc = R"($/;"	v	typeref:typename:char *
-BasicVsSrc	opengl.cpp	/^char *BasicVsSrc = R"($/;"	v	typeref:typename:char *
-Basis	mesh.h	/^	basis Basis;$/;"	m	struct:model	typeref:typename:basis
+Base	game.h	/^	u8 *Base;$/;"	m	struct:memory_arena	typeref:typename:u8 *
+BaseLineToNextTop	font.h	/^	f32 BaseLineToNextTop;$/;"	m	struct:font	typeref:typename:f32
 BindTransform	mesh.h	/^	mat4 BindTransform;$/;"	m	struct:mesh	typeref:typename:mat4
 BlendCurrentTime	animation.h	/^	f32 BlendCurrentTime;$/;"	m	struct:animation	typeref:typename:f32
 BlendDuration	animation.h	/^	f32 BlendDuration;$/;"	m	struct:animation	typeref:typename:f32
@@ -48,15 +53,15 @@ BlendedAnimations	animation.h	/^	key_frame *BlendedAnimations;$/;"	m	struct:anim
 BlendingIn	animation.h	/^	b32 BlendingIn;$/;"	m	struct:animation	typeref:typename:b32
 BlendingOut	animation.h	/^	b32 BlendingOut;$/;"	m	struct:animation	typeref:typename:b32
 BufferNextWord	strings.cpp	/^BufferNextWord(u8 **C, u8 *Buff)$/;"	f	typeref:typename:void
-COLLADA_ATTRIBUTE_MAX_COUNT	platform.h	/^#define COLLADA_ATTRIBUTE_MAX_COUNT /;"	d
-COLLADA_NODE_CHILDREN_MAX_COUNT	platform.h	/^#define COLLADA_NODE_CHILDREN_MAX_COUNT /;"	d
+Buttons	platform.h	/^		game_button Buttons[Key_Count];$/;"	m	union:game_keyboard::__anon7b296420020a	typeref:typename:game_button[]
 CameraP	game.h	/^	v3 CameraP;$/;"	m	struct:game_state	typeref:typename:v3
 CameraTransform	game.h	/^	mat4 CameraTransform;$/;"	m	struct:game_state	typeref:typename:mat4
+ChannelCount	texture.h	/^	s32 ChannelCount;$/;"	m	struct:texture	typeref:typename:s32
 Clamp	math_util.h	/^Clamp(f32 Min, f32 X, f32 Max)$/;"	f	typeref:typename:f32
 Clamp	math_util.h	/^Clamp(u32 Min, u32 X, u32 Max)$/;"	f	typeref:typename:u32
 Clamp01	math_util.h	/^Clamp01(f32 X)$/;"	f	typeref:typename:f32
 CommonCompilerFlags	build.bat	/^set CommonCompilerFlags=-Od -MTd -fp:fast -W4 -wd4201 -wd4100 -wd4505 -wd4189 -Oi -Z7$/;"	v
-CommonLinkerFlags	build.bat	/^set CommonLinkerFlags=-incremental:no user32.lib gdi32.lib opengl32.lib$/;"	v
+CommonLinkerFlags	build.bat	/^set CommonLinkerFlags=-incremental:no user32.lib gdi32.lib opengl32.lib kernel32.lib$/;"	v
 Conjugate	math_util.h	/^Conjugate(quaternion Q)$/;"	f	typeref:typename:quaternion
 Content	platform.h	/^	void *Content;$/;"	m	struct:debug_file	typeref:typename:void *
 Count	mesh.h	/^	u32 Count;$/;"	m	struct:joint_info	typeref:typename:u32
@@ -64,22 +69,29 @@ Count	strings.h	/^	u32 Count;$/;"	m	struct:string_array	typeref:typename:u32
 Count	strings.h	/^	u64 Count;$/;"	m	struct:string_list	typeref:typename:u64
 Cross	math_util.h	/^Cross(v3 A, v3 B)$/;"	f	typeref:typename:v3
 Cross	math_util.h	/^Cross(v4 A, v4 B)$/;"	f	typeref:typename:v4
+Cube	game.h	/^	model *Cube;$/;"	m	struct:game_state	typeref:typename:model *
+CubeAdd	game.cpp	/^CubeAdd(game_state *GameState, v3 P)$/;"	f	typeref:typename:internal void
 CurrentTime	animation.h	/^	f32 CurrentTime; $/;"	m	struct:animation	typeref:typename:f32
 CurrentTime	animation.h	/^	f32 CurrentTime;$/;"	m	struct:animation_info	typeref:typename:f32
 CurrentTime	animation.h	/^	f32 CurrentTime;$/;"	m	struct:animation_player	typeref:typename:f32
+CurrentTime	asset.h	/^	f32 CurrentTime;$/;"	m	struct:asset_animation_header	typeref:typename:f32
 Cx	math_util.h	/^	f32 Cx;$/;"	m	struct:affine_decomposition	typeref:typename:f32
 Cy	math_util.h	/^	f32 Cy;$/;"	m	struct:affine_decomposition	typeref:typename:f32
 Cz	math_util.h	/^	f32 Cz;$/;"	m	struct:affine_decomposition	typeref:typename:f32
+D	platform.h	/^			game_button D;$/;"	m	struct:game_keyboard::__anon7b296420020a::__anon7b2964200308	typeref:typename:game_button
 Data	strings.h	/^	u8 *Data;$/;"	m	struct:string	typeref:typename:u8 *
 DegreeToRad	platform.h	/^#define DegreeToRad(/;"	d
 Diffuse	mesh.h	/^	v4 Diffuse;$/;"	m	struct:material_spec	typeref:typename:v4
+Dim	font.h	/^	v2 Dim;$/;"	m	struct:glyph_box	typeref:typename:v2
 Direction	game.h	/^	v3 Direction;$/;"	m	struct:game_state	typeref:typename:v3
-DoneProcessingMesh	asset.cpp	/^DoneProcessingMesh(string_node *Line)$/;"	f	typeref:typename:internal b32
+DirectionToEuler	math_util.h	/^DirectionToEuler(v3 V)$/;"	f	typeref:typename:v3
 Dot	math_util.h	/^Dot(quaternion Q1, quaternion Q2)$/;"	f	typeref:typename:f32
 Dot	math_util.h	/^Dot(v3 A, v3 B)$/;"	f	typeref:typename:f32
 Dot	math_util.h	/^Dot(v4 A, v4 B)$/;"	f	typeref:typename:f32
+DtForFrame	platform.h	/^	f32 DtForFrame;$/;"	m	struct:game_input	typeref:typename:f32
 Duration	animation.h	/^	f32 Duration;$/;"	m	struct:animation	typeref:typename:f32
 Duration	animation.h	/^	f32 Duration;$/;"	m	struct:animation_info	typeref:typename:f32
+Duration	asset.h	/^	f32 Duration;$/;"	m	struct:asset_animation_header	typeref:typename:f32
 E	math_util.h	/^	f32 E[2];$/;"	m	union:v2	typeref:typename:f32[2]
 E	math_util.h	/^	f32 E[3];$/;"	m	union:v3	typeref:typename:f32[3]
 E	math_util.h	/^	f32 E[3][3];$/;"	m	struct:mat3	typeref:typename:f32[3][3]
@@ -87,70 +99,146 @@ E	math_util.h	/^	f32 E[4];$/;"	m	union:quaternion	typeref:typename:f32[4]
 E	math_util.h	/^	f32 E[4];$/;"	m	union:v4	typeref:typename:f32[4]
 E	math_util.h	/^	f32 E[4][4];$/;"	m	struct:mat4	typeref:typename:f32[4][4]
 EatSpaces	strings.cpp	/^EatSpaces(u8 **Buff)$/;"	f	typeref:typename:void
-Equal	math_util.h	/^Equal(v3 A, v3 B, f32 Tolerance = SMALL_NUMBER)$/;"	f	typeref:typename:b32
+Entities	game.h	/^	entity Entities[4096];$/;"	m	struct:game_state	typeref:typename:entity[4096]
+EntityAdd	game.cpp	/^EntityAdd(game_state *GameState, entity_type Type)$/;"	f	typeref:typename:internal entity *
+EntityCount	game.h	/^	u32 EntityCount;$/;"	m	struct:game_state	typeref:typename:u32
+EntityTransform	game.cpp	/^EntityTransform(entity *Entity, f32 Scale = 1.0f)$/;"	f	typeref:typename:mat4
+EntityType_Cube	game.h	/^	EntityType_Cube,$/;"	e	enum:entity_type
+EntityType_Invalid	game.h	/^	EntityType_Invalid,$/;"	e	enum:entity_type
+EntityType_Player	game.h	/^	EntityType_Player,$/;"	e	enum:entity_type
+Equal	math_util.h	/^Equal(quaternion A, quaternion B, f32 Tolerance = SmallNumber)$/;"	f	typeref:typename:b32
+Equal	math_util.h	/^Equal(v3 A, v3 B, f32 Tolerance = SmallNumber)$/;"	f	typeref:typename:b32
 Extensions	opengl.cpp	/^	char *Extensions;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
 F32FromASCII	strings.cpp	/^F32FromASCII(string S)$/;"	f	typeref:typename:f32
 F32FromASCII	strings.cpp	/^F32FromASCII(u8 *S)$/;"	f	typeref:typename:f32
 F32RoundToU32	intrinsics.h	/^F32RoundToU32(f32 X)$/;"	f	typeref:typename:u32
 F32TruncateToS32	intrinsics.h	/^F32TruncateToS32(f32 X)$/;"	f	typeref:typename:s32
-FOV	game.h	/^	f32 FOV;\/\/ = DegreeToRad(45.0f);$/;"	m	struct:game_state	typeref:typename:f32
-Finished	animation.h	/^	b32 Finished;$/;"	m	struct:animation	typeref:typename:b32
+FAST_BITS	stb_image.h	/^#define FAST_BITS /;"	d
+FONT_H	font.h	/^#define FONT_H$/;"	d
+FOV	game.h	/^	f32 FOV;$/;"	m	struct:game_state	typeref:typename:f32
+FileName	texture.h	/^	char *FileName;$/;"	m	struct:texture	typeref:typename:char *
 First	strings.h	/^	string_node *First;$/;"	m	struct:string_list	typeref:typename:string_node *
+FlagAdd	animation.cpp	/^FlagAdd(animation *Animation, u32 Flag)$/;"	f	typeref:typename:void
+FlagIsSet	animation.cpp	/^FlagIsSet(animation *Animation, u32 Flag)$/;"	f	typeref:typename:b32
+Flags	animation.h	/^	u32 Flags;$/;"	m	struct:animation	typeref:typename:u32
+Font	game.h	/^	font_quad Font;$/;"	m	struct:game_state	typeref:typename:font_quad
+FontInit	game.cpp	/^FontInit(memory_arena *Arena, char *TTFPath)$/;"	f	typeref:typename:internal font_quad
+FontQuadDefault	game.cpp	/^FontQuadDefault(void)$/;"	f	typeref:typename:internal font_quad
 FrameRate	animation.h	/^	f32 FrameRate;$/;"	m	struct:animation_info	typeref:typename:f32
+FrameRate	asset.h	/^	f32 FrameRate;$/;"	m	struct:asset_animation_header	typeref:typename:f32
 GAME_H	game.h	/^#define GAME_H$/;"	d
+GLCompilerShader	opengl.cpp	/^GLCompilerShader(GLenum ShaderType, char *Source)$/;"	f	typeref:typename:internal u32
+GLDebugCallback	opengl.cpp	/^GLDebugCallback(GLenum Source, GLenum Type, GLuint ID, GLenum Severity, GLsizei Length, const GL/;"	f	typeref:typename:internal void
 GLIBOInit	opengl.cpp	/^GLIBOInit(u32 *IBO, u32 *Indices, u32 IndicesCount)$/;"	f	typeref:typename:internal void
 GLProgramCreate	opengl.cpp	/^GLProgramCreate(char *VS, char *FS)$/;"	f	typeref:typename:internal u32
 GL_ACTIVE_ATTRIBUTES	opengl.cpp	/^#define GL_ACTIVE_ATTRIBUTES /;"	d	file:
 GL_ARRAY_BUFFER	opengl.cpp	/^#define GL_ARRAY_BUFFER /;"	d	file:
 GL_BACK	opengl.cpp	/^#define GL_BACK /;"	d	file:
+GL_BGRA	opengl.cpp	/^#define GL_BGRA	/;"	d	file:
+GL_BGRA8_EXT	opengl.cpp	/^#define GL_BGRA8_EXT	/;"	d	file:
 GL_CCW	opengl.cpp	/^#define GL_CCW /;"	d	file:
+GL_CLAMP_TO_BORDER	opengl.cpp	/^#define GL_CLAMP_TO_BORDER /;"	d	file:
+GL_CLAMP_TO_EDGE	opengl.cpp	/^#define GL_CLAMP_TO_EDGE	/;"	d	file:
 GL_COLOR_BUFFER_BIT	opengl.cpp	/^#define GL_COLOR_BUFFER_BIT	/;"	d	file:
 GL_COMPILE_STATUS	opengl.cpp	/^#define GL_COMPILE_STATUS /;"	d	file:
 GL_CULL_FACE	opengl.cpp	/^#define GL_CULL_FACE /;"	d	file:
+GL_DEBUG_CALLBACK	win32_opengl.h	/^#define GL_DEBUG_CALLBACK(/;"	d
+GL_DEBUG_CALLBACK	win32_opengl.h	/^typedef GL_DEBUG_CALLBACK(GLDEBUGPROC);$/;"	t
+GL_DEBUG_LOGGED_MESSAGES	opengl.cpp	/^#define GL_DEBUG_LOGGED_MESSAGES /;"	d	file:
+GL_DEBUG_OUTPUT	opengl.cpp	/^#define GL_DEBUG_OUTPUT	/;"	d	file:
+GL_DEBUG_SEVERITY_HIGH	opengl.cpp	/^#define GL_DEBUG_SEVERITY_HIGH /;"	d	file:
+GL_DEBUG_SEVERITY_LOW	opengl.cpp	/^#define GL_DEBUG_SEVERITY_LOW /;"	d	file:
+GL_DEBUG_SEVERITY_MEDIUM	opengl.cpp	/^#define GL_DEBUG_SEVERITY_MEDIUM /;"	d	file:
+GL_DEBUG_SEVERITY_NOTIFICATION	opengl.cpp	/^#define GL_DEBUG_SEVERITY_NOTIFICATION /;"	d	file:
+GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR	opengl.cpp	/^#define GL_DEBUG_TYPE_DEPRECATED_BEHAVIOR /;"	d	file:
+GL_DEBUG_TYPE_ERROR	opengl.cpp	/^#define GL_DEBUG_TYPE_ERROR /;"	d	file:
+GL_DEBUG_TYPE_MARKER	opengl.cpp	/^#define GL_DEBUG_TYPE_MARKER /;"	d	file:
+GL_DEBUG_TYPE_OTHER	opengl.cpp	/^#define GL_DEBUG_TYPE_OTHER /;"	d	file:
+GL_DEBUG_TYPE_PERFORMANCE	opengl.cpp	/^#define GL_DEBUG_TYPE_PERFORMANCE /;"	d	file:
+GL_DEBUG_TYPE_POP_GROUP	opengl.cpp	/^#define GL_DEBUG_TYPE_POP_GROUP /;"	d	file:
+GL_DEBUG_TYPE_PORTABILITY	opengl.cpp	/^#define GL_DEBUG_TYPE_PORTABILITY /;"	d	file:
+GL_DEBUG_TYPE_PUSH_GROUP	opengl.cpp	/^#define GL_DEBUG_TYPE_PUSH_GROUP /;"	d	file:
+GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR	opengl.cpp	/^#define GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR /;"	d	file:
 GL_DEPTH_BUFFER_BIT	opengl.cpp	/^#define GL_DEPTH_BUFFER_BIT	/;"	d	file:
 GL_DEPTH_TEST	opengl.cpp	/^#define GL_DEPTH_TEST /;"	d	file:
 GL_ELEMENT_ARRAY_BUFFER	opengl.cpp	/^#define GL_ELEMENT_ARRAY_BUFFER /;"	d	file:
 GL_FALSE	opengl.cpp	/^#define GL_FALSE	/;"	d	file:
 GL_FRAGMENT_SHADER	opengl.cpp	/^#define GL_FRAGMENT_SHADER /;"	d	file:
 GL_LESS	opengl.cpp	/^#define GL_LESS /;"	d	file:
+GL_LINES_ADJACENCY	opengl.cpp	/^#define GL_LINES_ADJACENCY /;"	d	file:
+GL_LINE_STRIP_ADJACENCY	opengl.cpp	/^#define GL_LINE_STRIP_ADJACENCY /;"	d	file:
 GL_LINK_STATUS	opengl.cpp	/^#define GL_LINK_STATUS /;"	d	file:
+GL_MAX_DEBUG_LOGGED_MESSAGES	opengl.cpp	/^#define GL_MAX_DEBUG_LOGGED_MESSAGES /;"	d	file:
+GL_MAX_DEBUG_MESSAGE_LENGTH	opengl.cpp	/^#define GL_MAX_DEBUG_MESSAGE_LENGTH /;"	d	file:
+GL_MIPMAP	opengl.cpp	/^#define GL_MIPMAP /;"	d	file:
 GL_MULTISAMPLE	opengl.cpp	/^#define GL_MULTISAMPLE /;"	d	file:
+GL_R8	opengl.cpp	/^#define GL_R8 /;"	d	file:
 GL_SAMPLE_ALPHA_TO_COVERAGE	opengl.cpp	/^#define GL_SAMPLE_ALPHA_TO_COVERAGE /;"	d	file:
 GL_SAMPLE_ALPHA_TO_ONE	opengl.cpp	/^#define GL_SAMPLE_ALPHA_TO_ONE /;"	d	file:
 GL_SHADING_LANGUAGE_VERSION	opengl.cpp	/^#define GL_SHADING_LANGUAGE_VERSION /;"	d	file:
 GL_STATIC_DRAW	opengl.cpp	/^#define GL_STATIC_DRAW /;"	d	file:
+GL_TEXTURE0	opengl.cpp	/^#define GL_TEXTURE0	/;"	d	file:
+GL_TEXTURE_2D	opengl.cpp	/^#define GL_TEXTURE_2D	/;"	d	file:
+GL_TEXTURE_2D_ARRAY	opengl.cpp	/^#define GL_TEXTURE_2D_ARRAY	/;"	d	file:
+GL_TEXTURE_2D_MULTISAMPLE	opengl.cpp	/^#define GL_TEXTURE_2D_MULTISAMPLE /;"	d	file:
+GL_TEXTURE_MAG_FILTER	opengl.cpp	/^#define GL_TEXTURE_MAG_FILTER /;"	d	file:
+GL_TEXTURE_MAX_LEVEL	opengl.cpp	/^#define GL_TEXTURE_MAX_LEVEL	/;"	d	file:
+GL_TEXTURE_MIN_FILTER	opengl.cpp	/^#define GL_TEXTURE_MIN_FILTER /;"	d	file:
+GL_TEXTURE_WRAP_S	opengl.cpp	/^#define GL_TEXTURE_WRAP_S /;"	d	file:
+GL_TEXTURE_WRAP_T	opengl.cpp	/^#define GL_TEXTURE_WRAP_T /;"	d	file:
 GL_TRUE	opengl.cpp	/^#define GL_TRUE /;"	d	file:
 GL_VERTEX_SHADER	opengl.cpp	/^#define GL_VERTEX_SHADER /;"	d	file:
-GLchar	win32_main.cpp	/^typedef char GLchar;$/;"	t	typeref:typename:char	file:
-GLsizeiptr	win32_main.cpp	/^typedef uintptr_t GLsizeiptr;$/;"	t	typeref:typename:uintptr_t	file:
-GameUpdateAndRender	game.cpp	/^GameUpdateAndRender(game_memory *GameMemory, f32 DtForFrame)$/;"	f	typeref:typename:internal void
+GLchar	win32_opengl.h	/^typedef char GLchar;$/;"	t	typeref:typename:char
+GLsizeiptr	win32_opengl.h	/^typedef uintptr_t GLsizeiptr;$/;"	t	typeref:typename:uintptr_t
+GameUpdateAndRender	game.cpp	/^GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)$/;"	f	typeref:typename:internal void
 Gigabyte	platform.h	/^#define Gigabyte(/;"	d
+Glyph	font.h	/^	glyph_box Glyph[128];$/;"	m	struct:font	typeref:typename:glyph_box[128]
+HalfTransitionCount	platform.h	/^	u32 HalfTransitionCount;$/;"	m	struct:game_button	typeref:typename:u32
+Handle	texture.h	/^	u32 Handle;$/;"	m	struct:texture	typeref:typename:u32
+HasSkeleton	asset.h	/^	b32 HasSkeleton;$/;"	m	struct:asset_model_header	typeref:typename:b32
 HasSkeleton	mesh.h	/^	b32 HasSkeleton;$/;"	m	struct:model	typeref:typename:b32
+Height	texture.h	/^	s32 Width, Height;$/;"	m	struct:texture	typeref:typename:s32
+IB	game.h	/^	u32 IB;$/;"	m	struct:quad	typeref:typename:u32
 IBO	mesh.h	/^	u32 IBO[2];$/;"	m	struct:model	typeref:typename:u32[2]
 ID	animation.h	/^	animation_id ID;$/;"	m	struct:animation	typeref:typename:animation_id
 INTRINSICS_H	intrinsics.h	/^#define INTRINSICS_H$/;"	d
+Indices	game.h	/^	u32 Indices[6];$/;"	m	struct:quad	typeref:typename:u32[6]
 Indices	mesh.h	/^	u32 *Indices;$/;"	m	struct:mesh	typeref:typename:u32 *
+IndicesCount	asset.h	/^	u32 IndicesCount;$/;"	m	struct:asset_mesh_info	typeref:typename:u32
 IndicesCount	mesh.h	/^	u32 IndicesCount;$/;"	m	struct:mesh	typeref:typename:u32
 Info	animation.h	/^	animation_info *Info;$/;"	m	struct:animation	typeref:typename:animation_info *
+Initialized	font.h	/^	b32 Initialized;$/;"	m	struct:font	typeref:typename:b32
 InvBindTransforms	mesh.h	/^	mat4 *InvBindTransforms;$/;"	m	struct:mesh	typeref:typename:mat4 *
+IsDown	platform.h	/^	b32 IsDown;$/;"	m	struct:game_button	typeref:typename:b32
 IsInitialized	animation.h	/^	b32 IsInitialized;$/;"	m	struct:animation_player	typeref:typename:b32
 IsInitialized	platform.h	/^	b32 IsInitialized;$/;"	m	struct:game_memory	typeref:typename:b32
 IsNewLine	strings.cpp	/^IsNewLine(char *S)$/;"	f	typeref:typename:b32
 IsNewLine	strings.cpp	/^IsNewLine(u8 *S)$/;"	f	typeref:typename:b32
 IsSpace	strings.cpp	/^IsSpace(u8 *S)$/;"	f	typeref:typename:b32
 JointCount	animation.h	/^	u32 JointCount;$/;"	m	struct:animation_info	typeref:typename:u32
+JointCount	asset.h	/^	u32 JointCount;$/;"	m	struct:asset_animation_header	typeref:typename:u32
+JointCount	asset.h	/^	u32 JointCount;$/;"	m	struct:asset_mesh_info	typeref:typename:u32
 JointCount	mesh.h	/^	u32 JointCount;$/;"	m	struct:mesh	typeref:typename:u32
 JointIndex	mesh.h	/^	u32 JointIndex[3];$/;"	m	struct:joint_info	typeref:typename:u32[3]
 JointIndexGet	mesh.cpp	/^JointIndexGet(string *JointNames, u32 JointCount, string JointName)$/;"	f	typeref:typename:internal s32
-JointInfo	mesh.h	/^	joint_info JointInfo;$/;"	m	struct:vertex_list	typeref:typename:joint_info
+JointInfo	mesh.h	/^	joint_info JointInfo;$/;"	m	struct:vertex	typeref:typename:joint_info
 JointNames	animation.h	/^	string *JointNames;$/;"	m	struct:animation_info	typeref:typename:string *
-JointNames	mesh.h	/^	string *JointNames;$/;"	m	struct:mesh	typeref:typename:string *
 JointTransformFromSQT	animation.cpp	/^JointTransformFromSQT(sqt SQT)$/;"	f	typeref:typename:mat4
 JointTransformInterpolatedSQT	animation.cpp	/^JointTransformInterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 JointIndex)$/;"	f	typeref:typename:sqt
 JointTransforms	mesh.h	/^	mat4 *JointTransforms;$/;"	m	struct:mesh	typeref:typename:mat4 *
 Joints	mesh.h	/^	joint *Joints;$/;"	m	struct:mesh	typeref:typename:joint *
 KeyFrameCount	animation.h	/^	u32 KeyFrameCount;$/;"	m	struct:animation_info	typeref:typename:u32
+KeyFrameCount	asset.h	/^	u32 KeyFrameCount;$/;"	m	struct:asset_animation_header	typeref:typename:u32
+KeyFrameIndex	asset.h	/^	u32 KeyFrameIndex;$/;"	m	struct:asset_animation_header	typeref:typename:u32
 KeyFrames	animation.h	/^	key_frame *KeyFrames;$/;"	m	struct:animation_info	typeref:typename:key_frame *
+Key_A	platform.h	/^	Key_A,$/;"	e	enum:__anon7b2964200103
+Key_Count	platform.h	/^	Key_Count$/;"	e	enum:__anon7b2964200103
+Key_D	platform.h	/^	Key_D,$/;"	e	enum:__anon7b2964200103
+Key_S	platform.h	/^	Key_S,$/;"	e	enum:__anon7b2964200103
+Key_Shift	platform.h	/^	Key_Shift,$/;"	e	enum:__anon7b2964200103
+Key_Space	platform.h	/^	Key_Space,$/;"	e	enum:__anon7b2964200103
+Key_W	platform.h	/^	Key_W,$/;"	e	enum:__anon7b2964200103
+Keyboard	platform.h	/^	game_keyboard Keyboard;$/;"	m	struct:game_input	typeref:typename:game_keyboard
 Kilobyte	platform.h	/^#define Kilobyte(/;"	d
 Last	strings.h	/^	string_node *Last;$/;"	m	struct:string_list	typeref:typename:string_node *
 Length	math_util.h	/^Length(v3 V)$/;"	f	typeref:typename:f32
@@ -158,10 +246,15 @@ Lerp	math_util.h	/^Lerp(f32 A, f32 t, f32 B)$/;"	f	typeref:typename:f32
 Lerp	math_util.h	/^Lerp(quaternion A, f32 t, quaternion B)$/;"	f	typeref:typename:quaternion
 Lerp	math_util.h	/^Lerp(v3 A, f32 t, v3 B)$/;"	f	typeref:typename:v3
 LerpShortest	math_util.h	/^LerpShortest(quaternion A, f32 t, quaternion B)$/;"	f	typeref:typename:quaternion
-Looping	animation.h	/^	b32 Looping;$/;"	m	struct:animation	typeref:typename:b32
 MATH_UTIL_H	math_util.h	/^#define MATH_UTIL_H /;"	d
 MESH_H	mesh.h	/^#define MESH_H$/;"	d
+MODEL_FILE_MAGIC_NUMBER	asset.h	/^#define MODEL_FILE_MAGIC_NUMBER /;"	d
+MODEL_FILE_VERSION	asset.h	/^#define MODEL_FILE_VERSION /;"	d
+MagicNumber	asset.h	/^	u32 MagicNumber;$/;"	m	struct:asset_animation_header	typeref:typename:u32
+MagicNumber	asset.h	/^	u32 MagicNumber;$/;"	m	struct:asset_model_header	typeref:typename:u32
+MainFS	opengl.cpp	/^char *MainFS= R"($/;"	v	typeref:typename:char *
 MainFile	build.bat	/^set MainFile=win32_main.cpp$/;"	v
+MainVS	opengl.cpp	/^char *MainVS = R"($/;"	v	typeref:typename:char *
 Mat3	math_util.h	/^Mat3(v3 X, v3 Y, v3 Z)$/;"	f	typeref:typename:mat3
 Mat4	math_util.h	/^Mat4(v3 X, v3 Y, v3 Z)$/;"	f	typeref:typename:internal mat4
 Mat4	math_util.h	/^Mat4(v3 X, v3 Y, v3 Z, v3 W)$/;"	f	typeref:typename:internal mat4
@@ -177,21 +270,35 @@ Mat4Transform	math_util.h	/^Mat4Transform(mat4 T, v4 V)$/;"	f	typeref:typename:i
 Mat4Translate	math_util.h	/^Mat4Translate(v3 V)$/;"	f	typeref:typename:internal mat4
 Mat4Transpose	math_util.h	/^Mat4Transpose(mat4 T)$/;"	f	typeref:typename:internal mat4
 Mat4TransposeMat3	math_util.h	/^Mat4TransposeMat3(mat4 T)$/;"	f	typeref:typename:internal mat4
+Mat4XRotation	math_util.h	/^Mat4XRotation(f32 Angle)$/;"	f	typeref:typename:internal mat4
 Mat4YRotation	math_util.h	/^Mat4YRotation(f32 Angle)$/;"	f	typeref:typename:internal mat4
+MaterialSpec	asset.h	/^	material_spec MaterialSpec;$/;"	m	struct:asset_mesh_info	typeref:typename:material_spec
 MaterialSpec	mesh.h	/^	material_spec MaterialSpec;$/;"	m	struct:mesh	typeref:typename:material_spec
+Max	intrinsics.h	/^Max(f32 X, f32 Y)$/;"	f	typeref:typename:f32
 Megabyte	platform.h	/^#define Megabyte(/;"	d
-MemoryCopy	platform.h	/^MemoryCopy(memory_index Size, void *SrcInit, void *DestInit)$/;"	f	typeref:typename:internal void *
-MemoryZero	platform.h	/^MemoryZero(memory_index Size, void *Src)$/;"	f	typeref:typename:internal void
+Memory	texture.h	/^	u8 *Memory;$/;"	m	struct:texture	typeref:typename:u8 *
+MemoryCopy	game.h	/^MemoryCopy(memory_index Size, void *SrcInit, void *DestInit)$/;"	f	typeref:typename:internal void *
+MemorySet	platform.h	/^#define MemorySet(/;"	d
+MemoryZero	game.h	/^MemoryZero(memory_index Size, void *Src)$/;"	f	typeref:typename:internal void
+MeshCount	asset.h	/^	u32 MeshCount;$/;"	m	struct:asset_model_header	typeref:typename:u32
 MeshCount	mesh.h	/^	u32 MeshCount;$/;"	m	struct:model	typeref:typename:u32
-MeshHeaderNumberGet	asset.cpp	/^MeshHeaderNumberGet(memory_arena *Arena, string_node *Line, u8 *LineDelimeters, u32 DelimCount)$/;"	f	typeref:typename:internal u32
 Meshes	mesh.h	/^	mesh *Meshes;$/;"	m	struct:model	typeref:typename:mesh *
 Model	animation.h	/^	model *Model; $/;"	m	struct:animation_player	typeref:typename:model *
-Model	game.h	/^	model *Model;$/;"	m	struct:game_state	typeref:typename:model *
 ModelLoad	asset.cpp	/^ModelLoad(memory_arena *Arena, char *FileName)$/;"	f	typeref:typename:internal model
 ModelSpaceTransforms	mesh.h	/^	mat4 *ModelSpaceTransforms;$/;"	m	struct:mesh	typeref:typename:mat4 *
 ModelTransformFromBasis	math_util.h	/^ModelTransformFromBasis(basis *B)$/;"	f	typeref:typename:internal mat4
-ModelUpdate	win32_main.cpp	/^ModelUpdate(animation_player *AnimationPlayer)$/;"	f	typeref:typename:internal void
-N	mesh.h	/^	v3 N;$/;"	m	struct:vertex_list	typeref:typename:v3
+ModelUpdate	animation.cpp	/^ModelUpdate(animation_player *AnimationPlayer)$/;"	f	typeref:typename:internal void
+MonoTextureFS	opengl.cpp	/^char *MonoTextureFS = R"($/;"	v	typeref:typename:char *
+MonoTextureVS	opengl.cpp	/^char *MonoTextureVS = R"($/;"	v	typeref:typename:char *
+MovementState	game.h	/^	movement_state MovementState;$/;"	m	struct:entity	typeref:typename:movement_state
+MovementState_Idle	game.h	/^	MovementState_Idle,$/;"	e	enum:movement_state
+MovementState_Sprinting	game.h	/^	MovementState_Sprinting,$/;"	e	enum:movement_state
+MovementState_Walking	game.h	/^	MovementState_Walking,$/;"	e	enum:movement_state
+N	game.h	/^	v3 N;$/;"	m	struct:quad_vertex	typeref:typename:v3
+N	mesh.h	/^	v3 N;$/;"	m	struct:vertex	typeref:typename:v3
+Name	asset.h	/^	u8 Name[32];$/;"	m	struct:asset_joint_info	typeref:typename:u8[32]
+Name	asset.h	/^	u8 Name[32];$/;"	m	struct:asset_mesh_info	typeref:typename:u8[32]
+Name	asset.h	/^	u8 Name[64];$/;"	m	struct:asset_joint_name	typeref:typename:u8[64]
 Name	mesh.h	/^	string Name;$/;"	m	struct:joint	typeref:typename:string
 Name	mesh.h	/^	string Name;$/;"	m	struct:mesh	typeref:typename:string
 Next	animation.h	/^	animation *Next;$/;"	m	struct:animation	typeref:typename:animation *
@@ -199,61 +306,237 @@ Next	strings.h	/^	string_node *Next;$/;"	m	struct:string_node	typeref:typename:s
 Normalize	math_util.h	/^Normalize(quaternion Q)$/;"	f	typeref:typename:quaternion
 Normalize	math_util.h	/^Normalize(v3 V)$/;"	f	typeref:typename:v3
 O	math_util.h	/^	v3 O;$/;"	m	struct:basis	typeref:typename:v3
+Offset	font.h	/^	v2 Offset;$/;"	m	struct:glyph_box	typeref:typename:v2
+OffsetToAnimationInfo	asset.h	/^	u64 OffsetToAnimationInfo;$/;"	m	struct:asset_animation_header	typeref:typename:u64
+OffsetToIndices	asset.h	/^	u64 OffsetToIndices;$/;"	m	struct:asset_mesh_info	typeref:typename:u64
+OffsetToInvBindXForms	asset.h	/^	u64 OffsetToInvBindXForms;$/;"	m	struct:asset_mesh_info	typeref:typename:u64
+OffsetToJoints	asset.h	/^	u64 OffsetToJoints;$/;"	m	struct:asset_mesh_info	typeref:typename:u64
+OffsetToMeshInfo	asset.h	/^	u64 OffsetToMeshInfo;$/;"	m	struct:asset_model_header	typeref:typename:u64
+OffsetToNames	asset.h	/^	u64 OffsetToNames;$/;"	m	struct:asset_animation_header	typeref:typename:u64
+OffsetToPositions	asset.h	/^	u64 OffsetToPositions;$/;"	m	struct:asset_animation_info	typeref:typename:u64
+OffsetToQuaternions	asset.h	/^	u64 OffsetToQuaternions;$/;"	m	struct:asset_animation_info	typeref:typename:u64
+OffsetToScales	asset.h	/^	u64 OffsetToScales;$/;"	m	struct:asset_animation_info	typeref:typename:u64
+OffsetToTimes	asset.h	/^	u64 OffsetToTimes;$/;"	m	struct:asset_animation_header	typeref:typename:u64
+OffsetToVertices	asset.h	/^	u64 OffsetToVertices;$/;"	m	struct:asset_mesh_info	typeref:typename:u64
 OldTime	animation.h	/^	f32 OldTime; $/;"	m	struct:animation	typeref:typename:f32
 OpenGLAllocateAnimatedModel	opengl.cpp	/^OpenGLAllocateAnimatedModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
+OpenGLAllocateFontQuad	opengl.cpp	/^OpenGLAllocateFontQuad(font_quad *Quad, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
 OpenGLAllocateModel	opengl.cpp	/^OpenGLAllocateModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
+OpenGLAllocateQuad	opengl.cpp	/^OpenGLAllocateQuad(quad *Quad, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
+OpenGLAllocateTexture	opengl.cpp	/^OpenGLAllocateTexture(texture *Texture)$/;"	f	typeref:typename:internal void
 OpenGLAttribList	win32_main.cpp	/^int OpenGLAttribList[] =$/;"	v	typeref:typename:int[]
-OpenGLDrawAnimatedModel	opengl.cpp	/^OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
-OpenGLDrawModel	opengl.cpp	/^OpenGLDrawModel(model *Model, u32 ShaderProgram)$/;"	f	typeref:typename:internal void
+OpenGLDrawAnimatedModel	opengl.cpp	/^OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram, mat4 Transform)$/;"	f	typeref:typename:internal void
+OpenGLDrawFont	opengl.cpp	/^OpenGLDrawFont(font_quad *Quad, u32 ShaderProgram, mat4 Transform)$/;"	f	typeref:typename:internal void
+OpenGLDrawModel	opengl.cpp	/^OpenGLDrawModel(model *Model, u32 ShaderProgram, mat4 Transform)$/;"	f	typeref:typename:internal void
+OpenGLDrawQuad	opengl.cpp	/^OpenGLDrawQuad(quad *Quad, u32 ShaderProgram, mat4 Transform)$/;"	f	typeref:typename:internal void
+Orientation	game.h	/^	quaternion Orientation;$/;"	m	struct:entity	typeref:typename:quaternion
 Orientation	math_util.h	/^	quaternion Orientation;$/;"	m	struct:sqt	typeref:typename:quaternion
 Orientations	animation.h	/^	quaternion *Orientations;$/;"	m	struct:key_frame	typeref:typename:quaternion *
+P	game.h	/^	v2 P;$/;"	m	struct:font_quad_vertex	typeref:typename:v2
+P	game.h	/^	v3 P;$/;"	m	struct:entity	typeref:typename:v3
+P	game.h	/^	v3 P;$/;"	m	struct:quad_vertex	typeref:typename:v3
 P	math_util.h	/^	v3 P;$/;"	m	struct:affine_decomposition	typeref:typename:v3
-P	mesh.h	/^	v3 P;$/;"	m	struct:vertex_list	typeref:typename:v3
-PI32	platform.h	/^#define PI32 /;"	d
+P	mesh.h	/^	v3 P;$/;"	m	struct:vertex	typeref:typename:v3
 PLATFORM_H	platform.h	/^#define PLATFORM_H$/;"	d
+ParentIndex	asset.h	/^	s32 ParentIndex;$/;"	m	struct:asset_joint_info	typeref:typename:s32
 ParentIndex	mesh.h	/^	s32 ParentIndex;$/;"	m	struct:joint	typeref:typename:s32
 ParseF32Array	strings.cpp	/^ParseF32Array(f32 *Dest, u32 DestCount, string Str)$/;"	f	typeref:typename:internal void
 ParseF32Array	strings.cpp	/^ParseF32Array(memory_arena *Arena, f32 *Dest, u32 DestCount, string Str)$/;"	f	typeref:typename:internal void
-ParseMeshF32Array	asset.cpp	/^ParseMeshF32Array(memory_arena *Arena, f32 **F32, u32 *Count, string_node *Line, u8 *Delimeters,/;"	f	typeref:typename:internal void
-ParseMeshU32Array	asset.cpp	/^ParseMeshU32Array(memory_arena *Arena, u32 **U32, u32 *Count, string_node *Line, u8 *Delimeters,/;"	f	typeref:typename:internal void
 ParseStringArray	strings.cpp	/^ParseStringArray(memory_arena *Arena, string *Dest, u32 DestCount, string Str)$/;"	f	typeref:typename:internal void
 ParseU32Array	strings.cpp	/^ParseU32Array(u32 *Dest, u32 DestCount, string Str)$/;"	f	typeref:typename:internal void
 PermArena	animation.h	/^	memory_arena *PermArena;$/;"	m	struct:animation_player	typeref:typename:memory_arena *
 PermanentStorage	platform.h	/^	void *PermanentStorage;$/;"	m	struct:game_memory	typeref:typename:void *
 PermanentStorageSize	platform.h	/^	u64 PermanentStorageSize;$/;"	m	struct:game_memory	typeref:typename:u64
-PerspectiveTransform	game.h	/^	mat4 PerspectiveTransform;\/\/ = Mat4Perspective(FOV, Aspect, ZNear, ZFar);$/;"	m	struct:game_state	typeref:typename:mat4
+PerspectiveTransform	game.h	/^	mat4 PerspectiveTransform;$/;"	m	struct:game_state	typeref:typename:mat4
+Pi32	platform.h	/^#define Pi32 /;"	d
+PlayerAdd	game.cpp	/^PlayerAdd(game_state *GameState)$/;"	f	typeref:typename:internal void
+PlayerEntityIndex	game.h	/^	u32 PlayerEntityIndex;$/;"	m	struct:game_state	typeref:typename:u32
+PlayingCount	animation.h	/^	u32 PlayingCount;$/;"	m	struct:animation_player	typeref:typename:u32
 Position	math_util.h	/^	v3 Position;$/;"	m	struct:sqt	typeref:typename:v3
 Positions	animation.h	/^	v3 *Positions;$/;"	m	struct:key_frame	typeref:typename:v3 *
 PushArray	platform.h	/^#define PushArray(/;"	d
-PushSize_	platform.h	/^PushSize_(memory_arena *Arena, memory_index Size)$/;"	f	typeref:typename:internal void *
+PushSize_	game.h	/^PushSize_(memory_arena *Arena, memory_index Size)$/;"	f	typeref:typename:internal void *
 PushStruct	platform.h	/^#define PushStruct(/;"	d
+QuadDefault	game.cpp	/^QuadDefault(void)$/;"	f	typeref:typename:internal quad
+QuadFS	opengl.cpp	/^char *QuadFS= R"($/;"	v	typeref:typename:char *
+QuadVS	opengl.cpp	/^char *QuadVS = R"($/;"	v	typeref:typename:char *
 Quaternion	math_util.h	/^Quaternion()$/;"	f	typeref:typename:quaternion
 Quaternion	math_util.h	/^Quaternion(v3 Axis, f32 Angle)$/;"	f	typeref:typename:quaternion
 Quaternion	math_util.h	/^Quaternion(v3 V)$/;"	f	typeref:typename:quaternion
 QuaternionToMat4	math_util.h	/^QuaternionToMat4(quaternion Q)$/;"	f	typeref:typename:mat4
 R	math_util.h	/^	mat4 R;$/;"	m	struct:affine_decomposition	typeref:typename:mat4
-RemoveLocomotion	animation.h	/^	b32 RemoveLocomotion;$/;"	m	struct:animation	typeref:typename:b32
 Renderer	opengl.cpp	/^	char *Renderer;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
 RetiredCount	animation.h	/^	u32 RetiredCount;$/;"	m	struct:animation_player	typeref:typename:u32
 Rotate	math_util.h	/^Rotate(v3 V, quaternion Q)$/;"	f	typeref:typename:v3
 Rotate	math_util.h	/^Rotate(v4 V, quaternion Q)$/;"	f	typeref:typename:v4
+RotateTowards	math_util.h	/^RotateTowards(quaternion Current, quaternion Target, f32 dt, f32 AngularSpeed)$/;"	f	typeref:typename:quaternion
 RotationToQuaternion	math_util.h	/^RotationToQuaternion(mat4 Mat)$/;"	f	typeref:typename:quaternion
+S	platform.h	/^			game_button S;$/;"	m	struct:game_keyboard::__anon7b296420020a::__anon7b2964200308	typeref:typename:game_button
 S32FromASCII	strings.cpp	/^S32FromASCII(u8 *S)$/;"	f	typeref:typename:s32
 SLLQueuePush	platform.h	/^#define SLLQueuePush(/;"	d
 SLLQueuePush_N	platform.h	/^#define SLLQueuePush_N(/;"	d
-SMALL_NUMBER	platform.h	/^#define SMALL_NUMBER /;"	d
+STBIDEF	stb_image.h	/^#define STBIDEF /;"	d
+STBI_ASSERT	stb_image.h	/^#define STBI_ASSERT(/;"	d
+STBI_EXTERN	stb_image.h	/^#define STBI_EXTERN /;"	d
+STBI_FREE	stb_image.h	/^#define STBI_FREE(/;"	d
+STBI_HAS_LROTL	stb_image.h	/^#define STBI_HAS_LROTL$/;"	d
+STBI_INCLUDE_STB_IMAGE_H	stb_image.h	/^#define STBI_INCLUDE_STB_IMAGE_H$/;"	d
+STBI_MALLOC	stb_image.h	/^#define STBI_MALLOC(/;"	d
+STBI_MAX_DIMENSIONS	stb_image.h	/^#define STBI_MAX_DIMENSIONS /;"	d
+STBI_NOTUSED	stb_image.h	/^#define STBI_NOTUSED(/;"	d
+STBI_NO_BMP	stb_image.h	/^   #define STBI_NO_BMP$/;"	d
+STBI_NO_GIF	stb_image.h	/^   #define STBI_NO_GIF$/;"	d
+STBI_NO_HDR	stb_image.h	/^   #define STBI_NO_HDR$/;"	d
+STBI_NO_JPEG	stb_image.h	/^   #define STBI_NO_JPEG$/;"	d
+STBI_NO_PIC	stb_image.h	/^   #define STBI_NO_PIC$/;"	d
+STBI_NO_PNG	stb_image.h	/^   #define STBI_NO_PNG$/;"	d
+STBI_NO_PNM	stb_image.h	/^   #define STBI_NO_PNM$/;"	d
+STBI_NO_PSD	stb_image.h	/^   #define STBI_NO_PSD$/;"	d
+STBI_NO_SIMD	stb_image.h	/^#define STBI_NO_SIMD$/;"	d
+STBI_NO_TGA	stb_image.h	/^   #define STBI_NO_TGA$/;"	d
+STBI_NO_ZLIB	stb_image.h	/^#define STBI_NO_ZLIB$/;"	d
+STBI_ORDER_BGR	stb_image.h	/^   STBI_ORDER_BGR$/;"	e	enum:__anon84e4e8860403
+STBI_ORDER_RGB	stb_image.h	/^   STBI_ORDER_RGB,$/;"	e	enum:__anon84e4e8860403
+STBI_REALLOC	stb_image.h	/^#define STBI_REALLOC(/;"	d
+STBI_REALLOC_SIZED	stb_image.h	/^#define STBI_REALLOC_SIZED(/;"	d
+STBI_SIMD_ALIGN	stb_image.h	/^#define STBI_SIMD_ALIGN(/;"	d
+STBI_SSE2	stb_image.h	/^#define STBI_SSE2$/;"	d
+STBI_THREAD_LOCAL	stb_image.h	/^        #define STBI_THREAD_LOCAL /;"	d
+STBI_THREAD_LOCAL	stb_image.h	/^      #define STBI_THREAD_LOCAL /;"	d
+STBI_VERSION	stb_image.h	/^#define STBI_VERSION /;"	d
+STBI__BYTECAST	stb_image.h	/^#define STBI__BYTECAST(/;"	d
+STBI__CASE	stb_image.h	/^      #define STBI__CASE(/;"	d
+STBI__COMBO	stb_image.h	/^      #define STBI__COMBO(/;"	d
+STBI__F_avg	stb_image.h	/^   STBI__F_avg=3,$/;"	e	enum:__anon84e4e8860f03
+STBI__F_avg_first	stb_image.h	/^   STBI__F_avg_first$/;"	e	enum:__anon84e4e8860f03
+STBI__F_none	stb_image.h	/^   STBI__F_none=0,$/;"	e	enum:__anon84e4e8860f03
+STBI__F_paeth	stb_image.h	/^   STBI__F_paeth=4,$/;"	e	enum:__anon84e4e8860f03
+STBI__F_sub	stb_image.h	/^   STBI__F_sub=1,$/;"	e	enum:__anon84e4e8860f03
+STBI__F_up	stb_image.h	/^   STBI__F_up=2,$/;"	e	enum:__anon84e4e8860f03
+STBI__HDR_BUFLEN	stb_image.h	/^#define STBI__HDR_BUFLEN /;"	d
+STBI__IDCT_1D	stb_image.h	/^#define STBI__IDCT_1D(/;"	d
+STBI__MARKER_none	stb_image.h	/^#define STBI__MARKER_none /;"	d
+STBI__PNG_TYPE	stb_image.h	/^#define STBI__PNG_TYPE(/;"	d
+STBI__RESTART	stb_image.h	/^#define STBI__RESTART(/;"	d
+STBI__SCAN_header	stb_image.h	/^   STBI__SCAN_header$/;"	e	enum:__anon84e4e8860603
+STBI__SCAN_load	stb_image.h	/^   STBI__SCAN_load=0,$/;"	e	enum:__anon84e4e8860603
+STBI__SCAN_type	stb_image.h	/^   STBI__SCAN_type,$/;"	e	enum:__anon84e4e8860603
+STBI__X64_TARGET	stb_image.h	/^#define STBI__X64_TARGET$/;"	d
+STBI__X86_TARGET	stb_image.h	/^#define STBI__X86_TARGET$/;"	d
+STBI__ZFAST_BITS	stb_image.h	/^#define STBI__ZFAST_BITS /;"	d
+STBI__ZFAST_MASK	stb_image.h	/^#define STBI__ZFAST_MASK /;"	d
+STBI__ZNSYMS	stb_image.h	/^#define STBI__ZNSYMS /;"	d
+STBI_default	stb_image.h	/^   STBI_default = 0, \/\/ only used for desired_channels$/;"	e	enum:__anon84e4e8860103
+STBI_grey	stb_image.h	/^   STBI_grey       = 1,$/;"	e	enum:__anon84e4e8860103
+STBI_grey_alpha	stb_image.h	/^   STBI_grey_alpha = 2,$/;"	e	enum:__anon84e4e8860103
+STBI_rgb	stb_image.h	/^   STBI_rgb        = 3,$/;"	e	enum:__anon84e4e8860103
+STBI_rgb_alpha	stb_image.h	/^   STBI_rgb_alpha  = 4$/;"	e	enum:__anon84e4e8860103
+STBTT_DEF	stb_truetype.h	/^#define STBTT_DEF /;"	d
+STBTT_FIX	stb_truetype.h	/^#define STBTT_FIX /;"	d
+STBTT_FIXMASK	stb_truetype.h	/^#define STBTT_FIXMASK /;"	d
+STBTT_FIXSHIFT	stb_truetype.h	/^#define STBTT_FIXSHIFT /;"	d
+STBTT_GPOS_TODO_assert	stb_truetype.h	/^#define STBTT_GPOS_TODO_assert(/;"	d
+STBTT_MACSTYLE_BOLD	stb_truetype.h	/^#define STBTT_MACSTYLE_BOLD /;"	d
+STBTT_MACSTYLE_DONTCARE	stb_truetype.h	/^#define STBTT_MACSTYLE_DONTCARE /;"	d
+STBTT_MACSTYLE_ITALIC	stb_truetype.h	/^#define STBTT_MACSTYLE_ITALIC /;"	d
+STBTT_MACSTYLE_NONE	stb_truetype.h	/^#define STBTT_MACSTYLE_NONE /;"	d
+STBTT_MACSTYLE_UNDERSCORE	stb_truetype.h	/^#define STBTT_MACSTYLE_UNDERSCORE /;"	d
+STBTT_MAC_EID_ARABIC	stb_truetype.h	/^   STBTT_MAC_EID_ROMAN        =0,   STBTT_MAC_EID_ARABIC       =4,$/;"	e	enum:__anon0048a2850c03
+STBTT_MAC_EID_CHINESE_TRAD	stb_truetype.h	/^   STBTT_MAC_EID_CHINESE_TRAD =2,   STBTT_MAC_EID_GREEK        =6,$/;"	e	enum:__anon0048a2850c03
+STBTT_MAC_EID_GREEK	stb_truetype.h	/^   STBTT_MAC_EID_CHINESE_TRAD =2,   STBTT_MAC_EID_GREEK        =6,$/;"	e	enum:__anon0048a2850c03
+STBTT_MAC_EID_HEBREW	stb_truetype.h	/^   STBTT_MAC_EID_JAPANESE     =1,   STBTT_MAC_EID_HEBREW       =5,$/;"	e	enum:__anon0048a2850c03
+STBTT_MAC_EID_JAPANESE	stb_truetype.h	/^   STBTT_MAC_EID_JAPANESE     =1,   STBTT_MAC_EID_HEBREW       =5,$/;"	e	enum:__anon0048a2850c03
+STBTT_MAC_EID_KOREAN	stb_truetype.h	/^   STBTT_MAC_EID_KOREAN       =3,   STBTT_MAC_EID_RUSSIAN      =7$/;"	e	enum:__anon0048a2850c03
+STBTT_MAC_EID_ROMAN	stb_truetype.h	/^   STBTT_MAC_EID_ROMAN        =0,   STBTT_MAC_EID_ARABIC       =4,$/;"	e	enum:__anon0048a2850c03
+STBTT_MAC_EID_RUSSIAN	stb_truetype.h	/^   STBTT_MAC_EID_KOREAN       =3,   STBTT_MAC_EID_RUSSIAN      =7$/;"	e	enum:__anon0048a2850c03
+STBTT_MAC_LANG_ARABIC	stb_truetype.h	/^   STBTT_MAC_LANG_ARABIC       =12,   STBTT_MAC_LANG_KOREAN       =23,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_CHINESE_SIMPLIFIED	stb_truetype.h	/^   STBTT_MAC_LANG_HEBREW       =10,   STBTT_MAC_LANG_CHINESE_SIMPLIFIED =33,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_CHINESE_TRAD	stb_truetype.h	/^   STBTT_MAC_LANG_ITALIAN      =3 ,   STBTT_MAC_LANG_CHINESE_TRAD =19$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_DUTCH	stb_truetype.h	/^   STBTT_MAC_LANG_DUTCH        =4 ,   STBTT_MAC_LANG_RUSSIAN      =32,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_ENGLISH	stb_truetype.h	/^   STBTT_MAC_LANG_ENGLISH      =0 ,   STBTT_MAC_LANG_JAPANESE     =11,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_FRENCH	stb_truetype.h	/^   STBTT_MAC_LANG_FRENCH       =1 ,   STBTT_MAC_LANG_SPANISH      =6 ,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_GERMAN	stb_truetype.h	/^   STBTT_MAC_LANG_GERMAN       =2 ,   STBTT_MAC_LANG_SWEDISH      =5 ,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_HEBREW	stb_truetype.h	/^   STBTT_MAC_LANG_HEBREW       =10,   STBTT_MAC_LANG_CHINESE_SIMPLIFIED =33,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_ITALIAN	stb_truetype.h	/^   STBTT_MAC_LANG_ITALIAN      =3 ,   STBTT_MAC_LANG_CHINESE_TRAD =19$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_JAPANESE	stb_truetype.h	/^   STBTT_MAC_LANG_ENGLISH      =0 ,   STBTT_MAC_LANG_JAPANESE     =11,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_KOREAN	stb_truetype.h	/^   STBTT_MAC_LANG_ARABIC       =12,   STBTT_MAC_LANG_KOREAN       =23,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_RUSSIAN	stb_truetype.h	/^   STBTT_MAC_LANG_DUTCH        =4 ,   STBTT_MAC_LANG_RUSSIAN      =32,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_SPANISH	stb_truetype.h	/^   STBTT_MAC_LANG_FRENCH       =1 ,   STBTT_MAC_LANG_SPANISH      =6 ,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAC_LANG_SWEDISH	stb_truetype.h	/^   STBTT_MAC_LANG_GERMAN       =2 ,   STBTT_MAC_LANG_SWEDISH      =5 ,$/;"	e	enum:__anon0048a2850e03
+STBTT_MAX_OVERSAMPLE	stb_truetype.h	/^#define STBTT_MAX_OVERSAMPLE /;"	d
+STBTT_MS_EID_SHIFTJIS	stb_truetype.h	/^   STBTT_MS_EID_SHIFTJIS      =2,$/;"	e	enum:__anon0048a2850b03
+STBTT_MS_EID_SYMBOL	stb_truetype.h	/^   STBTT_MS_EID_SYMBOL        =0,$/;"	e	enum:__anon0048a2850b03
+STBTT_MS_EID_UNICODE_BMP	stb_truetype.h	/^   STBTT_MS_EID_UNICODE_BMP   =1,$/;"	e	enum:__anon0048a2850b03
+STBTT_MS_EID_UNICODE_FULL	stb_truetype.h	/^   STBTT_MS_EID_UNICODE_FULL  =10$/;"	e	enum:__anon0048a2850b03
+STBTT_MS_LANG_CHINESE	stb_truetype.h	/^   STBTT_MS_LANG_CHINESE     =0x0804,   STBTT_MS_LANG_JAPANESE    =0x0411,$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_DUTCH	stb_truetype.h	/^   STBTT_MS_LANG_DUTCH       =0x0413,   STBTT_MS_LANG_KOREAN      =0x0412,$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_ENGLISH	stb_truetype.h	/^   STBTT_MS_LANG_ENGLISH     =0x0409,   STBTT_MS_LANG_ITALIAN     =0x0410,$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_FRENCH	stb_truetype.h	/^   STBTT_MS_LANG_FRENCH      =0x040c,   STBTT_MS_LANG_RUSSIAN     =0x0419,$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_GERMAN	stb_truetype.h	/^   STBTT_MS_LANG_GERMAN      =0x0407,   STBTT_MS_LANG_SPANISH     =0x0409,$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_HEBREW	stb_truetype.h	/^   STBTT_MS_LANG_HEBREW      =0x040d,   STBTT_MS_LANG_SWEDISH     =0x041D$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_ITALIAN	stb_truetype.h	/^   STBTT_MS_LANG_ENGLISH     =0x0409,   STBTT_MS_LANG_ITALIAN     =0x0410,$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_JAPANESE	stb_truetype.h	/^   STBTT_MS_LANG_CHINESE     =0x0804,   STBTT_MS_LANG_JAPANESE    =0x0411,$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_KOREAN	stb_truetype.h	/^   STBTT_MS_LANG_DUTCH       =0x0413,   STBTT_MS_LANG_KOREAN      =0x0412,$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_RUSSIAN	stb_truetype.h	/^   STBTT_MS_LANG_FRENCH      =0x040c,   STBTT_MS_LANG_RUSSIAN     =0x0419,$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_SPANISH	stb_truetype.h	/^   STBTT_MS_LANG_GERMAN      =0x0407,   STBTT_MS_LANG_SPANISH     =0x0409,$/;"	e	enum:__anon0048a2850d03
+STBTT_MS_LANG_SWEDISH	stb_truetype.h	/^   STBTT_MS_LANG_HEBREW      =0x040d,   STBTT_MS_LANG_SWEDISH     =0x041D$/;"	e	enum:__anon0048a2850d03
+STBTT_PLATFORM_ID_ISO	stb_truetype.h	/^   STBTT_PLATFORM_ID_ISO       =2,$/;"	e	enum:__anon0048a2850903
+STBTT_PLATFORM_ID_MAC	stb_truetype.h	/^   STBTT_PLATFORM_ID_MAC       =1,$/;"	e	enum:__anon0048a2850903
+STBTT_PLATFORM_ID_MICROSOFT	stb_truetype.h	/^   STBTT_PLATFORM_ID_MICROSOFT =3$/;"	e	enum:__anon0048a2850903
+STBTT_PLATFORM_ID_UNICODE	stb_truetype.h	/^   STBTT_PLATFORM_ID_UNICODE   =0,$/;"	e	enum:__anon0048a2850903
+STBTT_POINT_SIZE	stb_truetype.h	/^#define STBTT_POINT_SIZE(/;"	d
+STBTT_RASTERIZER_VERSION	stb_truetype.h	/^#define STBTT_RASTERIZER_VERSION /;"	d
+STBTT_UNICODE_EID_ISO_10646	stb_truetype.h	/^   STBTT_UNICODE_EID_ISO_10646      =2,$/;"	e	enum:__anon0048a2850a03
+STBTT_UNICODE_EID_UNICODE_1_0	stb_truetype.h	/^   STBTT_UNICODE_EID_UNICODE_1_0    =0,$/;"	e	enum:__anon0048a2850a03
+STBTT_UNICODE_EID_UNICODE_1_1	stb_truetype.h	/^   STBTT_UNICODE_EID_UNICODE_1_1    =1,$/;"	e	enum:__anon0048a2850a03
+STBTT_UNICODE_EID_UNICODE_2_0_BMP	stb_truetype.h	/^   STBTT_UNICODE_EID_UNICODE_2_0_BMP=3,$/;"	e	enum:__anon0048a2850a03
+STBTT_UNICODE_EID_UNICODE_2_0_FULL	stb_truetype.h	/^   STBTT_UNICODE_EID_UNICODE_2_0_FULL=4$/;"	e	enum:__anon0048a2850a03
+STBTT__COMPARE	stb_truetype.h	/^#define STBTT__COMPARE(/;"	d
+STBTT__CSCTX_INIT	stb_truetype.h	/^#define STBTT__CSCTX_INIT(/;"	d
+STBTT__CSERR	stb_truetype.h	/^#define STBTT__CSERR(/;"	d
+STBTT__NOTUSED	stb_truetype.h	/^#define STBTT__NOTUSED(/;"	d
+STBTT__OVER_MASK	stb_truetype.h	/^#define STBTT__OVER_MASK /;"	d
+STBTT_acos	stb_truetype.h	/^   #define STBTT_acos(/;"	d
+STBTT_assert	stb_truetype.h	/^   #define STBTT_assert(/;"	d
+STBTT_cos	stb_truetype.h	/^   #define STBTT_cos(/;"	d
+STBTT_fabs	stb_truetype.h	/^   #define STBTT_fabs(/;"	d
+STBTT_fmod	stb_truetype.h	/^   #define STBTT_fmod(/;"	d
+STBTT_free	stb_truetype.h	/^   #define STBTT_free(/;"	d
+STBTT_iceil	stb_truetype.h	/^   #define STBTT_iceil(/;"	d
+STBTT_ifloor	stb_truetype.h	/^   #define STBTT_ifloor(/;"	d
+STBTT_malloc	stb_truetype.h	/^   #define STBTT_malloc(/;"	d
+STBTT_max	stb_truetype.h	/^#define STBTT_max(/;"	d
+STBTT_memcpy	stb_truetype.h	/^   #define STBTT_memcpy /;"	d
+STBTT_memset	stb_truetype.h	/^   #define STBTT_memset /;"	d
+STBTT_min	stb_truetype.h	/^#define STBTT_min(/;"	d
+STBTT_pow	stb_truetype.h	/^   #define STBTT_pow(/;"	d
+STBTT_sqrt	stb_truetype.h	/^   #define STBTT_sqrt(/;"	d
+STBTT_strlen	stb_truetype.h	/^   #define STBTT_strlen(/;"	d
+STBTT_vcubic	stb_truetype.h	/^      STBTT_vcubic$/;"	e	enum:__anon0048a2850603
+STBTT_vcurve	stb_truetype.h	/^      STBTT_vcurve,$/;"	e	enum:__anon0048a2850603
+STBTT_vline	stb_truetype.h	/^      STBTT_vline,$/;"	e	enum:__anon0048a2850603
+STBTT_vmove	stb_truetype.h	/^      STBTT_vmove=1,$/;"	e	enum:__anon0048a2850603
+STB_IMAGE_IMPLEMENTATION	texture.cpp	/^#define STB_IMAGE_IMPLEMENTATION$/;"	d	file:
+STB_TRUETYPE_IMPLEMENTATION	font.h	/^#define STB_TRUETYPE_IMPLEMENTATION$/;"	d
 STRINGS_H	strings.h	/^#define STRINGS_H$/;"	d
 Scale	math_util.h	/^	v3 Scale;$/;"	m	struct:sqt	typeref:typename:v3
 Scales	animation.h	/^	v3 *Scales;$/;"	m	struct:key_frame	typeref:typename:v3 *
 Shaders	game.h	/^	u32 Shaders[2];$/;"	m	struct:game_state	typeref:typename:u32[2]
 ShadingLanguageVersion	opengl.cpp	/^	char *ShadingLanguageVersion;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
+Shift	platform.h	/^			game_button Shift;$/;"	m	struct:game_keyboard::__anon7b296420020a::__anon7b2964200308	typeref:typename:game_button
 Shininess	mesh.h	/^	f32 Shininess;$/;"	m	struct:material_spec	typeref:typename:f32
-Size	platform.h	/^	memory_index Size;$/;"	m	struct:memory_arena	typeref:typename:memory_index
-Size	platform.h	/^	u32 Size;$/;"	m	struct:debug_file	typeref:typename:u32
+Size	game.h	/^	memory_index Size;$/;"	m	struct:memory_arena	typeref:typename:memory_index
+Size	platform.h	/^	u64 Size;$/;"	m	struct:debug_file	typeref:typename:u64
 Size	strings.h	/^	u64 Size;$/;"	m	struct:string	typeref:typename:u64
 Size	strings.h	/^	u64 Size;$/;"	m	struct:string_list	typeref:typename:u64
+SmallNumber	platform.h	/^#define SmallNumber /;"	d
+Space	platform.h	/^			game_button Space;$/;"	m	struct:game_keyboard::__anon7b296420020a::__anon7b2964200308	typeref:typename:game_button
 Specular	mesh.h	/^	v4 Specular;$/;"	m	struct:material_spec	typeref:typename:v4
+Sqrt	intrinsics.h	/^Sqrt(f32 X)$/;"	f	typeref:typename:f32
 Square	math_util.h	/^Square(f32 C)$/;"	f	typeref:typename:f32
+SrcFormat	texture.h	/^	GLenum SrcFormat;$/;"	m	struct:texture	typeref:typename:GLenum
+State	animation.h	/^	animation_state State;$/;"	m	struct:animation_player	typeref:typename:animation_state
+StoredFormat	texture.h	/^	GLint StoredFormat;$/;"	m	struct:texture	typeref:typename:GLint
 String	strings.cpp	/^String(u8 *Cstr)$/;"	f	typeref:typename:internal string
 String	strings.h	/^	string String;$/;"	m	struct:string_node	typeref:typename:string
 StringAllocAndCopy	strings.cpp	/^StringAllocAndCopy(memory_arena *Arena, char *Cstr)$/;"	f	typeref:typename:internal string
@@ -268,35 +551,50 @@ StringSearchFor	strings.cpp	/^StringSearchFor(string S, char C)$/;"	f	typeref:ty
 StringSplit	strings.cpp	/^StringSplit(memory_arena *Arena, string String, u8 *Splits, u32 Count)$/;"	f	typeref:typename:internal string_list
 StringSplitIntoArray	strings.cpp	/^StringSplitIntoArray(memory_arena *Arena, string Str, u8 *Delimeters, u32 DelimCount)$/;"	f	typeref:typename:internal string_array
 Strings	strings.h	/^	string *Strings;$/;"	m	struct:string_array	typeref:typename:string *
+StringsAreSame	strings.cpp	/^StringsAreSame(char *S1, u8 *S2)$/;"	f	typeref:typename:internal b32
 StringsAreSame	strings.cpp	/^StringsAreSame(char *Str1, char *Str2)$/;"	f	typeref:typename:internal b32
 StringsAreSame	strings.cpp	/^StringsAreSame(string S1, char *Str2)$/;"	f	typeref:typename:internal b32
 StringsAreSame	strings.cpp	/^StringsAreSame(string S1, string S2)$/;"	f	typeref:typename:internal b32
 StringsAreSame	strings.cpp	/^StringsAreSame(u8 *S1, char *S2)$/;"	f	typeref:typename:internal b32
 SubStringExists	strings.cpp	/^SubStringExists(char *HayStack, char *Needle)$/;"	f	typeref:typename:internal b32
 SubStringExists	strings.cpp	/^SubStringExists(string HayStack, char *Needle)$/;"	f	typeref:typename:internal b32
+TEXTURE_H	texture.h	/^#define TEXTURE_H$/;"	d
 TempArena	game.h	/^	memory_arena TempArena;$/;"	m	struct:game_state	typeref:typename:memory_arena
-TempCount	platform.h	/^	s32 TempCount;$/;"	m	struct:memory_arena	typeref:typename:s32
-TemporaryMemoryBegin	platform.h	/^TemporaryMemoryBegin(memory_arena *Arena)$/;"	f	typeref:typename:temporary_memory
-TemporaryMemoryEnd	platform.h	/^TemporaryMemoryEnd(temporary_memory TempMemory)$/;"	f	typeref:typename:void
+TempCount	game.h	/^	s32 TempCount;$/;"	m	struct:memory_arena	typeref:typename:s32
+TemporaryMemoryBegin	game.h	/^TemporaryMemoryBegin(memory_arena *Arena)$/;"	f	typeref:typename:temporary_memory
+TemporaryMemoryEnd	game.h	/^TemporaryMemoryEnd(temporary_memory TempMemory)$/;"	f	typeref:typename:void
 TemporaryStorage	platform.h	/^	void *TemporaryStorage;$/;"	m	struct:game_memory	typeref:typename:void *
 TemporaryStorageSize	platform.h	/^	u64 TemporaryStorageSize;$/;"	m	struct:game_memory	typeref:typename:u64
+Texture	game.h	/^	u32 Texture;$/;"	m	struct:quad	typeref:typename:u32
+TextureHandle	font.h	/^	u32 TextureHandle;$/;"	m	struct:font	typeref:typename:u32
+TextureHandle	game.h	/^	u32 TextureHandle;$/;"	m	struct:font_quad	typeref:typename:u32
 TextureHandle	mesh.h	/^	u32 TextureHandle;$/;"	m	struct:mesh	typeref:typename:u32
+TextureLoad	texture.cpp	/^TextureLoad(char *FileName)$/;"	f	typeref:typename:internal texture
+Textures	game.h	/^	texture Textures[32];$/;"	m	struct:game_state	typeref:typename:texture[32]
+TimeCount	asset.h	/^	u32 TimeCount;$/;"	m	struct:asset_animation_header	typeref:typename:u32
 TimeScale	animation.h	/^	f32 TimeScale; $/;"	m	struct:animation	typeref:typename:f32
+TopToBaseLine	font.h	/^	f32 TopToBaseLine;$/;"	m	struct:font	typeref:typename:f32
 Trace	math_util.h	/^Trace(mat3 M)$/;"	f	typeref:typename:f32
+Transform	asset.h	/^	mat4 Transform;$/;"	m	struct:asset_joint_info	typeref:typename:mat4
 Transform	mesh.h	/^	mat4 Transform;$/;"	m	struct:joint	typeref:typename:mat4
-U32ArraySum	platform.h	/^U32ArraySum(u32 *A, u32 Count)$/;"	f	typeref:typename:internal u32
+Type	game.h	/^	entity_type Type;$/;"	m	struct:entity	typeref:typename:entity_type
+U32ArraySum	game.h	/^U32ArraySum(u32 *A, u32 Count)$/;"	f	typeref:typename:internal u32
 U32FromASCII	strings.cpp	/^U32FromASCII(string S)$/;"	f	typeref:typename:u32
 U32FromASCII	strings.cpp	/^U32FromASCII(u8 *S)$/;"	f	typeref:typename:u32
 U64TruncateToU32	platform.h	/^U64TruncateToU32(u64 U64)$/;"	f	typeref:typename:u32
-UV	mesh.h	/^	v2 UV;$/;"	m	struct:vertex_list	typeref:typename:v2
+UV	game.h	/^	v2 UV;$/;"	m	struct:font_quad_vertex	typeref:typename:v2
+UV	game.h	/^	v2 UV;$/;"	m	struct:quad_vertex	typeref:typename:v2
+UV	mesh.h	/^	v2 UV;$/;"	m	struct:vertex	typeref:typename:v2
+UniformBoolSet	opengl.cpp	/^UniformBoolSet(u32 ShaderProgram, char *UniformName, b32 B32)$/;"	f	typeref:typename:internal void
 UniformF32Set	opengl.cpp	/^UniformF32Set(u32 ShaderProgram, char *UniformName, f32 F32)$/;"	f	typeref:typename:internal void
 UniformMatrixArraySet	opengl.cpp	/^UniformMatrixArraySet(u32 ShaderProgram, char *UniformName, mat4 *M, u32 Count)$/;"	f	typeref:typename:internal void
 UniformMatrixSet	opengl.cpp	/^UniformMatrixSet(u32 ShaderProgram, char *UniformName, mat4 M)$/;"	f	typeref:typename:internal void
 UniformU32Set	opengl.cpp	/^UniformU32Set(u32 ShaderProgram, char *UniformName, u32 U32)$/;"	f	typeref:typename:internal void
 UniformV3Set	opengl.cpp	/^UniformV3Set(u32 ShaderProgram, char *UniformName, v3 V)$/;"	f	typeref:typename:internal void
 UniformV4Set	opengl.cpp	/^UniformV4Set(u32 ShaderProgram, char *UniformName, v4 V)$/;"	f	typeref:typename:internal void
-Used	platform.h	/^	memory_index Used;$/;"	m	struct:memory_arena	typeref:typename:memory_index
-Used	platform.h	/^	memory_index Used;$/;"	m	struct:temporary_memory	typeref:typename:memory_index
+Used	game.h	/^	memory_index Used;$/;"	m	struct:memory_arena	typeref:typename:memory_index
+Used	game.h	/^	memory_index Used;$/;"	m	struct:temporary_memory	typeref:typename:memory_index
+V2	math_util.h	/^V2(f32 X)$/;"	f	typeref:typename:v2
 V2	math_util.h	/^V2(f32 X, f32 Y)$/;"	f	typeref:typename:v2
 V3	math_util.h	/^V3(f32 C)$/;"	f	typeref:typename:v3
 V3	math_util.h	/^V3(f32 X, f32 Y, f32 Z)$/;"	f	typeref:typename:v3
@@ -306,17 +604,27 @@ V4	math_util.h	/^V4(f32 X, f32 Y, f32 Z)$/;"	f	typeref:typename:v4
 V4	math_util.h	/^V4(f32 X, f32 Y, f32 Z, f32 W)$/;"	f	typeref:typename:v4
 V4	math_util.h	/^V4(v3 V, f32 C)$/;"	f	typeref:typename:v4
 V4FromMat4	math_util.h	/^V4FromMat4(mat4 M, u32 ColIndex)$/;"	f	typeref:typename:internal v4
+VA	game.h	/^	u32 VA;$/;"	m	struct:font_quad	typeref:typename:u32
+VA	game.h	/^	u32 VA;$/;"	m	struct:quad	typeref:typename:u32
 VA	mesh.h	/^	u32 VA[2];$/;"	m	struct:model	typeref:typename:u32[2]
+VB	game.h	/^	u32 VB;$/;"	m	struct:font_quad	typeref:typename:u32
+VB	game.h	/^	u32 VB;$/;"	m	struct:quad	typeref:typename:u32
 VB	mesh.h	/^	u32 VB[2];$/;"	m	struct:model	typeref:typename:u32[2]
 Value	animation.h	/^	u32 Value;$/;"	m	struct:animation_id	typeref:typename:u32
 Vendor	opengl.cpp	/^	char *Vendor;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
+Version	asset.h	/^	u32 Version;$/;"	m	struct:asset_animation_header	typeref:typename:u32
+Version	asset.h	/^	u32 Version;$/;"	m	struct:asset_model_header	typeref:typename:u32
 Version	opengl.cpp	/^	char *Version;$/;"	m	struct:opengl_info	typeref:typename:char *	file:
+VertexCount	asset.h	/^	u32 VertexCount;$/;"	m	struct:asset_mesh_info	typeref:typename:u32
 VertexCount	mesh.h	/^	u32 VertexCount;$/;"	m	struct:mesh	typeref:typename:u32
-Vertices	mesh.h	/^	vertex_list *Vertices;$/;"	m	struct:mesh	typeref:typename:vertex_list *
-WGL_ACCELERATION_ARB	win32_main.cpp	/^#define WGL_ACCELERATION_ARB /;"	d	file:
-WGL_ALPHA_BITS_ARB	win32_main.cpp	/^#define WGL_ALPHA_BITS_ARB /;"	d	file:
-WGL_BLUE_BITS_ARB	win32_main.cpp	/^#define WGL_BLUE_BITS_ARB /;"	d	file:
-WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB	opengl.cpp	/^#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB /;"	d	file:
+Vertices	game.h	/^	font_quad_vertex Vertices[6];$/;"	m	struct:font_quad	typeref:typename:font_quad_vertex[6]
+Vertices	game.h	/^	quad_vertex Vertices[4];$/;"	m	struct:quad	typeref:typename:quad_vertex[4]
+Vertices	mesh.h	/^	vertex *Vertices;$/;"	m	struct:mesh	typeref:typename:vertex *
+W	platform.h	/^			game_button W;$/;"	m	struct:game_keyboard::__anon7b296420020a::__anon7b2964200308	typeref:typename:game_button
+WGL_ACCELERATION_ARB	win32_opengl.h	/^#define WGL_ACCELERATION_ARB /;"	d
+WGL_ALPHA_BITS_ARB	win32_opengl.h	/^#define WGL_ALPHA_BITS_ARB /;"	d
+WGL_BLUE_BITS_ARB	win32_opengl.h	/^#define WGL_BLUE_BITS_ARB /;"	d
+WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB	opengl.cpp	/^#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB	/;"	d	file:
 WGL_CONTEXT_DEBUG_BIT_ARB	opengl.cpp	/^#define WGL_CONTEXT_DEBUG_BIT_ARB	/;"	d	file:
 WGL_CONTEXT_FLAGS_ARB	opengl.cpp	/^#define WGL_CONTEXT_FLAGS_ARB /;"	d	file:
 WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB	opengl.cpp	/^#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB	/;"	d	file:
@@ -324,22 +632,24 @@ WGL_CONTEXT_LAYER_PLANE_ARB	opengl.cpp	/^#define WGL_CONTEXT_LAYER_PLANE_ARB /;"
 WGL_CONTEXT_MAJOR_VERSION_ARB	opengl.cpp	/^#define WGL_CONTEXT_MAJOR_VERSION_ARB /;"	d	file:
 WGL_CONTEXT_MINOR_VERSION_ARB	opengl.cpp	/^#define WGL_CONTEXT_MINOR_VERSION_ARB /;"	d	file:
 WGL_CONTEXT_PROFILE_MASK_ARB	opengl.cpp	/^#define WGL_CONTEXT_PROFILE_MASK_ARB /;"	d	file:
-WGL_DEPTH_BITS_ARB	win32_main.cpp	/^#define WGL_DEPTH_BITS_ARB /;"	d	file:
-WGL_DOUBLE_BUFFER_ARB	win32_main.cpp	/^#define WGL_DOUBLE_BUFFER_ARB /;"	d	file:
-WGL_DRAW_TO_WINDOW_ARB	win32_main.cpp	/^#define WGL_DRAW_TO_WINDOW_ARB /;"	d	file:
-WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB	win32_main.cpp	/^#define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB /;"	d	file:
-WGL_FULL_ACCELERATION_ARB	win32_main.cpp	/^#define WGL_FULL_ACCELERATION_ARB /;"	d	file:
-WGL_GREEN_BITS_ARB	win32_main.cpp	/^#define WGL_GREEN_BITS_ARB /;"	d	file:
-WGL_PIXEL_TYPE_ARB	win32_main.cpp	/^#define WGL_PIXEL_TYPE_ARB /;"	d	file:
-WGL_RED_BITS_ARB	win32_main.cpp	/^#define WGL_RED_BITS_ARB /;"	d	file:
-WGL_SAMPLES_ARB	win32_main.cpp	/^#define WGL_SAMPLES_ARB	/;"	d	file:
-WGL_STENCIL_BITS_ARB	win32_main.cpp	/^#define WGL_STENCIL_BITS_ARB /;"	d	file:
-WGL_SUPPORT_OPENGL_ARB	win32_main.cpp	/^#define WGL_SUPPORT_OPENGL_ARB /;"	d	file:
-WGL_TYPE_RGBA_ARB	win32_main.cpp	/^#define WGL_TYPE_RGBA_ARB /;"	d	file:
+WGL_DEPTH_BITS_ARB	win32_opengl.h	/^#define WGL_DEPTH_BITS_ARB /;"	d
+WGL_DOUBLE_BUFFER_ARB	win32_opengl.h	/^#define WGL_DOUBLE_BUFFER_ARB /;"	d
+WGL_DRAW_TO_WINDOW_ARB	win32_opengl.h	/^#define WGL_DRAW_TO_WINDOW_ARB /;"	d
+WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB	win32_opengl.h	/^#define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB /;"	d
+WGL_FULL_ACCELERATION_ARB	win32_opengl.h	/^#define WGL_FULL_ACCELERATION_ARB /;"	d
+WGL_GREEN_BITS_ARB	win32_opengl.h	/^#define WGL_GREEN_BITS_ARB /;"	d
+WGL_PIXEL_TYPE_ARB	win32_opengl.h	/^#define WGL_PIXEL_TYPE_ARB /;"	d
+WGL_RED_BITS_ARB	win32_opengl.h	/^#define WGL_RED_BITS_ARB /;"	d
+WGL_SAMPLES_ARB	win32_opengl.h	/^#define WGL_SAMPLES_ARB	/;"	d
+WGL_STENCIL_BITS_ARB	win32_opengl.h	/^#define WGL_STENCIL_BITS_ARB /;"	d
+WGL_SUPPORT_OPENGL_ARB	win32_opengl.h	/^#define WGL_SUPPORT_OPENGL_ARB /;"	d
+WGL_TYPE_RGBA_ARB	win32_opengl.h	/^#define WGL_TYPE_RGBA_ARB /;"	d
 WIN32_MAIN_H	win32_main.h	/^#define WIN32_MAIN_H$/;"	d
+WIN32_OPENGL_H	win32_opengl.h	/^#define WIN32_OPENGL_H$/;"	d
 Weights	mesh.h	/^	f32 Weights[3];$/;"	m	struct:joint_info	typeref:typename:f32[3]
-Win32FileFree	win32_main.cpp	/^Win32FileFree(void *Memory)$/;"	f	typeref:typename:internal void
-Win32FileReadEntire	win32_main.cpp	/^Win32FileReadEntire(char *FileName)$/;"	f	typeref:typename:internal debug_file
+Width	texture.h	/^	s32 Width, Height;$/;"	m	struct:texture	typeref:typename:s32
+Win32FileFree	win32_file_io.cpp	/^Win32FileFree(void *Memory)$/;"	f	typeref:typename:internal void
+Win32FileReadEntire	win32_file_io.cpp	/^Win32FileReadEntire(char *FileName)$/;"	f	typeref:typename:internal debug_file
 Win32GlobalRunning	win32_main.cpp	/^global_varible b32 Win32GlobalRunning;$/;"	v	typeref:typename:global_varible b32
 Win32GlobalTicksPerSecond	win32_main.cpp	/^global_varible s64 Win32GlobalTicksPerSecond;$/;"	v	typeref:typename:global_varible s64
 Win32GlobalWindowHeight	win32_main.cpp	/^global_varible int Win32GlobalWindowHeight;$/;"	v	typeref:typename:global_varible int
@@ -351,105 +661,363 @@ Win32WindowCallBack	win32_main.cpp	/^Win32WindowCallBack(HWND Window, UINT Messa
 WinMain	win32_main.cpp	/^WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)$/;"	f	typeref:typename:int WINAPI
 X	math_util.h	/^	v3 X;$/;"	m	struct:basis	typeref:typename:v3
 XAxis	math_util.h	/^XAxis()$/;"	f	typeref:typename:v3
+XBot	game.h	/^	model *XBot;$/;"	m	struct:game_state	typeref:typename:model *
+XFormBind	asset.h	/^	mat4 XFormBind;$/;"	m	struct:asset_mesh_info	typeref:typename:mat4
 Y	math_util.h	/^	v3 Y;$/;"	m	struct:basis	typeref:typename:v3
 YAxis	math_util.h	/^YAxis()$/;"	f	typeref:typename:v3
+YCbCr_to_RGB_kernel	stb_image.h	/^   void (*YCbCr_to_RGB_kernel)(stbi_uc *out, const stbi_uc *y, const stbi_uc *pcb, const stbi_uc/;"	m	struct:__anon84e4e8860808	typeref:typename:void (*)(stbi_uc * out,const stbi_uc * y,const stbi_uc * pcb,const stbi_uc * pcr,int count,int step)
 Z	math_util.h	/^	v3 Z;$/;"	m	struct:basis	typeref:typename:v3
 ZAxis	math_util.h	/^ZAxis()$/;"	f	typeref:typename:v3
-ZFar	game.h	/^	f32 ZFar;\/\/ = 100.0f;$/;"	m	struct:game_state	typeref:typename:f32
-ZNear	game.h	/^	f32 ZNear;\/\/ = 0.1f;$/;"	m	struct:game_state	typeref:typename:f32
-__VSCMD_ARG_NO_LOGO	build.bat	/^  set __VSCMD_ARG_NO_LOGO=1$/;"	v
+ZFar	game.h	/^	f32 ZFar;$/;"	m	struct:game_state	typeref:typename:f32
+ZNear	game.h	/^	f32 ZNear;$/;"	m	struct:game_state	typeref:typename:f32
+__STB_INCLUDE_STB_TRUETYPE_H__	stb_truetype.h	/^#define __STB_INCLUDE_STB_TRUETYPE_H__$/;"	d
+__VSCMD_ARG_NO_LOGO	build.bat	/^REM   set __VSCMD_ARG_NO_LOGO=1$/;"	v
+__anon0048a2850108	stb_truetype.h	/^{$/;"	s
+__anon0048a2850208	stb_truetype.h	/^{$/;"	s
+__anon0048a2850308	stb_truetype.h	/^{$/;"	s
+__anon0048a2850408	stb_truetype.h	/^{$/;"	s
+__anon0048a2850508	stb_truetype.h	/^{$/;"	s
+__anon0048a2850603	stb_truetype.h	/^   enum {$/;"	g
+__anon0048a2850708	stb_truetype.h	/^   {$/;"	s
+__anon0048a2850808	stb_truetype.h	/^{$/;"	s
+__anon0048a2850903	stb_truetype.h	/^enum { \/\/ platformID$/;"	g
+__anon0048a2850a03	stb_truetype.h	/^enum { \/\/ encodingID for STBTT_PLATFORM_ID_UNICODE$/;"	g
+__anon0048a2850b03	stb_truetype.h	/^enum { \/\/ encodingID for STBTT_PLATFORM_ID_MICROSOFT$/;"	g
+__anon0048a2850c03	stb_truetype.h	/^enum { \/\/ encodingID for STBTT_PLATFORM_ID_MAC; same as Script Manager codes$/;"	g
+__anon0048a2850d03	stb_truetype.h	/^enum { \/\/ languageID for STBTT_PLATFORM_ID_MICROSOFT; same as LCID...$/;"	g
+__anon0048a2850e03	stb_truetype.h	/^enum { \/\/ languageID for STBTT_PLATFORM_ID_MAC$/;"	g
+__anon0048a2850f08	stb_truetype.h	/^{$/;"	s
+__anon0048a2851008	stb_truetype.h	/^{$/;"	s
+__anon0048a2851108	stb_truetype.h	/^{$/;"	s
+__anon0048a2851208	stb_truetype.h	/^{$/;"	s
+__anon7b2964200103	platform.h	/^{$/;"	g
+__anon7b296420020a	platform.h	/^	{$/;"	u	struct:game_keyboard
+__anon7b2964200308	platform.h	/^		{$/;"	s	union:game_keyboard::__anon7b296420020a
+__anon84e4e8860103	stb_image.h	/^{$/;"	g
+__anon84e4e8860208	stb_image.h	/^{$/;"	s
+__anon84e4e8860308	stb_image.h	/^{$/;"	s
+__anon84e4e8860403	stb_image.h	/^{$/;"	g
+__anon84e4e8860508	stb_image.h	/^{$/;"	s
+__anon84e4e8860603	stb_image.h	/^{$/;"	g
+__anon84e4e8860708	stb_image.h	/^{$/;"	s
+__anon84e4e8860808	stb_image.h	/^{$/;"	s
+__anon84e4e8860908	stb_image.h	/^   {$/;"	s	struct:__anon84e4e8860808
+__anon84e4e8860a08	stb_image.h	/^{$/;"	s
+__anon84e4e8860b08	stb_image.h	/^{$/;"	s
+__anon84e4e8860c08	stb_image.h	/^{$/;"	s
+__anon84e4e8860d08	stb_image.h	/^{$/;"	s
+__anon84e4e8860e08	stb_image.h	/^{$/;"	s
+__anon84e4e8860f03	stb_image.h	/^enum {$/;"	g
+__anon84e4e8861008	stb_image.h	/^{$/;"	s
+__anon84e4e8861108	stb_image.h	/^{$/;"	s
+__anon84e4e8861208	stb_image.h	/^{$/;"	s
+__anon84e4e8861308	stb_image.h	/^{$/;"	s
 __anona93c3f220108	math_util.h	/^	{$/;"	s	union:v2
 __anona93c3f220208	math_util.h	/^	{$/;"	s	union:v3
-__anona93c3f220308	math_util.h	/^	{$/;"	s	union:v4
+__anona93c3f220308	math_util.h	/^	{$/;"	s	union:v3
 __anona93c3f220408	math_util.h	/^	{$/;"	s	union:v4
-__anona93c3f22050a	math_util.h	/^		{$/;"	u	struct:v4::__anona93c3f220408
-__anona93c3f220608	math_util.h	/^			{$/;"	s	union:v4::__anona93c3f220408::__anona93c3f22050a
-__anona93c3f220708	math_util.h	/^	{$/;"	s	union:quaternion
+__anona93c3f220508	math_util.h	/^	{$/;"	s	union:v4
+__anona93c3f22060a	math_util.h	/^		{$/;"	u	struct:v4::__anona93c3f220508
+__anona93c3f220708	math_util.h	/^			{$/;"	s	union:v4::__anona93c3f220508::__anona93c3f22060a
+__anona93c3f220808	math_util.h	/^	{$/;"	s	union:quaternion
+advance	stb_truetype.h	/^   int advance;$/;"	m	struct:stbtt_kerningentry	typeref:typename:int
 affine_decomposition	math_util.h	/^struct affine_decomposition$/;"	s
+all_a	stb_image.h	/^   unsigned int mr,mg,mb,ma, all_a;$/;"	m	struct:__anon84e4e8861008	typeref:typename:unsigned int
 animation	animation.h	/^struct animation$/;"	s
-animation_header	asset.cpp	/^enum animation_header$/;"	g	file:
+animation_flags	animation.h	/^enum animation_flags$/;"	g
 animation_id	animation.h	/^struct animation_id$/;"	s
 animation_info	animation.h	/^struct animation_info$/;"	s
 animation_player	animation.h	/^struct animation_player$/;"	s
-b32	platform.h	/^typedef s32 b32;$/;"	t	typeref:typename:s32
+animation_state	animation.h	/^enum animation_state$/;"	g
+app14_color_transform	stb_image.h	/^   int            app14_color_transform; \/\/ Adobe APP14 tag$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+array_of_unicode_codepoints	stb_truetype.h	/^   int *array_of_unicode_codepoints;       \/\/ if non-zero, then this is an array of unicode co/;"	m	struct:__anon0048a2850508	typeref:typename:int *
+asset_animation_header	asset.h	/^struct asset_animation_header$/;"	s
+asset_animation_info	asset.h	/^struct asset_animation_info$/;"	s
+asset_joint_info	asset.h	/^struct asset_joint_info$/;"	s
+asset_joint_name	asset.h	/^struct asset_joint_name$/;"	s
+asset_mesh_info	asset.h	/^struct asset_mesh_info$/;"	s
+asset_model_header	asset.h	/^struct asset_model_header$/;"	s
+b32	platform.h	/^typedef s32		 b32;$/;"	t	typeref:typename:s32
+background	stb_image.h	/^   stbi_uc *background;          \/\/ The current "background" as far as a gif is concerned$/;"	m	struct:__anon84e4e8861308	typeref:typename:stbi_uc *
 basis	math_util.h	/^struct basis$/;"	s
+bgindex	stb_image.h	/^   int flags, bgindex, ratio, transparent, eflags;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+bits_per_channel	stb_image.h	/^   int bits_per_channel;$/;"	m	struct:__anon84e4e8860508	typeref:typename:int
+bottom_y	stb_truetype.h	/^   int x,y,bottom_y;$/;"	m	struct:__anon0048a2851108	typeref:typename:int
+bounds	stb_truetype.h	/^   int bounds;$/;"	m	struct:__anon0048a2850f08	typeref:typename:int
+bpp	stb_image.h	/^   int bpp, offset, hsz;$/;"	m	struct:__anon84e4e8861008	typeref:typename:int
+buffer_start	stb_image.h	/^   stbi_uc buffer_start[128];$/;"	m	struct:__anon84e4e8860308	typeref:typename:stbi_uc[128]
+buflen	stb_image.h	/^   int buflen;$/;"	m	struct:__anon84e4e8860308	typeref:typename:int
+callback_already_read	stb_image.h	/^   int callback_already_read;$/;"	m	struct:__anon84e4e8860308	typeref:typename:int
+cff	stb_truetype.h	/^   stbtt__buf cff;                    \/\/ cff font data$/;"	m	struct:stbtt_fontinfo	typeref:typename:stbtt__buf
+channel	stb_image.h	/^   stbi_uc size,type,channel;$/;"	m	struct:__anon84e4e8861108	typeref:typename:stbi_uc
+channel_order	stb_image.h	/^   int channel_order;$/;"	m	struct:__anon84e4e8860508	typeref:typename:int
+chardata_for_range	stb_truetype.h	/^   stbtt_packedchar *chardata_for_range; \/\/ output$/;"	m	struct:__anon0048a2850508	typeref:typename:stbtt_packedchar *
+charstrings	stb_truetype.h	/^   stbtt__buf charstrings;            \/\/ the charstring index$/;"	m	struct:stbtt_fontinfo	typeref:typename:stbtt__buf
+code	stb_image.h	/^   stbi__uint16 code[256];$/;"	m	struct:__anon84e4e8860708	typeref:typename:stbi__uint16[256]
+code_bits	stb_image.h	/^   int            code_bits;   \/\/ number of valid bits$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+code_buffer	stb_image.h	/^   stbi__uint32   code_buffer; \/\/ jpeg entropy-coded buffer$/;"	m	struct:__anon84e4e8860808	typeref:typename:stbi__uint32
+code_buffer	stb_image.h	/^   stbi__uint32 code_buffer;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:stbi__uint32
+codes	stb_image.h	/^   stbi__gif_lzw codes[8192];$/;"	m	struct:__anon84e4e8861308	typeref:typename:stbi__gif_lzw[8192]
+coeff	stb_image.h	/^      short   *coeff;   \/\/ progressive only$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:short *
+coeff_h	stb_image.h	/^      int      coeff_w, coeff_h; \/\/ number of 8x8 coefficient blocks$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+coeff_w	stb_image.h	/^      int      coeff_w, coeff_h; \/\/ number of 8x8 coefficient blocks$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+color_table	stb_image.h	/^   stbi_uc *color_table;$/;"	m	struct:__anon84e4e8861308	typeref:typename:stbi_uc *
+cur_x	stb_image.h	/^   int cur_x, cur_y;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+cur_y	stb_image.h	/^   int cur_x, cur_y;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+cursor	stb_truetype.h	/^   int cursor;$/;"	m	struct:__anon0048a2850108	typeref:typename:int
+cx	stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon0048a2850708	typeref:typename:stbtt_vertex_type
+cx1	stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon0048a2850708	typeref:typename:stbtt_vertex_type
+cy	stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon0048a2850708	typeref:typename:stbtt_vertex_type
+cy1	stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon0048a2850708	typeref:typename:stbtt_vertex_type
+dP	game.h	/^	v3 dP;$/;"	m	struct:entity	typeref:typename:v3
+data	stb_image.h	/^      stbi_uc *data;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:stbi_uc *
+data	stb_truetype.h	/^   unsigned char  * data;              \/\/ pointer to .ttf file$/;"	m	struct:stbtt_fontinfo	typeref:typename:unsigned char *
+data	stb_truetype.h	/^   unsigned char *data;$/;"	m	struct:__anon0048a2850108	typeref:typename:unsigned char *
+dc_pred	stb_image.h	/^      int dc_pred;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+dct_bfly32o	stb_image.h	/^   #define dct_bfly32o(/;"	d
+dct_bfly32o	stb_image.h	/^#define dct_bfly32o(/;"	d
+dct_const	stb_image.h	/^   #define dct_const(/;"	d
+dct_interleave16	stb_image.h	/^   #define dct_interleave16(/;"	d
+dct_interleave8	stb_image.h	/^   #define dct_interleave8(/;"	d
+dct_long_mac	stb_image.h	/^#define dct_long_mac(/;"	d
+dct_long_mul	stb_image.h	/^#define dct_long_mul(/;"	d
+dct_pass	stb_image.h	/^   #define dct_pass(/;"	d
+dct_pass	stb_image.h	/^#define dct_pass(/;"	d
+dct_rot	stb_image.h	/^   #define dct_rot(/;"	d
+dct_trn16	stb_image.h	/^#define dct_trn16(/;"	d
+dct_trn32	stb_image.h	/^#define dct_trn32(/;"	d
+dct_trn64	stb_image.h	/^#define dct_trn64(/;"	d
+dct_trn8_16	stb_image.h	/^#define dct_trn8_16(/;"	d
+dct_trn8_32	stb_image.h	/^#define dct_trn8_32(/;"	d
+dct_trn8_8	stb_image.h	/^#define dct_trn8_8(/;"	d
+dct_wadd	stb_image.h	/^   #define dct_wadd(/;"	d
+dct_wadd	stb_image.h	/^#define dct_wadd(/;"	d
+dct_widen	stb_image.h	/^   #define dct_widen(/;"	d
+dct_widen	stb_image.h	/^#define dct_widen(/;"	d
+dct_wsub	stb_image.h	/^   #define dct_wsub(/;"	d
+dct_wsub	stb_image.h	/^#define dct_wsub(/;"	d
+ddP	game.h	/^	v3 ddP;$/;"	m	struct:entity	typeref:typename:v3
 debug_file	platform.h	/^struct debug_file$/;"	s
+delay	stb_image.h	/^   int delay;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+delta	stb_image.h	/^   int    delta[17];   \/\/ old 'firstsymbol' - old 'firstcode'$/;"	m	struct:__anon84e4e8860708	typeref:typename:int[17]
+depth	stb_image.h	/^   int depth;$/;"	m	struct:__anon84e4e8860e08	typeref:typename:int
+dequant	stb_image.h	/^   stbi__uint16 dequant[4][64];$/;"	m	struct:__anon84e4e8860808	typeref:typename:stbi__uint16[4][64]
+direction	stb_truetype.h	/^   float direction;$/;"	m	struct:stbtt__active_edge	typeref:typename:float
+direction	stb_truetype.h	/^   int direction;$/;"	m	struct:stbtt__active_edge	typeref:typename:int
 dt	animation.h	/^	f32 dt;$/;"	m	struct:animation_player	typeref:typename:f32
-f32	platform.h	/^typedef float f32;$/;"	t	typeref:typename:float
-f64	platform.h	/^typedef double f64;$/;"	t	typeref:typename:double
+dx	stb_truetype.h	/^   int x,dx;$/;"	m	struct:stbtt__active_edge	typeref:typename:int
+eflags	stb_image.h	/^   int flags, bgindex, ratio, transparent, eflags;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+entity	game.h	/^struct entity$/;"	s
+entity_type	game.h	/^enum entity_type$/;"	g
+eob_run	stb_image.h	/^   int            eob_run;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+eof	stb_image.h	/^   int      (*eof)   (void *user);                       \/\/ returns nonzero if we are at end o/;"	m	struct:__anon84e4e8860208	typeref:typename:int (*)(void * user)
+equal	stb_truetype.h	/^static int equal(float *a, float *b)$/;"	f	typeref:typename:int
+expanded	stb_image.h	/^   stbi_uc *idata, *expanded, *out;$/;"	m	struct:__anon84e4e8860e08	typeref:typename:stbi_uc *
+extra_read	stb_image.h	/^   int extra_read;$/;"	m	struct:__anon84e4e8861008	typeref:typename:int
+ey	stb_truetype.h	/^   float ey;$/;"	m	struct:stbtt__active_edge	typeref:typename:float
+f32	platform.h	/^typedef float	 f32;$/;"	t	typeref:typename:float
+f64	platform.h	/^typedef double	 f64;$/;"	t	typeref:typename:double
+fast	stb_image.h	/^   stbi__uint16 fast[1 << STBI__ZFAST_BITS];$/;"	m	struct:__anon84e4e8860b08	typeref:typename:stbi__uint16[]
+fast	stb_image.h	/^   stbi_uc  fast[1 << FAST_BITS];$/;"	m	struct:__anon84e4e8860708	typeref:typename:stbi_uc[]
+fast_ac	stb_image.h	/^   stbi__int16 fast_ac[4][1 << FAST_BITS];$/;"	m	struct:__anon84e4e8860808	typeref:typename:stbi__int16[4][]
+fdselect	stb_truetype.h	/^   stbtt__buf fdselect;               \/\/ map from glyph to fontdict$/;"	m	struct:stbtt_fontinfo	typeref:typename:stbtt__buf
+fdx	stb_truetype.h	/^   float fx,fdx,fdy;$/;"	m	struct:stbtt__active_edge	typeref:typename:float
+fdy	stb_truetype.h	/^   float fx,fdx,fdy;$/;"	m	struct:stbtt__active_edge	typeref:typename:float
+first	stb_image.h	/^   stbi_uc first;$/;"	m	struct:__anon84e4e8861208	typeref:typename:stbi_uc
+first_free	stb_truetype.h	/^   void   *first_free;$/;"	m	struct:stbtt__hheap	typeref:typename:void *
+first_row_filter	stb_image.h	/^static stbi_uc first_row_filter[5] =$/;"	v	typeref:typename:stbi_uc[5]
+first_unicode_codepoint_in_range	stb_truetype.h	/^   int first_unicode_codepoint_in_range;  \/\/ if non-zero, then the chars are continuous, and t/;"	m	struct:__anon0048a2850508	typeref:typename:int
+first_x	stb_truetype.h	/^   float first_x, first_y;$/;"	m	struct:__anon0048a2850f08	typeref:typename:float
+first_y	stb_truetype.h	/^   float first_x, first_y;$/;"	m	struct:__anon0048a2850f08	typeref:typename:float
+firstcode	stb_image.h	/^   stbi__uint16 firstcode[16];$/;"	m	struct:__anon84e4e8860b08	typeref:typename:stbi__uint16[16]
+firstsymbol	stb_image.h	/^   stbi__uint16 firstsymbol[16];$/;"	m	struct:__anon84e4e8860b08	typeref:typename:stbi__uint16[16]
+flags	stb_image.h	/^   int flags, bgindex, ratio, transparent, eflags;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+font	font.h	/^struct font$/;"	s
+font_quad	game.h	/^struct font_quad$/;"	s
+font_quad_vertex	game.h	/^struct font_quad_vertex$/;"	s
+font_size	stb_truetype.h	/^   float font_size;$/;"	m	struct:__anon0048a2850508	typeref:typename:float
+fontdicts	stb_truetype.h	/^   stbtt__buf fontdicts;              \/\/ array of font dicts$/;"	m	struct:stbtt_fontinfo	typeref:typename:stbtt__buf
+fontstart	stb_truetype.h	/^   int              fontstart;         \/\/ offset of start of font$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+fx	stb_truetype.h	/^   float fx,fdx,fdy;$/;"	m	struct:stbtt__active_edge	typeref:typename:float
+game_button	platform.h	/^struct game_button$/;"	s
+game_input	platform.h	/^struct game_input$/;"	s
+game_keyboard	platform.h	/^struct game_keyboard$/;"	s
 game_memory	platform.h	/^struct game_memory$/;"	s
 game_state	game.h	/^struct game_state$/;"	s
-glAttachShader	win32_main.cpp	/^global_varible gl_attach_shader                 *glAttachShader;$/;"	v	typeref:typename:global_varible gl_attach_shader *
-glBindBuffer	win32_main.cpp	/^global_varible gl_bind_buffer					*glBindBuffer;$/;"	v	typeref:typename:global_varible gl_bind_buffer *
-glBindVertexArray	win32_main.cpp	/^global_varible gl_bind_vertex_array				*glBindVertexArray;$/;"	v	typeref:typename:global_varible gl_bind_vertex_array *
-glBufferData	win32_main.cpp	/^global_varible gl_buffer_data					*glBufferData;$/;"	v	typeref:typename:global_varible gl_buffer_data *
-glCompileShader	win32_main.cpp	/^global_varible gl_compile_shader                *glCompileShader;$/;"	v	typeref:typename:global_varible gl_compile_shader *
-glCreateProgram	win32_main.cpp	/^global_varible gl_create_program                *glCreateProgram;$/;"	v	typeref:typename:global_varible gl_create_program *
-glCreateShader	win32_main.cpp	/^global_varible gl_create_shader                 *glCreateShader;$/;"	v	typeref:typename:global_varible gl_create_shader *
-glDeleteProgram	win32_main.cpp	/^global_varible gl_delete_program                *glDeleteProgram;$/;"	v	typeref:typename:global_varible gl_delete_program *
-glDeleteShader	win32_main.cpp	/^global_varible gl_delete_shader                 *glDeleteShader;$/;"	v	typeref:typename:global_varible gl_delete_shader *
-glEnableVertexAttribArray	win32_main.cpp	/^global_varible gl_enable_vertex_attrib_array    *glEnableVertexAttribArray;$/;"	v	typeref:typename:global_varible gl_enable_vertex_attrib_array *
-glGenBuffers	win32_main.cpp	/^global_varible gl_gen_buffers					*glGenBuffers;$/;"	v	typeref:typename:global_varible gl_gen_buffers *
-glGenVertexArrays	win32_main.cpp	/^global_varible gl_gen_vertex_arrays				*glGenVertexArrays;$/;"	v	typeref:typename:global_varible gl_gen_vertex_arrays *
-glGetActiveAttrib	win32_main.cpp	/^global_varible gl_get_active_attrib             *glGetActiveAttrib;$/;"	v	typeref:typename:global_varible gl_get_active_attrib *
-glGetProgramInfoLog	win32_main.cpp	/^global_varible gl_get_program_info_log          *glGetProgramInfoLog;$/;"	v	typeref:typename:global_varible gl_get_program_info_log *
-glGetProgramiv	win32_main.cpp	/^global_varible gl_get_programiv                 *glGetProgramiv;$/;"	v	typeref:typename:global_varible gl_get_programiv *
-glGetShaderInfoLog	win32_main.cpp	/^global_varible gl_get_shader_info_log           *glGetShaderInfoLog;$/;"	v	typeref:typename:global_varible gl_get_shader_info_log *
-glGetShaderiv	win32_main.cpp	/^global_varible gl_get_shaderiv                  *glGetShaderiv;$/;"	v	typeref:typename:global_varible gl_get_shaderiv *
-glGetUniformLocation	win32_main.cpp	/^global_varible gl_get_uniform_location          *glGetUniformLocation;$/;"	v	typeref:typename:global_varible gl_get_uniform_location *
-glLinkProgram	win32_main.cpp	/^global_varible gl_link_program					*glLinkProgram;$/;"	v	typeref:typename:global_varible gl_link_program *
-glShaderSource	win32_main.cpp	/^global_varible gl_shader_source					*glShaderSource;$/;"	v	typeref:typename:global_varible gl_shader_source *
-glUniform1f	win32_main.cpp	/^global_varible gl_uniform_1f					*glUniform1f;$/;"	v	typeref:typename:global_varible gl_uniform_1f *
-glUniform1ui	win32_main.cpp	/^global_varible gl_uniform_1ui					*glUniform1ui;$/;"	v	typeref:typename:global_varible gl_uniform_1ui *
-glUniform3fv	win32_main.cpp	/^global_varible gl_uniform_3fv					*glUniform3fv;$/;"	v	typeref:typename:global_varible gl_uniform_3fv *
-glUniform4fv	win32_main.cpp	/^global_varible gl_uniform_4fv					*glUniform4fv;$/;"	v	typeref:typename:global_varible gl_uniform_4fv *
-glUniformMatrix4fv	win32_main.cpp	/^global_varible gl_uniform_matrix_4fv			*glUniformMatrix4fv;$/;"	v	typeref:typename:global_varible gl_uniform_matrix_4fv *
-glUseProgram	win32_main.cpp	/^global_varible gl_use_program					*glUseProgram;$/;"	v	typeref:typename:global_varible gl_use_program *
-glValidateProgram	win32_main.cpp	/^global_varible gl_validate_program				*glValidateProgram;$/;"	v	typeref:typename:global_varible gl_validate_program *
-glVertexAttribIPointer	win32_main.cpp	/^global_varible gl_vertex_attribi_pointer		*glVertexAttribIPointer;$/;"	v	typeref:typename:global_varible gl_vertex_attribi_pointer *
-glVertexAttribPointer	win32_main.cpp	/^global_varible gl_vertex_attrib_pointer			*glVertexAttribPointer;$/;"	v	typeref:typename:global_varible gl_vertex_attrib_pointer *
-gl_attach_shader	win32_main.cpp	/^typedef void 	WINAPI gl_attach_shader(GLuint program, GLuint shader);$/;"	t	typeref:typename:void WINAPI ()(GLuint program,GLuint shader)	file:
-gl_bind_buffer	win32_main.cpp	/^typedef void 	WINAPI gl_bind_buffer(GLenum target, GLuint buffer);$/;"	t	typeref:typename:void WINAPI ()(GLenum target,GLuint buffer)	file:
-gl_bind_vertex_array	win32_main.cpp	/^typedef void	WINAPI gl_bind_vertex_array(GLuint array);$/;"	t	typeref:typename:void WINAPI ()(GLuint array)	file:
-gl_buffer_data	win32_main.cpp	/^typedef void 	WINAPI gl_buffer_data(GLenum target, GLsizeiptr size, const void *data, GLenum usa/;"	t	typeref:typename:void WINAPI ()(GLenum target,GLsizeiptr size,const void * data,GLenum usage)	file:
-gl_compile_shader	win32_main.cpp	/^typedef void 	WINAPI gl_compile_shader(GLuint shader);$/;"	t	typeref:typename:void WINAPI ()(GLuint shader)	file:
-gl_create_program	win32_main.cpp	/^typedef GLuint	WINAPI gl_create_program(void);$/;"	t	typeref:typename:GLuint WINAPI ()(void)	file:
-gl_create_shader	win32_main.cpp	/^typedef GLuint	WINAPI gl_create_shader(GLenum type);$/;"	t	typeref:typename:GLuint WINAPI ()(GLenum type)	file:
-gl_delete_program	win32_main.cpp	/^typedef void	WINAPI gl_delete_program(GLuint program);$/;"	t	typeref:typename:void WINAPI ()(GLuint program)	file:
-gl_delete_shader	win32_main.cpp	/^typedef void 	WINAPI gl_delete_shader(GLuint shader);$/;"	t	typeref:typename:void WINAPI ()(GLuint shader)	file:
-gl_enable_vertex_attrib_array	win32_main.cpp	/^typedef void 	WINAPI gl_enable_vertex_attrib_array(GLuint index);$/;"	t	typeref:typename:void WINAPI ()(GLuint index)	file:
-gl_gen_buffers	win32_main.cpp	/^typedef void 	WINAPI gl_gen_buffers(GLsizei n, GLuint *buffers);$/;"	t	typeref:typename:void WINAPI ()(GLsizei n,GLuint * buffers)	file:
-gl_gen_vertex_arrays	win32_main.cpp	/^typedef void 	WINAPI gl_gen_vertex_arrays(GLsizei n, GLuint *arrays);$/;"	t	typeref:typename:void WINAPI ()(GLsizei n,GLuint * arrays)	file:
-gl_get_active_attrib	win32_main.cpp	/^typedef void 	WINAPI gl_get_active_attrib(GLuint program, GLuint index, GLsizei bufSize, GLsizei/;"	t	typeref:typename:void WINAPI ()(GLuint program,GLuint index,GLsizei bufSize,GLsizei * length,GLint * size,GLenum * type,GLchar * name)	file:
-gl_get_program_info_log	win32_main.cpp	/^typedef void 	WINAPI gl_get_program_info_log(GLuint program, GLsizei bufSize, GLsizei *length, G/;"	t	typeref:typename:void WINAPI ()(GLuint program,GLsizei bufSize,GLsizei * length,GLchar * infoLog)	file:
-gl_get_programiv	win32_main.cpp	/^typedef void 	WINAPI gl_get_programiv(GLuint program, GLenum pname, GLint *params);$/;"	t	typeref:typename:void WINAPI ()(GLuint program,GLenum pname,GLint * params)	file:
-gl_get_shader_info_log	win32_main.cpp	/^typedef void 	WINAPI gl_get_shader_info_log(GLuint shader, GLsizei bufSize, GLsizei *length, GLc/;"	t	typeref:typename:void WINAPI ()(GLuint shader,GLsizei bufSize,GLsizei * length,GLchar * infoLog)	file:
-gl_get_shaderiv	win32_main.cpp	/^typedef void 	WINAPI gl_get_shaderiv(GLuint shader, GLenum pname, GLint *params);$/;"	t	typeref:typename:void WINAPI ()(GLuint shader,GLenum pname,GLint * params)	file:
-gl_get_uniform_location	win32_main.cpp	/^typedef GLint	WINAPI gl_get_uniform_location(GLuint program, const GLchar *name);$/;"	t	typeref:typename:GLint WINAPI ()(GLuint program,const GLchar * name)	file:
-gl_link_program	win32_main.cpp	/^typedef void 	WINAPI gl_link_program(GLuint program);$/;"	t	typeref:typename:void WINAPI ()(GLuint program)	file:
-gl_shader_source	win32_main.cpp	/^typedef void 	WINAPI gl_shader_source(GLuint shader, GLsizei count, const GLchar *const*string, /;"	t	typeref:typename:void WINAPI ()(GLuint shader,GLsizei count,const GLchar * const * string,const GLint * length)	file:
-gl_uniform_1f	win32_main.cpp	/^typedef void 	WINAPI gl_uniform_1f(GLint location, GLfloat v0);$/;"	t	typeref:typename:void WINAPI ()(GLint location,GLfloat v0)	file:
-gl_uniform_1ui	win32_main.cpp	/^typedef void 	WINAPI gl_uniform_1ui(GLint location, GLuint v0);$/;"	t	typeref:typename:void WINAPI ()(GLint location,GLuint v0)	file:
-gl_uniform_3fv	win32_main.cpp	/^typedef void 	WINAPI gl_uniform_3fv(GLint location, GLsizei count, const GLfloat *value);$/;"	t	typeref:typename:void WINAPI ()(GLint location,GLsizei count,const GLfloat * value)	file:
-gl_uniform_4fv	win32_main.cpp	/^typedef void 	WINAPI gl_uniform_4fv(GLint location, GLsizei count, const GLfloat *value);$/;"	t	typeref:typename:void WINAPI ()(GLint location,GLsizei count,const GLfloat * value)	file:
-gl_uniform_matrix_4fv	win32_main.cpp	/^typedef void 	WINAPI gl_uniform_matrix_4fv(GLint location, GLsizei count, GLboolean transpose, c/;"	t	typeref:typename:void WINAPI ()(GLint location,GLsizei count,GLboolean transpose,const GLfloat * value)	file:
-gl_use_program	win32_main.cpp	/^typedef void 	WINAPI gl_use_program(GLuint program);$/;"	t	typeref:typename:void WINAPI ()(GLuint program)	file:
-gl_validate_program	win32_main.cpp	/^typedef void 	WINAPI gl_validate_program(GLuint program);$/;"	t	typeref:typename:void WINAPI ()(GLuint program)	file:
-gl_vertex_attrib_pointer	win32_main.cpp	/^typedef void 	WINAPI gl_vertex_attrib_pointer(GLuint index, GLint size, GLenum type, GLboolean n/;"	t	typeref:typename:void WINAPI ()(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei stride,const void * pointer)	file:
-gl_vertex_attribi_pointer	win32_main.cpp	/^typedef void 	WINAPI gl_vertex_attribi_pointer(GLuint index, GLint size, GLenum type, GLsizei st/;"	t	typeref:typename:void WINAPI ()(GLuint index,GLint size,GLenum type,GLsizei stride,const void * pointer)	file:
-global_varible	platform.h	/^#define global_varible /;"	d
-internal	platform.h	/^#define internal /;"	d
+glActiveTexture	win32_opengl.h	/^global_variable gl_active_texture				*glActiveTexture;$/;"	v	typeref:typename:global_variable gl_active_texture *
+glAttachShader	win32_opengl.h	/^global_varible gl_attach_shader                 *glAttachShader;$/;"	v	typeref:typename:global_varible gl_attach_shader *
+glBindBuffer	win32_opengl.h	/^global_varible gl_bind_buffer					*glBindBuffer;$/;"	v	typeref:typename:global_varible gl_bind_buffer *
+glBindVertexArray	win32_opengl.h	/^global_varible gl_bind_vertex_array				*glBindVertexArray;$/;"	v	typeref:typename:global_varible gl_bind_vertex_array *
+glBufferData	win32_opengl.h	/^global_varible gl_buffer_data					*glBufferData;$/;"	v	typeref:typename:global_varible gl_buffer_data *
+glCompileShader	win32_opengl.h	/^global_varible gl_compile_shader                *glCompileShader;$/;"	v	typeref:typename:global_varible gl_compile_shader *
+glCreateProgram	win32_opengl.h	/^global_varible gl_create_program                *glCreateProgram;$/;"	v	typeref:typename:global_varible gl_create_program *
+glCreateShader	win32_opengl.h	/^global_varible gl_create_shader                 *glCreateShader;$/;"	v	typeref:typename:global_varible gl_create_shader *
+glDebugMessageCallback	win32_opengl.h	/^global_variable gl_debug_message_callback *glDebugMessageCallback;$/;"	v	typeref:typename:global_variable gl_debug_message_callback *
+glDeleteProgram	win32_opengl.h	/^global_varible gl_delete_program                *glDeleteProgram;$/;"	v	typeref:typename:global_varible gl_delete_program *
+glDeleteShader	win32_opengl.h	/^global_varible gl_delete_shader                 *glDeleteShader;$/;"	v	typeref:typename:global_varible gl_delete_shader *
+glEnableVertexAttribArray	win32_opengl.h	/^global_varible gl_enable_vertex_attrib_array    *glEnableVertexAttribArray;$/;"	v	typeref:typename:global_varible gl_enable_vertex_attrib_array *
+glGenBuffers	win32_opengl.h	/^global_varible gl_gen_buffers					*glGenBuffers;$/;"	v	typeref:typename:global_varible gl_gen_buffers *
+glGenVertexArrays	win32_opengl.h	/^global_varible gl_gen_vertex_arrays				*glGenVertexArrays;$/;"	v	typeref:typename:global_varible gl_gen_vertex_arrays *
+glGenerateMipmap	win32_opengl.h	/^global_variable gl_generate_mipmap				*glGenerateMipmap;$/;"	v	typeref:typename:global_variable gl_generate_mipmap *
+glGetActiveAttrib	win32_opengl.h	/^global_varible gl_get_active_attrib             *glGetActiveAttrib;$/;"	v	typeref:typename:global_varible gl_get_active_attrib *
+glGetProgramInfoLog	win32_opengl.h	/^global_varible gl_get_program_info_log          *glGetProgramInfoLog;$/;"	v	typeref:typename:global_varible gl_get_program_info_log *
+glGetProgramiv	win32_opengl.h	/^global_varible gl_get_programiv                 *glGetProgramiv;$/;"	v	typeref:typename:global_varible gl_get_programiv *
+glGetShaderInfoLog	win32_opengl.h	/^global_varible gl_get_shader_info_log           *glGetShaderInfoLog;$/;"	v	typeref:typename:global_varible gl_get_shader_info_log *
+glGetShaderiv	win32_opengl.h	/^global_varible gl_get_shaderiv                  *glGetShaderiv;$/;"	v	typeref:typename:global_varible gl_get_shaderiv *
+glGetUniformLocation	win32_opengl.h	/^global_varible gl_get_uniform_location          *glGetUniformLocation;$/;"	v	typeref:typename:global_varible gl_get_uniform_location *
+glLinkProgram	win32_opengl.h	/^global_varible gl_link_program					*glLinkProgram;$/;"	v	typeref:typename:global_varible gl_link_program *
+glShaderSource	win32_opengl.h	/^global_varible gl_shader_source					*glShaderSource;$/;"	v	typeref:typename:global_varible gl_shader_source *
+glTexImage3D	win32_opengl.h	/^global_variable gl_tex_image3D					*glTexImage3D;$/;"	v	typeref:typename:global_variable gl_tex_image3D *
+glTexSubImage3D	win32_opengl.h	/^global_variable gl_tex_sub_image3D				*glTexSubImage3D;$/;"	v	typeref:typename:global_variable gl_tex_sub_image3D *
+glUniform1f	win32_opengl.h	/^global_varible gl_uniform_1f					*glUniform1f;$/;"	v	typeref:typename:global_varible gl_uniform_1f *
+glUniform1i	win32_opengl.h	/^global_variable gl_uniform_1i					*glUniform1i;$/;"	v	typeref:typename:global_variable gl_uniform_1i *
+glUniform1ui	win32_opengl.h	/^global_varible gl_uniform_1ui					*glUniform1ui;$/;"	v	typeref:typename:global_varible gl_uniform_1ui *
+glUniform3fv	win32_opengl.h	/^global_varible gl_uniform_3fv					*glUniform3fv;$/;"	v	typeref:typename:global_varible gl_uniform_3fv *
+glUniform4fv	win32_opengl.h	/^global_varible gl_uniform_4fv					*glUniform4fv;$/;"	v	typeref:typename:global_varible gl_uniform_4fv *
+glUniformMatrix3fv	win32_opengl.h	/^global_varible gl_uniform_matrix_3fv			*glUniformMatrix3fv;$/;"	v	typeref:typename:global_varible gl_uniform_matrix_3fv *
+glUniformMatrix4fv	win32_opengl.h	/^global_varible gl_uniform_matrix_4fv			*glUniformMatrix4fv;$/;"	v	typeref:typename:global_varible gl_uniform_matrix_4fv *
+glUseProgram	win32_opengl.h	/^global_varible gl_use_program					*glUseProgram;$/;"	v	typeref:typename:global_varible gl_use_program *
+glValidateProgram	win32_opengl.h	/^global_varible gl_validate_program				*glValidateProgram;$/;"	v	typeref:typename:global_varible gl_validate_program *
+glVertexAttribIPointer	win32_opengl.h	/^global_varible gl_vertex_attribi_pointer		*glVertexAttribIPointer;$/;"	v	typeref:typename:global_varible gl_vertex_attribi_pointer *
+glVertexAttribPointer	win32_opengl.h	/^global_varible gl_vertex_attrib_pointer			*glVertexAttribPointer;$/;"	v	typeref:typename:global_varible gl_vertex_attrib_pointer *
+gl_active_texture	win32_opengl.h	/^typedef void	WINAPI gl_active_texture(GLenum texture);$/;"	t	typeref:typename:void WINAPI ()(GLenum texture)
+gl_attach_shader	win32_opengl.h	/^typedef void 	WINAPI gl_attach_shader(GLuint program, GLuint shader);$/;"	t	typeref:typename:void WINAPI ()(GLuint program,GLuint shader)
+gl_bind_buffer	win32_opengl.h	/^typedef void 	WINAPI gl_bind_buffer(GLenum target, GLuint buffer);$/;"	t	typeref:typename:void WINAPI ()(GLenum target,GLuint buffer)
+gl_bind_vertex_array	win32_opengl.h	/^typedef void	WINAPI gl_bind_vertex_array(GLuint array);$/;"	t	typeref:typename:void WINAPI ()(GLuint array)
+gl_buffer_data	win32_opengl.h	/^typedef void 	WINAPI gl_buffer_data(GLenum target, GLsizeiptr size, const void *data, GLenum usa/;"	t	typeref:typename:void WINAPI ()(GLenum target,GLsizeiptr size,const void * data,GLenum usage)
+gl_compile_shader	win32_opengl.h	/^typedef void 	WINAPI gl_compile_shader(GLuint shader);$/;"	t	typeref:typename:void WINAPI ()(GLuint shader)
+gl_create_program	win32_opengl.h	/^typedef GLuint	WINAPI gl_create_program(void);$/;"	t	typeref:typename:GLuint WINAPI ()(void)
+gl_create_shader	win32_opengl.h	/^typedef GLuint	WINAPI gl_create_shader(GLenum type);$/;"	t	typeref:typename:GLuint WINAPI ()(GLenum type)
+gl_debug_message_callback	win32_opengl.h	/^typedef void WINAPI gl_debug_message_callback(GLDEBUGPROC *callback, const void *userParam);$/;"	t	typeref:typename:void WINAPI ()(GLDEBUGPROC * callback,const void * userParam)
+gl_delete_program	win32_opengl.h	/^typedef void	WINAPI gl_delete_program(GLuint program);$/;"	t	typeref:typename:void WINAPI ()(GLuint program)
+gl_delete_shader	win32_opengl.h	/^typedef void 	WINAPI gl_delete_shader(GLuint shader);$/;"	t	typeref:typename:void WINAPI ()(GLuint shader)
+gl_enable_vertex_attrib_array	win32_opengl.h	/^typedef void 	WINAPI gl_enable_vertex_attrib_array(GLuint index);$/;"	t	typeref:typename:void WINAPI ()(GLuint index)
+gl_gen_buffers	win32_opengl.h	/^typedef void 	WINAPI gl_gen_buffers(GLsizei n, GLuint *buffers);$/;"	t	typeref:typename:void WINAPI ()(GLsizei n,GLuint * buffers)
+gl_gen_vertex_arrays	win32_opengl.h	/^typedef void 	WINAPI gl_gen_vertex_arrays(GLsizei n, GLuint *arrays);$/;"	t	typeref:typename:void WINAPI ()(GLsizei n,GLuint * arrays)
+gl_generate_mipmap	win32_opengl.h	/^typedef void	WINAPI gl_generate_mipmap(GLenum target);$/;"	t	typeref:typename:void WINAPI ()(GLenum target)
+gl_get_active_attrib	win32_opengl.h	/^typedef void 	WINAPI gl_get_active_attrib(GLuint program, GLuint index, GLsizei bufSize, GLsizei/;"	t	typeref:typename:void WINAPI ()(GLuint program,GLuint index,GLsizei bufSize,GLsizei * length,GLint * size,GLenum * type,GLchar * name)
+gl_get_program_info_log	win32_opengl.h	/^typedef void 	WINAPI gl_get_program_info_log(GLuint program, GLsizei bufSize, GLsizei *length, G/;"	t	typeref:typename:void WINAPI ()(GLuint program,GLsizei bufSize,GLsizei * length,GLchar * infoLog)
+gl_get_programiv	win32_opengl.h	/^typedef void 	WINAPI gl_get_programiv(GLuint program, GLenum pname, GLint *params);$/;"	t	typeref:typename:void WINAPI ()(GLuint program,GLenum pname,GLint * params)
+gl_get_shader_info_log	win32_opengl.h	/^typedef void	WINAPI gl_get_shader_info_log(GLuint shader, GLsizei bufSize, GLsizei *length, GLch/;"	t	typeref:typename:void WINAPI ()(GLuint shader,GLsizei bufSize,GLsizei * length,GLchar * infoLog)
+gl_get_shader_info_log	win32_opengl.h	/^typedef void 	WINAPI gl_get_shader_info_log(GLuint shader, GLsizei bufSize, GLsizei *length, GLc/;"	t	typeref:typename:void WINAPI ()(GLuint shader,GLsizei bufSize,GLsizei * length,GLchar * infoLog)
+gl_get_shaderiv	win32_opengl.h	/^typedef void 	WINAPI gl_get_shaderiv(GLuint shader, GLenum pname, GLint *params);$/;"	t	typeref:typename:void WINAPI ()(GLuint shader,GLenum pname,GLint * params)
+gl_get_uniform_location	win32_opengl.h	/^typedef GLint	WINAPI gl_get_uniform_location(GLuint program, const GLchar *name);$/;"	t	typeref:typename:GLint WINAPI ()(GLuint program,const GLchar * name)
+gl_link_program	win32_opengl.h	/^typedef void 	WINAPI gl_link_program(GLuint program);$/;"	t	typeref:typename:void WINAPI ()(GLuint program)
+gl_shader_source	win32_opengl.h	/^typedef void 	WINAPI gl_shader_source(GLuint shader, GLsizei count, const GLchar *const*string, /;"	t	typeref:typename:void WINAPI ()(GLuint shader,GLsizei count,const GLchar * const * string,const GLint * length)
+gl_tex_image3D	win32_opengl.h	/^typedef void	WINAPI gl_tex_image3D(GLenum target, GLint level, GLint internalformat, GLsizei wid/;"	t	typeref:typename:void WINAPI ()(GLenum target,GLint level,GLint internalformat,GLsizei width,GLsizei height,GLsizei depth,GLint border,GLenum format,GLenum type,const void * data)
+gl_tex_sub_image3D	win32_opengl.h	/^typedef void	WINAPI gl_tex_sub_image3D(GLuint texture, GLint level, GLint xoffset, GLint yoffset/;"	t	typeref:typename:void WINAPI ()(GLuint texture,GLint level,GLint xoffset,GLint yoffset,GLint zoffset,GLsizei width,GLsizei height,GLsizei depth,GLenum format,GLenum type,const void * pixels)
+gl_uniform_1f	win32_opengl.h	/^typedef void 	WINAPI gl_uniform_1f(GLint location, GLfloat v0);$/;"	t	typeref:typename:void WINAPI ()(GLint location,GLfloat v0)
+gl_uniform_1i	win32_opengl.h	/^typedef void	WINAPI gl_uniform_1i(GLint location, GLint v0);$/;"	t	typeref:typename:void WINAPI ()(GLint location,GLint v0)
+gl_uniform_1ui	win32_opengl.h	/^typedef void 	WINAPI gl_uniform_1ui(GLint location, GLuint v0);$/;"	t	typeref:typename:void WINAPI ()(GLint location,GLuint v0)
+gl_uniform_3fv	win32_opengl.h	/^typedef void 	WINAPI gl_uniform_3fv(GLint location, GLsizei count, const GLfloat *value);$/;"	t	typeref:typename:void WINAPI ()(GLint location,GLsizei count,const GLfloat * value)
+gl_uniform_4fv	win32_opengl.h	/^typedef void 	WINAPI gl_uniform_4fv(GLint location, GLsizei count, const GLfloat *value);$/;"	t	typeref:typename:void WINAPI ()(GLint location,GLsizei count,const GLfloat * value)
+gl_uniform_matrix_3fv	win32_opengl.h	/^typedef void 	WINAPI gl_uniform_matrix_3fv(GLint location, GLsizei count, GLboolean transpose, c/;"	t	typeref:typename:void WINAPI ()(GLint location,GLsizei count,GLboolean transpose,const GLfloat * value)
+gl_uniform_matrix_4fv	win32_opengl.h	/^typedef void 	WINAPI gl_uniform_matrix_4fv(GLint location, GLsizei count, GLboolean transpose, c/;"	t	typeref:typename:void WINAPI ()(GLint location,GLsizei count,GLboolean transpose,const GLfloat * value)
+gl_use_program	win32_opengl.h	/^typedef void 	WINAPI gl_use_program(GLuint program);$/;"	t	typeref:typename:void WINAPI ()(GLuint program)
+gl_validate_program	win32_opengl.h	/^typedef void 	WINAPI gl_validate_program(GLuint program);$/;"	t	typeref:typename:void WINAPI ()(GLuint program)
+gl_vertex_attrib_pointer	win32_opengl.h	/^typedef void 	WINAPI gl_vertex_attrib_pointer(GLuint index, GLint size, GLenum type, GLboolean n/;"	t	typeref:typename:void WINAPI ()(GLuint index,GLint size,GLenum type,GLboolean normalized,GLsizei stride,const void * pointer)
+gl_vertex_attribi_pointer	win32_opengl.h	/^typedef void 	WINAPI gl_vertex_attribi_pointer(GLuint index, GLint size, GLenum type, GLsizei st/;"	t	typeref:typename:void WINAPI ()(GLuint index,GLint size,GLenum type,GLsizei stride,const void * pointer)
+global_variable	win32_opengl.h	/^#define global_variable /;"	d
+global_varible	platform.h	/^#define global_varible	/;"	d
+glyf	stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+glyph1	stb_truetype.h	/^   int glyph1; \/\/ use stbtt_FindGlyphIndex$/;"	m	struct:stbtt_kerningentry	typeref:typename:int
+glyph2	stb_truetype.h	/^   int glyph2;$/;"	m	struct:stbtt_kerningentry	typeref:typename:int
+glyph_box	font.h	/^struct glyph_box$/;"	s
+gpos	stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+gsubrs	stb_truetype.h	/^   stbtt__buf gsubrs;                 \/\/ global charstring subroutines index$/;"	m	struct:stbtt_fontinfo	typeref:typename:stbtt__buf
+h	stb_image.h	/^      int h,v;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+h	stb_image.h	/^   int w,h;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+h	stb_truetype.h	/^   int id,w,h,was_packed;$/;"	m	struct:stbrp_rect	typeref:typename:int
+h	stb_truetype.h	/^   int w,h,stride;$/;"	m	struct:__anon0048a2850808	typeref:typename:int
+h2	stb_image.h	/^      int x,y,w2,h2;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+h_oversample	stb_truetype.h	/^   unsigned char h_oversample, v_oversample; \/\/ don't set these, they're used internally$/;"	m	struct:__anon0048a2850508	typeref:typename:unsigned char
+h_oversample	stb_truetype.h	/^   unsigned int   h_oversample, v_oversample;$/;"	m	struct:stbtt_pack_context	typeref:typename:unsigned int
+ha	stb_image.h	/^      int hd,ha;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+hd	stb_image.h	/^      int hd,ha;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+head	stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+head	stb_truetype.h	/^   struct stbtt__hheap_chunk *head;$/;"	m	struct:stbtt__hheap	typeref:struct:stbtt__hheap_chunk *
+height	stb_truetype.h	/^   int   height;$/;"	m	struct:stbtt_pack_context	typeref:typename:int
+height	stb_truetype.h	/^   int width,height;$/;"	m	struct:__anon0048a2851108	typeref:typename:int
+hhea	stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+history	stb_image.h	/^   stbi_uc *history;$/;"	m	struct:__anon84e4e8861308	typeref:typename:stbi_uc *
+hit_zeof_once	stb_image.h	/^   int hit_zeof_once;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:int
+hmtx	stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+hs	stb_image.h	/^   int hs,vs;   \/\/ expansion factor in each axis$/;"	m	struct:__anon84e4e8860a08	typeref:typename:int
+hsz	stb_image.h	/^   int bpp, offset, hsz;$/;"	m	struct:__anon84e4e8861008	typeref:typename:int
+huff_ac	stb_image.h	/^   stbi__huffman huff_ac[4];$/;"	m	struct:__anon84e4e8860808	typeref:typename:stbi__huffman[4]
+huff_dc	stb_image.h	/^   stbi__huffman huff_dc[4];$/;"	m	struct:__anon84e4e8860808	typeref:typename:stbi__huffman[4]
+id	stb_image.h	/^      int id;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+id	stb_truetype.h	/^   int id,w,h,was_packed;$/;"	m	struct:stbrp_rect	typeref:typename:int
+idata	stb_image.h	/^   stbi_uc *idata, *expanded, *out;$/;"	m	struct:__anon84e4e8860e08	typeref:typename:stbi_uc *
+idct_block_kernel	stb_image.h	/^   void (*idct_block_kernel)(stbi_uc *out, int out_stride, short data[64]);$/;"	m	struct:__anon84e4e8860808	typeref:typename:void (*)(stbi_uc * out,int out_stride,short data[64])
+img_buffer	stb_image.h	/^   stbi_uc *img_buffer, *img_buffer_end;$/;"	m	struct:__anon84e4e8860308	typeref:typename:stbi_uc *
+img_buffer_end	stb_image.h	/^   stbi_uc *img_buffer, *img_buffer_end;$/;"	m	struct:__anon84e4e8860308	typeref:typename:stbi_uc *
+img_buffer_original	stb_image.h	/^   stbi_uc *img_buffer_original, *img_buffer_original_end;$/;"	m	struct:__anon84e4e8860308	typeref:typename:stbi_uc *
+img_buffer_original_end	stb_image.h	/^   stbi_uc *img_buffer_original, *img_buffer_original_end;$/;"	m	struct:__anon84e4e8860308	typeref:typename:stbi_uc *
+img_comp	stb_image.h	/^   } img_comp[4];$/;"	m	struct:__anon84e4e8860808	typeref:struct:__anon84e4e8860808::__anon84e4e8860908[4]
+img_h_max	stb_image.h	/^   int img_h_max, img_v_max;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+img_mcu_h	stb_image.h	/^   int img_mcu_w, img_mcu_h;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+img_mcu_w	stb_image.h	/^   int img_mcu_w, img_mcu_h;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+img_mcu_x	stb_image.h	/^   int img_mcu_x, img_mcu_y;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+img_mcu_y	stb_image.h	/^   int img_mcu_x, img_mcu_y;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+img_n	stb_image.h	/^   int img_n, img_out_n;$/;"	m	struct:__anon84e4e8860308	typeref:typename:int
+img_out_n	stb_image.h	/^   int img_n, img_out_n;$/;"	m	struct:__anon84e4e8860308	typeref:typename:int
+img_v_max	stb_image.h	/^   int img_h_max, img_v_max;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+img_x	stb_image.h	/^   stbi__uint32 img_x, img_y;$/;"	m	struct:__anon84e4e8860308	typeref:typename:stbi__uint32
+img_y	stb_image.h	/^   stbi__uint32 img_x, img_y;$/;"	m	struct:__anon84e4e8860308	typeref:typename:stbi__uint32
+indexToLocFormat	stb_truetype.h	/^   int indexToLocFormat;              \/\/ format needed to map from glyph index to glyph$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+index_map	stb_truetype.h	/^   int index_map;                     \/\/ a cmap mapping for our chosen character encoding$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+internal	platform.h	/^#define internal	/;"	d
+invert	stb_truetype.h	/^   int invert;$/;"	m	struct:stbtt__edge	typeref:typename:int
+io	stb_image.h	/^   stbi_io_callbacks io;$/;"	m	struct:__anon84e4e8860308	typeref:typename:stbi_io_callbacks
+io_user_data	stb_image.h	/^   void *io_user_data;$/;"	m	struct:__anon84e4e8860308	typeref:typename:void *
+jfif	stb_image.h	/^   int            jfif;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
 joint	mesh.h	/^struct joint$/;"	s
 joint_info	mesh.h	/^struct joint_info$/;"	s
+kern	stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
 key_frame	animation.h	/^struct key_frame$/;"	s
-local_persist	platform.h	/^#define local_persist /;"	d
+length	stb_image.h	/^   stbi__uint32 length;$/;"	m	struct:__anon84e4e8860d08	typeref:typename:stbi__uint32
+lflags	stb_image.h	/^   int lflags;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+line0	stb_image.h	/^   stbi_uc *line0,*line1;$/;"	m	struct:__anon84e4e8860a08	typeref:typename:stbi_uc *
+line1	stb_image.h	/^   stbi_uc *line0,*line1;$/;"	m	struct:__anon84e4e8860a08	typeref:typename:stbi_uc *
+line_size	stb_image.h	/^   int line_size;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+linebuf	stb_image.h	/^      stbi_uc *linebuf;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:stbi_uc *
+load_jpeg_image	stb_image.h	/^static stbi_uc *load_jpeg_image(stbi__jpeg *z, int *out_x, int *out_y, int *comp, int req_comp)$/;"	f	typeref:typename:stbi_uc *
+loca	stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+local_persist	platform.h	/^#define local_persist	/;"	d
+lpal	stb_image.h	/^   stbi_uc lpal[256][4];$/;"	m	struct:__anon84e4e8861308	typeref:typename:stbi_uc[256][4]
+ma	stb_image.h	/^   unsigned int mr,mg,mb,ma, all_a;$/;"	m	struct:__anon84e4e8861008	typeref:typename:unsigned int
+marker	stb_image.h	/^   unsigned char  marker;      \/\/ marker seen while filling entropy buffer$/;"	m	struct:__anon84e4e8860808	typeref:typename:unsigned char
 mat3	math_util.h	/^struct mat3$/;"	s
 mat4	math_util.h	/^struct mat4$/;"	s
 material_spec	mesh.h	/^struct material_spec$/;"	s
-memory_arena	platform.h	/^struct memory_arena$/;"	s
-memory_index	platform.h	/^typedef size_t memory_index;$/;"	t	typeref:typename:size_t
+max_x	stb_image.h	/^   int max_x, max_y;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+max_x	stb_truetype.h	/^   stbtt_int32 min_x, max_x, min_y, max_y;$/;"	m	struct:__anon0048a2850f08	typeref:typename:stbtt_int32
+max_y	stb_image.h	/^   int max_x, max_y;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+max_y	stb_truetype.h	/^   stbtt_int32 min_x, max_x, min_y, max_y;$/;"	m	struct:__anon0048a2850f08	typeref:typename:stbtt_int32
+maxcode	stb_image.h	/^   int maxcode[17];$/;"	m	struct:__anon84e4e8860b08	typeref:typename:int[17]
+maxcode	stb_image.h	/^   unsigned int maxcode[18];$/;"	m	struct:__anon84e4e8860708	typeref:typename:unsigned int[18]
+mb	stb_image.h	/^   unsigned int mr,mg,mb,ma, all_a;$/;"	m	struct:__anon84e4e8861008	typeref:typename:unsigned int
+memory_arena	game.h	/^struct memory_arena$/;"	s
+memory_index	platform.h	/^typedef size_t	 memory_index;$/;"	t	typeref:typename:size_t
 mesh	mesh.h	/^struct mesh$/;"	s
+mg	stb_image.h	/^   unsigned int mr,mg,mb,ma, all_a;$/;"	m	struct:__anon84e4e8861008	typeref:typename:unsigned int
+min_x	stb_truetype.h	/^   stbtt_int32 min_x, max_x, min_y, max_y;$/;"	m	struct:__anon0048a2850f08	typeref:typename:stbtt_int32
+min_y	stb_truetype.h	/^   stbtt_int32 min_x, max_x, min_y, max_y;$/;"	m	struct:__anon0048a2850f08	typeref:typename:stbtt_int32
 model	mesh.h	/^struct model$/;"	s
+movement_state	game.h	/^enum movement_state$/;"	g
+mr	stb_image.h	/^   unsigned int mr,mg,mb,ma, all_a;$/;"	m	struct:__anon84e4e8861008	typeref:typename:unsigned int
+next	stb_truetype.h	/^   struct stbtt__active_edge *next;$/;"	m	struct:stbtt__active_edge	typeref:struct:stbtt__active_edge *
+next	stb_truetype.h	/^   struct stbtt__hheap_chunk *next;$/;"	m	struct:stbtt__hheap_chunk	typeref:struct:stbtt__hheap_chunk *
+nodes	stb_truetype.h	/^   void  *nodes;$/;"	m	struct:stbtt_pack_context	typeref:typename:void *
+nomore	stb_image.h	/^   int            nomore;      \/\/ flag if we saw a marker so must stop$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+numGlyphs	stb_truetype.h	/^   int numGlyphs;                     \/\/ number of glyphs, needed for range checking$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+num_bits	stb_image.h	/^   int num_bits;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:int
+num_channels	stb_image.h	/^   int num_channels;$/;"	m	struct:__anon84e4e8860508	typeref:typename:int
+num_chars	stb_truetype.h	/^   int num_chars;$/;"	m	struct:__anon0048a2850508	typeref:typename:int
+num_remaining_in_head_chunk	stb_truetype.h	/^   int    num_remaining_in_head_chunk;$/;"	m	struct:stbtt__hheap	typeref:typename:int
+num_vertices	stb_truetype.h	/^   int num_vertices;$/;"	m	struct:__anon0048a2850f08	typeref:typename:int
+offset	stb_image.h	/^   int bpp, offset, hsz;$/;"	m	struct:__anon84e4e8861008	typeref:typename:int
 opengl_info	opengl.cpp	/^struct opengl_info$/;"	s	file:
 operator *	math_util.h	/^operator *(f32 C, v3 V)$/;"	f	typeref:typename:v3
 operator *	math_util.h	/^operator *(v3 V, f32 C)$/;"	f	typeref:typename:v3
@@ -459,57 +1027,656 @@ operator *	math_util.h	/^operator*(mat4 A, mat4 B)$/;"	f	typeref:typename:mat4
 operator *	math_util.h	/^operator*(mat4 T, v3 V)$/;"	f	typeref:typename:v3
 operator *	math_util.h	/^operator*(quaternion Q1, quaternion Q2)$/;"	f	typeref:typename:quaternion
 operator *	math_util.h	/^operator*(v4 A, f32 C)$/;"	f	typeref:typename:v4
+operator *=	math_util.h	/^operator *=(v3 &V, f32 C)$/;"	f	typeref:typename:v3 &
 operator *=	math_util.h	/^operator*=(quaternion &Q1, quaternion Q2)$/;"	f	typeref:typename:void
 operator +	math_util.h	/^operator +(v3 A, v3 B)$/;"	f	typeref:typename:v3
 operator +	math_util.h	/^operator+(quaternion Q1, quaternion Q2)$/;"	f	typeref:typename:quaternion
 operator +	math_util.h	/^operator+(v4 A, v4 B)$/;"	f	typeref:typename:v4
+operator +=	math_util.h	/^operator +=(v3 &A, v3 B)$/;"	f	typeref:typename:v3 &
 operator +=	math_util.h	/^operator+=(v4 &A, v4 &B)$/;"	f	typeref:typename:void
 operator -	math_util.h	/^operator -(v3 A, v3 B)$/;"	f	typeref:typename:v3
 operator -	math_util.h	/^operator-(v4 A, v4 B)$/;"	f	typeref:typename:v4
+order	stb_image.h	/^   int scan_n, order[4];$/;"	m	struct:__anon84e4e8860808	typeref:typename:int[4]
+out	stb_image.h	/^   stbi_uc *idata, *expanded, *out;$/;"	m	struct:__anon84e4e8860e08	typeref:typename:stbi_uc *
+out	stb_image.h	/^   stbi_uc *out;                 \/\/ output buffer (always 4 components)$/;"	m	struct:__anon84e4e8861308	typeref:typename:stbi_uc *
+pack_info	stb_truetype.h	/^   void *pack_info;$/;"	m	struct:stbtt_pack_context	typeref:typename:void *
+padding	stb_truetype.h	/^      unsigned char type,padding;$/;"	m	struct:__anon0048a2850708	typeref:typename:unsigned char
+padding	stb_truetype.h	/^   int   padding;$/;"	m	struct:stbtt_pack_context	typeref:typename:int
+pal	stb_image.h	/^   stbi_uc  pal[256][4];$/;"	m	struct:__anon84e4e8861308	typeref:typename:stbi_uc[256][4]
+parse	stb_image.h	/^   int parse, step;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+pitch	math_util.h	/^		f32 pitch, yaw, roll;$/;"	m	struct:v3::__anona93c3f220308	typeref:typename:f32
+pixels	stb_truetype.h	/^   unsigned char *pixels;$/;"	m	struct:__anon0048a2850808	typeref:typename:unsigned char *
+pixels	stb_truetype.h	/^   unsigned char *pixels;$/;"	m	struct:stbtt_pack_context	typeref:typename:unsigned char *
+prefix	stb_image.h	/^   stbi__int16 prefix;$/;"	m	struct:__anon84e4e8861208	typeref:typename:stbi__int16
+progressive	stb_image.h	/^   int            progressive;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+pvertices	stb_truetype.h	/^   stbtt_vertex *pvertices;$/;"	m	struct:__anon0048a2850f08	typeref:typename:stbtt_vertex *
+quad	game.h	/^struct quad$/;"	s
+quad_vertex	game.h	/^struct quad_vertex$/;"	s
 quaternion	math_util.h	/^union quaternion$/;"	u
-s16	platform.h	/^typedef int16_t s16;$/;"	t	typeref:typename:int16_t
-s32	platform.h	/^typedef int32_t s32;$/;"	t	typeref:typename:int32_t
-s64	platform.h	/^typedef int64_t s64;$/;"	t	typeref:typename:int64_t
-s8	platform.h	/^typedef int8_t s8;$/;"	t	typeref:typename:int8_t
+ratio	stb_image.h	/^   int flags, bgindex, ratio, transparent, eflags;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+raw_coeff	stb_image.h	/^      void *raw_data, *raw_coeff;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:void *
+raw_data	stb_image.h	/^      void *raw_data, *raw_coeff;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:void *
+read	stb_image.h	/^   int      (*read)  (void *user,char *data,int size);   \/\/ fill 'data' with 'size' bytes.  re/;"	m	struct:__anon84e4e8860208	typeref:typename:int (*)(void * user,char * data,int size)
+read_from_callbacks	stb_image.h	/^   int read_from_callbacks;$/;"	m	struct:__anon84e4e8860308	typeref:typename:int
+resample	stb_image.h	/^   resample_row_func resample;$/;"	m	struct:__anon84e4e8860a08	typeref:typename:resample_row_func
+resample_row_1	stb_image.h	/^static stbi_uc *resample_row_1(stbi_uc *out, stbi_uc *in_near, stbi_uc *in_far, int w, int hs)$/;"	f	typeref:typename:stbi_uc *
+resample_row_func	stb_image.h	/^typedef stbi_uc *(*resample_row_func)(stbi_uc *out, stbi_uc *in0, stbi_uc *in1,$/;"	t	typeref:typename:stbi_uc * (*)(stbi_uc * out,stbi_uc * in0,stbi_uc * in1,int w,int hs)
+resample_row_hv_2_kernel	stb_image.h	/^   stbi_uc *(*resample_row_hv_2_kernel)(stbi_uc *out, stbi_uc *in_near, stbi_uc *in_far, int w, /;"	m	struct:__anon84e4e8860808	typeref:typename:stbi_uc * (*)(stbi_uc * out,stbi_uc * in_near,stbi_uc * in_far,int w,int hs)
+restart_interval	stb_image.h	/^   int restart_interval, todo;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+rgb	stb_image.h	/^   int            rgb;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+roll	math_util.h	/^		f32 pitch, yaw, roll;$/;"	m	struct:v3::__anona93c3f220308	typeref:typename:f32
+s	stb_image.h	/^   stbi__context *s;$/;"	m	struct:__anon84e4e8860808	typeref:typename:stbi__context *
+s	stb_image.h	/^   stbi__context *s;$/;"	m	struct:__anon84e4e8860e08	typeref:typename:stbi__context *
+s0	stb_truetype.h	/^   float x0,y0,s0,t0; \/\/ top-left$/;"	m	struct:__anon0048a2850308	typeref:typename:float
+s1	stb_truetype.h	/^   float x1,y1,s1,t1; \/\/ bottom-right$/;"	m	struct:__anon0048a2850308	typeref:typename:float
+s16	platform.h	/^typedef int16_t  s16;$/;"	t	typeref:typename:int16_t
+s32	platform.h	/^typedef int32_t  s32;$/;"	t	typeref:typename:int32_t
+s64	platform.h	/^typedef int64_t  s64;$/;"	t	typeref:typename:int64_t
+s8	platform.h	/^typedef int8_t	 s8;$/;"	t	typeref:typename:int8_t
+scan_n	stb_image.h	/^   int scan_n, order[4];$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+size	stb_image.h	/^   stbi_uc  size[257];$/;"	m	struct:__anon84e4e8860708	typeref:typename:stbi_uc[257]
+size	stb_image.h	/^   stbi_uc  size[STBI__ZNSYMS];$/;"	m	struct:__anon84e4e8860b08	typeref:typename:stbi_uc[]
+size	stb_image.h	/^   stbi_uc size,type,channel;$/;"	m	struct:__anon84e4e8861108	typeref:typename:stbi_uc
+size	stb_truetype.h	/^   int size;$/;"	m	struct:__anon0048a2850108	typeref:typename:int
+skip	stb_image.h	/^   void     (*skip)  (void *user,int n);                 \/\/ skip the next 'n' bytes, or 'unget/;"	m	struct:__anon84e4e8860208	typeref:typename:void (*)(void * user,int n)
+skip_missing	stb_truetype.h	/^   int   skip_missing;$/;"	m	struct:stbtt_pack_context	typeref:typename:int
+spec_end	stb_image.h	/^   int            spec_end;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+spec_start	stb_image.h	/^   int            spec_start;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
 sqt	math_util.h	/^struct sqt$/;"	s
+start_x	stb_image.h	/^   int start_x, start_y;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+start_y	stb_image.h	/^   int start_x, start_y;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+started	stb_truetype.h	/^   int started;$/;"	m	struct:__anon0048a2850f08	typeref:typename:int
+stbi__DNL	stb_image.h	/^#define stbi__DNL(/;"	d
+stbi__EOI	stb_image.h	/^#define stbi__EOI(/;"	d
+stbi__SOF	stb_image.h	/^#define stbi__SOF(/;"	d
+stbi__SOF_progressive	stb_image.h	/^#define stbi__SOF_progressive(/;"	d
+stbi__SOI	stb_image.h	/^#define stbi__SOI(/;"	d
+stbi__SOS	stb_image.h	/^#define stbi__SOS(/;"	d
+stbi__YCbCr_to_RGB_row	stb_image.h	/^static void stbi__YCbCr_to_RGB_row(stbi_uc *out, const stbi_uc *y, const stbi_uc *pcb, const stb/;"	f	typeref:typename:void
+stbi__YCbCr_to_RGB_simd	stb_image.h	/^static void stbi__YCbCr_to_RGB_simd(stbi_uc *out, stbi_uc const *y, stbi_uc const *pcb, stbi_uc /;"	f	typeref:typename:void
+stbi__addints_valid	stb_image.h	/^static int stbi__addints_valid(int a, int b)$/;"	f	typeref:typename:int
+stbi__addsizes_valid	stb_image.h	/^static int stbi__addsizes_valid(int a, int b)$/;"	f	typeref:typename:int
+stbi__at_eof	stb_image.h	/^stbi_inline static int stbi__at_eof(stbi__context *s)$/;"	f	typeref:typename:stbi_inline int
+stbi__bit_reverse	stb_image.h	/^stbi_inline static int stbi__bit_reverse(int v, int bits)$/;"	f	typeref:typename:stbi_inline int
+stbi__bitcount	stb_image.h	/^static int stbi__bitcount(unsigned int a)$/;"	f	typeref:typename:int
+stbi__bitreverse16	stb_image.h	/^stbi_inline static int stbi__bitreverse16(int n)$/;"	f	typeref:typename:stbi_inline int
+stbi__blinn_8x8	stb_image.h	/^static stbi_uc stbi__blinn_8x8(stbi_uc x, stbi_uc y)$/;"	f	typeref:typename:stbi_uc
+stbi__bmask	stb_image.h	/^static const stbi__uint32 stbi__bmask[17]={0,1,3,7,15,31,63,127,255,511,1023,2047,4095,8191,1638/;"	v	typeref:typename:const stbi__uint32[17]
+stbi__bmp_data	stb_image.h	/^} stbi__bmp_data;$/;"	t	typeref:struct:__anon84e4e8861008
+stbi__bmp_info	stb_image.h	/^static int stbi__bmp_info(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__bmp_load	stb_image.h	/^static void *stbi__bmp_load(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__res/;"	f	typeref:typename:void *
+stbi__bmp_parse_header	stb_image.h	/^static void *stbi__bmp_parse_header(stbi__context *s, stbi__bmp_data *info)$/;"	f	typeref:typename:void *
+stbi__bmp_set_mask_defaults	stb_image.h	/^static int stbi__bmp_set_mask_defaults(stbi__bmp_data *info, int compress)$/;"	f	typeref:typename:int
+stbi__bmp_test	stb_image.h	/^static int stbi__bmp_test(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__bmp_test_raw	stb_image.h	/^static int stbi__bmp_test_raw(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__build_fast_ac	stb_image.h	/^static void stbi__build_fast_ac(stbi__int16 *fast_ac, stbi__huffman *h)$/;"	f	typeref:typename:void
+stbi__build_huffman	stb_image.h	/^static int stbi__build_huffman(stbi__huffman *h, int *count)$/;"	f	typeref:typename:int
+stbi__check_png_header	stb_image.h	/^static int stbi__check_png_header(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__clamp	stb_image.h	/^stbi_inline static stbi_uc stbi__clamp(int x)$/;"	f	typeref:typename:stbi_inline stbi_uc
+stbi__cleanup_jpeg	stb_image.h	/^static void stbi__cleanup_jpeg(stbi__jpeg *j)$/;"	f	typeref:typename:void
+stbi__compute_huffman_codes	stb_image.h	/^static int stbi__compute_huffman_codes(stbi__zbuf *a)$/;"	f	typeref:typename:int
+stbi__compute_transparency	stb_image.h	/^static int stbi__compute_transparency(stbi__png *z, stbi_uc tc[3], int out_n)$/;"	f	typeref:typename:int
+stbi__compute_transparency16	stb_image.h	/^static int stbi__compute_transparency16(stbi__png *z, stbi__uint16 tc[3], int out_n)$/;"	f	typeref:typename:int
+stbi__compute_y	stb_image.h	/^static stbi_uc stbi__compute_y(int r, int g, int b)$/;"	f	typeref:typename:stbi_uc
+stbi__compute_y_16	stb_image.h	/^static stbi__uint16 stbi__compute_y_16(int r, int g, int b)$/;"	f	typeref:typename:stbi__uint16
+stbi__context	stb_image.h	/^} stbi__context;$/;"	t	typeref:struct:__anon84e4e8860308
+stbi__convert_16_to_8	stb_image.h	/^static stbi_uc *stbi__convert_16_to_8(stbi__uint16 *orig, int w, int h, int channels)$/;"	f	typeref:typename:stbi_uc *
+stbi__convert_8_to_16	stb_image.h	/^static stbi__uint16 *stbi__convert_8_to_16(stbi_uc *orig, int w, int h, int channels)$/;"	f	typeref:typename:stbi__uint16 *
+stbi__convert_format	stb_image.h	/^static unsigned char *stbi__convert_format(unsigned char *data, int img_n, int req_comp, unsigne/;"	f	typeref:typename:unsigned char *
+stbi__convert_format16	stb_image.h	/^static stbi__uint16 *stbi__convert_format16(stbi__uint16 *data, int img_n, int req_comp, unsigne/;"	f	typeref:typename:stbi__uint16 *
+stbi__copyval	stb_image.h	/^static void stbi__copyval(int channel,stbi_uc *dest,const stbi_uc *src)$/;"	f	typeref:typename:void
+stbi__cpuid3	stb_image.h	/^static int stbi__cpuid3(void)$/;"	f	typeref:typename:int
+stbi__create_png_alpha_expand8	stb_image.h	/^static void stbi__create_png_alpha_expand8(stbi_uc *dest, stbi_uc *src, stbi__uint32 x, int img_/;"	f	typeref:typename:void
+stbi__create_png_image	stb_image.h	/^static int stbi__create_png_image(stbi__png *a, stbi_uc *image_data, stbi__uint32 image_data_len/;"	f	typeref:typename:int
+stbi__create_png_image_raw	stb_image.h	/^static int stbi__create_png_image_raw(stbi__png *a, stbi_uc *raw, stbi__uint32 raw_len, int out_/;"	f	typeref:typename:int
+stbi__de_iphone	stb_image.h	/^static void stbi__de_iphone(stbi__png *z)$/;"	f	typeref:typename:void
+stbi__de_iphone_flag	stb_image.h	/^#define stbi__de_iphone_flag /;"	d
+stbi__de_iphone_flag_global	stb_image.h	/^static int stbi__de_iphone_flag_global = 0;$/;"	v	typeref:typename:int
+stbi__de_iphone_flag_local	stb_image.h	/^static STBI_THREAD_LOCAL int stbi__de_iphone_flag_local, stbi__de_iphone_flag_set;$/;"	v	typeref:typename:STBI_THREAD_LOCAL int
+stbi__de_iphone_flag_set	stb_image.h	/^static STBI_THREAD_LOCAL int stbi__de_iphone_flag_local, stbi__de_iphone_flag_set;$/;"	v	typeref:typename:STBI_THREAD_LOCAL int
+stbi__decode_jpeg_header	stb_image.h	/^static int stbi__decode_jpeg_header(stbi__jpeg *z, int scan)$/;"	f	typeref:typename:int
+stbi__decode_jpeg_image	stb_image.h	/^static int stbi__decode_jpeg_image(stbi__jpeg *j)$/;"	f	typeref:typename:int
+stbi__depth_scale_table	stb_image.h	/^static const stbi_uc stbi__depth_scale_table[9] = { 0, 0xff, 0x55, 0, 0x11, 0,0,0, 0x01 };$/;"	v	typeref:typename:const stbi_uc[9]
+stbi__div16	stb_image.h	/^#define stbi__div16(/;"	d
+stbi__div4	stb_image.h	/^#define stbi__div4(/;"	d
+stbi__do_png	stb_image.h	/^static void *stbi__do_png(stbi__png *p, int *x, int *y, int *n, int req_comp, stbi__result_info /;"	f	typeref:typename:void *
+stbi__do_zlib	stb_image.h	/^static int stbi__do_zlib(stbi__zbuf *a, char *obuf, int olen, int exp, int parse_header)$/;"	f	typeref:typename:int
+stbi__err	stb_image.h	/^   #define stbi__err(/;"	d
+stbi__err	stb_image.h	/^static int stbi__err(const char *str)$/;"	f	typeref:typename:int
+stbi__errpf	stb_image.h	/^#define stbi__errpf(/;"	d
+stbi__errpuc	stb_image.h	/^#define stbi__errpuc(/;"	d
+stbi__expand_png_palette	stb_image.h	/^static int stbi__expand_png_palette(stbi__png *a, stbi_uc *palette, int len, int pal_img_n)$/;"	f	typeref:typename:int
+stbi__extend_receive	stb_image.h	/^stbi_inline static int stbi__extend_receive(stbi__jpeg *j, int n)$/;"	f	typeref:typename:stbi_inline int
+stbi__f2f	stb_image.h	/^#define stbi__f2f(/;"	d
+stbi__fill_bits	stb_image.h	/^static void stbi__fill_bits(stbi__zbuf *z)$/;"	f	typeref:typename:void
+stbi__float2fixed	stb_image.h	/^#define stbi__float2fixed(/;"	d
+stbi__float2int	stb_image.h	/^#define stbi__float2int(/;"	d
+stbi__float_postprocess	stb_image.h	/^static void stbi__float_postprocess(float *result, int *x, int *y, int *comp, int req_comp)$/;"	f	typeref:typename:void
+stbi__fopen	stb_image.h	/^static FILE *stbi__fopen(char const *filename, char const *mode)$/;"	f	typeref:typename:FILE *
+stbi__free_jpeg_components	stb_image.h	/^static int stbi__free_jpeg_components(stbi__jpeg *z, int ncomp, int why)$/;"	f	typeref:typename:int
+stbi__fsh	stb_image.h	/^#define stbi__fsh(/;"	d
+stbi__g_failure_reason	stb_image.h	/^const char *stbi__g_failure_reason;$/;"	v	typeref:typename:STBI_THREAD_LOCAL const char *
+stbi__get16be	stb_image.h	/^static int stbi__get16be(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__get16le	stb_image.h	/^static int stbi__get16le(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__get32be	stb_image.h	/^static stbi__uint32 stbi__get32be(stbi__context *s)$/;"	f	typeref:typename:stbi__uint32
+stbi__get32le	stb_image.h	/^static stbi__uint32 stbi__get32le(stbi__context *s)$/;"	f	typeref:typename:stbi__uint32
+stbi__get8	stb_image.h	/^stbi_inline static stbi_uc stbi__get8(stbi__context *s)$/;"	f	typeref:typename:stbi_inline stbi_uc
+stbi__get_chunk_header	stb_image.h	/^static stbi__pngchunk stbi__get_chunk_header(stbi__context *s)$/;"	f	typeref:typename:stbi__pngchunk
+stbi__get_marker	stb_image.h	/^static stbi_uc stbi__get_marker(stbi__jpeg *j)$/;"	f	typeref:typename:stbi_uc
+stbi__getn	stb_image.h	/^static int stbi__getn(stbi__context *s, stbi_uc *buffer, int n)$/;"	f	typeref:typename:int
+stbi__gif	stb_image.h	/^} stbi__gif;$/;"	t	typeref:struct:__anon84e4e8861308
+stbi__gif_header	stb_image.h	/^static int stbi__gif_header(stbi__context *s, stbi__gif *g, int *comp, int is_info)$/;"	f	typeref:typename:int
+stbi__gif_info	stb_image.h	/^static int stbi__gif_info(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__gif_info_raw	stb_image.h	/^static int stbi__gif_info_raw(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__gif_load	stb_image.h	/^static void *stbi__gif_load(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__res/;"	f	typeref:typename:void *
+stbi__gif_load_next	stb_image.h	/^static stbi_uc *stbi__gif_load_next(stbi__context *s, stbi__gif *g, int *comp, int req_comp, stb/;"	f	typeref:typename:stbi_uc *
+stbi__gif_lzw	stb_image.h	/^} stbi__gif_lzw;$/;"	t	typeref:struct:__anon84e4e8861208
+stbi__gif_parse_colortable	stb_image.h	/^static void stbi__gif_parse_colortable(stbi__context *s, stbi_uc pal[256][4], int num_entries, i/;"	f	typeref:typename:void
+stbi__gif_test	stb_image.h	/^static int stbi__gif_test(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__gif_test_raw	stb_image.h	/^static int stbi__gif_test_raw(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__grow_buffer_unsafe	stb_image.h	/^static void stbi__grow_buffer_unsafe(stbi__jpeg *j)$/;"	f	typeref:typename:void
+stbi__h2l_gamma_i	stb_image.h	/^static float stbi__h2l_gamma_i=1.0f\/2.2f, stbi__h2l_scale_i=1.0f;$/;"	v	typeref:typename:float
+stbi__h2l_scale_i	stb_image.h	/^static float stbi__h2l_gamma_i=1.0f\/2.2f, stbi__h2l_scale_i=1.0f;$/;"	v	typeref:typename:float
+stbi__hdr_convert	stb_image.h	/^static void stbi__hdr_convert(float *output, stbi_uc *input, int req_comp)$/;"	f	typeref:typename:void
+stbi__hdr_gettoken	stb_image.h	/^static char *stbi__hdr_gettoken(stbi__context *z, char *buffer)$/;"	f	typeref:typename:char *
+stbi__hdr_info	stb_image.h	/^static int stbi__hdr_info(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__hdr_load	stb_image.h	/^static float *stbi__hdr_load(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__re/;"	f	typeref:typename:float *
+stbi__hdr_test	stb_image.h	/^static int stbi__hdr_test(stbi__context* s)$/;"	f	typeref:typename:int
+stbi__hdr_test_core	stb_image.h	/^static int stbi__hdr_test_core(stbi__context *s, const char *signature)$/;"	f	typeref:typename:int
+stbi__hdr_to_ldr	stb_image.h	/^static stbi_uc *stbi__hdr_to_ldr(float   *data, int x, int y, int comp)$/;"	f	typeref:typename:stbi_uc *
+stbi__high_bit	stb_image.h	/^static int stbi__high_bit(unsigned int z)$/;"	f	typeref:typename:int
+stbi__huffman	stb_image.h	/^} stbi__huffman;$/;"	t	typeref:struct:__anon84e4e8860708
+stbi__idct_block	stb_image.h	/^static void stbi__idct_block(stbi_uc *out, int out_stride, short data[64])$/;"	f	typeref:typename:void
+stbi__idct_simd	stb_image.h	/^static void stbi__idct_simd(stbi_uc *out, int out_stride, short data[64])$/;"	f	typeref:typename:void
+stbi__info_main	stb_image.h	/^static int stbi__info_main(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__int16	stb_image.h	/^typedef   signed short stbi__int16;$/;"	t	typeref:typename:signed short
+stbi__int16	stb_image.h	/^typedef int16_t  stbi__int16;$/;"	t	typeref:typename:int16_t
+stbi__int32	stb_image.h	/^typedef   signed int   stbi__int32;$/;"	t	typeref:typename:signed int
+stbi__int32	stb_image.h	/^typedef int32_t  stbi__int32;$/;"	t	typeref:typename:int32_t
+stbi__is_16_main	stb_image.h	/^static int stbi__is_16_main(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__jbias	stb_image.h	/^static const int stbi__jbias[16] = {0,-1,-3,-7,-15,-31,-63,-127,-255,-511,-1023,-2047,-4095,-819/;"	v	typeref:typename:const int[16]
+stbi__jpeg	stb_image.h	/^} stbi__jpeg;$/;"	t	typeref:struct:__anon84e4e8860808
+stbi__jpeg_decode_block	stb_image.h	/^static int stbi__jpeg_decode_block(stbi__jpeg *j, short data[64], stbi__huffman *hdc, stbi__huff/;"	f	typeref:typename:int
+stbi__jpeg_decode_block_prog_ac	stb_image.h	/^static int stbi__jpeg_decode_block_prog_ac(stbi__jpeg *j, short data[64], stbi__huffman *hac, st/;"	f	typeref:typename:int
+stbi__jpeg_decode_block_prog_dc	stb_image.h	/^static int stbi__jpeg_decode_block_prog_dc(stbi__jpeg *j, short data[64], stbi__huffman *hdc, in/;"	f	typeref:typename:int
+stbi__jpeg_dequantize	stb_image.h	/^static void stbi__jpeg_dequantize(short *data, stbi__uint16 *dequant)$/;"	f	typeref:typename:void
+stbi__jpeg_dezigzag	stb_image.h	/^static const stbi_uc stbi__jpeg_dezigzag[64+15] =$/;"	v	typeref:typename:const stbi_uc[]
+stbi__jpeg_finish	stb_image.h	/^static void stbi__jpeg_finish(stbi__jpeg *z)$/;"	f	typeref:typename:void
+stbi__jpeg_get_bit	stb_image.h	/^stbi_inline static int stbi__jpeg_get_bit(stbi__jpeg *j)$/;"	f	typeref:typename:stbi_inline int
+stbi__jpeg_get_bits	stb_image.h	/^stbi_inline static int stbi__jpeg_get_bits(stbi__jpeg *j, int n)$/;"	f	typeref:typename:stbi_inline int
+stbi__jpeg_huff_decode	stb_image.h	/^stbi_inline static int stbi__jpeg_huff_decode(stbi__jpeg *j, stbi__huffman *h)$/;"	f	typeref:typename:stbi_inline int
+stbi__jpeg_info	stb_image.h	/^static int stbi__jpeg_info(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__jpeg_info_raw	stb_image.h	/^static int stbi__jpeg_info_raw(stbi__jpeg *j, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__jpeg_load	stb_image.h	/^static void *stbi__jpeg_load(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__re/;"	f	typeref:typename:void *
+stbi__jpeg_reset	stb_image.h	/^static void stbi__jpeg_reset(stbi__jpeg *j)$/;"	f	typeref:typename:void
+stbi__jpeg_test	stb_image.h	/^static int stbi__jpeg_test(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__l2h_gamma	stb_image.h	/^static float stbi__l2h_gamma=2.2f, stbi__l2h_scale=1.0f;$/;"	v	typeref:typename:float
+stbi__l2h_scale	stb_image.h	/^static float stbi__l2h_gamma=2.2f, stbi__l2h_scale=1.0f;$/;"	v	typeref:typename:float
+stbi__ldr_to_hdr	stb_image.h	/^static float   *stbi__ldr_to_hdr(stbi_uc *data, int x, int y, int comp)$/;"	f	typeref:typename:float *
+stbi__load_and_postprocess_16bit	stb_image.h	/^static stbi__uint16 *stbi__load_and_postprocess_16bit(stbi__context *s, int *x, int *y, int *com/;"	f	typeref:typename:stbi__uint16 *
+stbi__load_and_postprocess_8bit	stb_image.h	/^static unsigned char *stbi__load_and_postprocess_8bit(stbi__context *s, int *x, int *y, int *com/;"	f	typeref:typename:unsigned char *
+stbi__load_gif_main	stb_image.h	/^static void *stbi__load_gif_main(stbi__context *s, int **delays, int *x, int *y, int *z, int *co/;"	f	typeref:typename:void *
+stbi__load_gif_main_outofmem	stb_image.h	/^static void *stbi__load_gif_main_outofmem(stbi__gif *g, stbi_uc *out, int **delays)$/;"	f	typeref:typename:void *
+stbi__load_main	stb_image.h	/^static void *stbi__load_main(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__re/;"	f	typeref:typename:void *
+stbi__loadf_main	stb_image.h	/^static float *stbi__loadf_main(stbi__context *s, int *x, int *y, int *comp, int req_comp)$/;"	f	typeref:typename:float *
+stbi__mad2sizes_valid	stb_image.h	/^static int stbi__mad2sizes_valid(int a, int b, int add)$/;"	f	typeref:typename:int
+stbi__mad3sizes_valid	stb_image.h	/^static int stbi__mad3sizes_valid(int a, int b, int c, int add)$/;"	f	typeref:typename:int
+stbi__mad4sizes_valid	stb_image.h	/^static int stbi__mad4sizes_valid(int a, int b, int c, int d, int add)$/;"	f	typeref:typename:int
+stbi__malloc	stb_image.h	/^static void *stbi__malloc(size_t size)$/;"	f	typeref:typename:void *
+stbi__malloc_mad2	stb_image.h	/^static void *stbi__malloc_mad2(int a, int b, int add)$/;"	f	typeref:typename:void *
+stbi__malloc_mad3	stb_image.h	/^static void *stbi__malloc_mad3(int a, int b, int c, int add)$/;"	f	typeref:typename:void *
+stbi__malloc_mad4	stb_image.h	/^static void *stbi__malloc_mad4(int a, int b, int c, int d, int add)$/;"	f	typeref:typename:void *
+stbi__mul2shorts_valid	stb_image.h	/^static int stbi__mul2shorts_valid(int a, int b)$/;"	f	typeref:typename:int
+stbi__mul2sizes_valid	stb_image.h	/^static int stbi__mul2sizes_valid(int a, int b)$/;"	f	typeref:typename:int
+stbi__out_gif_code	stb_image.h	/^static void stbi__out_gif_code(stbi__gif *g, stbi__uint16 code)$/;"	f	typeref:typename:void
+stbi__paeth	stb_image.h	/^static int stbi__paeth(int a, int b, int c)$/;"	f	typeref:typename:int
+stbi__parse_entropy_coded_data	stb_image.h	/^static int stbi__parse_entropy_coded_data(stbi__jpeg *z)$/;"	f	typeref:typename:int
+stbi__parse_huffman_block	stb_image.h	/^static int stbi__parse_huffman_block(stbi__zbuf *a)$/;"	f	typeref:typename:int
+stbi__parse_png_file	stb_image.h	/^static int stbi__parse_png_file(stbi__png *z, int scan, int req_comp)$/;"	f	typeref:typename:int
+stbi__parse_uncompressed_block	stb_image.h	/^static int stbi__parse_uncompressed_block(stbi__zbuf *a)$/;"	f	typeref:typename:int
+stbi__parse_zlib	stb_image.h	/^static int stbi__parse_zlib(stbi__zbuf *a, int parse_header)$/;"	f	typeref:typename:int
+stbi__parse_zlib_header	stb_image.h	/^static int stbi__parse_zlib_header(stbi__zbuf *a)$/;"	f	typeref:typename:int
+stbi__pic_info	stb_image.h	/^static int stbi__pic_info(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__pic_is4	stb_image.h	/^static int stbi__pic_is4(stbi__context *s,const char *str)$/;"	f	typeref:typename:int
+stbi__pic_load	stb_image.h	/^static void *stbi__pic_load(stbi__context *s,int *px,int *py,int *comp,int req_comp, stbi__resul/;"	f	typeref:typename:void *
+stbi__pic_load_core	stb_image.h	/^static stbi_uc *stbi__pic_load_core(stbi__context *s,int width,int height,int *comp, stbi_uc *re/;"	f	typeref:typename:stbi_uc *
+stbi__pic_packet	stb_image.h	/^} stbi__pic_packet;$/;"	t	typeref:struct:__anon84e4e8861108
+stbi__pic_test	stb_image.h	/^static int stbi__pic_test(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__pic_test_core	stb_image.h	/^static int stbi__pic_test_core(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__png	stb_image.h	/^} stbi__png;$/;"	t	typeref:struct:__anon84e4e8860e08
+stbi__png_info	stb_image.h	/^static int stbi__png_info(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__png_info_raw	stb_image.h	/^static int stbi__png_info_raw(stbi__png *p, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__png_is16	stb_image.h	/^static int stbi__png_is16(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__png_load	stb_image.h	/^static void *stbi__png_load(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__res/;"	f	typeref:typename:void *
+stbi__png_test	stb_image.h	/^static int stbi__png_test(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__pngchunk	stb_image.h	/^} stbi__pngchunk;$/;"	t	typeref:struct:__anon84e4e8860d08
+stbi__pnm_getinteger	stb_image.h	/^static int      stbi__pnm_getinteger(stbi__context *s, char *c)$/;"	f	typeref:typename:int
+stbi__pnm_info	stb_image.h	/^static int      stbi__pnm_info(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__pnm_is16	stb_image.h	/^static int stbi__pnm_is16(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__pnm_isdigit	stb_image.h	/^static int      stbi__pnm_isdigit(char c)$/;"	f	typeref:typename:int
+stbi__pnm_isspace	stb_image.h	/^static int      stbi__pnm_isspace(char c)$/;"	f	typeref:typename:int
+stbi__pnm_load	stb_image.h	/^static void *stbi__pnm_load(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__res/;"	f	typeref:typename:void *
+stbi__pnm_skip_whitespace	stb_image.h	/^static void     stbi__pnm_skip_whitespace(stbi__context *s, char *c)$/;"	f	typeref:typename:void
+stbi__pnm_test	stb_image.h	/^static int      stbi__pnm_test(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__process_frame_header	stb_image.h	/^static int stbi__process_frame_header(stbi__jpeg *z, int scan)$/;"	f	typeref:typename:int
+stbi__process_gif_raster	stb_image.h	/^static stbi_uc *stbi__process_gif_raster(stbi__context *s, stbi__gif *g)$/;"	f	typeref:typename:stbi_uc *
+stbi__process_marker	stb_image.h	/^static int stbi__process_marker(stbi__jpeg *z, int m)$/;"	f	typeref:typename:int
+stbi__process_scan_header	stb_image.h	/^static int stbi__process_scan_header(stbi__jpeg *z)$/;"	f	typeref:typename:int
+stbi__psd_decode_rle	stb_image.h	/^static int stbi__psd_decode_rle(stbi__context *s, stbi_uc *p, int pixelCount)$/;"	f	typeref:typename:int
+stbi__psd_info	stb_image.h	/^static int stbi__psd_info(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__psd_is16	stb_image.h	/^static int stbi__psd_is16(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__psd_load	stb_image.h	/^static void *stbi__psd_load(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__res/;"	f	typeref:typename:void *
+stbi__psd_test	stb_image.h	/^static int stbi__psd_test(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__readval	stb_image.h	/^static stbi_uc *stbi__readval(stbi__context *s, int channel, stbi_uc *dest)$/;"	f	typeref:typename:stbi_uc *
+stbi__refill_buffer	stb_image.h	/^static void stbi__refill_buffer(stbi__context *s)$/;"	f	typeref:typename:void
+stbi__resample	stb_image.h	/^} stbi__resample;$/;"	t	typeref:struct:__anon84e4e8860a08
+stbi__resample_row_generic	stb_image.h	/^static stbi_uc *stbi__resample_row_generic(stbi_uc *out, stbi_uc *in_near, stbi_uc *in_far, int /;"	f	typeref:typename:stbi_uc *
+stbi__resample_row_h_2	stb_image.h	/^static stbi_uc*  stbi__resample_row_h_2(stbi_uc *out, stbi_uc *in_near, stbi_uc *in_far, int w, /;"	f	typeref:typename:stbi_uc *
+stbi__resample_row_hv_2	stb_image.h	/^static stbi_uc *stbi__resample_row_hv_2(stbi_uc *out, stbi_uc *in_near, stbi_uc *in_far, int w, /;"	f	typeref:typename:stbi_uc *
+stbi__resample_row_hv_2_simd	stb_image.h	/^static stbi_uc *stbi__resample_row_hv_2_simd(stbi_uc *out, stbi_uc *in_near, stbi_uc *in_far, in/;"	f	typeref:typename:stbi_uc *
+stbi__resample_row_v_2	stb_image.h	/^static stbi_uc* stbi__resample_row_v_2(stbi_uc *out, stbi_uc *in_near, stbi_uc *in_far, int w, i/;"	f	typeref:typename:stbi_uc *
+stbi__result_info	stb_image.h	/^} stbi__result_info;$/;"	t	typeref:struct:__anon84e4e8860508
+stbi__rewind	stb_image.h	/^static void stbi__rewind(stbi__context *s)$/;"	f	typeref:typename:void
+stbi__setup_jpeg	stb_image.h	/^static void stbi__setup_jpeg(stbi__jpeg *j)$/;"	f	typeref:typename:void
+stbi__shiftsigned	stb_image.h	/^static int stbi__shiftsigned(unsigned int v, int shift, int bits)$/;"	f	typeref:typename:int
+stbi__skip	stb_image.h	/^static void stbi__skip(stbi__context *s, int n)$/;"	f	typeref:typename:void
+stbi__skip_jpeg_junk_at_end	stb_image.h	/^static stbi_uc stbi__skip_jpeg_junk_at_end(stbi__jpeg *j)$/;"	f	typeref:typename:stbi_uc
+stbi__sse2_available	stb_image.h	/^static int stbi__sse2_available(void)$/;"	f	typeref:typename:int
+stbi__start_callbacks	stb_image.h	/^static void stbi__start_callbacks(stbi__context *s, stbi_io_callbacks *c, void *user)$/;"	f	typeref:typename:void
+stbi__start_file	stb_image.h	/^static void stbi__start_file(stbi__context *s, FILE *f)$/;"	f	typeref:typename:void
+stbi__start_mem	stb_image.h	/^static void stbi__start_mem(stbi__context *s, stbi_uc const *buffer, int len)$/;"	f	typeref:typename:void
+stbi__stdio_callbacks	stb_image.h	/^static stbi_io_callbacks stbi__stdio_callbacks =$/;"	v	typeref:typename:stbi_io_callbacks
+stbi__stdio_eof	stb_image.h	/^static int stbi__stdio_eof(void *user)$/;"	f	typeref:typename:int
+stbi__stdio_read	stb_image.h	/^static int stbi__stdio_read(void *user, char *data, int size)$/;"	f	typeref:typename:int
+stbi__stdio_skip	stb_image.h	/^static void stbi__stdio_skip(void *user, int n)$/;"	f	typeref:typename:void
+stbi__tga_get_comp	stb_image.h	/^static int stbi__tga_get_comp(int bits_per_pixel, int is_grey, int* is_rgb16)$/;"	f	typeref:typename:int
+stbi__tga_info	stb_image.h	/^static int stbi__tga_info(stbi__context *s, int *x, int *y, int *comp)$/;"	f	typeref:typename:int
+stbi__tga_load	stb_image.h	/^static void *stbi__tga_load(stbi__context *s, int *x, int *y, int *comp, int req_comp, stbi__res/;"	f	typeref:typename:void *
+stbi__tga_read_rgb16	stb_image.h	/^static void stbi__tga_read_rgb16(stbi__context *s, stbi_uc* out)$/;"	f	typeref:typename:void
+stbi__tga_test	stb_image.h	/^static int stbi__tga_test(stbi__context *s)$/;"	f	typeref:typename:int
+stbi__uint16	stb_image.h	/^typedef uint16_t stbi__uint16;$/;"	t	typeref:typename:uint16_t
+stbi__uint16	stb_image.h	/^typedef unsigned short stbi__uint16;$/;"	t	typeref:typename:unsigned short
+stbi__uint32	stb_image.h	/^typedef uint32_t stbi__uint32;$/;"	t	typeref:typename:uint32_t
+stbi__uint32	stb_image.h	/^typedef unsigned int   stbi__uint32;$/;"	t	typeref:typename:unsigned int
+stbi__unpremultiply_on_load	stb_image.h	/^#define stbi__unpremultiply_on_load /;"	d
+stbi__unpremultiply_on_load_global	stb_image.h	/^static int stbi__unpremultiply_on_load_global = 0;$/;"	v	typeref:typename:int
+stbi__unpremultiply_on_load_local	stb_image.h	/^static STBI_THREAD_LOCAL int stbi__unpremultiply_on_load_local, stbi__unpremultiply_on_load_set;$/;"	v	typeref:typename:STBI_THREAD_LOCAL int
+stbi__unpremultiply_on_load_set	stb_image.h	/^static STBI_THREAD_LOCAL int stbi__unpremultiply_on_load_local, stbi__unpremultiply_on_load_set;$/;"	v	typeref:typename:STBI_THREAD_LOCAL int
+stbi__vertical_flip	stb_image.h	/^static void stbi__vertical_flip(void *image, int w, int h, int bytes_per_pixel)$/;"	f	typeref:typename:void
+stbi__vertical_flip_slices	stb_image.h	/^static void stbi__vertical_flip_slices(void *image, int w, int h, int z, int bytes_per_pixel)$/;"	f	typeref:typename:void
+stbi__vertically_flip_on_load	stb_image.h	/^#define stbi__vertically_flip_on_load /;"	d
+stbi__vertically_flip_on_load_global	stb_image.h	/^static int stbi__vertically_flip_on_load_global = 0;$/;"	v	typeref:typename:int
+stbi__vertically_flip_on_load_local	stb_image.h	/^static STBI_THREAD_LOCAL int stbi__vertically_flip_on_load_local, stbi__vertically_flip_on_load_/;"	v	typeref:typename:STBI_THREAD_LOCAL int
+stbi__vertically_flip_on_load_set	stb_image.h	/^static STBI_THREAD_LOCAL int stbi__vertically_flip_on_load_local, stbi__vertically_flip_on_load_/;"	v	typeref:typename:STBI_THREAD_LOCAL int
+stbi__zbuf	stb_image.h	/^} stbi__zbuf;$/;"	t	typeref:struct:__anon84e4e8860c08
+stbi__zbuild_huffman	stb_image.h	/^static int stbi__zbuild_huffman(stbi__zhuffman *z, const stbi_uc *sizelist, int num)$/;"	f	typeref:typename:int
+stbi__zdefault_distance	stb_image.h	/^static const stbi_uc stbi__zdefault_distance[32] =$/;"	v	typeref:typename:const stbi_uc[32]
+stbi__zdefault_length	stb_image.h	/^static const stbi_uc stbi__zdefault_length[STBI__ZNSYMS] =$/;"	v	typeref:typename:const stbi_uc[]
+stbi__zdist_base	stb_image.h	/^static const int stbi__zdist_base[32] = { 1,2,3,4,5,7,9,13,17,25,33,49,65,97,129,193,$/;"	v	typeref:typename:const int[32]
+stbi__zdist_extra	stb_image.h	/^static const int stbi__zdist_extra[32] =$/;"	v	typeref:typename:const int[32]
+stbi__zeof	stb_image.h	/^stbi_inline static int stbi__zeof(stbi__zbuf *z)$/;"	f	typeref:typename:stbi_inline int
+stbi__zexpand	stb_image.h	/^static int stbi__zexpand(stbi__zbuf *z, char *zout, int n)  \/\/ need to make room for n bytes$/;"	f	typeref:typename:int
+stbi__zget8	stb_image.h	/^stbi_inline static stbi_uc stbi__zget8(stbi__zbuf *z)$/;"	f	typeref:typename:stbi_inline stbi_uc
+stbi__zhuffman	stb_image.h	/^} stbi__zhuffman;$/;"	t	typeref:struct:__anon84e4e8860b08
+stbi__zhuffman_decode	stb_image.h	/^stbi_inline static int stbi__zhuffman_decode(stbi__zbuf *a, stbi__zhuffman *z)$/;"	f	typeref:typename:stbi_inline int
+stbi__zhuffman_decode_slowpath	stb_image.h	/^static int stbi__zhuffman_decode_slowpath(stbi__zbuf *a, stbi__zhuffman *z)$/;"	f	typeref:typename:int
+stbi__zlength_base	stb_image.h	/^static const int stbi__zlength_base[31] = {$/;"	v	typeref:typename:const int[31]
+stbi__zlength_extra	stb_image.h	/^static const int stbi__zlength_extra[31]=$/;"	v	typeref:typename:const int[31]
+stbi__zreceive	stb_image.h	/^stbi_inline static unsigned int stbi__zreceive(stbi__zbuf *z, int n)$/;"	f	typeref:typename:stbi_inline unsigned int
+stbi_convert_iphone_png_to_rgb	stb_image.h	/^STBIDEF void stbi_convert_iphone_png_to_rgb(int flag_true_if_should_convert)$/;"	f	typeref:typename:STBIDEF void
+stbi_convert_iphone_png_to_rgb_thread	stb_image.h	/^STBIDEF void stbi_convert_iphone_png_to_rgb_thread(int flag_true_if_should_convert)$/;"	f	typeref:typename:STBIDEF void
+stbi_convert_wchar_to_utf8	stb_image.h	/^STBIDEF int stbi_convert_wchar_to_utf8(char *buffer, size_t bufferlen, const wchar_t* input)$/;"	f	typeref:typename:STBIDEF int
+stbi_failure_reason	stb_image.h	/^STBIDEF const char *stbi_failure_reason(void)$/;"	f	typeref:typename:STBIDEF const char *
+stbi_hdr_to_ldr_gamma	stb_image.h	/^STBIDEF void   stbi_hdr_to_ldr_gamma(float gamma) { stbi__h2l_gamma_i = 1\/gamma; }$/;"	f	typeref:typename:STBIDEF void
+stbi_hdr_to_ldr_scale	stb_image.h	/^STBIDEF void   stbi_hdr_to_ldr_scale(float scale) { stbi__h2l_scale_i = 1\/scale; }$/;"	f	typeref:typename:STBIDEF void
+stbi_image_free	stb_image.h	/^STBIDEF void stbi_image_free(void *retval_from_stbi_load)$/;"	f	typeref:typename:STBIDEF void
+stbi_info	stb_image.h	/^STBIDEF int stbi_info(char const *filename, int *x, int *y, int *comp)$/;"	f	typeref:typename:STBIDEF int
+stbi_info_from_callbacks	stb_image.h	/^STBIDEF int stbi_info_from_callbacks(stbi_io_callbacks const *c, void *user, int *x, int *y, int/;"	f	typeref:typename:STBIDEF int
+stbi_info_from_file	stb_image.h	/^STBIDEF int stbi_info_from_file(FILE *f, int *x, int *y, int *comp)$/;"	f	typeref:typename:STBIDEF int
+stbi_info_from_memory	stb_image.h	/^STBIDEF int stbi_info_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp)$/;"	f	typeref:typename:STBIDEF int
+stbi_inline	stb_image.h	/^   #define stbi_inline /;"	d
+stbi_inline	stb_image.h	/^   #define stbi_inline$/;"	d
+stbi_io_callbacks	stb_image.h	/^} stbi_io_callbacks;$/;"	t	typeref:struct:__anon84e4e8860208
+stbi_is_16_bit	stb_image.h	/^STBIDEF int stbi_is_16_bit(char const *filename)$/;"	f	typeref:typename:STBIDEF int
+stbi_is_16_bit_from_callbacks	stb_image.h	/^STBIDEF int stbi_is_16_bit_from_callbacks(stbi_io_callbacks const *c, void *user)$/;"	f	typeref:typename:STBIDEF int
+stbi_is_16_bit_from_file	stb_image.h	/^STBIDEF int stbi_is_16_bit_from_file(FILE *f)$/;"	f	typeref:typename:STBIDEF int
+stbi_is_16_bit_from_memory	stb_image.h	/^STBIDEF int stbi_is_16_bit_from_memory(stbi_uc const *buffer, int len)$/;"	f	typeref:typename:STBIDEF int
+stbi_is_hdr	stb_image.h	/^STBIDEF int      stbi_is_hdr          (char const *filename)$/;"	f	typeref:typename:STBIDEF int
+stbi_is_hdr_from_callbacks	stb_image.h	/^STBIDEF int      stbi_is_hdr_from_callbacks(stbi_io_callbacks const *clbk, void *user)$/;"	f	typeref:typename:STBIDEF int
+stbi_is_hdr_from_file	stb_image.h	/^STBIDEF int stbi_is_hdr_from_file(FILE *f)$/;"	f	typeref:typename:STBIDEF int
+stbi_is_hdr_from_memory	stb_image.h	/^STBIDEF int stbi_is_hdr_from_memory(stbi_uc const *buffer, int len)$/;"	f	typeref:typename:STBIDEF int
+stbi_ldr_to_hdr_gamma	stb_image.h	/^STBIDEF void   stbi_ldr_to_hdr_gamma(float gamma) { stbi__l2h_gamma = gamma; }$/;"	f	typeref:typename:STBIDEF void
+stbi_ldr_to_hdr_scale	stb_image.h	/^STBIDEF void   stbi_ldr_to_hdr_scale(float scale) { stbi__l2h_scale = scale; }$/;"	f	typeref:typename:STBIDEF void
+stbi_load	stb_image.h	/^STBIDEF stbi_uc *stbi_load(char const *filename, int *x, int *y, int *comp, int req_comp)$/;"	f	typeref:typename:STBIDEF stbi_uc *
+stbi_load_16	stb_image.h	/^STBIDEF stbi_us *stbi_load_16(char const *filename, int *x, int *y, int *comp, int req_comp)$/;"	f	typeref:typename:STBIDEF stbi_us *
+stbi_load_16_from_callbacks	stb_image.h	/^STBIDEF stbi_us *stbi_load_16_from_callbacks(stbi_io_callbacks const *clbk, void *user, int *x, /;"	f	typeref:typename:STBIDEF stbi_us *
+stbi_load_16_from_memory	stb_image.h	/^STBIDEF stbi_us *stbi_load_16_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *c/;"	f	typeref:typename:STBIDEF stbi_us *
+stbi_load_from_callbacks	stb_image.h	/^STBIDEF stbi_uc *stbi_load_from_callbacks(stbi_io_callbacks const *clbk, void *user, int *x, int/;"	f	typeref:typename:STBIDEF stbi_uc *
+stbi_load_from_file	stb_image.h	/^STBIDEF stbi_uc *stbi_load_from_file(FILE *f, int *x, int *y, int *comp, int req_comp)$/;"	f	typeref:typename:STBIDEF stbi_uc *
+stbi_load_from_file_16	stb_image.h	/^STBIDEF stbi__uint16 *stbi_load_from_file_16(FILE *f, int *x, int *y, int *comp, int req_comp)$/;"	f	typeref:typename:STBIDEF stbi__uint16 *
+stbi_load_from_memory	stb_image.h	/^STBIDEF stbi_uc *stbi_load_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp/;"	f	typeref:typename:STBIDEF stbi_uc *
+stbi_load_gif_from_memory	stb_image.h	/^STBIDEF stbi_uc *stbi_load_gif_from_memory(stbi_uc const *buffer, int len, int **delays, int *x,/;"	f	typeref:typename:STBIDEF stbi_uc *
+stbi_loadf	stb_image.h	/^STBIDEF float *stbi_loadf(char const *filename, int *x, int *y, int *comp, int req_comp)$/;"	f	typeref:typename:STBIDEF float *
+stbi_loadf_from_callbacks	stb_image.h	/^STBIDEF float *stbi_loadf_from_callbacks(stbi_io_callbacks const *clbk, void *user, int *x, int /;"	f	typeref:typename:STBIDEF float *
+stbi_loadf_from_file	stb_image.h	/^STBIDEF float *stbi_loadf_from_file(FILE *f, int *x, int *y, int *comp, int req_comp)$/;"	f	typeref:typename:STBIDEF float *
+stbi_loadf_from_memory	stb_image.h	/^STBIDEF float *stbi_loadf_from_memory(stbi_uc const *buffer, int len, int *x, int *y, int *comp,/;"	f	typeref:typename:STBIDEF float *
+stbi_lrot	stb_image.h	/^   #define stbi_lrot(/;"	d
+stbi_set_flip_vertically_on_load	stb_image.h	/^STBIDEF void stbi_set_flip_vertically_on_load(int flag_true_if_should_flip)$/;"	f	typeref:typename:STBIDEF void
+stbi_set_flip_vertically_on_load_thread	stb_image.h	/^STBIDEF void stbi_set_flip_vertically_on_load_thread(int flag_true_if_should_flip)$/;"	f	typeref:typename:STBIDEF void
+stbi_set_unpremultiply_on_load	stb_image.h	/^STBIDEF void stbi_set_unpremultiply_on_load(int flag_true_if_should_unpremultiply)$/;"	f	typeref:typename:STBIDEF void
+stbi_set_unpremultiply_on_load_thread	stb_image.h	/^STBIDEF void stbi_set_unpremultiply_on_load_thread(int flag_true_if_should_unpremultiply)$/;"	f	typeref:typename:STBIDEF void
+stbi_uc	stb_image.h	/^typedef unsigned char stbi_uc;$/;"	t	typeref:typename:unsigned char
+stbi_us	stb_image.h	/^typedef unsigned short stbi_us;$/;"	t	typeref:typename:unsigned short
+stbi_zlib_decode_buffer	stb_image.h	/^STBIDEF int stbi_zlib_decode_buffer(char *obuffer, int olen, char const *ibuffer, int ilen)$/;"	f	typeref:typename:STBIDEF int
+stbi_zlib_decode_malloc	stb_image.h	/^STBIDEF char *stbi_zlib_decode_malloc(char const *buffer, int len, int *outlen)$/;"	f	typeref:typename:STBIDEF char *
+stbi_zlib_decode_malloc_guesssize	stb_image.h	/^STBIDEF char *stbi_zlib_decode_malloc_guesssize(const char *buffer, int len, int initial_size, i/;"	f	typeref:typename:STBIDEF char *
+stbi_zlib_decode_malloc_guesssize_headerflag	stb_image.h	/^STBIDEF char *stbi_zlib_decode_malloc_guesssize_headerflag(const char *buffer, int len, int init/;"	f	typeref:typename:STBIDEF char *
+stbi_zlib_decode_noheader_buffer	stb_image.h	/^STBIDEF int stbi_zlib_decode_noheader_buffer(char *obuffer, int olen, const char *ibuffer, int i/;"	f	typeref:typename:STBIDEF int
+stbi_zlib_decode_noheader_malloc	stb_image.h	/^STBIDEF char *stbi_zlib_decode_noheader_malloc(char const *buffer, int len, int *outlen)$/;"	f	typeref:typename:STBIDEF char *
+stbrp_context	stb_truetype.h	/^} stbrp_context;$/;"	t	typeref:struct:__anon0048a2851108
+stbrp_coord	stb_truetype.h	/^typedef int stbrp_coord;$/;"	t	typeref:typename:int
+stbrp_init_target	stb_truetype.h	/^static void stbrp_init_target(stbrp_context *con, int pw, int ph, stbrp_node *nodes, int num_nod/;"	f	typeref:typename:void
+stbrp_node	stb_truetype.h	/^} stbrp_node;$/;"	t	typeref:struct:__anon0048a2851208
+stbrp_pack_rects	stb_truetype.h	/^static void stbrp_pack_rects(stbrp_context *con, stbrp_rect *rects, int num_rects)$/;"	f	typeref:typename:void
+stbrp_rect	stb_truetype.h	/^struct stbrp_rect$/;"	s
+stbrp_rect	stb_truetype.h	/^typedef struct stbrp_rect stbrp_rect;$/;"	t	typeref:struct:stbrp_rect
+stbtt_BakeFontBitmap	stb_truetype.h	/^STBTT_DEF int stbtt_BakeFontBitmap(const unsigned char *data, int offset,$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_BakeFontBitmap_internal	stb_truetype.h	/^static int stbtt_BakeFontBitmap_internal(unsigned char *data, int offset,  \/\/ font location (u/;"	f	typeref:typename:int
+stbtt_CompareUTF8toUTF16_bigendian	stb_truetype.h	/^STBTT_DEF int stbtt_CompareUTF8toUTF16_bigendian(const char *s1, int len1, const char *s2, int l/;"	f	typeref:typename:STBTT_DEF int
+stbtt_CompareUTF8toUTF16_bigendian_internal	stb_truetype.h	/^static int stbtt_CompareUTF8toUTF16_bigendian_internal(char *s1, int len1, char *s2, int len2)$/;"	f	typeref:typename:int
+stbtt_FindGlyphIndex	stb_truetype.h	/^STBTT_DEF int stbtt_FindGlyphIndex(const stbtt_fontinfo *info, int unicode_codepoint)$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_FindMatchingFont	stb_truetype.h	/^STBTT_DEF int stbtt_FindMatchingFont(const unsigned char *fontdata, const char *name, int flags)$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_FindMatchingFont_internal	stb_truetype.h	/^static int stbtt_FindMatchingFont_internal(unsigned char *font_collection, char *name_utf8, stbt/;"	f	typeref:typename:int
+stbtt_FindSVGDoc	stb_truetype.h	/^STBTT_DEF stbtt_uint8 *stbtt_FindSVGDoc(const stbtt_fontinfo *info, int gl)$/;"	f	typeref:typename:STBTT_DEF stbtt_uint8 *
+stbtt_FlattenCurves	stb_truetype.h	/^static stbtt__point *stbtt_FlattenCurves(stbtt_vertex *vertices, int num_verts, float objspace_f/;"	f	typeref:typename:stbtt__point *
+stbtt_FreeBitmap	stb_truetype.h	/^STBTT_DEF void stbtt_FreeBitmap(unsigned char *bitmap, void *userdata)$/;"	f	typeref:typename:STBTT_DEF void
+stbtt_FreeSDF	stb_truetype.h	/^STBTT_DEF void stbtt_FreeSDF(unsigned char *bitmap, void *userdata)$/;"	f	typeref:typename:STBTT_DEF void
+stbtt_FreeShape	stb_truetype.h	/^STBTT_DEF void stbtt_FreeShape(const stbtt_fontinfo *info, stbtt_vertex *v)$/;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetBakedQuad	stb_truetype.h	/^STBTT_DEF void stbtt_GetBakedQuad(const stbtt_bakedchar *chardata, int pw, int ph, int char_inde/;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetCodepointBitmap	stb_truetype.h	/^STBTT_DEF unsigned char *stbtt_GetCodepointBitmap(const stbtt_fontinfo *info, float scale_x, flo/;"	f	typeref:typename:STBTT_DEF unsigned char *
+stbtt_GetCodepointBitmapBox	stb_truetype.h	/^STBTT_DEF void stbtt_GetCodepointBitmapBox(const stbtt_fontinfo *font, int codepoint, float scal/;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetCodepointBitmapBoxSubpixel	stb_truetype.h	/^STBTT_DEF void stbtt_GetCodepointBitmapBoxSubpixel(const stbtt_fontinfo *font, int codepoint, fl/;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetCodepointBitmapSubpixel	stb_truetype.h	/^STBTT_DEF unsigned char *stbtt_GetCodepointBitmapSubpixel(const stbtt_fontinfo *info, float scal/;"	f	typeref:typename:STBTT_DEF unsigned char *
+stbtt_GetCodepointBox	stb_truetype.h	/^STBTT_DEF int stbtt_GetCodepointBox(const stbtt_fontinfo *info, int codepoint, int *x0, int *y0,/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetCodepointHMetrics	stb_truetype.h	/^STBTT_DEF void stbtt_GetCodepointHMetrics(const stbtt_fontinfo *info, int codepoint, int *advanc/;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetCodepointKernAdvance	stb_truetype.h	/^STBTT_DEF int  stbtt_GetCodepointKernAdvance(const stbtt_fontinfo *info, int ch1, int ch2)$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetCodepointSDF	stb_truetype.h	/^STBTT_DEF unsigned char * stbtt_GetCodepointSDF(const stbtt_fontinfo *info, float scale, int cod/;"	f	typeref:typename:STBTT_DEF unsigned char *
+stbtt_GetCodepointSVG	stb_truetype.h	/^STBTT_DEF int stbtt_GetCodepointSVG(const stbtt_fontinfo *info, int unicode_codepoint, const cha/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetCodepointShape	stb_truetype.h	/^STBTT_DEF int stbtt_GetCodepointShape(const stbtt_fontinfo *info, int unicode_codepoint, stbtt_v/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetFontBoundingBox	stb_truetype.h	/^STBTT_DEF void stbtt_GetFontBoundingBox(const stbtt_fontinfo *info, int *x0, int *y0, int *x1, i/;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetFontNameString	stb_truetype.h	/^STBTT_DEF const char *stbtt_GetFontNameString(const stbtt_fontinfo *font, int *length, int platf/;"	f	typeref:typename:STBTT_DEF const char *
+stbtt_GetFontOffsetForIndex	stb_truetype.h	/^STBTT_DEF int stbtt_GetFontOffsetForIndex(const unsigned char *data, int index)$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetFontOffsetForIndex_internal	stb_truetype.h	/^static int stbtt_GetFontOffsetForIndex_internal(unsigned char *font_collection, int index)$/;"	f	typeref:typename:int
+stbtt_GetFontVMetrics	stb_truetype.h	/^STBTT_DEF void stbtt_GetFontVMetrics(const stbtt_fontinfo *info, int *ascent, int *descent, int /;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetFontVMetricsOS2	stb_truetype.h	/^STBTT_DEF int  stbtt_GetFontVMetricsOS2(const stbtt_fontinfo *info, int *typoAscent, int *typoDe/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetGlyphBitmap	stb_truetype.h	/^STBTT_DEF unsigned char *stbtt_GetGlyphBitmap(const stbtt_fontinfo *info, float scale_x, float s/;"	f	typeref:typename:STBTT_DEF unsigned char *
+stbtt_GetGlyphBitmapBox	stb_truetype.h	/^STBTT_DEF void stbtt_GetGlyphBitmapBox(const stbtt_fontinfo *font, int glyph, float scale_x, flo/;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetGlyphBitmapBoxSubpixel	stb_truetype.h	/^STBTT_DEF void stbtt_GetGlyphBitmapBoxSubpixel(const stbtt_fontinfo *font, int glyph, float scal/;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetGlyphBitmapSubpixel	stb_truetype.h	/^STBTT_DEF unsigned char *stbtt_GetGlyphBitmapSubpixel(const stbtt_fontinfo *info, float scale_x,/;"	f	typeref:typename:STBTT_DEF unsigned char *
+stbtt_GetGlyphBox	stb_truetype.h	/^STBTT_DEF int stbtt_GetGlyphBox(const stbtt_fontinfo *info, int glyph_index, int *x0, int *y0, i/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetGlyphHMetrics	stb_truetype.h	/^STBTT_DEF void stbtt_GetGlyphHMetrics(const stbtt_fontinfo *info, int glyph_index, int *advanceW/;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetGlyphKernAdvance	stb_truetype.h	/^STBTT_DEF int  stbtt_GetGlyphKernAdvance(const stbtt_fontinfo *info, int g1, int g2)$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetGlyphSDF	stb_truetype.h	/^STBTT_DEF unsigned char * stbtt_GetGlyphSDF(const stbtt_fontinfo *info, float scale, int glyph, /;"	f	typeref:typename:STBTT_DEF unsigned char *
+stbtt_GetGlyphSVG	stb_truetype.h	/^STBTT_DEF int stbtt_GetGlyphSVG(const stbtt_fontinfo *info, int gl, const char **svg)$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetGlyphShape	stb_truetype.h	/^STBTT_DEF int stbtt_GetGlyphShape(const stbtt_fontinfo *info, int glyph_index, stbtt_vertex **pv/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetKerningTable	stb_truetype.h	/^STBTT_DEF int stbtt_GetKerningTable(const stbtt_fontinfo *info, stbtt_kerningentry* table, int t/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetKerningTableLength	stb_truetype.h	/^STBTT_DEF int  stbtt_GetKerningTableLength(const stbtt_fontinfo *info)$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetNumberOfFonts	stb_truetype.h	/^STBTT_DEF int stbtt_GetNumberOfFonts(const unsigned char *data)$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_GetNumberOfFonts_internal	stb_truetype.h	/^static int stbtt_GetNumberOfFonts_internal(unsigned char *font_collection)$/;"	f	typeref:typename:int
+stbtt_GetPackedQuad	stb_truetype.h	/^STBTT_DEF void stbtt_GetPackedQuad(const stbtt_packedchar *chardata, int pw, int ph, int char_in/;"	f	typeref:typename:STBTT_DEF void
+stbtt_GetScaledFontVMetrics	stb_truetype.h	/^STBTT_DEF void stbtt_GetScaledFontVMetrics(const unsigned char *fontdata, int index, float size,/;"	f	typeref:typename:STBTT_DEF void
+stbtt_InitFont	stb_truetype.h	/^STBTT_DEF int stbtt_InitFont(stbtt_fontinfo *info, const unsigned char *data, int offset)$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_InitFont_internal	stb_truetype.h	/^static int stbtt_InitFont_internal(stbtt_fontinfo *info, unsigned char *data, int fontstart)$/;"	f	typeref:typename:int
+stbtt_IsGlyphEmpty	stb_truetype.h	/^STBTT_DEF int stbtt_IsGlyphEmpty(const stbtt_fontinfo *info, int glyph_index)$/;"	f	typeref:typename:STBTT_DEF int
+stbtt_MakeCodepointBitmap	stb_truetype.h	/^STBTT_DEF void stbtt_MakeCodepointBitmap(const stbtt_fontinfo *info, unsigned char *output, int /;"	f	typeref:typename:STBTT_DEF void
+stbtt_MakeCodepointBitmapSubpixel	stb_truetype.h	/^STBTT_DEF void stbtt_MakeCodepointBitmapSubpixel(const stbtt_fontinfo *info, unsigned char *outp/;"	f	typeref:typename:STBTT_DEF void
+stbtt_MakeCodepointBitmapSubpixelPrefilter	stb_truetype.h	/^STBTT_DEF void stbtt_MakeCodepointBitmapSubpixelPrefilter(const stbtt_fontinfo *info, unsigned c/;"	f	typeref:typename:STBTT_DEF void
+stbtt_MakeGlyphBitmap	stb_truetype.h	/^STBTT_DEF void stbtt_MakeGlyphBitmap(const stbtt_fontinfo *info, unsigned char *output, int out_/;"	f	typeref:typename:STBTT_DEF void
+stbtt_MakeGlyphBitmapSubpixel	stb_truetype.h	/^STBTT_DEF void stbtt_MakeGlyphBitmapSubpixel(const stbtt_fontinfo *info, unsigned char *output, /;"	f	typeref:typename:STBTT_DEF void
+stbtt_MakeGlyphBitmapSubpixelPrefilter	stb_truetype.h	/^STBTT_DEF void stbtt_MakeGlyphBitmapSubpixelPrefilter(const stbtt_fontinfo *info, unsigned char /;"	f	typeref:typename:STBTT_DEF void
+stbtt_PackBegin	stb_truetype.h	/^STBTT_DEF int stbtt_PackBegin(stbtt_pack_context *spc, unsigned char *pixels, int pw, int ph, in/;"	f	typeref:typename:STBTT_DEF int
+stbtt_PackEnd	stb_truetype.h	/^STBTT_DEF void stbtt_PackEnd  (stbtt_pack_context *spc)$/;"	f	typeref:typename:STBTT_DEF void
+stbtt_PackFontRange	stb_truetype.h	/^STBTT_DEF int stbtt_PackFontRange(stbtt_pack_context *spc, const unsigned char *fontdata, int fo/;"	f	typeref:typename:STBTT_DEF int
+stbtt_PackFontRanges	stb_truetype.h	/^STBTT_DEF int stbtt_PackFontRanges(stbtt_pack_context *spc, const unsigned char *fontdata, int f/;"	f	typeref:typename:STBTT_DEF int
+stbtt_PackFontRangesGatherRects	stb_truetype.h	/^STBTT_DEF int stbtt_PackFontRangesGatherRects(stbtt_pack_context *spc, const stbtt_fontinfo *inf/;"	f	typeref:typename:STBTT_DEF int
+stbtt_PackFontRangesPackRects	stb_truetype.h	/^STBTT_DEF void stbtt_PackFontRangesPackRects(stbtt_pack_context *spc, stbrp_rect *rects, int num/;"	f	typeref:typename:STBTT_DEF void
+stbtt_PackFontRangesRenderIntoRects	stb_truetype.h	/^STBTT_DEF int stbtt_PackFontRangesRenderIntoRects(stbtt_pack_context *spc, const stbtt_fontinfo /;"	f	typeref:typename:STBTT_DEF int
+stbtt_PackSetOversampling	stb_truetype.h	/^STBTT_DEF void stbtt_PackSetOversampling(stbtt_pack_context *spc, unsigned int h_oversample, uns/;"	f	typeref:typename:STBTT_DEF void
+stbtt_PackSetSkipMissingCodepoints	stb_truetype.h	/^STBTT_DEF void stbtt_PackSetSkipMissingCodepoints(stbtt_pack_context *spc, int skip)$/;"	f	typeref:typename:STBTT_DEF void
+stbtt_Rasterize	stb_truetype.h	/^STBTT_DEF void stbtt_Rasterize(stbtt__bitmap *result, float flatness_in_pixels, stbtt_vertex *ve/;"	f	typeref:typename:STBTT_DEF void
+stbtt_ScaleForMappingEmToPixels	stb_truetype.h	/^STBTT_DEF float stbtt_ScaleForMappingEmToPixels(const stbtt_fontinfo *info, float pixels)$/;"	f	typeref:typename:STBTT_DEF float
+stbtt_ScaleForPixelHeight	stb_truetype.h	/^STBTT_DEF float stbtt_ScaleForPixelHeight(const stbtt_fontinfo *info, float height)$/;"	f	typeref:typename:STBTT_DEF float
+stbtt__CompareUTF8toUTF16_bigendian_prefix	stb_truetype.h	/^static stbtt_int32 stbtt__CompareUTF8toUTF16_bigendian_prefix(stbtt_uint8 *s1, stbtt_int32 len1,/;"	f	typeref:typename:stbtt_int32
+stbtt__GetCoverageIndex	stb_truetype.h	/^static stbtt_int32 stbtt__GetCoverageIndex(stbtt_uint8 *coverageTable, int glyph)$/;"	f	typeref:typename:stbtt_int32
+stbtt__GetGlyfOffset	stb_truetype.h	/^static int stbtt__GetGlyfOffset(const stbtt_fontinfo *info, int glyph_index)$/;"	f	typeref:typename:int
+stbtt__GetGlyphClass	stb_truetype.h	/^static stbtt_int32  stbtt__GetGlyphClass(stbtt_uint8 *classDefTable, int glyph)$/;"	f	typeref:typename:stbtt_int32
+stbtt__GetGlyphGPOSInfoAdvance	stb_truetype.h	/^static stbtt_int32 stbtt__GetGlyphGPOSInfoAdvance(const stbtt_fontinfo *info, int glyph1, int gl/;"	f	typeref:typename:stbtt_int32
+stbtt__GetGlyphInfoT2	stb_truetype.h	/^static int stbtt__GetGlyphInfoT2(const stbtt_fontinfo *info, int glyph_index, int *x0, int *y0, /;"	f	typeref:typename:int
+stbtt__GetGlyphKernInfoAdvance	stb_truetype.h	/^static int stbtt__GetGlyphKernInfoAdvance(const stbtt_fontinfo *info, int glyph1, int glyph2)$/;"	f	typeref:typename:int
+stbtt__GetGlyphShapeT2	stb_truetype.h	/^static int stbtt__GetGlyphShapeT2(const stbtt_fontinfo *info, int glyph_index, stbtt_vertex **pv/;"	f	typeref:typename:int
+stbtt__GetGlyphShapeTT	stb_truetype.h	/^static int stbtt__GetGlyphShapeTT(const stbtt_fontinfo *info, int glyph_index, stbtt_vertex **pv/;"	f	typeref:typename:int
+stbtt__active_edge	stb_truetype.h	/^typedef struct stbtt__active_edge$/;"	s
+stbtt__active_edge	stb_truetype.h	/^} stbtt__active_edge;$/;"	t	typeref:struct:stbtt__active_edge
+stbtt__add_point	stb_truetype.h	/^static void stbtt__add_point(stbtt__point *points, int n, float x, float y)$/;"	f	typeref:typename:void
+stbtt__bitmap	stb_truetype.h	/^} stbtt__bitmap;$/;"	t	typeref:struct:__anon0048a2850808
+stbtt__buf	stb_truetype.h	/^} stbtt__buf;$/;"	t	typeref:struct:__anon0048a2850108
+stbtt__buf_get	stb_truetype.h	/^static stbtt_uint32 stbtt__buf_get(stbtt__buf *b, int n)$/;"	f	typeref:typename:stbtt_uint32
+stbtt__buf_get16	stb_truetype.h	/^#define stbtt__buf_get16(/;"	d
+stbtt__buf_get32	stb_truetype.h	/^#define stbtt__buf_get32(/;"	d
+stbtt__buf_get8	stb_truetype.h	/^static stbtt_uint8 stbtt__buf_get8(stbtt__buf *b)$/;"	f	typeref:typename:stbtt_uint8
+stbtt__buf_peek8	stb_truetype.h	/^static stbtt_uint8 stbtt__buf_peek8(stbtt__buf *b)$/;"	f	typeref:typename:stbtt_uint8
+stbtt__buf_range	stb_truetype.h	/^static stbtt__buf stbtt__buf_range(const stbtt__buf *b, int o, int s)$/;"	f	typeref:typename:stbtt__buf
+stbtt__buf_seek	stb_truetype.h	/^static void stbtt__buf_seek(stbtt__buf *b, int o)$/;"	f	typeref:typename:void
+stbtt__buf_skip	stb_truetype.h	/^static void stbtt__buf_skip(stbtt__buf *b, int o)$/;"	f	typeref:typename:void
+stbtt__cff_get_index	stb_truetype.h	/^static stbtt__buf stbtt__cff_get_index(stbtt__buf *b)$/;"	f	typeref:typename:stbtt__buf
+stbtt__cff_index_count	stb_truetype.h	/^static int stbtt__cff_index_count(stbtt__buf *b)$/;"	f	typeref:typename:int
+stbtt__cff_index_get	stb_truetype.h	/^static stbtt__buf stbtt__cff_index_get(stbtt__buf b, int i)$/;"	f	typeref:typename:stbtt__buf
+stbtt__cff_int	stb_truetype.h	/^static stbtt_uint32 stbtt__cff_int(stbtt__buf *b)$/;"	f	typeref:typename:stbtt_uint32
+stbtt__cff_skip_operand	stb_truetype.h	/^static void stbtt__cff_skip_operand(stbtt__buf *b) {$/;"	f	typeref:typename:void
+stbtt__check_size16	stb_truetype.h	/^   typedef char stbtt__check_size16[sizeof(stbtt_int16)==2 ? 1 : -1];$/;"	t	typeref:typename:char[sizeof (stbtt_int16)==2?1:-1]
+stbtt__check_size32	stb_truetype.h	/^   typedef char stbtt__check_size32[sizeof(stbtt_int32)==4 ? 1 : -1];$/;"	t	typeref:typename:char[sizeof (stbtt_int32)==4?1:-1]
+stbtt__cid_get_glyph_subrs	stb_truetype.h	/^static stbtt__buf stbtt__cid_get_glyph_subrs(const stbtt_fontinfo *info, int glyph_index)$/;"	f	typeref:typename:stbtt__buf
+stbtt__close_shape	stb_truetype.h	/^static int stbtt__close_shape(stbtt_vertex *vertices, int num_vertices, int was_off, int start_o/;"	f	typeref:typename:int
+stbtt__compute_crossings_x	stb_truetype.h	/^static int stbtt__compute_crossings_x(float x, float y, int nverts, stbtt_vertex *verts)$/;"	f	typeref:typename:int
+stbtt__csctx	stb_truetype.h	/^} stbtt__csctx;$/;"	t	typeref:struct:__anon0048a2850f08
+stbtt__csctx_close_shape	stb_truetype.h	/^static void stbtt__csctx_close_shape(stbtt__csctx *ctx)$/;"	f	typeref:typename:void
+stbtt__csctx_rccurve_to	stb_truetype.h	/^static void stbtt__csctx_rccurve_to(stbtt__csctx *ctx, float dx1, float dy1, float dx2, float dy/;"	f	typeref:typename:void
+stbtt__csctx_rline_to	stb_truetype.h	/^static void stbtt__csctx_rline_to(stbtt__csctx *ctx, float dx, float dy)$/;"	f	typeref:typename:void
+stbtt__csctx_rmove_to	stb_truetype.h	/^static void stbtt__csctx_rmove_to(stbtt__csctx *ctx, float dx, float dy)$/;"	f	typeref:typename:void
+stbtt__csctx_v	stb_truetype.h	/^static void stbtt__csctx_v(stbtt__csctx *c, stbtt_uint8 type, stbtt_int32 x, stbtt_int32 y, stbt/;"	f	typeref:typename:void
+stbtt__cuberoot	stb_truetype.h	/^static float stbtt__cuberoot( float x )$/;"	f	typeref:typename:float
+stbtt__dict_get	stb_truetype.h	/^static stbtt__buf stbtt__dict_get(stbtt__buf *b, int key)$/;"	f	typeref:typename:stbtt__buf
+stbtt__dict_get_ints	stb_truetype.h	/^static void stbtt__dict_get_ints(stbtt__buf *b, int key, int outcount, stbtt_uint32 *out)$/;"	f	typeref:typename:void
+stbtt__edge	stb_truetype.h	/^typedef struct stbtt__edge {$/;"	s
+stbtt__edge	stb_truetype.h	/^} stbtt__edge;$/;"	t	typeref:struct:stbtt__edge
+stbtt__fill_active_edges	stb_truetype.h	/^static void stbtt__fill_active_edges(unsigned char *scanline, int len, stbtt__active_edge *e, in/;"	f	typeref:typename:void
+stbtt__fill_active_edges_new	stb_truetype.h	/^static void stbtt__fill_active_edges_new(float *scanline, float *scanline_fill, int len, stbtt__/;"	f	typeref:typename:void
+stbtt__find_table	stb_truetype.h	/^static stbtt_uint32 stbtt__find_table(stbtt_uint8 *data, stbtt_uint32 fontstart, const char *tag/;"	f	typeref:typename:stbtt_uint32
+stbtt__get_subr	stb_truetype.h	/^static stbtt__buf stbtt__get_subr(stbtt__buf idx, int n)$/;"	f	typeref:typename:stbtt__buf
+stbtt__get_subrs	stb_truetype.h	/^static stbtt__buf stbtt__get_subrs(stbtt__buf cff, stbtt__buf fontdict)$/;"	f	typeref:typename:stbtt__buf
+stbtt__get_svg	stb_truetype.h	/^static int stbtt__get_svg(stbtt_fontinfo *info)$/;"	f	typeref:typename:int
+stbtt__h_prefilter	stb_truetype.h	/^static void stbtt__h_prefilter(unsigned char *pixels, int w, int h, int stride_in_bytes, unsigne/;"	f	typeref:typename:void
+stbtt__handle_clipped_edge	stb_truetype.h	/^static void stbtt__handle_clipped_edge(float *scanline, int x, stbtt__active_edge *e, float x0, /;"	f	typeref:typename:void
+stbtt__hheap	stb_truetype.h	/^typedef struct stbtt__hheap$/;"	s
+stbtt__hheap	stb_truetype.h	/^} stbtt__hheap;$/;"	t	typeref:struct:stbtt__hheap
+stbtt__hheap_alloc	stb_truetype.h	/^static void *stbtt__hheap_alloc(stbtt__hheap *hh, size_t size, void *userdata)$/;"	f	typeref:typename:void *
+stbtt__hheap_chunk	stb_truetype.h	/^typedef struct stbtt__hheap_chunk$/;"	s
+stbtt__hheap_chunk	stb_truetype.h	/^} stbtt__hheap_chunk;$/;"	t	typeref:struct:stbtt__hheap_chunk
+stbtt__hheap_cleanup	stb_truetype.h	/^static void stbtt__hheap_cleanup(stbtt__hheap *hh, void *userdata)$/;"	f	typeref:typename:void
+stbtt__hheap_free	stb_truetype.h	/^static void stbtt__hheap_free(stbtt__hheap *hh, void *p)$/;"	f	typeref:typename:void
+stbtt__isfont	stb_truetype.h	/^static int stbtt__isfont(stbtt_uint8 *font)$/;"	f	typeref:typename:int
+stbtt__matches	stb_truetype.h	/^static int stbtt__matches(stbtt_uint8 *fc, stbtt_uint32 offset, stbtt_uint8 *name, stbtt_int32 f/;"	f	typeref:typename:int
+stbtt__matchpair	stb_truetype.h	/^static int stbtt__matchpair(stbtt_uint8 *fc, stbtt_uint32 nm, stbtt_uint8 *name, stbtt_int32 nle/;"	f	typeref:typename:int
+stbtt__new_active	stb_truetype.h	/^static stbtt__active_edge *stbtt__new_active(stbtt__hheap *hh, stbtt__edge *e, int off_x, float /;"	f	typeref:typename:stbtt__active_edge *
+stbtt__new_buf	stb_truetype.h	/^static stbtt__buf stbtt__new_buf(const void *p, size_t size)$/;"	f	typeref:typename:stbtt__buf
+stbtt__oversample_shift	stb_truetype.h	/^static float stbtt__oversample_shift(int oversample)$/;"	f	typeref:typename:float
+stbtt__point	stb_truetype.h	/^} stbtt__point;$/;"	t	typeref:struct:__anon0048a2851008
+stbtt__position_trapezoid_area	stb_truetype.h	/^static float stbtt__position_trapezoid_area(float height, float tx0, float tx1, float bx0, float/;"	f	typeref:typename:float
+stbtt__rasterize	stb_truetype.h	/^static void stbtt__rasterize(stbtt__bitmap *result, stbtt__point *pts, int *wcount, int windings/;"	f	typeref:typename:void
+stbtt__rasterize_sorted_edges	stb_truetype.h	/^static void stbtt__rasterize_sorted_edges(stbtt__bitmap *result, stbtt__edge *e, int n, int vsub/;"	f	typeref:typename:void
+stbtt__ray_intersect_bezier	stb_truetype.h	/^static int stbtt__ray_intersect_bezier(float orig[2], float ray[2], float q0[2], float q1[2], fl/;"	f	typeref:typename:int
+stbtt__run_charstring	stb_truetype.h	/^static int stbtt__run_charstring(const stbtt_fontinfo *info, int glyph_index, stbtt__csctx *c)$/;"	f	typeref:typename:int
+stbtt__sized_trapezoid_area	stb_truetype.h	/^static float stbtt__sized_trapezoid_area(float height, float top_width, float bottom_width)$/;"	f	typeref:typename:float
+stbtt__sized_triangle_area	stb_truetype.h	/^static float stbtt__sized_triangle_area(float height, float width)$/;"	f	typeref:typename:float
+stbtt__solve_cubic	stb_truetype.h	/^static int stbtt__solve_cubic(float a, float b, float c, float* r)$/;"	f	typeref:typename:int
+stbtt__sort_edges	stb_truetype.h	/^static void stbtt__sort_edges(stbtt__edge *p, int n)$/;"	f	typeref:typename:void
+stbtt__sort_edges_ins_sort	stb_truetype.h	/^static void stbtt__sort_edges_ins_sort(stbtt__edge *p, int n)$/;"	f	typeref:typename:void
+stbtt__sort_edges_quicksort	stb_truetype.h	/^static void stbtt__sort_edges_quicksort(stbtt__edge *p, int n)$/;"	f	typeref:typename:void
+stbtt__tesselate_cubic	stb_truetype.h	/^static void stbtt__tesselate_cubic(stbtt__point *points, int *num_points, float x0, float y0, fl/;"	f	typeref:typename:void
+stbtt__tesselate_curve	stb_truetype.h	/^static int stbtt__tesselate_curve(stbtt__point *points, int *num_points, float x0, float y0, flo/;"	f	typeref:typename:int
+stbtt__test_oversample_pow2	stb_truetype.h	/^typedef int stbtt__test_oversample_pow2[(STBTT_MAX_OVERSAMPLE & (STBTT_MAX_OVERSAMPLE-1)) == 0 ?/;"	t	typeref:typename:int[(STBTT_MAX_OVERSAMPLE & (STBTT_MAX_OVERSAMPLE-1))==0?1:-1]
+stbtt__track_vertex	stb_truetype.h	/^static void stbtt__track_vertex(stbtt__csctx *c, stbtt_int32 x, stbtt_int32 y)$/;"	f	typeref:typename:void
+stbtt__v_prefilter	stb_truetype.h	/^static void stbtt__v_prefilter(unsigned char *pixels, int w, int h, int stride_in_bytes, unsigne/;"	f	typeref:typename:void
+stbtt_aligned_quad	stb_truetype.h	/^} stbtt_aligned_quad;$/;"	t	typeref:struct:__anon0048a2850308
+stbtt_bakedchar	stb_truetype.h	/^} stbtt_bakedchar;$/;"	t	typeref:struct:__anon0048a2850208
+stbtt_fontinfo	stb_truetype.h	/^struct stbtt_fontinfo$/;"	s
+stbtt_fontinfo	stb_truetype.h	/^typedef struct stbtt_fontinfo stbtt_fontinfo;$/;"	t	typeref:struct:stbtt_fontinfo
+stbtt_int16	stb_truetype.h	/^   typedef signed   short  stbtt_int16;$/;"	t	typeref:typename:signed short
+stbtt_int32	stb_truetype.h	/^   typedef signed   int    stbtt_int32;$/;"	t	typeref:typename:signed int
+stbtt_int8	stb_truetype.h	/^   typedef signed   char   stbtt_int8;$/;"	t	typeref:typename:signed char
+stbtt_kerningentry	stb_truetype.h	/^typedef struct stbtt_kerningentry$/;"	s
+stbtt_kerningentry	stb_truetype.h	/^} stbtt_kerningentry;$/;"	t	typeref:struct:stbtt_kerningentry
+stbtt_pack_context	stb_truetype.h	/^struct stbtt_pack_context {$/;"	s
+stbtt_pack_context	stb_truetype.h	/^typedef struct stbtt_pack_context stbtt_pack_context;$/;"	t	typeref:struct:stbtt_pack_context
+stbtt_pack_range	stb_truetype.h	/^} stbtt_pack_range;$/;"	t	typeref:struct:__anon0048a2850508
+stbtt_packedchar	stb_truetype.h	/^} stbtt_packedchar;$/;"	t	typeref:struct:__anon0048a2850408
+stbtt_setvertex	stb_truetype.h	/^static void stbtt_setvertex(stbtt_vertex *v, stbtt_uint8 type, stbtt_int32 x, stbtt_int32 y, stb/;"	f	typeref:typename:void
+stbtt_tag	stb_truetype.h	/^#define stbtt_tag(/;"	d
+stbtt_tag4	stb_truetype.h	/^#define stbtt_tag4(/;"	d
+stbtt_uint16	stb_truetype.h	/^   typedef unsigned short  stbtt_uint16;$/;"	t	typeref:typename:unsigned short
+stbtt_uint32	stb_truetype.h	/^   typedef unsigned int    stbtt_uint32;$/;"	t	typeref:typename:unsigned int
+stbtt_uint8	stb_truetype.h	/^   typedef unsigned char   stbtt_uint8;$/;"	t	typeref:typename:unsigned char
+stbtt_vertex	stb_truetype.h	/^   } stbtt_vertex;$/;"	t	typeref:struct:__anon0048a2850708
+stbtt_vertex_type	stb_truetype.h	/^   #define stbtt_vertex_type /;"	d
+step	stb_image.h	/^   int parse, step;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+stride	stb_truetype.h	/^   int w,h,stride;$/;"	m	struct:__anon0048a2850808	typeref:typename:int
+stride_in_bytes	stb_truetype.h	/^   int   stride_in_bytes;$/;"	m	struct:stbtt_pack_context	typeref:typename:int
 string	strings.h	/^struct string$/;"	s
 string_array	strings.h	/^struct string_array$/;"	s
 string_list	strings.h	/^struct string_list$/;"	s
 string_node	strings.h	/^struct string_node$/;"	s
-temporary_memory	platform.h	/^struct temporary_memory$/;"	s
+subrs	stb_truetype.h	/^   stbtt__buf subrs;                  \/\/ private charstring subroutines index$/;"	m	struct:stbtt_fontinfo	typeref:typename:stbtt__buf
+succ_high	stb_image.h	/^   int            succ_high;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+succ_low	stb_image.h	/^   int            succ_low;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+suffix	stb_image.h	/^   stbi_uc suffix;$/;"	m	struct:__anon84e4e8861208	typeref:typename:stbi_uc
+svg	stb_truetype.h	/^   int loca,head,glyf,hhea,hmtx,kern,gpos,svg; \/\/ table locations as offset from start of .ttf$/;"	m	struct:stbtt_fontinfo	typeref:typename:int
+sy	stb_truetype.h	/^   float sy;$/;"	m	struct:stbtt__active_edge	typeref:typename:float
+t0	stb_truetype.h	/^   float x0,y0,s0,t0; \/\/ top-left$/;"	m	struct:__anon0048a2850308	typeref:typename:float
+t1	stb_truetype.h	/^   float x1,y1,s1,t1; \/\/ bottom-right$/;"	m	struct:__anon0048a2850308	typeref:typename:float
+temporary_memory	game.h	/^struct temporary_memory$/;"	s
+texture	texture.h	/^struct texture$/;"	s
+todo	stb_image.h	/^   int restart_interval, todo;$/;"	m	struct:__anon84e4e8860808	typeref:typename:int
+tq	stb_image.h	/^      int tq;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+transparent	stb_image.h	/^   int flags, bgindex, ratio, transparent, eflags;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+ttBYTE	stb_truetype.h	/^#define ttBYTE(/;"	d
+ttCHAR	stb_truetype.h	/^#define ttCHAR(/;"	d
+ttFixed	stb_truetype.h	/^#define ttFixed(/;"	d
+ttLONG	stb_truetype.h	/^static stbtt_int32 ttLONG(stbtt_uint8 *p)    { return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) + p[3]/;"	f	typeref:typename:stbtt_int32
+ttSHORT	stb_truetype.h	/^static stbtt_int16 ttSHORT(stbtt_uint8 *p)   { return p[0]*256 + p[1]; }$/;"	f	typeref:typename:stbtt_int16
+ttULONG	stb_truetype.h	/^static stbtt_uint32 ttULONG(stbtt_uint8 *p)  { return (p[0]<<24) + (p[1]<<16) + (p[2]<<8) + p[3]/;"	f	typeref:typename:stbtt_uint32
+ttUSHORT	stb_truetype.h	/^static stbtt_uint16 ttUSHORT(stbtt_uint8 *p) { return p[0]*256 + p[1]; }$/;"	f	typeref:typename:stbtt_uint16
+type	stb_image.h	/^   stbi__uint32 type;$/;"	m	struct:__anon84e4e8860d08	typeref:typename:stbi__uint32
+type	stb_image.h	/^   stbi_uc size,type,channel;$/;"	m	struct:__anon84e4e8861108	typeref:typename:stbi_uc
+type	stb_truetype.h	/^      unsigned char type,padding;$/;"	m	struct:__anon0048a2850708	typeref:typename:unsigned char
 u16	platform.h	/^typedef uint16_t u16;$/;"	t	typeref:typename:uint16_t
 u32	platform.h	/^typedef uint32_t u32;$/;"	t	typeref:typename:uint32_t
 u64	platform.h	/^typedef uint64_t u64;$/;"	t	typeref:typename:uint64_t
-u8	platform.h	/^typedef uint8_t u8;$/;"	t	typeref:typename:uint8_t
+u8	platform.h	/^typedef uint8_t	 u8;$/;"	t	typeref:typename:uint8_t
+user_allocator_context	stb_truetype.h	/^   void *user_allocator_context;$/;"	m	struct:stbtt_pack_context	typeref:typename:void *
+userdata	stb_truetype.h	/^   void           * userdata;$/;"	m	struct:stbtt_fontinfo	typeref:typename:void *
+v	stb_image.h	/^      int h,v;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
 v2	math_util.h	/^union v2$/;"	u
 v3	math_util.h	/^union v3$/;"	u
 v4	math_util.h	/^union v4$/;"	u
-vertex_list	mesh.h	/^struct vertex_list$/;"	s
-w	math_util.h	/^		f32 w;$/;"	m	struct:quaternion::__anona93c3f220708	typeref:typename:f32
-w	math_util.h	/^		f32 w;$/;"	m	struct:v4::__anona93c3f220408	typeref:typename:f32
-w	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32
-wglChoosePixelFormatARB	win32_main.cpp	/^global_varible wgl_choose_pixel_format_arb		*wglChoosePixelFormatARB;$/;"	v	typeref:typename:global_varible wgl_choose_pixel_format_arb *
-wglCreateContextAttribsARB	win32_main.cpp	/^global_varible wgl_create_context_attribs_arb	*wglCreateContextAttribsARB;$/;"	v	typeref:typename:global_varible wgl_create_context_attribs_arb *
-wglGetExtensionsStringEXT	win32_main.cpp	/^global_varible wgl_get_extensions_string_ext	*wglGetExtensionsStringEXT;$/;"	v	typeref:typename:global_varible wgl_get_extensions_string_ext *
-wglSwapIntervalEXT	win32_main.cpp	/^global_varible wgl_swap_interval_ext			*wglSwapIntervalEXT;$/;"	v	typeref:typename:global_varible wgl_swap_interval_ext *
-wgl_choose_pixel_format_arb	win32_main.cpp	/^typedef BOOL WINAPI wgl_choose_pixel_format_arb(HDC hdc,$/;"	t	typeref:typename:BOOL WINAPI ()(HDC hdc,const int * piAttribIList,const FLOAT * pfAttribFList,UINT nMaxFormats,int * piFormats,UINT * nNumFormats)	file:
-wgl_create_context_attribs_arb	win32_main.cpp	/^typedef HGLRC WINAPI wgl_create_context_attribs_arb(HDC hDC, HGLRC hShareContext, const int *att/;"	t	typeref:typename:HGLRC WINAPI ()(HDC hDC,HGLRC hShareContext,const int * attribList)	file:
-wgl_get_extensions_string_ext	win32_main.cpp	/^typedef const char * WINAPI wgl_get_extensions_string_ext(void);$/;"	t	typeref:typename:const char * WINAPI ()(void)	file:
-wgl_get_pixel_format_attrib_fv_arb	win32_main.cpp	/^typedef BOOL WINAPI wgl_get_pixel_format_attrib_fv_arb(HDC hdc,$/;"	t	typeref:typename:BOOL WINAPI ()(HDC hdc,int iPixelFormat,int iLayerPlane,UINT nAttributes,const int * piAttributes,FLOAT * pfValues)	file:
-wgl_get_pixel_format_attrib_iv_arb	win32_main.cpp	/^typedef BOOL WINAPI wgl_get_pixel_format_attrib_iv_arb(HDC hdc,$/;"	t	typeref:typename:BOOL WINAPI ()(HDC hdc,int iPixelFormat,int iLayerPlane,UINT nAttributes,const int * piAttributes,int * piValues)	file:
-wgl_swap_interval_ext	win32_main.cpp	/^typedef BOOL WINAPI wgl_swap_interval_ext(int interval);$/;"	t	typeref:typename:BOOL WINAPI ()(int interval)	file:
-x	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220408::__anona93c3f22050a::__anona93c3f220608	typeref:typename:f32
-x	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32
+v_oversample	stb_truetype.h	/^   unsigned char h_oversample, v_oversample; \/\/ don't set these, they're used internally$/;"	m	struct:__anon0048a2850508	typeref:typename:unsigned char
+v_oversample	stb_truetype.h	/^   unsigned int   h_oversample, v_oversample;$/;"	m	struct:stbtt_pack_context	typeref:typename:unsigned int
+validate_uint32	stb_image.h	/^typedef unsigned char validate_uint32[sizeof(stbi__uint32)==4 ? 1 : -1];$/;"	t	typeref:typename:unsigned char[sizeof (stbi__uint32)==4?1:-1]
+value	stb_image.h	/^   stbi__uint16 value[STBI__ZNSYMS];$/;"	m	struct:__anon84e4e8860b08	typeref:typename:stbi__uint16[]
+values	stb_image.h	/^   stbi_uc  values[256];$/;"	m	struct:__anon84e4e8860708	typeref:typename:stbi_uc[256]
+vertex	mesh.h	/^struct vertex $/;"	s
+vs	stb_image.h	/^   int hs,vs;   \/\/ expansion factor in each axis$/;"	m	struct:__anon84e4e8860a08	typeref:typename:int
+w	math_util.h	/^		f32 w;$/;"	m	struct:quaternion::__anona93c3f220808	typeref:typename:f32
+w	math_util.h	/^		f32 w;$/;"	m	struct:v4::__anona93c3f220508	typeref:typename:f32
+w	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220408	typeref:typename:f32
+w	stb_image.h	/^   int w,h;$/;"	m	struct:__anon84e4e8861308	typeref:typename:int
+w	stb_truetype.h	/^   int id,w,h,was_packed;$/;"	m	struct:stbrp_rect	typeref:typename:int
+w	stb_truetype.h	/^   int w,h,stride;$/;"	m	struct:__anon0048a2850808	typeref:typename:int
+w2	stb_image.h	/^      int x,y,w2,h2;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+w_lores	stb_image.h	/^   int w_lores; \/\/ horizontal pixels pre-expansion$/;"	m	struct:__anon84e4e8860a08	typeref:typename:int
+was_packed	stb_truetype.h	/^   int id,w,h,was_packed;$/;"	m	struct:stbrp_rect	typeref:typename:int
+wglChoosePixelFormatARB	win32_opengl.h	/^global_varible wgl_choose_pixel_format_arb		*wglChoosePixelFormatARB;$/;"	v	typeref:typename:global_varible wgl_choose_pixel_format_arb *
+wglCreateContextAttribsARB	win32_opengl.h	/^global_varible wgl_create_context_attribs_arb	*wglCreateContextAttribsARB;$/;"	v	typeref:typename:global_varible wgl_create_context_attribs_arb *
+wglGetExtensionsStringEXT	win32_opengl.h	/^global_varible wgl_get_extensions_string_ext	*wglGetExtensionsStringEXT;$/;"	v	typeref:typename:global_varible wgl_get_extensions_string_ext *
+wglSwapIntervalEXT	win32_opengl.h	/^global_varible wgl_swap_interval_ext			*wglSwapIntervalEXT;$/;"	v	typeref:typename:global_varible wgl_swap_interval_ext *
+wgl_choose_pixel_format_arb	win32_opengl.h	/^typedef BOOL WINAPI wgl_choose_pixel_format_arb(HDC hdc,$/;"	t	typeref:typename:BOOL WINAPI ()(HDC hdc,const int * piAttribIList,const FLOAT * pfAttribFList,UINT nMaxFormats,int * piFormats,UINT * nNumFormats)
+wgl_create_context_attribs_arb	win32_opengl.h	/^typedef HGLRC WINAPI wgl_create_context_attribs_arb(HDC hDC, HGLRC hShareContext, const int *att/;"	t	typeref:typename:HGLRC WINAPI ()(HDC hDC,HGLRC hShareContext,const int * attribList)
+wgl_get_extensions_string_ext	win32_opengl.h	/^typedef const char * WINAPI wgl_get_extensions_string_ext(void);$/;"	t	typeref:typename:const char * WINAPI ()(void)
+wgl_get_pixel_format_attrib_fv_arb	win32_opengl.h	/^typedef BOOL WINAPI wgl_get_pixel_format_attrib_fv_arb(HDC hdc,$/;"	t	typeref:typename:BOOL WINAPI ()(HDC hdc,int iPixelFormat,int iLayerPlane,UINT nAttributes,const int * piAttributes,FLOAT * pfValues)
+wgl_get_pixel_format_attrib_iv_arb	win32_opengl.h	/^typedef BOOL WINAPI wgl_get_pixel_format_attrib_iv_arb(HDC hdc,$/;"	t	typeref:typename:BOOL WINAPI ()(HDC hdc,int iPixelFormat,int iLayerPlane,UINT nAttributes,const int * piAttributes,int * piValues)
+wgl_swap_interval_ext	win32_opengl.h	/^typedef BOOL WINAPI wgl_swap_interval_ext(int interval);$/;"	t	typeref:typename:BOOL WINAPI ()(int interval)
+width	stb_truetype.h	/^   int   width;$/;"	m	struct:stbtt_pack_context	typeref:typename:int
+width	stb_truetype.h	/^   int width,height;$/;"	m	struct:__anon0048a2851108	typeref:typename:int
+x	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220508::__anona93c3f22060a::__anona93c3f220708	typeref:typename:f32
+x	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220408	typeref:typename:f32
 x	math_util.h	/^		f32 x, y, z;$/;"	m	struct:v3::__anona93c3f220208	typeref:typename:f32
 x	math_util.h	/^		f32 x, y;$/;"	m	struct:v2::__anona93c3f220108	typeref:typename:f32
-x	math_util.h	/^		f32 x;$/;"	m	struct:quaternion::__anona93c3f220708	typeref:typename:f32
-xyz	math_util.h	/^			v3 xyz;$/;"	m	union:v4::__anona93c3f220408::__anona93c3f22050a	typeref:typename:v3
-y	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220408::__anona93c3f22050a::__anona93c3f220608	typeref:typename:f32
-y	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32
+x	math_util.h	/^		f32 x;$/;"	m	struct:quaternion::__anona93c3f220808	typeref:typename:f32
+x	stb_image.h	/^      int x,y,w2,h2;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+x	stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon0048a2850708	typeref:typename:stbtt_vertex_type
+x	stb_truetype.h	/^   float x, y;$/;"	m	struct:__anon0048a2850f08	typeref:typename:float
+x	stb_truetype.h	/^   float x,y;$/;"	m	struct:__anon0048a2851008	typeref:typename:float
+x	stb_truetype.h	/^   int x,dx;$/;"	m	struct:stbtt__active_edge	typeref:typename:int
+x	stb_truetype.h	/^   int x,y,bottom_y;$/;"	m	struct:__anon0048a2851108	typeref:typename:int
+x	stb_truetype.h	/^   stbrp_coord x,y;$/;"	m	struct:stbrp_rect	typeref:typename:stbrp_coord
+x	stb_truetype.h	/^   unsigned char x;$/;"	m	struct:__anon0048a2851208	typeref:typename:unsigned char
+x0	stb_truetype.h	/^   float x0,y0, x1,y1;$/;"	m	struct:stbtt__edge	typeref:typename:float
+x0	stb_truetype.h	/^   float x0,y0,s0,t0; \/\/ top-left$/;"	m	struct:__anon0048a2850308	typeref:typename:float
+x0	stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon0048a2850208	typeref:typename:unsigned short
+x0	stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon0048a2850408	typeref:typename:unsigned short
+x1	stb_truetype.h	/^   float x0,y0, x1,y1;$/;"	m	struct:stbtt__edge	typeref:typename:float
+x1	stb_truetype.h	/^   float x1,y1,s1,t1; \/\/ bottom-right$/;"	m	struct:__anon0048a2850308	typeref:typename:float
+x1	stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon0048a2850208	typeref:typename:unsigned short
+x1	stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon0048a2850408	typeref:typename:unsigned short
+xadvance	stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon0048a2850208	typeref:typename:float
+xadvance	stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon0048a2850408	typeref:typename:float
+xoff	stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon0048a2850208	typeref:typename:float
+xoff	stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon0048a2850408	typeref:typename:float
+xoff2	stb_truetype.h	/^   float xoff2,yoff2;$/;"	m	struct:__anon0048a2850408	typeref:typename:float
+xyz	math_util.h	/^			v3 xyz;$/;"	m	union:v4::__anona93c3f220508::__anona93c3f22060a	typeref:typename:v3
+y	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220508::__anona93c3f22060a::__anona93c3f220708	typeref:typename:f32
+y	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220408	typeref:typename:f32
 y	math_util.h	/^		f32 x, y, z;$/;"	m	struct:v3::__anona93c3f220208	typeref:typename:f32
 y	math_util.h	/^		f32 x, y;$/;"	m	struct:v2::__anona93c3f220108	typeref:typename:f32
-y	math_util.h	/^		f32 y;$/;"	m	struct:quaternion::__anona93c3f220708	typeref:typename:f32
-z	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220408::__anona93c3f22050a::__anona93c3f220608	typeref:typename:f32
-z	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220308	typeref:typename:f32
+y	math_util.h	/^		f32 y;$/;"	m	struct:quaternion::__anona93c3f220808	typeref:typename:f32
+y	stb_image.h	/^      int x,y,w2,h2;$/;"	m	struct:__anon84e4e8860808::__anon84e4e8860908	typeref:typename:int
+y	stb_truetype.h	/^      stbtt_vertex_type x,y,cx,cy,cx1,cy1;$/;"	m	struct:__anon0048a2850708	typeref:typename:stbtt_vertex_type
+y	stb_truetype.h	/^   float x, y;$/;"	m	struct:__anon0048a2850f08	typeref:typename:float
+y	stb_truetype.h	/^   float x,y;$/;"	m	struct:__anon0048a2851008	typeref:typename:float
+y	stb_truetype.h	/^   int x,y,bottom_y;$/;"	m	struct:__anon0048a2851108	typeref:typename:int
+y	stb_truetype.h	/^   stbrp_coord x,y;$/;"	m	struct:stbrp_rect	typeref:typename:stbrp_coord
+y0	stb_truetype.h	/^   float x0,y0, x1,y1;$/;"	m	struct:stbtt__edge	typeref:typename:float
+y0	stb_truetype.h	/^   float x0,y0,s0,t0; \/\/ top-left$/;"	m	struct:__anon0048a2850308	typeref:typename:float
+y0	stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon0048a2850208	typeref:typename:unsigned short
+y0	stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon0048a2850408	typeref:typename:unsigned short
+y1	stb_truetype.h	/^   float x0,y0, x1,y1;$/;"	m	struct:stbtt__edge	typeref:typename:float
+y1	stb_truetype.h	/^   float x1,y1,s1,t1; \/\/ bottom-right$/;"	m	struct:__anon0048a2850308	typeref:typename:float
+y1	stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon0048a2850208	typeref:typename:unsigned short
+y1	stb_truetype.h	/^   unsigned short x0,y0,x1,y1; \/\/ coordinates of bbox in bitmap$/;"	m	struct:__anon0048a2850408	typeref:typename:unsigned short
+yaw	math_util.h	/^		f32 pitch, yaw, roll;$/;"	m	struct:v3::__anona93c3f220308	typeref:typename:f32
+yoff	stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon0048a2850208	typeref:typename:float
+yoff	stb_truetype.h	/^   float xoff,yoff,xadvance;$/;"	m	struct:__anon0048a2850408	typeref:typename:float
+yoff2	stb_truetype.h	/^   float xoff2,yoff2;$/;"	m	struct:__anon0048a2850408	typeref:typename:float
+ypos	stb_image.h	/^   int ypos;    \/\/ which pre-expansion row we're on$/;"	m	struct:__anon84e4e8860a08	typeref:typename:int
+ystep	stb_image.h	/^   int ystep;   \/\/ how far through vertical expansion we are$/;"	m	struct:__anon84e4e8860a08	typeref:typename:int
+z	math_util.h	/^				f32 x, y, z;$/;"	m	struct:v4::__anona93c3f220508::__anona93c3f22060a::__anona93c3f220708	typeref:typename:f32
+z	math_util.h	/^		f32 x, y, z, w;$/;"	m	struct:v4::__anona93c3f220408	typeref:typename:f32
 z	math_util.h	/^		f32 x, y, z;$/;"	m	struct:v3::__anona93c3f220208	typeref:typename:f32
-z	math_util.h	/^		f32 z;$/;"	m	struct:quaternion::__anona93c3f220708	typeref:typename:f32
+z	math_util.h	/^		f32 z;$/;"	m	struct:quaternion::__anona93c3f220808	typeref:typename:f32
+z_distance	stb_image.h	/^   stbi__zhuffman z_length, z_distance;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:stbi__zhuffman
+z_expandable	stb_image.h	/^   int   z_expandable;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:int
+z_length	stb_image.h	/^   stbi__zhuffman z_length, z_distance;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:stbi__zhuffman
+zbuffer	stb_image.h	/^   stbi_uc *zbuffer, *zbuffer_end;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:stbi_uc *
+zbuffer_end	stb_image.h	/^   stbi_uc *zbuffer, *zbuffer_end;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:stbi_uc *
+zout	stb_image.h	/^   char *zout;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:char *
+zout_end	stb_image.h	/^   char *zout_end;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:char *
+zout_start	stb_image.h	/^   char *zout_start;$/;"	m	struct:__anon84e4e8860c08	typeref:typename:char *

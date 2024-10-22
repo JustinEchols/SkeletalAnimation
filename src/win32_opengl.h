@@ -5,12 +5,9 @@
 #define WGL_SUPPORT_OPENGL_ARB                  0x2010
 #define WGL_DOUBLE_BUFFER_ARB                   0x2011
 #define WGL_PIXEL_TYPE_ARB                      0x2013
-
 #define WGL_TYPE_RGBA_ARB                       0x202B
 #define WGL_FULL_ACCELERATION_ARB               0x2027
-
 #define WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB        0x20A9
-
 #define WGL_RED_BITS_ARB                        0x2015
 #define WGL_GREEN_BITS_ARB                      0x2017
 #define WGL_BLUE_BITS_ARB                       0x2019
@@ -77,10 +74,21 @@ typedef void 	WINAPI gl_uniform_1f(GLint location, GLfloat v0);
 typedef void 	WINAPI gl_uniform_3fv(GLint location, GLsizei count, const GLfloat *value);
 typedef void 	WINAPI gl_uniform_4fv(GLint location, GLsizei count, const GLfloat *value);
 typedef void 	WINAPI gl_uniform_matrix_4fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void 	WINAPI gl_uniform_matrix_3fv(GLint location, GLsizei count, GLboolean transpose, const GLfloat *value);
+typedef void	WINAPI gl_get_shader_info_log(GLuint shader, GLsizei bufSize, GLsizei *length, GLchar *infoLog);
+typedef void	WINAPI gl_active_texture(GLenum texture);
+typedef void	WINAPI gl_uniform_1i(GLint location, GLint v0);
+typedef void	WINAPI gl_generate_mipmap(GLenum target);
+typedef void	WINAPI gl_tex_image3D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void * data);
+typedef void	WINAPI gl_tex_sub_image3D(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
+
+
 
 #define GL_DEBUG_CALLBACK(Name) void WINAPI Name(GLenum Source, GLenum Type, GLuint ID, GLenum Severity, GLsizei Length, const GLchar *Message, const void *UserParam)
 typedef GL_DEBUG_CALLBACK(GLDEBUGPROC);
 typedef void WINAPI gl_debug_message_callback(GLDEBUGPROC *callback, const void *userParam);
+
+#define global_variable static
 
 global_varible gl_attach_shader                 *glAttachShader;
 global_varible gl_compile_shader                *glCompileShader;
@@ -115,12 +123,20 @@ global_varible gl_uniform_1f					*glUniform1f;
 global_varible gl_uniform_3fv					*glUniform3fv;
 global_varible gl_uniform_4fv					*glUniform4fv;
 global_varible gl_uniform_matrix_4fv			*glUniformMatrix4fv;
+global_varible gl_uniform_matrix_3fv			*glUniformMatrix3fv;
+
+global_variable gl_active_texture				*glActiveTexture;
+global_variable gl_uniform_1i					*glUniform1i;
+global_variable gl_generate_mipmap				*glGenerateMipmap;
+global_variable gl_tex_image3D					*glTexImage3D;
+global_variable gl_tex_sub_image3D				*glTexSubImage3D;
 
 global_varible wgl_create_context_attribs_arb	*wglCreateContextAttribsARB;
 global_varible wgl_choose_pixel_format_arb		*wglChoosePixelFormatARB;
 global_varible wgl_swap_interval_ext			*wglSwapIntervalEXT;
 global_varible wgl_get_extensions_string_ext	*wglGetExtensionsStringEXT;
 
-global_varible gl_debug_message_callback		*glDebugMessageCallback;
+global_variable gl_debug_message_callback *glDebugMessageCallback;
+
 #define WIN32_OPENGL_H
 #endif

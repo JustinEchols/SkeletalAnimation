@@ -58,8 +58,6 @@ struct mesh
 // NOTE(Justin): Should the model have a basis?
 struct model
 {
-	//basis Basis;
-
 	b32 HasSkeleton;
 
 	u32 MeshCount;

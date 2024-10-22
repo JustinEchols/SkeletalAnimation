@@ -55,6 +55,7 @@ MemoryZero(memory_index Size, void *Src)
 	}
 }
 
+
 inline temporary_memory
 TemporaryMemoryBegin(memory_arena *Arena)
 {
@@ -93,9 +94,18 @@ U32ArraySum(u32 *A, u32 Count)
 #include "intrinsics.h"
 #include "math_util.h"
 #include "strings.h"
+#include "texture.h"
+#include "font.h"
 #include "mesh.h"
 #include "animation.h"
 #include "asset.h"
+
+enum movement_state
+{
+	MovementState_Idle,
+	MovementState_Walking,
+	MovementState_Sprinting,
+};
 
 enum entity_type
 {
@@ -107,11 +117,29 @@ enum entity_type
 struct entity
 {
 	entity_type Type;
+	movement_state MovementState;
 
 	v3 P;
 	v3 dP;
 	v3 ddP;
 	quaternion Orientation;
+};
+
+struct quad_vertex
+{
+	v3 P;
+	v3 N;
+	v2 UV;
+};
+
+struct quad
+{
+	u32 VA;
+	u32 VB;
+	u32 Texture;
+	//v3 P;
+
+	quad_vertex Vertices[6];
 };
 
 struct game_state
@@ -125,13 +153,14 @@ struct game_state
 	u32 PlayerEntityIndex;
 	model *XBot;
 	model *Cube;
+	quad Quad;
 
 	animation_player AnimationPlayer;
 	animation_info *AnimationInfos;
 	animation *Animations;
 
 	v3 CameraP;
-	v3 Direction;
+	v3 CameraDirection;
 	mat4 CameraTransform;
 
 	f32 FOV;
@@ -143,6 +172,9 @@ struct game_state
 	f32 Angle;
 
 	u32 Shaders[2];
+
+	texture Textures[32];
+
 };
 
 #define GAME_H

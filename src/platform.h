@@ -1,40 +1,46 @@
 #if !defined(PLATFORM_H)
 
+// NOTE(Justin): C Standard Library
+
 #include <stdint.h>
+#include <string.h>
 
-typedef int8_t s8;
-typedef int16_t s16;
-typedef int32_t s32;
-typedef int64_t s64;
+#define MemorySet(Source, Value, Size) memset(Source, Value, Size)
 
-typedef uint8_t u8;
+#define PushArray(Arena, Count, Type) (Type *)PushSize_(Arena, Count * sizeof(Type))
+#define PushStruct(Arena, Type) (Type *)PushSize_(Arena, sizeof(Type))
+#define ArrayCopy(Count, Src, Dest) MemoryCopy((Count)*sizeof(*(Src)), (Src), (Dest))
+
+// NOTE(Justin): Base Types
+
+typedef int8_t	 s8;
+typedef int16_t  s16;
+typedef int32_t  s32;
+typedef int64_t  s64;
+typedef uint8_t	 u8;
 typedef uint16_t u16;
 typedef uint32_t u32;
 typedef uint64_t u64;
+typedef float	 f32;
+typedef double	 f64;
+typedef s32		 b32;
+typedef size_t	 memory_index;
 
-typedef float f32;
-typedef double f64;
+// NOTE(Justin): Helper Macros 
 
-typedef s32 b32;
-typedef size_t memory_index;
-
-#define global_varible static
-#define internal static
-#define local_persist static
-
+#define global_varible	static
+#define internal		static
+#define local_persist	static
 #define Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
 #define ArrayCount(A) sizeof(A) / sizeof((A)[0])
 #define Kilobyte(Count) (1024 * Count)
 #define Megabyte(Count) (1024 * Kilobyte(Count))
 #define Gigabyte(Count) (1024 * Megabyte(Count))
+#define Pi32 3.1415926535897f
+#define DegreeToRad(Degrees) ((Degrees) * (Pi32 / 180.0f))
+#define SmallNumber (1.e-8f)
 
-#define PI32 3.1415926535897f
-#define SMALL_NUMBER (1.e-8f)
-#define DegreeToRad(Degrees) ((Degrees) * (PI32 / 180.0f))
-
-#define PushArray(Arena, Count, Type) (Type *)PushSize_(Arena, Count * sizeof(Type))
-#define PushStruct(Arena, Type) (Type *)PushSize_(Arena, sizeof(Type))
-#define ArrayCopy(Count, Src, Dest) MemoryCopy((Count)*sizeof(*(Src)), (Src), (Dest))
+// NOTE(Justin): Linked List Macros
 
 #define SLLQueuePush_N(First,Last,Node,Next) (((First)==0?\
 (First)=(Last)=(Node):\
@@ -45,7 +51,7 @@ typedef size_t memory_index;
 struct debug_file
 {
 	void *Content;
-	u32 Size;
+	u64 Size;
 };
 
 inline u32
@@ -58,7 +64,7 @@ U64TruncateToU32(u64 U64)
 
 struct game_button
 {
-	b32 IsDown;
+	b32 EndedDown;
 	u32 HalfTransitionCount;
 };
 
@@ -68,6 +74,8 @@ enum
 	Key_A,
 	Key_S,
 	Key_D,
+	Key_Shift,
+	Key_Space,
 
 	Key_Count
 };
@@ -83,6 +91,8 @@ struct game_keyboard
 			game_button A;
 			game_button S;
 			game_button D;
+			game_button Shift;
+			game_button Space;
 		};
 	};
 };
@@ -91,7 +101,6 @@ struct game_input
 {
 	game_keyboard Keyboard;
 	f32 DtForFrame;
-	//v3 MouseP;
 };
 
 struct game_memory

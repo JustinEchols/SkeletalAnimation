@@ -211,7 +211,14 @@ Win32OpenGLInit(HDC WindowDC)
 		glUniform3fv 				= (gl_uniform_3fv *)wglGetProcAddress("glUniform3fv");
 		glUniform4fv 				= (gl_uniform_4fv *)wglGetProcAddress("glUniform4fv");
 		glUniformMatrix4fv 			= (gl_uniform_matrix_4fv *)wglGetProcAddress("glUniformMatrix4fv");
+		glUniformMatrix3fv 			= (gl_uniform_matrix_3fv *)wglGetProcAddress("glUniformMatrix3fv");
+		glGetShaderInfoLog			= (gl_get_shader_info_log *)wglGetProcAddress("glGetShaderInfoLog");
 		glDebugMessageCallback		= (gl_debug_message_callback *)wglGetProcAddress("glDebugMessageCallback");
+		glActiveTexture				= (gl_active_texture *)wglGetProcAddress("glActiveTexture");
+		glUniform1i					= (gl_uniform_1i *)wglGetProcAddress("glUniform1i");
+		glGenerateMipmap			= (gl_generate_mipmap *)wglGetProcAddress("glGenerateMipmap");	
+		glTexImage3D				= (gl_tex_image3D *)wglGetProcAddress("glTexImage3D");	
+		glTexSubImage3D				= (gl_tex_sub_image3D *)wglGetProcAddress("glTexSubImage3D");	
 	}
 
 	if(wglSwapIntervalEXT)
@@ -284,14 +291,13 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			*NewKeyboard = {};
 			for(u32 ButtonIndex = 0; ButtonIndex < ArrayCount(NewKeyboard->Buttons); ++ButtonIndex)
 			{
-				NewKeyboard->Buttons[ButtonIndex].IsDown =
-					OldKeyboard->Buttons[ButtonIndex].IsDown;
+				NewKeyboard->Buttons[ButtonIndex].EndedDown =
+					OldKeyboard->Buttons[ButtonIndex].EndedDown;
 			}
 
 			MSG Message = {};
 			while(PeekMessage(&Message, Window, 0, 0, PM_REMOVE))
 			{
-				//UINT MessageType = Message.message;
 				switch(Message.message)
 				{
 					// NOTE(Justin): ALL THESE CASES ARE BUNDLED TOGETHER!!!! 
@@ -307,26 +313,36 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 						{
 							if(KeyCode == 'W')
 							{
-								if(NewKeyboard->W.IsDown != IsDown)
+								if(NewKeyboard->W.EndedDown != IsDown)
 								{
-									NewKeyboard->W.IsDown = IsDown;
+									NewKeyboard->W.EndedDown = IsDown;
 									NewKeyboard->W.HalfTransitionCount++;
 								}
 							}
 							else if(KeyCode == 'A')
 							{
-								NewKeyboard->Buttons[Key_A].IsDown = IsDown;
+								NewKeyboard->Buttons[Key_A].EndedDown = IsDown;
 								NewKeyboard->Buttons[Key_A].HalfTransitionCount++;
 							}
 							else if(KeyCode == 'S')
 							{
-								NewKeyboard->Buttons[Key_S].IsDown = IsDown;
+								NewKeyboard->Buttons[Key_S].EndedDown = IsDown;
 								NewKeyboard->Buttons[Key_S].HalfTransitionCount++;
 							}
 							else if(KeyCode == 'D')
 							{
-								NewKeyboard->Buttons[Key_D].IsDown = IsDown;
+								NewKeyboard->Buttons[Key_D].EndedDown = IsDown;
 								NewKeyboard->Buttons[Key_D].HalfTransitionCount++;
+							}
+							else if(KeyCode == VK_SHIFT)
+							{
+								NewKeyboard->Buttons[Key_Shift].EndedDown = IsDown;
+								NewKeyboard->Buttons[Key_Shift].HalfTransitionCount++;
+							}
+							else if(KeyCode == VK_SPACE)
+							{
+								NewKeyboard->Buttons[Key_Space].EndedDown = IsDown;
+								NewKeyboard->Buttons[Key_Space].HalfTransitionCount++;
 							}
 						}
 					} break;

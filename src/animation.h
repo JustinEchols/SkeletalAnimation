@@ -3,8 +3,12 @@
 char *AnimationFiles[] =
 {
 	"..\\data\\XBot_ActionIdle.animation",
-	"..\\data\\XBot_IdleToSprint.animation",
+	"..\\data\\XBot_Walking.animation",
 	"..\\data\\XBot_Running.animation",
+	"..\\data\\XBot_FastRun.animation",
+	"..\\data\\XBot_Jumping.animation",
+	"..\\data\\XBot_IdleToSprint.animation",
+	"..\\data\\XBot_FemaleWalk.animation",
 	"..\\data\\XBot_IdleLookAround.animation",
 	"..\\data\\XBot_RightTurn.animation",
 	"..\\data\\XBot_LeftTurn.animation",
@@ -14,7 +18,7 @@ char *AnimationFiles[] =
 	"..\\data\\XBot_ActionIdleToStandingIdle.animation",
 	"..\\data\\XBot_RunningToTurn.animation",
 	"..\\data\\XBot_RunningChangeDirection.animation",
-	"..\\data\\XBot_FemaleWalk.animation",
+
 };
 
 enum animation_state

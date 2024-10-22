@@ -29,6 +29,20 @@ Sqrt(f32 X)
 }
 
 inline f32
+Cos(f32 X)
+{
+	f32 Result = cosf(X);
+	return(Result);
+}
+
+inline f32
+Sin(f32 X)
+{
+	f32 Result = sinf(X);
+	return(Result);
+}
+
+inline f32
 ATan2(f32 Y, f32 X)
 {
 	f32 Result = (f32)atan2(Y, X);

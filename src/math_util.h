@@ -93,6 +93,17 @@ V2(f32 X, f32 Y)
 	return(Result);
 }
 
+inline v2
+V2(f32 X)
+{
+	v2 Result = {};
+
+	Result.x = X;
+	Result.y = X;
+
+	return(Result);
+}
+
 inline v3
 V3(f32 X, f32 Y, f32 Z)
 {
@@ -297,6 +308,13 @@ operator *(v3 V, f32 C)
 	return(Result);
 }
 
+inline v3 &
+operator *=(v3 &V, f32 C)
+{
+	V = C * V;
+	return(V);
+}
+
 inline f32
 Dot(v3 A, v3 B)
 {
@@ -345,7 +363,7 @@ Lerp(v3 A, f32 t, v3 B)
 }
 
 inline b32
-Equal(v3 A, v3 B, f32 Tolerance = SMALL_NUMBER)
+Equal(v3 A, v3 B, f32 Tolerance = SmallNumber)
 {
 	b32 Result = ((AbsVal(A.x - B.x) <= Tolerance) &&
 				  (AbsVal(A.y - B.y) <= Tolerance) &&
@@ -500,6 +518,20 @@ Mat4Scale(f32 C)
 		{{C, 0, 0, 0},
 		{0, C, 0, 0},
 		{0, 0, C, 0},
+		{0, 0, 0, 1}}
+	};
+
+	return(R);
+}
+
+internal mat4
+Mat4Scale(v3 V)
+{
+	mat4 R =
+	{
+		{{V.x, 0, 0, 0},
+		{0, V.y, 0, 0},
+		{0, 0, V.z, 0},
 		{0, 0, 0, 1}}
 	};
 
@@ -678,7 +710,21 @@ Mat4YRotation(f32 Angle)
 	{
 		{{-sinf(Angle), 0.0f, cosf(Angle), 0.0f},
 		 {0.0f, 1.0f, 0.0f, 0.0f},
-		 {cosf(Angle), 0.0f, sinf(Angle), 1.0f},
+		 {cosf(Angle), 0.0f, sinf(Angle), 0.0f},
+		 {0.0f, 0.0f, 0.0f, 1.0f}}
+	};
+
+	return(R);
+}
+
+internal mat4
+Mat4XRotation(f32 Angle)
+{
+	mat4 R = 
+	{
+		{{1.0f, 0.0f, 0.0f, 0.0f},
+		 {0.0f, cosf(Angle), -sinf(Angle), 0.0f},
+		 {0.0f, sinf(Angle), cosf(Angle), 0.0f},
 		 {0.0f, 0.0f, 0.0f, 1.0f}}
 	};
 
@@ -1042,7 +1088,7 @@ AngleBetween(quaternion A, quaternion B)
 }
 
 inline b32
-Equal(quaternion A, quaternion B, f32 Tolerance = SMALL_NUMBER)
+Equal(quaternion A, quaternion B, f32 Tolerance = SmallNumber)
 {
 	b32 Result = ((AbsVal(A.x - B.x) <= Tolerance) &&
 				  (AbsVal(A.y - B.y) <= Tolerance) &&
@@ -1066,7 +1112,7 @@ RotateTowards(quaternion Current, quaternion Target, f32 dt, f32 AngularSpeed)
 	}
 
 	f32 dSpeed = Clamp01(dt * AngularSpeed);
-	f32 dTheta = Max(AngleBetween(Current, Target), SMALL_NUMBER);
+	f32 dTheta = Max(AngleBetween(Current, Target), SmallNumber);
 	f32 tAlpha = Clamp01(dSpeed / dTheta);
 	
 	// TODO(Justin): Slerp?
