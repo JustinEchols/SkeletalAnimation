@@ -83,6 +83,30 @@ QuadDefault(void)
 }
 
 internal void
+CameraSet(camera *Camera, v3 P, f32 Yaw, f32 Pitch)
+{
+	Camera->P = P;
+	Camera->Direction.x = Cos(DegreeToRad(Yaw)) * Cos(DegreeToRad(Pitch));
+	Camera->Direction.y = Sin(DegreeToRad(Pitch));
+	Camera->Direction.z = Sin(DegreeToRad(Yaw)) * Cos(DegreeToRad(Pitch));
+}
+
+internal void
+CameraTransformUpdate(game_state *GameState)
+{
+	GameState->CameraTransform = Mat4Camera(GameState->Camera.P,
+											GameState->Camera.P + GameState->Camera.Direction);
+}
+
+internal void
+PerspectiveTransformUpdate(game_state *GameState)
+{
+	GameState->Aspect = (f32)Win32GlobalWindowWidth / (f32)Win32GlobalWindowHeight;
+	GameState->PerspectiveTransform = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
+}
+
+
+internal void
 GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 {
 	game_state *GameState = (game_state *)GameMemory->PermanentStorage;
@@ -101,8 +125,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		OpenGLAllocateTexture(&GameState->Textures[0]);
 		OpenGLAllocateTexture(&GameState->Textures[1]);
 
-		//GameState->Font = FontInit(&GameState->Arena, "c:/Windows/Fonts/arial.ttf");
-
 		GameState->XBot = PushStruct(Arena, model);
 		*GameState->XBot = ModelLoad(Arena, "..\\data\\XBot.mesh");
 
@@ -110,10 +132,23 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		*GameState->Cube = ModelLoad(Arena, "..\\data\\Cube.mesh");
 		GameState->Cube->Meshes[0].TextureHandle = GameState->Textures[0].Handle;
 
+		GameState->Sphere = PushStruct(Arena, model);
+		*GameState->Sphere = ModelLoad(Arena, "..\\data\\Sphere.mesh");
+
+		GameState->Arrow = PushStruct(Arena, model);
+		*GameState->Arrow = ModelLoad(Arena, "..\\data\\Arrow.mesh");
+
 		GameState->Quad = QuadDefault();
 		GameState->Quad.Texture = GameState->Textures[0].Handle;
 
 		PlayerAdd(GameState);
+
+		RandInit(2024);
+		for(u32 Index = 0; Index < 10; ++Index)
+		{
+			v3 P = V3(RandBetween(-100.0f, 100.0f), RandBetween(1.0f, 2.0f), RandBetween(-10.0f, -100.0f));
+			CubeAdd(GameState, P);
+		}
 
 		model *Model = GameState->XBot;
 		AnimationPlayerInitialize(&GameState->AnimationPlayer, Model, Arena);
@@ -133,56 +168,31 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 			}
 		}
 
-		GameState->CameraP = V3(0.0f, 15.0f, 20.0f);
-		f32 Yaw = -90.0f;
-		f32 Pitch = -10.0f;
-		GameState->CameraDirection.x = Cos(DegreeToRad(Yaw)) * Cos(DegreeToRad(Pitch));
-		GameState->CameraDirection.y = Sin(DegreeToRad(Pitch));
-		GameState->CameraDirection.z = Sin(DegreeToRad(Yaw)) * Cos(DegreeToRad(Pitch));
-		
-		GameState->CameraTransform = Mat4Camera(GameState->CameraP,
-												GameState->CameraP + GameState->CameraDirection);
+		CameraSet(&GameState->Camera, V3(0.0f, 15.0f, 20.0f), -90.0f, -10.0f);
+		CameraTransformUpdate(GameState);
+		GameState->CameraOffsetFromPlayer = V3(0.0f, 5.0f, 10.0f);
 
 		GameState->FOV = DegreeToRad(45.0f);
-		GameState->Aspect = (f32)Win32GlobalWindowWidth / Win32GlobalWindowHeight;
+		GameState->Aspect = (f32)Win32GlobalWindowWidth / (f32)Win32GlobalWindowHeight;
 		GameState->ZNear = 0.1f;
 		GameState->ZFar = 100.0f;
 		GameState->PerspectiveTransform = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 
 		GameState->Shaders[0] = GLProgramCreate(MainVS, MainFS);
-		GameState->Shaders[1] = GLProgramCreate(QuadVS, QuadFS);
-		u32 Shader = GameState->Shaders[0];
-		u32 Shader1 = GameState->Shaders[1];
+		GameState->Shaders[1] = GLProgramCreate(BasicVS, BasicFS);
+		GameState->Shaders[2] = GLProgramCreate(FontVS, FontFS);
+		u32 MainShader = GameState->Shaders[0];
+		u32 BasicShader = GameState->Shaders[1];
 
-		OpenGLAllocateAnimatedModel(GameState->XBot, Shader);
-		OpenGLAllocateModel(GameState->Cube, Shader1);
-		OpenGLAllocateQuad(&GameState->Quad, Shader1);
-
-#if 0
-		u32 ShadowMapFBO;
-		glGenFrameBuffers(1, &ShadowMapFBO);
-		u32 ShadowWidth = 1024;
-		u32 ShadowHeight = 1024;
-
-		u32 ShadowMap;
-		glGenTextures(1, &ShadowMap);
-		glBindTexture(GL_TEXTURE_2D, ShadowMap);
-		glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, ShadowWidth, ShadowHeight, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-
-		glBindFrameBuffer(GL_FRAMEBUFFER, ShadowMapFBO);
-		glFrameBufferTexture(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, ShadowMap, 0);
-		glDrawBuffer(GL_NONE);
-		glReadBuffer(GL_NONE);
-		glBindFrameBuffer(GL_FRAMEBUFFER, 0);
-#endif
-
+		OpenGLAllocateAnimatedModel(GameState->XBot, MainShader);
+		OpenGLAllocateModel(GameState->Cube, BasicShader);
+		OpenGLAllocateModel(GameState->Sphere, BasicShader);
+		OpenGLAllocateModel(GameState->Arrow, BasicShader);
+		OpenGLAllocateQuad(&GameState->Quad, BasicShader);
 
 		GameMemory->IsInitialized = true;
 	}
+
 
 	v3 ddP = {};
 	game_keyboard *Keyboard = &GameInput->Keyboard;
@@ -203,6 +213,12 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		ddP += V3(1.0f, 0.0f, 0.0f);
 	}
 
+	b32 IsSprinting = false;
+	if(Keyboard->Shift.EndedDown)
+	{
+		IsSprinting = true;
+	}
+
 	if(!Equal(ddP, V3(0.0f)))
 	{
 		ddP = Normalize(ddP);
@@ -212,12 +228,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	}
 
 	f32 dt = GameInput->DtForFrame;
-
-	entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
-	v3 Offset = V3(0.0f, 10.0f, 20.0f);
-	v3 *CameraP = &GameState->CameraP;
-	*CameraP = CameraFollowingEntity->P + Offset;
-
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
 		entity *Entity = GameState->Entities + EntityIndex;
@@ -225,53 +235,98 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		{
 			case EntityType_Player:
 			{
+				v3 OldPlayerddP = Entity->ddP;
+				Entity->ddP = ddP;
+
+				f32 PlayerSpeed = 50.0f;
+				if(IsSprinting)
+				{
+					PlayerSpeed *= 1.5f;
+				}
+
+				f32 PlayerDrag = -7.0f;
+				f32 AngularSpeed = 10.0f;
+				ddP = PlayerSpeed * ddP;
+				ddP += PlayerDrag * Entity->dP;
+
+				v3 OldP = Entity->P;
+				v3 dP = Entity->dP + dt * ddP;
+				v3 P =  Entity->P + 0.5f * dt * dt * ddP + dt * Entity->dP;
+
+				Entity->P = P;
+				Entity->dP = dP;
+
+				quaternion Orientation = Entity->Orientation;
+				v3 FacingDirection = Entity->dP;
+				FacingDirection.z *= -1.0f;
+				f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
+				quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
+				Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
+
 				u32 Flags = 0;
-				if(!Equal(ddP, V3(0.0f)))
+				animation_player *AnimationPlayer = &GameState->AnimationPlayer;
+				switch(AnimationPlayer->State)
 				{
-					ddP = 10.0f * ddP;
-					Entity->ddP = ddP;
-
-					v3 OldP = Entity->P;
-
-					v3 dP = Entity->dP + dt * ddP;
-					v3 P =  Entity->P + 0.5f * dt * dt * ddP + dt * Entity->dP;
-
-					Entity->P = P;
-					Entity->dP = dP;
-
-					quaternion Orientation = Entity->Orientation;
-					v3 FacingDirection = Entity->dP;
-					FacingDirection.z *= -1.0f;
-					f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
-					quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
-					Entity->Orientation = RotateTowards(Orientation, Target, dt, 10.0f);
-
-					Flags = AnimationFlags_RemoveLocomotion;
-					AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[2], Flags);
-				}
-				else
-				{
-					Entity->dP = V3(0.0f);
-					if(Keyboard->Space.EndedDown)
+					case AnimationState_Idle:
 					{
-						AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[4], Flags);
-					}
-					else
+						if(Equal(Entity->ddP, V3(0.0f)))
+						{
+							// NOTE(Justin): Animation state is idle and no acceleration, therefore play idle animation.
+							AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[0], AnimationFlags_Looping);
+						}
+						else if(Equal(OldPlayerddP, V3(0.0f)) &&
+								!Equal(Entity->ddP, OldPlayerddP))
+						{
+							// NOTE(Justin): State transition
+							// NOTE(Justin): Animation state is idle and acceleration exists, therefore play running animation.
+							// and set animation state to Running 
+							Flags = AnimationFlags_RemoveLocomotion;
+							AnimationPlayer->State = AnimationState_Running;
+							AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[2], Flags);
+						}
+					} break;
+					case AnimationState_Running:
 					{
-						Flags = AnimationFlags_Looping;
-						AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[0], Flags);
-					}
-				}
-			}
-		};
+						if(Equal(Entity->ddP, V3(0.0f)))
+						{
+							// NOTE(Justin): State transition
+							// NOTE(Justin): Animation state is running and no acceleration, therefore play idle animation.
+
+							AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[0], AnimationFlags_Looping);
+							AnimationPlayer->State = AnimationState_Idle;
+						}
+						else
+						{
+							// NOTE(Justin): Animation state is running and acceleration exists, therefore play looped running animation.
+							Flags = (AnimationFlags_RemoveLocomotion |
+									 AnimationFlags_Looping);
+
+							if(IsSprinting)
+							{
+								AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[3], Flags);
+							}
+							else
+							{
+								AnimationPlay(&GameState->AnimationPlayer, &GameState->Animations[2], Flags);
+							}
+						}
+
+					} break;
+				};
+			} break;
+		}
 	}
 
 	//
 	// NOTE(Justin): Render.
 	//
+
+	entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
+	camera *Camera = &GameState->Camera;
+	Camera->P = CameraFollowingEntity->P + GameState->CameraOffsetFromPlayer;
 	
-	GameState->CameraTransform = Mat4Camera(GameState->CameraP,
-											GameState->CameraP + GameState->CameraDirection);
+	CameraTransformUpdate(GameState);
+	PerspectiveTransformUpdate(GameState);
 
 	glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
 	glEnable(GL_DEPTH_TEST);
@@ -290,22 +345,25 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	f32 Angle = GameState->Angle;
 	v3 LightDir = V3(0.0f, -1.0f, 0.0f);
 
+	u32 MainShader = GameState->Shaders[0];
+	u32 BasicShader = GameState->Shaders[1];
+	u32 FontShader = GameState->Shaders[2];
+
 	//
 	// NOTE(Justin): Ground quad.
 	//
 
-	u32 Shader1 = GameState->Shaders[1];
-	glUseProgram(Shader1);
+	glUseProgram(BasicShader);
 	mat4 T = Mat4Translate(V3(0.0f, 0.0f, -500.0f));
 	mat4 R = Mat4Identity();
 	mat4 S = Mat4Scale(1000.0f);
 
-	UniformMatrixSet(Shader1, "View", GameState->CameraTransform);
-	UniformMatrixSet(Shader1, "Projection", GameState->PerspectiveTransform);
-	UniformBoolSet(Shader1, "OverRideTexture", false);
-	UniformV3Set(Shader1, "Ambient", V3(0.1f));
-	UniformV3Set(Shader1, "LightDir", LightDir);
-	OpenGLDrawQuad(&GameState->Quad, Shader1, T*R*S, GameState->Textures[0].Handle);
+	UniformMatrixSet(BasicShader, "View", GameState->CameraTransform);
+	UniformMatrixSet(BasicShader, "Projection", GameState->PerspectiveTransform);
+	UniformBoolSet(BasicShader, "OverRideTexture", false);
+	UniformV3Set(BasicShader, "Ambient", V3(0.1f));
+	UniformV3Set(BasicShader, "LightDir", LightDir);
+	OpenGLDrawQuad(&GameState->Quad, BasicShader, T*R*S, GameState->Textures[0].Handle);
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
 		entity *Entity = GameState->Entities + EntityIndex;
@@ -313,57 +371,64 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		{
 			case EntityType_Player:
 			{
-				u32 Shader = GameState->Shaders[0];
-				glUseProgram(Shader);
-				UniformMatrixSet(Shader, "View", GameState->CameraTransform);
-				UniformMatrixSet(Shader, "Projection", GameState->PerspectiveTransform);
-				UniformV3Set(Shader, "CameraP", GameState->CameraP);
-				UniformV3Set(Shader, "Ambient", V3(0.1f));
-				UniformV3Set(Shader, "CameraP", GameState->CameraP);
-				UniformV3Set(Shader, "LightDir", LightDir);
+				glUseProgram(MainShader);
+				UniformMatrixSet(MainShader, "View", GameState->CameraTransform);
+				UniformMatrixSet(MainShader, "Projection", GameState->PerspectiveTransform);
+				UniformV3Set(MainShader, "CameraP", Camera->P);
+				UniformV3Set(MainShader, "Ambient", V3(0.1f));
+				UniformV3Set(MainShader, "CameraP", Camera->P);
+				UniformV3Set(MainShader, "LightDir", LightDir);
 
 				AnimationPlayerUpdate(&GameState->AnimationPlayer, &GameState->TempArena, dt);
 				ModelUpdate(&GameState->AnimationPlayer);
 
-				mat4 Transform = EntityTransform(Entity, 0.05f);
+				mat4 Transform = EntityTransform(Entity, 0.025f);
 				model *Model = GameState->XBot;
-				OpenGLDrawAnimatedModel(Model, Shader, Transform);
+				OpenGLDrawAnimatedModel(Model, MainShader, Transform);
 
 				//
 				// NOTE(Justin): Debug orientation arrow 
 				//
 
-				glUseProgram(Shader1);
 				v3 P = Entity->P;
 				P.y += 0.25f;
 				T = Mat4Translate(P);
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(V3(1.0f));
 
-				UniformMatrixSet(Shader1, "View", GameState->CameraTransform);
-				UniformMatrixSet(Shader1, "Projection", GameState->PerspectiveTransform);
-				UniformBoolSet(Shader1, "OverRideTexture", true);
-				UniformV3Set(Shader1, "Ambient", V3(0.1f));
-				UniformV3Set(Shader1, "LightDir", LightDir);
-				UniformV4Set(Shader1, "Color", V4(1.0f, 0.0f, 0.0f));
-				OpenGLDrawQuad(&GameState->Quad, Shader1, T*R*S, GameState->Textures[1].Handle);
+				glUseProgram(BasicShader);
+				UniformMatrixSet(BasicShader, "View", GameState->CameraTransform);
+				UniformMatrixSet(BasicShader, "Projection", GameState->PerspectiveTransform);
+				UniformBoolSet(BasicShader, "OverRideTexture", true);
+				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
+				UniformV3Set(BasicShader, "LightDir", LightDir);
+				UniformV4Set(BasicShader, "Color", V4(1.0f, 0.0f, 0.0f));
+				OpenGLDrawQuad(&GameState->Quad, BasicShader, T*R*S, GameState->Textures[1].Handle);
+
+				//
+				// NOTE(Justin): Debug sphere 
+				//
+
+				Transform = EntityTransform(Entity, 0.5f);
+				UniformV4Set(BasicShader, "Color", V4(1.0f));
+				//OpenGLDrawModel(GameState->Sphere, BasicShader, Transform);
 
 			} break;
 			case EntityType_Cube:
 			{
-				u32 Shader = GameState->Shaders[1];
-
-				glUseProgram(Shader);
-				UniformMatrixSet(Shader, "View", GameState->CameraTransform);
-				UniformMatrixSet(Shader, "Projection", GameState->PerspectiveTransform);
-				UniformV3Set(Shader, "CameraP", GameState->CameraP);
-
-				UniformV3Set(Shader, "Ambient", V3(0.1f));
-				UniformV3Set(Shader, "LightDir", LightDir);
+				glUseProgram(BasicShader);
+				UniformMatrixSet(BasicShader, "View", GameState->CameraTransform);
+				UniformMatrixSet(BasicShader, "Projection", GameState->PerspectiveTransform);
+				UniformBoolSet(BasicShader, "OverRideTexture", true);
+				UniformV3Set(BasicShader, "Ambient", V3(1.0f));
+				UniformV3Set(BasicShader, "LightDir", LightDir);
+				UniformV4Set(BasicShader, "Color", V4(0.5f));
 				model *Cube = GameState->Cube;
-				mat4 Transform = EntityTransform(Entity);
-				OpenGLDrawModel(Cube, Shader, Transform);
+				mat4 Transform = EntityTransform(Entity, 1.0f);
+				OpenGLDrawModel(Cube, BasicShader, Transform);
 			} break;
 		};
 	}
+
+	ArenaClear(&GameState->TempArena);
 }

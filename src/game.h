@@ -24,6 +24,12 @@ ArenaInitialize(memory_arena *Arena, u8 *Base, memory_index Size)
 	Arena->TempCount = 0;
 }
 
+internal void
+ArenaClear(memory_arena *Arena)
+{
+	ArenaInitialize(Arena, Arena->Base, Arena->Size);
+}
+
 internal void *
 PushSize_(memory_arena *Arena, memory_index Size)
 {
@@ -92,8 +98,9 @@ U32ArraySum(u32 *A, u32 Count)
 }
 
 #include "intrinsics.h"
-#include "math_util.h"
+#include "math.h"
 #include "strings.h"
+#include "opengl.h"
 #include "texture.h"
 #include "font.h"
 #include "mesh.h"
@@ -137,9 +144,14 @@ struct quad
 	u32 VA;
 	u32 VB;
 	u32 Texture;
-	//v3 P;
 
 	quad_vertex Vertices[6];
+};
+
+struct camera
+{
+	v3 P;
+	v3 Direction;
 };
 
 struct game_state
@@ -153,14 +165,16 @@ struct game_state
 	u32 PlayerEntityIndex;
 	model *XBot;
 	model *Cube;
+	model *Sphere;
+	model *Arrow;
 	quad Quad;
 
 	animation_player AnimationPlayer;
 	animation_info *AnimationInfos;
 	animation *Animations;
 
-	v3 CameraP;
-	v3 CameraDirection;
+	camera Camera;
+	v3 CameraOffsetFromPlayer;
 	mat4 CameraTransform;
 
 	f32 FOV;
@@ -168,13 +182,12 @@ struct game_state
 	f32 ZNear;
 	f32 ZFar;
 	mat4 PerspectiveTransform;
+	mat4 OrthographicTransform;
 
 	f32 Angle;
 
-	u32 Shaders[2];
-
+	u32 Shaders[3];
 	texture Textures[32];
-
 };
 
 #define GAME_H

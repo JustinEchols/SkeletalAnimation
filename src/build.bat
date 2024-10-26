@@ -17,11 +17,12 @@ REM   exit /b 1
 REM )
 
 set MainFile=win32_main.cpp
-set CommonCompilerFlags=-Od -MTd -fp:fast -W4 -wd4201 -wd4100 -wd4505 -wd4189 -Oi -Z7
+set CommonCompilerFlags=-Od -fp:fast -W4 -wd4201 -wd4100 -wd4505 -wd4189 -Oi -Z7
 set CommonLinkerFlags=-incremental:no user32.lib gdi32.lib opengl32.lib kernel32.lib
+
 
 if not exist ..\build mkdir ..\build
 pushd ..\build
 
-cl "..\\src\\%MainFile%" %CommonCompilerFlags% /link %CommonLinkerFlags%
+cl ..\src\%MainFile% %CommonCompilerFlags% /link %CommonLinkerFlags% 
 popd

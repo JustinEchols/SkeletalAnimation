@@ -142,7 +142,9 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 {
 	Assert(AnimationPlayer->IsInitialized);
 
-	// Init temporary memory. Used for an array of interpolated poses for each key frame.
+	// Init temporary memory. Used to allocate an array of key_frames. Each element of the array
+	// will be a blended pose of an animation clip that is currently playing. Once they are all calculated
+	// then we can blend between each "clip/channel" which results in a "blended animation"
 	temporary_memory AnimationMemory = TemporaryMemoryBegin(TempArena);
 	key_frame *BlendedPoses = PushArray(TempArena, AnimationPlayer->PlayingCount, key_frame);
 	u32 BlendedPoseIndex = 0;
@@ -153,7 +155,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		animation_info *Info = Animation->Info;
 		if(Info)
 		{
-			// Update current animation timeline.
+			// Update current animation clip/channel timeline.
 			Animation->OldTime = Animation->CurrentTime;
 			Animation->CurrentTime += dt;
 
@@ -178,6 +180,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 				}
 			}
 
+			// Update global animation timeline
 			AnimationPlayer->CurrentTime += dt;
 			AnimationPlayer->dt = dt;
 
@@ -280,23 +283,30 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			Animation = Animation->Next,
 			BlendedPoseIndex++)
 	{
+		// NOTE(Justin): Each blended pose is the result of blending two keyframes of an animation channel/clip.
 		key_frame *BlendedPose = BlendedPoses + BlendedPoseIndex;
-		//animation_info *Info = AnimationGet(AssetManager, Animation->ID);
-		animation_info *Info = Animation->Info;//Get(AssetManager, Animation->ID);
+		animation_info *Info = Animation->Info;
 		if(Info)
 		{
-			for(u32 MeshIndex = 0; MeshIndex < AnimationPlayer->Model->MeshCount; ++MeshIndex)
+			model *Model = AnimationPlayer->Model;
+			for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 			{
 				key_frame *BlendedAnimation = AnimationPlayer->BlendedAnimations + MeshIndex;
-				mesh *Mesh = AnimationPlayer->Model->Meshes + MeshIndex;
+				mesh *Mesh = Model->Meshes + MeshIndex;
 				for(u32 Index = 0; Index < Mesh->JointCount; ++Index)
 				{
 					joint *Joint = Mesh->Joints + Index;
 					s32 JointIndex = JointIndexGet(Info->JointNames, Info->JointCount, Joint->Name);
-
-					if(First)
+					if(JointIndex == -1)
 					{
-						if(JointIndex != -1)
+						// This animation does not affect the joint, put default values here.
+						BlendedAnimation->Positions[Index] = V3(0.0f);
+						BlendedAnimation->Orientations[Index] = Quaternion();
+						BlendedAnimation->Scales[Index] = V3(0.0f);
+					}
+					else
+					{
+						if(First)
 						{
 							BlendedAnimation->Positions[Index] = BlendedPose->Positions[JointIndex];
 							BlendedAnimation->Orientations[Index] = BlendedPose->Orientations[JointIndex];
@@ -304,18 +314,8 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 						}
 						else
 						{
-							// TODO(Justin): Put original joint transform here?
-							BlendedAnimation->Positions[Index] = V3(0.0f);
-							BlendedAnimation->Orientations[Index] = Quaternion();
-							BlendedAnimation->Scales[Index] = V3(0.0f);
-						}
-					}
-					else
-					{
-						if(JointIndex != -1)
-						{
 							f32 t = Animation->BlendFactorLast;
-							if(t != 1)
+							if(t != 1.0f)
 							{
 								sqt A;
 								A.Position = Lerp(BlendedAnimation->Positions[Index], t, BlendedPose->Positions[JointIndex]);
@@ -332,13 +332,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 								BlendedAnimation->Orientations[Index] = BlendedPose->Orientations[JointIndex];
 								BlendedAnimation->Scales[Index] = BlendedPose->Scales[JointIndex];
 							}
-						}
-						else
-						{
-							// TODO(Justin): Put original joint transform here?
-							BlendedAnimation->Positions[Index] = V3(0.0f);
-							BlendedAnimation->Orientations[Index] = Quaternion();
-							BlendedAnimation->Scales[Index] = V3(0.0f);
 						}
 					}
 				}

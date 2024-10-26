@@ -64,5 +64,35 @@ Max(f32 X, f32 Y)
 	return(Result);
 }
 
+inline f32
+Max3(f32 X, f32 Y, f32 Z)
+{
+	f32 Max1 = Max(X, Y);
+	f32 Max2 = Max(Y, Z);
+	f32 Result = Max(Max1, Max2);
+	return(Result);
+}
+
+inline void
+RandInit(u32 Seed)
+{
+	srand(Seed);
+}
+
+inline f32
+Rand01(void)
+{
+	f32 Result = rand() / (f32)RAND_MAX;
+	return(Result);
+}
+
+inline f32
+RandBetween(f32 A, f32 B)
+{
+	f32 Result = (B - A) * Rand01() + A;
+	return(Result);
+}
+
+
 #define INTRINSICS_H
 #endif

@@ -1,5 +1,5 @@
 #if !defined(WIN32_OPENGL_H)
-
+#if 0
 #define WGL_DRAW_TO_WINDOW_ARB                  0x2001
 #define WGL_ACCELERATION_ARB                    0x2003
 #define WGL_SUPPORT_OPENGL_ARB                  0x2010
@@ -15,6 +15,16 @@
 #define WGL_DEPTH_BITS_ARB                      0x2022
 #define WGL_STENCIL_BITS_ARB                    0x2023
 #define WGL_SAMPLES_ARB							0x2042
+
+#define WGL_CONTEXT_MAJOR_VERSION_ARB           0x2091
+#define WGL_CONTEXT_MINOR_VERSION_ARB           0x2092
+#define WGL_CONTEXT_LAYER_PLANE_ARB             0x2093
+#define WGL_CONTEXT_FLAGS_ARB                   0x2094
+#define WGL_CONTEXT_PROFILE_MASK_ARB            0x9126
+
+//#define WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB		0x0002
+//#define WGL_CONTEXT_DEBUG_BIT_ARB					0x0001
+//<F7>#define WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB	0x00000002
 
 typedef HGLRC WINAPI wgl_create_context_attribs_arb(HDC hDC, HGLRC hShareContext, const int *attribList);
 
@@ -82,8 +92,6 @@ typedef void	WINAPI gl_generate_mipmap(GLenum target);
 typedef void	WINAPI gl_tex_image3D(GLenum target, GLint level, GLint internalformat, GLsizei width, GLsizei height, GLsizei depth, GLint border, GLenum format, GLenum type, const void * data);
 typedef void	WINAPI gl_tex_sub_image3D(GLuint texture, GLint level, GLint xoffset, GLint yoffset, GLint zoffset, GLsizei width, GLsizei height, GLsizei depth, GLenum format, GLenum type, const void *pixels);
 
-
-
 #define GL_DEBUG_CALLBACK(Name) void WINAPI Name(GLenum Source, GLenum Type, GLuint ID, GLenum Severity, GLsizei Length, const GLchar *Message, const void *UserParam)
 typedef GL_DEBUG_CALLBACK(GLDEBUGPROC);
 typedef void WINAPI gl_debug_message_callback(GLDEBUGPROC *callback, const void *userParam);
@@ -139,4 +147,5 @@ global_varible wgl_get_extensions_string_ext	*wglGetExtensionsStringEXT;
 global_variable gl_debug_message_callback *glDebugMessageCallback;
 
 #define WIN32_OPENGL_H
+#endif
 #endif

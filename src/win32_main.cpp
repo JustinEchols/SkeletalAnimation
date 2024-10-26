@@ -5,9 +5,12 @@
 #include <stdio.h>
 #include <math.h>
 #include <gl/gl.h>
+#include "wglext.h"
+#include "glext.h"
 
 #include "win32_file_io.cpp"
 #include "win32_opengl.h"
+#include "win32_opengl.cpp"
 
 global_varible b32 Win32GlobalRunning;
 global_varible s64 Win32GlobalTicksPerSecond;
@@ -23,6 +26,7 @@ Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
 	LRESULT Result = 0;
     switch(Message)
     {
+		case WM_CLOSE:
 		case WM_DESTROY:
 		{
 			Win32GlobalRunning = false;
@@ -51,182 +55,6 @@ Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
     }
 
 	return(Result);
-}
-
-internal void
-Win32PixelFormatSet(HDC WindowDC)
-{
-	s32 PFDIndex = 0;
-	GLuint EXTPick = 0;
-	if(wglChoosePixelFormatARB)
-	{
-		s32 PixelFormatList[] =
-		{
-			WGL_DRAW_TO_WINDOW_ARB, GL_TRUE,
-			WGL_ACCELERATION_ARB, WGL_FULL_ACCELERATION_ARB,
-			WGL_SUPPORT_OPENGL_ARB, GL_TRUE,
-			WGL_DOUBLE_BUFFER_ARB, GL_TRUE,
-			WGL_PIXEL_TYPE_ARB, WGL_TYPE_RGBA_ARB,
-			WGL_RED_BITS_ARB, 8,
-			WGL_GREEN_BITS_ARB, 8,
-			WGL_BLUE_BITS_ARB, 8,
-			WGL_ALPHA_BITS_ARB, 8,
-			WGL_DEPTH_BITS_ARB, 24,
-			WGL_STENCIL_BITS_ARB, 8,
-			WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB, GL_TRUE,
-			WGL_SAMPLES_ARB, 4,
-			0,	
-		};
-
-		wglChoosePixelFormatARB(WindowDC, PixelFormatList, 0, 1, &PFDIndex, &EXTPick);
-	}
-
-	if(!EXTPick)
-	{
-		PIXELFORMATDESCRIPTOR PFD = {};
-		PFD.nSize = sizeof(PFD);
-		PFD.nVersion = 1;
-		PFD.dwFlags = PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER;
-		PFD.iPixelType = PFD_TYPE_RGBA;
-		PFD.cColorBits = 32;
-		PFD.cAlphaBits = 8;
-		PFD.cDepthBits = 24;
-		PFD.cStencilBits = 8;
-		PFD.iLayerType = PFD_MAIN_PLANE;
-
-		PFDIndex = ChoosePixelFormat(WindowDC, &PFD);
-	}
-
-	PIXELFORMATDESCRIPTOR ActualPFD;
-	DescribePixelFormat(WindowDC, PFDIndex, sizeof(ActualPFD), &ActualPFD);
-	SetPixelFormat(WindowDC, PFDIndex, &ActualPFD);
-}
-
-internal void
-Win32WGLExtensionsLoad(void)
-{
-	WNDCLASSA WindowClass = {};
-
-	WindowClass.lpfnWndProc = DefWindowProcA;
-	WindowClass.hInstance = GetModuleHandle(0);
-	WindowClass.lpszClassName = "WGLLoader";
-
-	if(RegisterClassA(&WindowClass))
-	{
-		HWND Window = CreateWindowExA(
-				0,
-				WindowClass.lpszClassName,
-				"Skeletal Animation",
-				0,
-				CW_USEDEFAULT,
-				CW_USEDEFAULT,
-				CW_USEDEFAULT,
-				CW_USEDEFAULT,
-				0,
-				0,
-				WindowClass.hInstance,
-				0);
-
-		HDC WindowDC = GetDC(Window);
-		Win32PixelFormatSet(WindowDC);
-		HGLRC OpenGLRC = wglCreateContext(WindowDC);
-		if(wglMakeCurrent(WindowDC, OpenGLRC))
-		{
-			wglChoosePixelFormatARB = (wgl_choose_pixel_format_arb *)wglGetProcAddress("wglChoosePixelFormatARB");
-			wglCreateContextAttribsARB = (wgl_create_context_attribs_arb *)wglGetProcAddress("wglCreateContextAttribsARB");
-			wglSwapIntervalEXT = (wgl_swap_interval_ext *)wglGetProcAddress("wglSwapIntervalEXT");
-			wglGetExtensionsStringEXT = (wgl_get_extensions_string_ext *)wglGetProcAddress("wglGetExtensionsStringEXT");
-
-			if(wglGetExtensionsStringEXT)
-			{
-				// TODO(Justin): Parse extension strings here to determine frame
-				// buffer formats that are supported and store result in open_gl
-				// info struct
-
-				wglMakeCurrent(0, 0);
-			}
-		}
-
-		wglDeleteContext(OpenGLRC);
-		ReleaseDC(Window, WindowDC);
-		DestroyWindow(Window);
-	}
-}
-
-int OpenGLAttribList[] =
-{
-	WGL_CONTEXT_MAJOR_VERSION_ARB, 4,
-	WGL_CONTEXT_MINOR_VERSION_ARB, 3,
-	WGL_CONTEXT_FLAGS_ARB, (WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB | WGL_CONTEXT_DEBUG_BIT_ARB),
-	WGL_CONTEXT_PROFILE_MASK_ARB, WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB,
-	0
-};
-
-internal HGLRC
-Win32OpenGLInit(HDC WindowDC)
-{
-	Win32WGLExtensionsLoad();
-	Win32PixelFormatSet(WindowDC);
-
-	b32 ModernContext = true;
-	HGLRC OpenGLRC = 0;
-	if(wglCreateContextAttribsARB)
-	{
-		OpenGLRC = wglCreateContextAttribsARB(WindowDC, 0, OpenGLAttribList);
-	}
-
-	if(!OpenGLRC)
-	{
-		ModernContext = false;
-		OpenGLRC = wglCreateContext(WindowDC);
-	}
-
-	if(wglMakeCurrent(WindowDC, OpenGLRC))
-	{
-		glAttachShader 				= (gl_attach_shader *)wglGetProcAddress("glAttachShader");
-		glCompileShader 			= (gl_compile_shader *)wglGetProcAddress("glCompileShader");
-		glCreateProgram 			= (gl_create_program *)wglGetProcAddress("glCreateProgram");
-		glCreateShader 				= (gl_create_shader *)wglGetProcAddress("glCreateShader");
-		glDeleteProgram 			= (gl_delete_program *)wglGetProcAddress("glDeleteProgram");
-		glDeleteShader 				= (gl_delete_shader *)wglGetProcAddress("glDeleteShader");
-		glEnableVertexAttribArray 	= (gl_enable_vertex_attrib_array *)wglGetProcAddress("glEnableVertexAttribArray");
-		glGetActiveAttrib 			= (gl_get_active_attrib *)wglGetProcAddress("glGetActiveAttrib");
-		glGetProgramiv 				= (gl_get_programiv *)wglGetProcAddress("glGetProgramiv");
-		glGetProgramInfoLog 		= (gl_get_program_info_log *)wglGetProcAddress("glGetProgramInfoLog");
-		glGetShaderiv 				= (gl_get_shaderiv *)wglGetProcAddress("glGetShaderiv");
-		glGetUniformLocation 		= (gl_get_uniform_location *)wglGetProcAddress("glGetUniformLocation");
-		glBindVertexArray 			= (gl_bind_vertex_array *)wglGetProcAddress("glBindVertexArray");
-		glGenVertexArrays 			= (gl_gen_vertex_arrays *)wglGetProcAddress("glGenVertexArrays");
-		glBindBuffer 				= (gl_bind_buffer *)wglGetProcAddress("glBindBuffer");
-		glGenBuffers 				= (gl_gen_buffers *)wglGetProcAddress("glGenBuffers");
-		glVertexAttribPointer 		= (gl_vertex_attrib_pointer *)wglGetProcAddress("glVertexAttribPointer");
-		glVertexAttribIPointer 		= (gl_vertex_attribi_pointer *)wglGetProcAddress("glVertexAttribIPointer");
-		glBufferData 				= (gl_buffer_data *)wglGetProcAddress("glBufferData");
-		glLinkProgram 				= (gl_link_program *)wglGetProcAddress("glLinkProgram");
-		glShaderSource 				= (gl_shader_source *)wglGetProcAddress("glShaderSource");
-		glUseProgram 				= (gl_use_program *)wglGetProcAddress("glUseProgram");
-		glValidateProgram 			= (gl_validate_program *)wglGetProcAddress("glValidateProgram");
-		glUniform1ui 				= (gl_uniform_1ui *)wglGetProcAddress("glUniform1ui");
-		glUniform1f 				= (gl_uniform_1f *)wglGetProcAddress("glUniform1f");
-		glUniform3fv 				= (gl_uniform_3fv *)wglGetProcAddress("glUniform3fv");
-		glUniform4fv 				= (gl_uniform_4fv *)wglGetProcAddress("glUniform4fv");
-		glUniformMatrix4fv 			= (gl_uniform_matrix_4fv *)wglGetProcAddress("glUniformMatrix4fv");
-		glUniformMatrix3fv 			= (gl_uniform_matrix_3fv *)wglGetProcAddress("glUniformMatrix3fv");
-		glGetShaderInfoLog			= (gl_get_shader_info_log *)wglGetProcAddress("glGetShaderInfoLog");
-		glDebugMessageCallback		= (gl_debug_message_callback *)wglGetProcAddress("glDebugMessageCallback");
-		glActiveTexture				= (gl_active_texture *)wglGetProcAddress("glActiveTexture");
-		glUniform1i					= (gl_uniform_1i *)wglGetProcAddress("glUniform1i");
-		glGenerateMipmap			= (gl_generate_mipmap *)wglGetProcAddress("glGenerateMipmap");	
-		glTexImage3D				= (gl_tex_image3D *)wglGetProcAddress("glTexImage3D");	
-		glTexSubImage3D				= (gl_tex_sub_image3D *)wglGetProcAddress("glTexSubImage3D");	
-	}
-
-	if(wglSwapIntervalEXT)
-	{
-		wglSwapIntervalEXT(1);
-	}
-
-	return(OpenGLRC);
 }
 
 int WINAPI
@@ -275,8 +103,8 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		GameMemory.TemporaryStorage = VirtualAlloc(0, GameMemory.TemporaryStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
 		game_input GameInput[2] = {};
-		game_input *OldInput = &GameInput[0];
-		game_input *NewInput = &GameInput[1];
+		game_input *NewInput = &GameInput[0];
+		game_input *OldInput = &GameInput[1];
 
 		Win32GlobalRunning = true;
 		f32 DtForFrame = 0.0f;
@@ -300,7 +128,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			{
 				switch(Message.message)
 				{
-					// NOTE(Justin): ALL THESE CASES ARE BUNDLED TOGETHER!!!! 
+					// NOTE(Justin): All these cases are bundled together!
 					case WM_SYSKEYDOWN:
 					case WM_SYSKEYUP:
 					case WM_KEYDOWN:
@@ -321,28 +149,46 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 							}
 							else if(KeyCode == 'A')
 							{
-								NewKeyboard->Buttons[Key_A].EndedDown = IsDown;
-								NewKeyboard->Buttons[Key_A].HalfTransitionCount++;
+								if(NewKeyboard->A.EndedDown != IsDown)
+								{
+									NewKeyboard->Buttons[Key_A].EndedDown = IsDown;
+									NewKeyboard->Buttons[Key_A].HalfTransitionCount++;
+								}
 							}
 							else if(KeyCode == 'S')
 							{
-								NewKeyboard->Buttons[Key_S].EndedDown = IsDown;
-								NewKeyboard->Buttons[Key_S].HalfTransitionCount++;
+
+								if(NewKeyboard->S.EndedDown != IsDown)
+								{
+									NewKeyboard->Buttons[Key_S].EndedDown = IsDown;
+									NewKeyboard->Buttons[Key_S].HalfTransitionCount++;
+								}
 							}
 							else if(KeyCode == 'D')
 							{
-								NewKeyboard->Buttons[Key_D].EndedDown = IsDown;
-								NewKeyboard->Buttons[Key_D].HalfTransitionCount++;
+
+								if(NewKeyboard->D.EndedDown != IsDown)
+								{
+									NewKeyboard->Buttons[Key_D].EndedDown = IsDown;
+									NewKeyboard->Buttons[Key_D].HalfTransitionCount++;
+								}
 							}
 							else if(KeyCode == VK_SHIFT)
 							{
-								NewKeyboard->Buttons[Key_Shift].EndedDown = IsDown;
-								NewKeyboard->Buttons[Key_Shift].HalfTransitionCount++;
+								if(NewKeyboard->Shift.EndedDown != IsDown)
+								{
+									NewKeyboard->Buttons[Key_Shift].EndedDown = IsDown;
+									NewKeyboard->Buttons[Key_Shift].HalfTransitionCount++;
+								}
 							}
 							else if(KeyCode == VK_SPACE)
 							{
-								NewKeyboard->Buttons[Key_Space].EndedDown = IsDown;
-								NewKeyboard->Buttons[Key_Space].HalfTransitionCount++;
+
+								if(NewKeyboard->Space.EndedDown != IsDown)
+								{
+									NewKeyboard->Buttons[Key_Space].EndedDown = IsDown;
+									NewKeyboard->Buttons[Key_Space].HalfTransitionCount++;
+								}
 							}
 						}
 					} break;

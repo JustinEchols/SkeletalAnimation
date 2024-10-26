@@ -1,6 +1,6 @@
 #if !defined(MATH_UTIL_H)
 
-#include "math.h"
+//#include "math.h"
 
 union v2
 {
@@ -778,6 +778,20 @@ Mat4Perspective(f32 FOV, f32 AspectRatio, f32 ZNear, f32 ZFar)
 
 	return(R);
 }
+
+inline mat4
+Mat4OrthographicProjection(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)
+{
+	mat4 R =
+	{
+		{{(2.0f / (r - l)), 0, 0, (-1.0f * (r + l) / (r - l))},
+		{0, (2.0f / (t - b)), 0, (-1.0f * (t + b) / (t - b))},
+		{0, 0, (2.0f / (f - n)), (-1.0f * (f + n) / (f - n))},
+		{0, 0, 0, 1}},
+	};
+	return(R);
+}
+
 
 struct affine_decomposition
 {

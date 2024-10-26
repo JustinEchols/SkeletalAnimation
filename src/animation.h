@@ -24,7 +24,7 @@ char *AnimationFiles[] =
 enum animation_state
 {
 	AnimationState_Idle = 0x0,
-	AnimationState_Running = 0x1,
+	AnimationState_Running = 0x2,
 };
 
 struct key_frame
@@ -57,6 +57,7 @@ enum animation_flags
 	AnimationFlags_Looping = (1 << 1),
 	AnimationFlags_RemoveLocomotion = (1 << 2),
 	AnimationFlags_Finished = (1 << 3),
+	AnimationFlags_Playing = (1 << 4),
 };
 
 struct animation
