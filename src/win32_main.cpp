@@ -173,6 +173,15 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 									NewKeyboard->Buttons[Key_D].HalfTransitionCount++;
 								}
 							}
+							else if(KeyCode == 'E')
+							{
+
+								if(NewKeyboard->E.EndedDown != IsDown)
+								{
+									NewKeyboard->Buttons[Key_E].EndedDown = IsDown;
+									NewKeyboard->Buttons[Key_E].HalfTransitionCount++;
+								}
+							}
 							else if(KeyCode == VK_SHIFT)
 							{
 								if(NewKeyboard->Shift.EndedDown != IsDown)

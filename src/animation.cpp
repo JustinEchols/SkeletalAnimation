@@ -12,6 +12,16 @@ FlagIsSet(animation *Animation, u32 Flag)
 	return(Result);
 }
 
+inline b32
+AnimationIsCrossFading(animation *Animation)
+{
+	b32 Result = ((FlagIsSet(Animation, AnimationFlags_CrossFadeIn)) ||
+				  (FlagIsSet(Animation, AnimationFlags_CrossFadeOut)));
+
+	return(Result);
+
+}
+
 inline mat4
 JointTransformFromSQT(sqt SQT)
 {
@@ -83,8 +93,97 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 	}
 }
 
+#if 0
 internal void
-AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, u32 Flags)
+AnimationUpdate(animation *Animation, f32 dt)
+{
+	animation_info *Info = Animation->Info;
+	if(Info)
+	{
+		// Update current animation clip/channel timeline.
+		Animation->OldTime = Animation->CurrentTime;
+		Animation->CurrentTime += dt;
+
+		if((Animation->OldTime != Animation->CurrentTime) &&
+				(Animation->CurrentTime >= Info->Duration))
+		{
+			if(!FlagIsSet(Animation, AnimationFlags_Looping))
+			{
+				FlagAdd(Animation, AnimationFlags_Finished);
+				Animation->CurrentTime = Info->Duration;
+			}
+
+			Animation->CurrentTime -= Info->Duration;
+		}
+
+		if(Animation->BlendingIn || Animation->BlendingOut)
+		{
+			Animation->BlendCurrentTime += dt;
+			if((Animation->BlendCurrentTime > Animation->BlendDuration) && Animation->BlendingOut)
+			{
+				FlagAdd(Animation, AnimationFlags_Finished);
+			}
+		}
+
+		// Update global animation timeline
+		//AnimationPlayer->CurrentTime += dt;
+		//AnimationPlayer->TimeInCurrentState += dt;
+		//AnimationPlayer->dt = dt;
+
+		if(!FlagIsSet(Animation, AnimationFlags_Finished))
+		{
+			// Allocate JointCount number of elements for the blended pose.
+			//key_frame *BlendedPose = BlendedPoses + BlendedPoseIndex++;
+			//BlendedPose->Positions = PushArray(TempArena, Info->JointCount, v3);
+			//BlendedPose->Orientations = PushArray(TempArena, Info->JointCount, quaternion);
+			//BlendedPose->Scales = PushArray(TempArena, Info->JointCount, v3);
+
+			f32 tNormalized = Animation->CurrentTime / Info->Duration;
+			u32 LastKeyFrameIndex = Info->KeyFrameCount - 1;
+			u32 KeyFrameIndex = F32TruncateToS32(tNormalized * (f32)LastKeyFrameIndex);
+
+			f32 DtPerKeyFrame = Info->Duration / (f32)LastKeyFrameIndex;
+			f32 KeyFrameTime = KeyFrameIndex * DtPerKeyFrame;
+			f32 t = (Animation->CurrentTime - KeyFrameTime) / DtPerKeyFrame;
+			t = Clamp01(t);
+
+			key_frame *KeyFrame = Info->KeyFrames + KeyFrameIndex;
+			key_frame *NextKeyFrame = Info->KeyFrames + (KeyFrameIndex + 1);
+
+			sqt RootTransform;
+			if(FlagIsSet(Animation, AnimationFlags_RemoveLocomotion))
+			{
+				RootTransform = JointTransformInterpolatedSQT(KeyFrame, t, NextKeyFrame, 0);
+
+				v3 RootStartP = Info->KeyFrames[0].Positions[0];
+
+				RootTransform.Position.x = RootStartP.x;
+				RootTransform.Position.z = RootStartP.z;
+			}
+			else
+			{
+				RootTransform = JointTransformInterpolatedSQT(KeyFrame, t, NextKeyFrame, 0);
+			}
+
+			//BlendedPose->Positions[0] = RootTransform.Position;
+			//BlendedPose->Orientations[0] = RootTransform.Orientation;
+			//BlendedPose->Scales[0] = RootTransform.Scale;
+
+			for(u32 JointIndex = 1; JointIndex < Info->JointCount; ++JointIndex)
+			{
+				sqt Transform;
+				Transform = JointTransformInterpolatedSQT(KeyFrame, t, NextKeyFrame, JointIndex);
+				BlendedPose->Positions[JointIndex] = Transform.Position;
+				BlendedPose->Orientations[JointIndex] = Transform.Orientation;
+				BlendedPose->Scales[JointIndex] = Transform.Scale;
+			}
+		}
+	}
+}
+#endif
+
+internal void
+AnimationPlayTransition(animation_player *AnimationPlayer, animation *NewAnimation, u32 Flags)
 {
 	Assert(AnimationPlayer->IsInitialized);
 	for(animation *Current = AnimationPlayer->AnimationPreviouslyAdded;
@@ -124,7 +223,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, u32 Fl
 	Animation->OldTime = 0.0f;
 	Animation->TimeScale = 1.0f;
 
-	Animation->BlendFactorLast = 0.0f;
+	Animation->BlendFactor = 0.0f;
 	Animation->BlendDuration = 0.2f;
 	Animation->BlendCurrentTime = 0.0f;
 	Animation->BlendingIn = true;
@@ -136,6 +235,64 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, u32 Fl
 	AnimationPlayer->AnimationPreviouslyAdded = Animation;
 	AnimationPlayer->PlayingCount++;
 }
+
+internal void
+AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, u32 Flags)
+{
+	Assert(AnimationPlayer->IsInitialized);
+	for(animation *Current = AnimationPlayer->AnimationPreviouslyAdded;
+			Current;
+			Current = Current->Next)
+	{
+		if(Current->ID.Value == NewAnimation->ID.Value)
+		{
+			// Animation is already playing, so return.
+			return;
+		}
+	}
+
+#if 0
+	// Blend out currently playing animations
+	for(animation *Current = AnimationPlayer->AnimationPreviouslyAdded;
+			Current;
+			Current = Current->Next)
+	{
+		Current->BlendDuration = 0.2f;
+		Current->BlendingOut = true;
+		Current->BlendCurrentTime = 0.0f;
+	}
+#endif
+
+	if(!AnimationPlayer->AnimationPreviouslyFreed)
+	{
+		AnimationPlayer->AnimationPreviouslyFreed = PushStruct(AnimationPlayer->PermArena, animation);
+		AnimationPlayer->AnimationPreviouslyFreed->Next = 0;
+	}
+
+	animation *Animation = AnimationPlayer->AnimationPreviouslyFreed;
+	AnimationPlayer->AnimationPreviouslyFreed = Animation->Next;
+
+	Animation->Flags = 0;
+	FlagAdd(Animation, Flags);
+
+	Animation->CurrentTime = 0.0f;
+	Animation->OldTime = 0.0f;
+	Animation->TimeScale = 1.0f;
+
+	Animation->BlendFactor = 0.5f;
+	//Animation->BlendDuration = 0.2f;
+	//Animation->BlendCurrentTime = 0.0f;
+	Animation->BlendingIn = false;
+	Animation->BlendingOut = false;
+	Animation->BlendingComposite = true;
+
+	Animation->ID = NewAnimation->ID;
+	Animation->Info = NewAnimation->Info;
+	Animation->Next = AnimationPlayer->AnimationPreviouslyAdded;
+	AnimationPlayer->AnimationPreviouslyAdded = Animation;
+	AnimationPlayer->PlayingCount++;
+}
+
 
 internal void
 AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena, f32 dt)
@@ -174,7 +331,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			if(Animation->BlendingIn || Animation->BlendingOut)
 			{
 				Animation->BlendCurrentTime += dt;
-				if((Animation->BlendCurrentTime > Animation->BlendDuration) && (Animation->BlendingOut))
+				if((Animation->BlendCurrentTime > Animation->BlendDuration) && Animation->BlendingOut)
 				{
 					FlagAdd(Animation, AnimationFlags_Finished);
 				}
@@ -182,6 +339,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 
 			// Update global animation timeline
 			AnimationPlayer->CurrentTime += dt;
+			AnimationPlayer->TimeInCurrentState += dt;
 			AnimationPlayer->dt = dt;
 
 			if(!FlagIsSet(Animation, AnimationFlags_Finished))
@@ -254,8 +412,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 
 	Assert(BlendedPoseIndex == AnimationPlayer->PlayingCount);
 
-	// TODO(Justin): Can we not just do this in the loop above???
-	// NOTE(Justin): Update blend coefficients.
+	// NOTE(Justin): Update blend coefficients for cross-fading.
 	for(animation *Animation = AnimationPlayer->AnimationPreviouslyAdded;
 			Animation;
 			Animation = Animation->Next)
@@ -269,8 +426,12 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		{
 			BlendFactorLast = (Animation->BlendCurrentTime / Animation->BlendDuration);
 		}
+		else if(Animation->BlendingComposite)
+		{
+			BlendFactorLast = Animation->BlendFactor;
+		}
 
-		Animation->BlendFactorLast = Clamp01(BlendFactorLast);
+		Animation->BlendFactor = Clamp01(BlendFactorLast);
 	}
 
 	// TODO(Justin): Clean this up..
@@ -314,7 +475,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 						}
 						else
 						{
-							f32 t = Animation->BlendFactorLast;
+							f32 t = Animation->BlendFactor;
 							if(t != 1.0f)
 							{
 								sqt A;
@@ -344,6 +505,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	TemporaryMemoryEnd(AnimationMemory);
 
 }
+
 
 internal void
 ModelUpdate(animation_player *AnimationPlayer)

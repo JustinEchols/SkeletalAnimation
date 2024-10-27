@@ -74,6 +74,7 @@ enum
 	Key_A,
 	Key_S,
 	Key_D,
+	Key_E,
 	Key_Shift,
 	Key_Space,
 
@@ -91,6 +92,7 @@ struct game_keyboard
 			game_button A;
 			game_button S;
 			game_button D;
+			game_button E;
 			game_button Shift;
 			game_button Space;
 		};
