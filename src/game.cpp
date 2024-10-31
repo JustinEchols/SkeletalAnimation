@@ -178,6 +178,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 			{
 				Animation->ID.Value = AnimIndex;
 				Animation->Info = Info;
+				Animation->BlendedPose = PushStruct(Arena, key_frame);
+				key_frame *BlendedPose = Animation->BlendedPose;
+				BlendedPose->Positions = PushArray(Arena, Info->JointCount, v3);
+				BlendedPose->Orientations = PushArray(Arena, Info->JointCount, quaternion);
+				BlendedPose->Scales = PushArray(Arena, Info->JointCount, v3);
 			}
 		}
 
@@ -205,7 +210,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 		GameMemory->IsInitialized = true;
 	}
-
 
 	v3 ddP = {};
 	game_keyboard *Keyboard = &GameInput->Keyboard;
@@ -292,13 +296,12 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 						{
 							if(IsWaving)
 							{
-								//AnimationPlayTransition(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Wave), 0);
+								AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Wave), 0);
 							}
 							else
 							{
 								// NOTE(Justin): Animation state is idle and no acceleration, therefore play idle animation.
 								AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Idle), AnimationFlags_Looping);
-								AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Wave), AnimationFlags_Looping);
 							}
 						}
 						else if(Equal(OldPlayerddP, V3(0.0f)) &&
@@ -310,7 +313,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 							Flags = AnimationFlags_RemoveLocomotion;
 							AnimationPlayer->TimeInCurrentState = 0.0f;
 							AnimationPlayer->State = AnimationState_Running;
-							AnimationPlayTransition(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Run), Flags);
+							AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Run), Flags);
 							PrintString("StateIdleToRun");
 						}
 					} break;
@@ -321,7 +324,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 							// NOTE(Justin): State transition
 							// NOTE(Justin): Animation state is running and no acceleration, therefore play idle animation.
 
-							AnimationPlayTransition(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Idle), AnimationFlags_Looping);
+							AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Idle), AnimationFlags_Looping);
 							AnimationPlayer->TimeInCurrentState = 0.0f;
 							AnimationPlayer->State = AnimationState_Idle;
 							PrintString("StateRunToIdle");
@@ -334,11 +337,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 							if(IsSprinting)
 							{
-								AnimationPlayTransition(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Sprint), Flags);
+								AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Sprint), Flags);
 							}
 							else
 							{
-								AnimationPlayTransition(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Run), Flags);
+								AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Run), Flags);
 							}
 						}
 

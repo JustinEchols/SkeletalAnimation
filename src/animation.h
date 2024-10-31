@@ -106,36 +106,16 @@ struct animation
 	key_frame *BlendedPose;
 };
 
-struct animation_2
-{
-	u32 Flags;
-
-	f32 Duration;
-	f32 CurrentTime; 
-	f32 OldTime; 
-	f32 TimeScale; 
-
-	f32 BlendFactor;
-	f32 BlendDuration;
-	f32 BlendCurrentTime;
-	b32 BlendingIn;
-	b32 BlendingOut;
-	b32 BlendingComposite;
-
-	animation_id ID;
-	animation_info *Info;
-
-	key_frame *BlendedPose;
-};
-
 struct animation_player
 {
 	b32 IsInitialized;
 	animation_state State;
 
-	memory_arena *PermArena;
-	animation *AnimationPreviouslyAdded;
-	animation *AnimationPreviouslyFreed;
+	memory_arena *Arena;
+	animation *Channels;
+	animation *FreeChannels;
+	//animation *AnimationPreviouslyAdded;
+	//animation *AnimationPreviouslyFreed;
 
 	u32 PlayingCount;
 	u32 RetiredCount;
@@ -144,7 +124,7 @@ struct animation_player
 	f32 TimeInCurrentState;
 	f32 dt;
 
-	key_frame *BlendedAnimations;
+	key_frame *FinalPose;
 	model *Model; 
 };
 

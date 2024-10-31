@@ -9,7 +9,6 @@
 #include "glext.h"
 
 #include "win32_file_io.cpp"
-#include "win32_opengl.h"
 #include "win32_opengl.cpp"
 
 global_varible b32 Win32GlobalRunning;

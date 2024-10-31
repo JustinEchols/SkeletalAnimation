@@ -155,7 +155,6 @@ V4(f32 X, f32 Y, f32 Z)
 	return(Result);
 }
 
-
 inline v4
 V4(v3 V, f32 C)
 {
@@ -165,6 +164,16 @@ V4(v3 V, f32 C)
 	Result.w = C;
 
 	return(Result);
+}
+
+inline sqt
+SQT(v3 Scale, quaternion Orientation, v3 Position)
+{
+	sqt Result;
+
+	Result.Scale = Scale;
+	Result.Orientation = Orientation;
+	Result.Position = Position;
 }
 
 inline f32
@@ -465,7 +474,7 @@ Trace(mat3 M)
 	return(Result);
 }
 
-internal mat4
+inline mat4
 Mat4Identity()
 {
 	mat4 R =
@@ -479,7 +488,7 @@ Mat4Identity()
 	return(R);
 }
 
-internal mat4
+inline mat4
 Mat4(v3 X, v3 Y, v3 Z)
 {
 	mat4 R =
@@ -493,7 +502,7 @@ Mat4(v3 X, v3 Y, v3 Z)
 	return(R);
 }
 
-internal mat4
+inline mat4
 Mat4(v3 X, v3 Y, v3 Z, v3 W)
 {
 	mat4 R =
@@ -507,10 +516,7 @@ Mat4(v3 X, v3 Y, v3 Z, v3 W)
 	return(R);
 }
 
-
-
-
-internal mat4
+inline mat4
 Mat4Scale(f32 C)
 {
 	mat4 R =
@@ -524,7 +530,7 @@ Mat4Scale(f32 C)
 	return(R);
 }
 
-internal mat4
+inline mat4
 Mat4Scale(v3 V)
 {
 	mat4 R =
@@ -538,7 +544,7 @@ Mat4Scale(v3 V)
 	return(R);
 }
 
-internal mat4
+inline mat4
 Mat4Translate(v3 V)
 {
 	mat4 R =
@@ -552,34 +558,7 @@ Mat4Translate(v3 V)
 	return(R);
 }
 
-internal v3
-V3FromMat4(mat4 M, u32 ColIndex)
-{
-	Assert(ColIndex <= 3);
-	v3 Result = {};
-
-	Result.x = M.E[ColIndex][0];
-	Result.y = M.E[ColIndex][1];
-	Result.z = M.E[ColIndex][2];
-
-	return(Result);
-}
-
-internal v4
-V4FromMat4(mat4 M, u32 ColIndex)
-{
-	Assert(ColIndex <= 3);
-	v4 Result = {};
-
-	Result.x = M.E[ColIndex][0];
-	Result.y = M.E[ColIndex][1];
-	Result.z = M.E[ColIndex][2];
-	Result.w = M.E[ColIndex][3];
-
-	return(Result);
-}
-
-internal v3
+inline v3
 Mat4ColumnGet(mat4 M, u32 ColIndex)
 {
 	v3 Result = {};
@@ -594,7 +573,7 @@ Mat4ColumnGet(mat4 M, u32 ColIndex)
 	return(Result);
 }
 
-internal mat4
+inline mat4
 Mat4ColumnSet(mat4 M, v4 V, u32 ColIndex)
 {
 	mat4 Result = M; 
@@ -610,10 +589,7 @@ Mat4ColumnSet(mat4 M, v4 V, u32 ColIndex)
 	return(Result);
 }
 
-
-
-
-internal v4
+inline v4
 Mat4Transform(mat4 T, v4 V)
 {
 	v4 Result = {};
@@ -626,7 +602,7 @@ Mat4Transform(mat4 T, v4 V)
 	return(Result);
 }
 
-internal mat4
+inline mat4
 Mat4TransposeMat3(mat4 T)
 {
 	mat4 R = T;
@@ -647,7 +623,7 @@ Mat4TransposeMat3(mat4 T)
 	return(R);
 }
 
-internal mat4
+inline mat4
 Mat4Transpose(mat4 T)
 {
 	mat4 R = T;
@@ -668,8 +644,6 @@ Mat4Transpose(mat4 T)
 	return(R);
 }
 
-
-
 inline v3
 operator*(mat4 T, v3 V)
 {
@@ -677,7 +651,30 @@ operator*(mat4 T, v3 V)
 	return(Result);
 }
 
-internal mat4
+inline mat4
+Mat4Add(mat4 A, mat4 B)
+{
+	mat4 R = {};
+
+	for(s32 i = 0; i <= 3; ++i)
+	{
+		for(s32 j = 0; j <= 3; ++j)
+		{
+			R.E[i][j] = A.E[i][j] + B.E[i][j];
+		}
+	}
+
+	return(R);
+}
+
+inline mat4
+operator+(mat4 A, mat4 B)
+{
+	mat4 Result = Mat4Add(A, B);
+	return(Result);
+}
+
+inline mat4
 Mat4Multiply(mat4 A, mat4 B)
 {
 	mat4 R = {};
@@ -703,7 +700,7 @@ operator*(mat4 A, mat4 B)
 	return(R);
 }
 
-internal mat4
+inline mat4
 Mat4YRotation(f32 Angle)
 {
 	mat4 R = 
@@ -717,7 +714,7 @@ Mat4YRotation(f32 Angle)
 	return(R);
 }
 
-internal mat4
+inline mat4
 Mat4XRotation(f32 Angle)
 {
 	mat4 R = 
@@ -731,7 +728,7 @@ Mat4XRotation(f32 Angle)
 	return(R);
 }
 
-internal mat4
+inline mat4
 ModelTransformFromBasis(basis *B)
 {
 	mat4 R =
@@ -745,7 +742,7 @@ ModelTransformFromBasis(basis *B)
 	return(R);
 }
 
-internal mat4
+inline mat4
 Mat4Camera(v3 P, v3 Target)
 {
 	mat4 R;
@@ -763,7 +760,7 @@ Mat4Camera(v3 P, v3 Target)
 	return(R);
 }
 
-internal mat4
+inline mat4
 Mat4Perspective(f32 FOV, f32 AspectRatio, f32 ZNear, f32 ZFar)
 {
 	f32 HalfFOV = FOV / 2.0f;
@@ -858,6 +855,44 @@ Conjugate(quaternion Q)
 	Result.z = -Q.z;
 
 	return(Result);
+}
+
+inline quaternion
+operator+(quaternion Q1, quaternion Q2)
+{
+	quaternion Result;
+
+	Result.x = Q1.x + Q2.x;
+	Result.y = Q1.y + Q2.y;
+	Result.z = Q1.z + Q2.z;
+	Result.w = Q1.w + Q2.w;
+
+	return(Result);
+}
+
+inline void 
+operator+=(quaternion &Q1, quaternion Q2)
+{
+	Q1 = Q1 + Q2;
+}
+
+inline quaternion
+operator*(f32 C, quaternion Q)
+{
+	quaternion Result;
+
+	Result.x = C * Q.x;
+	Result.y = C * Q.y;
+	Result.z = C * Q.z;
+	Result.w = C * Q.w;
+
+	return(Result);
+}
+
+inline void 
+operator*=(quaternion &Q, f32 C)
+{
+	Q = C * Q;
 }
 
 inline quaternion
@@ -979,6 +1014,24 @@ Normalize(quaternion Q)
 }
 
 inline quaternion
+NormalizeOrIdentity(quaternion Q)
+{
+	quaternion Result;
+
+	f32 Length = sqrtf(Square(Q.x) + Square(Q.y) + Square(Q.z) + Square(Q.w));
+	if(Length > 0.0f)
+	{
+		Result = (1.0f / Length) * Q;
+	}
+	else
+	{
+		Result = Quaternion();
+	}
+
+	return(Result);
+}
+
+inline quaternion
 RotationToQuaternion(mat4 Mat)
 {
     quaternion Quat = {};
@@ -1017,32 +1070,6 @@ RotationToQuaternion(mat4 Mat)
     return Quat;
 }
 
-inline quaternion
-operator*(f32 C, quaternion Q)
-{
-	quaternion Result;
-
-	Result.x = C * Q.x;
-	Result.y = C * Q.y;
-	Result.z = C * Q.z;
-	Result.w = C * Q.w;
-
-	return(Result);
-}
-
-inline quaternion
-operator+(quaternion Q1, quaternion Q2)
-{
-	quaternion Result;
-
-	Result.x = Q1.x + Q2.x;
-	Result.y = Q1.y + Q2.y;
-	Result.z = Q1.z + Q2.z;
-	Result.w = Q1.w + Q2.w;
-
-	return(Result);
-}
-
 inline f32
 Dot(quaternion Q1, quaternion Q2)
 {
@@ -1074,7 +1101,8 @@ LerpShortest(quaternion A, f32 t, quaternion B)
 		A = -1.0f * A;
 	}
 
-	return(Lerp(A, t, B));
+	quaternion Result = Lerp(A, t, B);
+	return(Result);
 }
 
 inline v3
