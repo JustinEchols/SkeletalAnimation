@@ -35,6 +35,7 @@ char *AnimationFiles[] =
 
 enum animation_state
 {
+	AnimationState_Invalid = 0x0,
 	AnimationState_Idle = 0x1,
 	AnimationState_IdleToRun = 0x2,
 	AnimationState_IdleToSprint = 0x3,
@@ -85,6 +86,9 @@ enum animation_flags
 // NOTE(Justin): Should we add more fields to this or rename this to animation_transition?
 struct animation
 {
+	char *Name;
+
+	u32 DefaultFlags;
 	u32 Flags;
 
 	f32 Duration;

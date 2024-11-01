@@ -125,6 +125,7 @@ struct entity
 {
 	entity_type Type;
 	movement_state MovementState;
+	animation_state AnimationState;
 
 	v3 P;
 	v3 dP;

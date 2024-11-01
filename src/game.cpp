@@ -25,6 +25,7 @@ PlayerAdd(game_state *GameState)
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
+	Entity->AnimationState = AnimationState_Invalid;
 }
 
 internal void
@@ -112,12 +113,7 @@ PrintString(char *String)
 	OutputDebugStringA("\n");
 }
 
-inline animation *
-AnimationGet(game_state *GameState, animation_name Name)
-{
-	animation *Result = &GameState->Animations[Name];
-	return(Result);
-}
+
 
 internal void
 GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
@@ -176,13 +172,30 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 			if(Info)
 			{
+				Animation->Name = AnimationFiles[AnimIndex];
 				Animation->ID.Value = AnimIndex;
 				Animation->Info = Info;
 				Animation->BlendedPose = PushStruct(Arena, key_frame);
 				key_frame *BlendedPose = Animation->BlendedPose;
-				BlendedPose->Positions = PushArray(Arena, Info->JointCount, v3);
-				BlendedPose->Orientations = PushArray(Arena, Info->JointCount, quaternion);
-				BlendedPose->Scales = PushArray(Arena, Info->JointCount, v3);
+				AllocateJointXforms(Arena, BlendedPose, Info->JointCount);
+			}
+
+			switch(AnimIndex)
+			{
+				case Animation_Idle:
+				{
+					Animation->DefaultFlags = AnimationFlags_Looping;
+				} break;
+				case Animation_Run:
+				{
+					Animation->DefaultFlags = AnimationFlags_Looping |
+											  AnimationFlags_RemoveLocomotion;
+				} break;
+				case Animation_Sprint:
+				{
+					Animation->DefaultFlags = AnimationFlags_Looping |
+											  AnimationFlags_RemoveLocomotion;
+				} break;
 			}
 		}
 
@@ -236,10 +249,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		IsWaving = true;
 	}
 
-	b32 IsSprinting = false;
+	b32 Sprinting = false;
 	if(Keyboard->Shift.EndedDown)
 	{
-		IsSprinting = true;
+		Sprinting = true;
 	}
 
 	if(!Equal(ddP, V3(0.0f)))
@@ -262,7 +275,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				Entity->ddP = ddP;
 
 				f32 PlayerSpeed = 50.0f;
-				if(IsSprinting)
+				if(Sprinting)
 				{
 					PlayerSpeed *= 1.5f;
 				}
@@ -286,65 +299,57 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
 				Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
 
-				u32 Flags = 0;
-				animation_player *AnimationPlayer = &GameState->AnimationPlayer;
-				switch(AnimationPlayer->State)
+				switch(Entity->AnimationState)
 				{
 					case AnimationState_Idle:
 					{
-						if(Equal(Entity->ddP, V3(0.0f)))
+						if(Equal(OldPlayerddP, V3(0.0f)) &&
+						  !Equal(Entity->ddP, OldPlayerddP))
 						{
-							if(IsWaving)
+							if(Sprinting)
 							{
-								AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Wave), 0);
+								Entity->AnimationState = AnimationState_Sprint;
 							}
 							else
 							{
-								// NOTE(Justin): Animation state is idle and no acceleration, therefore play idle animation.
-								AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Idle), AnimationFlags_Looping);
+								Entity->AnimationState = AnimationState_Running;
 							}
-						}
-						else if(Equal(OldPlayerddP, V3(0.0f)) &&
-								!Equal(Entity->ddP, OldPlayerddP))
-						{
-							// NOTE(Justin): State transition
-							// NOTE(Justin): Animation state is idle and acceleration exists, therefore play running animation.
-							// and set animation state to Running 
-							Flags = AnimationFlags_RemoveLocomotion;
-							AnimationPlayer->TimeInCurrentState = 0.0f;
-							AnimationPlayer->State = AnimationState_Running;
-							AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Run), Flags);
-							PrintString("StateIdleToRun");
 						}
 					} break;
 					case AnimationState_Running:
 					{
 						if(Equal(Entity->ddP, V3(0.0f)))
 						{
-							// NOTE(Justin): State transition
-							// NOTE(Justin): Animation state is running and no acceleration, therefore play idle animation.
-
-							AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Idle), AnimationFlags_Looping);
-							AnimationPlayer->TimeInCurrentState = 0.0f;
-							AnimationPlayer->State = AnimationState_Idle;
-							PrintString("StateRunToIdle");
+							Entity->AnimationState = AnimationState_Idle;
 						}
 						else
 						{
-							// NOTE(Justin): Animation state is running and acceleration exists, therefore play looped running animation.
-							Flags = (AnimationFlags_RemoveLocomotion |
-									 AnimationFlags_Looping);
-
-							if(IsSprinting)
+							if(Sprinting)
 							{
-								AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Sprint), Flags);
-							}
-							else
-							{
-								AnimationPlay(&GameState->AnimationPlayer, AnimationGet(GameState, Animation_Run), Flags);
+								Entity->AnimationState = AnimationState_Sprint;
 							}
 						}
 
+					} break;
+					case AnimationState_Sprint:
+					{
+						if(Equal(Entity->ddP, V3(0.0f)))
+						{
+							Entity->AnimationState = AnimationState_Idle;
+						}
+						else
+						{
+							if(!Sprinting)
+							{
+								Entity->AnimationState = AnimationState_Running;
+							}
+						}
+					} break;
+					case AnimationState_Invalid:
+					{
+						// NOTE(Justin): AnimationState is initalized to invalid.
+						// First time this is hit, we set the state to idle.
+						Entity->AnimationState = AnimationState_Idle;
 					} break;
 				};
 			} break;
@@ -413,8 +418,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				UniformV3Set(MainShader, "CameraP", Camera->P);
 				UniformV3Set(MainShader, "LightDir", LightDir);
 
-				AnimationPlayerUpdate(&GameState->AnimationPlayer, &GameState->TempArena, dt);
-				ModelUpdate(&GameState->AnimationPlayer);
+				animation_player *AnimationPlayer = &GameState->AnimationPlayer;
+				Animate(GameState, AnimationPlayer, Entity->AnimationState);
+				AnimationPlayerUpdate(AnimationPlayer, &GameState->TempArena, dt);
+				ModelUpdate(AnimationPlayer);
 
 				mat4 Transform = EntityTransform(Entity, 0.025f);
 				model *Model = GameState->XBot;
