@@ -124,6 +124,7 @@ void main()
 	Result = vec4(Ambient + Diffuse, A);
 })";
 
+#if 0
 char *FontVS = R"(
 #version 430 core
 layout (location = 0) in vec2 P;
@@ -155,6 +156,36 @@ void main()
 	float R = texture(Texture, UV).r;
 	Result = Color * vec4(1.0, 1.0, 1.0, R);
 })";
+#else
+char *FontVS = R"(
+#version 430 core
+layout (location = 0) in vec4 VertexXYUV;
+
+out vec2 UV;
+uniform float WindowWidth;
+uniform float WindowHeight;
+void main()
+{
+	float X = (2.0 * VertexXYUV.x) / WindowWidth - 1.0;
+	float Y = (2.0 * VertexXYUV.y) / WindowHeight - 1.0;
+	gl_Position = vec4(X, Y, 0.0, 1.0);
+	UV = VertexXYUV.zw;
+})";
+
+char *FontFS= R"(
+#version 430 core
+in vec2 UV;
+
+uniform sampler2D Texture;
+uniform vec3 Color;
+
+out vec4 Result;
+void main()
+{
+	float A = texture(Texture, UV).r;
+	Result = vec4(Color, A);
+})";
+#endif
 
 
 internal void 
@@ -185,8 +216,21 @@ GLCompilerShader(GLenum ShaderType, char *Source)
 	if(!IsValid)
 	{
 		glGetShaderInfoLog(Shader, 1024, &LogLength, Buffer);
-		OutputDebugStringA("ERROR: Shader Compile Failed\n");
+		switch(ShaderType)
+		{
+			case GL_VERTEX_SHADER:
+			{
+				OutputDebugStringA("ERROR: Vertex shader compile failed\n");
+
+			} break;
+			case GL_FRAGMENT_SHADER:
+			{
+				OutputDebugStringA("ERROR: Fragment shader compile failed\n");
+			} break;
+		};
+
 		OutputDebugStringA(Buffer);
+
 	}
 
 	return(Shader);
@@ -379,6 +423,36 @@ OpenGLAllocateQuad(quad *Quad, u32 ShaderProgram)
 }
 
 internal void
+OpenGLAllocateFontQuad(font_quad *Quad, u32 ShaderProgram)
+{
+	glGenVertexArrays(1, &Quad->VA);
+	glBindVertexArray(Quad->VA);
+	glGenBuffers(1, &Quad->VB);
+	glBindBuffer(GL_ARRAY_BUFFER, Quad->VB);
+	glBufferData(GL_ARRAY_BUFFER, ArrayCount(Quad->Vertices) * sizeof(font_quad_vertex), 0, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(font_quad_vertex), 0);
+	glEnableVertexAttribArray(0);
+
+	s32 ExpectedAttributeCount = 1;
+
+	s32 AttrCount;
+	glGetProgramiv(ShaderProgram, GL_ACTIVE_ATTRIBUTES, &AttrCount);
+	Assert(ExpectedAttributeCount == AttrCount);
+
+	char Name[256];
+	s32 Size = 0;
+	GLsizei Length = 0;
+	GLenum Type;
+	for(s32 i = 0; i < AttrCount; ++i)
+	{
+		glGetActiveAttrib(ShaderProgram, i, sizeof(Name), &Length, &Size, &Type, Name);
+		//printf("Attribute:%d\nName:%s\nSize:%d\n\n", i, Name, Size);
+	}
+
+	glBindVertexArray(0);
+}
+
+internal void
 UniformBoolSet(u32 ShaderProgram, char *UniformName, b32 B32)
 {
 	s32 UniformLocation = glGetUniformLocation(ShaderProgram, UniformName);
@@ -473,6 +547,50 @@ OpenGLDrawQuad(quad *Quad, u32 ShaderProgram, mat4 Transform, u32 TextureHandle)
 	glBindTexture(GL_TEXTURE_2D, TextureHandle);
 	glBindVertexArray(Quad->VA);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+	glBindVertexArray(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+internal void
+OpenGLDrawText(char *Text, u32 Shader, font_quad *Quad, v2 P, f32 Scale, v3 Color, s32 WindowWidth, s32 WindowHeight)
+{
+	glUseProgram(Shader);
+	UniformV3Set(Shader, "Color", Color);
+	glBindVertexArray(Quad->VA);
+	for(char *C = Text; *C; ++C)
+	{
+		glyph Glyph = Quad->Info.Glyphs[*C];
+
+		f32 X = P.x + Glyph.Bearing.x * Scale;
+		f32 Y = P.y - (Glyph.Dim.y - Glyph.Bearing.y) * Scale;
+
+		f32 Width = Glyph.Dim.x * Scale;
+		f32 Height = Glyph.Dim.y * Scale;
+
+		f32 Vertices[6][4] =
+		{
+			{X,			Y + Height, 0.0f, 0.0f},
+			{X,			Y,			0.0f, 1.0f},
+			{X + Width, Y,			1.0f, 1.0f},
+
+			{X,			Y + Height, 0.0f, 0.0f},
+			{X + Width,	Y,			1.0f, 1.0f},
+			{X + Width, Y + Height,	1.0f, 0.0f},
+		};
+
+		glActiveTexture(GL_TEXTURE0);
+		UniformBoolSet(Shader, "Texture", 0);
+		UniformF32Set(Shader, "WindowWidth", (f32)WindowWidth);
+		UniformF32Set(Shader, "WindowHeight", (f32)WindowHeight);
+		glBindTexture(GL_TEXTURE_2D, Glyph.TextureHandle);
+		glBindBuffer(GL_ARRAY_BUFFER, Quad->VB);
+		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		P.x += (Glyph.Advance >> 6) * Scale;
+
+	}
+
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }

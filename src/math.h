@@ -11,6 +11,16 @@ union v2
 	f32 E[2];
 };
 
+union v2i
+{
+	struct
+	{
+		s32 x, y;
+	};
+	s32 E[2];
+};
+
+
 union v3
 {
 	struct
@@ -97,6 +107,28 @@ inline v2
 V2(f32 X)
 {
 	v2 Result = {};
+
+	Result.x = X;
+	Result.y = X;
+
+	return(Result);
+}
+
+inline v2i
+V2I(s32 X, s32 Y)
+{
+	v2i Result = {};
+
+	Result.x = X;
+	Result.y = Y;
+
+	return(Result);
+}
+
+inline v2i
+V2I(s32 X)
+{
+	v2i Result = {};
 
 	Result.x = X;
 	Result.y = X;
@@ -777,16 +809,19 @@ Mat4Perspective(f32 FOV, f32 AspectRatio, f32 ZNear, f32 ZFar)
 }
 
 inline mat4
-Mat4OrthographicProjection(f32 l, f32 r, f32 b, f32 t, f32 n, f32 f)
+Mat4OrthographicProjection(f32 Left, f32 Right, f32 Bottom, f32 Top, f32 Near, f32 Far)
 {
-	mat4 R =
-	{
-		{{(2.0f / (r - l)), 0, 0, (-1.0f * (r + l) / (r - l))},
-		{0, (2.0f / (t - b)), 0, (-1.0f * (t + b) / (t - b))},
-		{0, 0, (2.0f / (f - n)), (-1.0f * (f + n) / (f - n))},
-		{0, 0, 0, 1}},
-	};
-	return(R);
+	mat4 Result = {};
+
+    Result.E[0][0] = 2.0f / (Right - Left);
+    Result.E[1][1] = 2.0f / (Top - Bottom);
+    Result.E[2][2] = 2.0f / (Far - Near);
+    Result.E[3][0] = (Left + Right) / (Left - Right);
+    Result.E[3][1] = (Bottom + Top) / (Bottom - Top);
+    Result.E[3][2] = (Far + Near) / (Near - Far);
+    Result.E[3][3] = 1.0f;
+
+	return(Result);
 }
 
 

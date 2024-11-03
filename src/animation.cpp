@@ -119,13 +119,10 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 }
 
 internal void
-//AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, u32 Flags = 0, f32 BlendDuration = 0.0f)
 AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendDuration = 0.0f)
 {
 	Assert(AnimationPlayer->IsInitialized);
-	for(animation *Current = AnimationPlayer->Channels;
-			Current;
-			Current = Current->Next)
+	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
 	{
 		if(Current->ID.Value == NewAnimation->ID.Value)
 		{
@@ -137,9 +134,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 	if(BlendDuration != 0.0f)
 	{
 		// Blend out currently playing animations
-		for(animation *Current = AnimationPlayer->Channels;
-				Current;
-				Current = Current->Next)
+		for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
 		{
 			//Current->BlendDuration = 0.2f;
 			Current->BlendDuration = BlendDuration;
@@ -162,7 +157,6 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 	Animation->CurrentTime = 0.0f;
 	Animation->OldTime = 0.0f;
 	Animation->TimeScale = 1.0f;
-
 	Animation->BlendFactor = 1.0f;
 	Animation->BlendDuration = BlendDuration;
 	Animation->BlendCurrentTime = 0.0f;
@@ -192,11 +186,7 @@ internal void
 AnimationUpdate(animation *Animation, f32 dt)
 {
 	animation_info *Info = Animation->Info;
-	if(!Info)
-	{
-		// TODO(Justin): Stream in animation.
-		return;
-	}
+	Assert(Info);
 
 	Animation->OldTime = Animation->CurrentTime;
 	Animation->CurrentTime += dt * Animation->TimeScale;
@@ -218,7 +208,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 		Animation->BlendCurrentTime += dt;
 		if((Animation->BlendCurrentTime > Animation->BlendDuration) && Animation->BlendingOut)
 		{
-			// Done blending out playing animations 
+			// Done blending out animation
 			FlagAdd(Animation, AnimationFlags_Finished);
 		}
 
@@ -266,7 +256,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 		}
 	}
 
-	f32 BlendFactor= 1.0f;
+	f32 BlendFactor = 1.0f;
 	if(Animation->BlendingOut)
 	{
 		BlendFactor = 1.0f - (Animation->BlendCurrentTime / Animation->BlendDuration);
@@ -297,17 +287,20 @@ Animate(game_state *GameState, animation_player *AnimationPlayer, animation_stat
 	// NOTE(Justin): Calling animation play everytime is what allows
 	// the animation system to "work" currently. If we only allow an animation to play during a 
 	// state change then if a sudden state change happens such as idle -> run -> idle
-	// what ends up happening is that the idle and run animation do not complete the blend.
-	// Since the blend is not complete both animations are still active. Since both are still active
-	// the idle animation is active. if the idle animation is still active and we try adn play another idle 
+	// what ends up happening is that the idle and run animation do not complete the cross fade.
+	// Since the cross fade is not complete both animations are still active. Since both are still active
+	// the idle animation is active. if the idle animation is still active and we try and play another idle 
 	// animation then it will return immedialtey. The result is that the original blend between idle and run
-	// will complete the blend. When this happens the idle animation drops and we are left with a running animation
-	// that keeps looping even though from the game perspective the player is not moving. How do we fix this
-	// without having to call animation play everytime? Or is calling animation play everytime an ok solution?
+	// will complete the cross fade. When this happens the idle animation drops and we are left with a running animation
+	// that keeps looping even though from the game perspective the player is not moving.
+	//
+	// Q: How do we fix this without having to call animation play everytime?
+	// Or is calling animation play everytime an ok solution?
 	//
 	// Q: Do we force the blend to complete before moving to another animation?
-	//  If we play animation that is currently blending with another then we already force the blend to complete before
-	//  playing the animation 
+	// If we play animation that is currently blending with another then we already force the blend to complete before
+	// playing the animation 
+	
 	//if(AnimationPlayer->State == State)
 	//{
 	//	return;
@@ -329,13 +322,20 @@ Animate(game_state *GameState, animation_player *AnimationPlayer, animation_stat
 				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Idle), 0.2f);
 			}
 		} break;
+		case AnimationState_IdleToSprint:
+		{
+			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleToSprint), 0.2f);
+			PrintString("AnimationState_IdleToSprint");
+		} break;
 		case AnimationState_Running:
 		{
 			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), 0.2f);
+			PrintString("AnimationState_Running");
 		} break;
 		case AnimationState_Sprint:
 		{
 			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Sprint), 0.2f);
+			PrintString("AnimationState_Sprint");
 		} break;
 	}
 }
@@ -347,8 +347,11 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	Assert(AnimationPlayer->IsInitialized);
 
 	AnimationPlayer->CurrentTime += dt;
-	AnimationPlayer->TimeInCurrentState += dt;
 	AnimationPlayer->dt = dt;
+
+	//
+	// NOTE(Justin): Update each channel.
+	//
 
 	for(animation **AnimationPtr = &AnimationPlayer->Channels; *AnimationPtr;)
 	{
@@ -368,7 +371,9 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		}
 	}
 
-	// NOTE(Justin): Use scratch pose to do the animation mixing then copy to the final pose.
+	//
+	// NOTE(Justin): Use scratch pose to mix all channels into, then copy to the final pose.
+	//
 
 	model *Model = AnimationPlayer->Model;
 	TemporaryMemoryBegin(TempArena);
@@ -401,11 +406,11 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			for(u32 Index = 0; Index < Mesh->JointCount; ++Index)
 			{
 				joint *Joint = Mesh->Joints + Index;
-
 				s32 JointIndex = JointIndexGet(Info->JointNames, Info->JointCount, Joint->Name);
 				if(JointIndex != -1)
 				{
 					FinalPose->Positions[Index]		+= Factor * BlendedPose->Positions[JointIndex];
+					FinalPose->Scales[Index]		+= Factor * BlendedPose->Scales[JointIndex];
 
 					// TODO(Justin): Pre-process the aniamtions so that the orientations are in the known correct neighborhood.
 					quaternion Scaled = Factor * BlendedPose->Orientations[JointIndex];
@@ -415,7 +420,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 					}
 
 					FinalPose->Orientations[Index]	+= Scaled;
-					FinalPose->Scales[Index]		+= Factor * BlendedPose->Scales[JointIndex];
 				}
 			}
 		}
@@ -426,6 +430,10 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	{
 		Scale = 1.0f / FactorSum;
 	}
+
+	//
+	// NOTE(Justin): Scale mixed animation, then copy.
+	//
 
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 	{
@@ -447,7 +455,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 }
 
 internal void
-ModelUpdate(animation_player *AnimationPlayer)
+ModelUpdateJoints(animation_player *AnimationPlayer)
 {
 	model *Model = AnimationPlayer->Model;
 	if(Model)

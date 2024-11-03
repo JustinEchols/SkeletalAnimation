@@ -14,6 +14,13 @@ IsNewLine(u8 *S)
 }
 
 inline b32 
+IsSpace(char C)
+{
+	b32 Result = ((C == ' '));
+	return(Result);
+}
+
+inline b32 
 IsSpace(u8 *S)
 {
 	b32 Result = ((*S == ' '));

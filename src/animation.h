@@ -8,6 +8,7 @@ enum animation_name
 	Animation_Sprint,
 	Animation_Jump,
 	Animation_Wave,
+	Animation_IdleToSprint,
 };
 
 char *AnimationFiles[] =
@@ -18,8 +19,8 @@ char *AnimationFiles[] =
 	"..\\data\\XBot_FastRun.animation",
 	"..\\data\\XBot_Jumping.animation",
 	"..\\data\\XBot_Waving.animation",
-	"..\\data\\XBot_IdleLookAround.animation",
 	"..\\data\\XBot_IdleToSprint.animation",
+	"..\\data\\XBot_IdleLookAround.animation",
 	"..\\data\\XBot_FemaleWalk.animation",
 	"..\\data\\XBot_RightTurn.animation",
 	"..\\data\\XBot_LeftTurn.animation",
@@ -30,7 +31,6 @@ char *AnimationFiles[] =
 	"..\\data\\XBot_RunningToTurn.animation",
 	"..\\data\\XBot_RunningChangeDirection.animation",
 	"..\\data\\XBot_RunToStop.animation",
-
 };
 
 enum animation_state
@@ -83,7 +83,6 @@ enum animation_flags
 	AnimationFlags_CrossFadeOut = (1 << 6),
 };
 
-// NOTE(Justin): Should we add more fields to this or rename this to animation_transition?
 struct animation
 {
 	char *Name;
@@ -118,14 +117,11 @@ struct animation_player
 	memory_arena *Arena;
 	animation *Channels;
 	animation *FreeChannels;
-	//animation *AnimationPreviouslyAdded;
-	//animation *AnimationPreviouslyFreed;
 
 	u32 PlayingCount;
 	u32 RetiredCount;
 
 	f32 CurrentTime;
-	f32 TimeInCurrentState;
 	f32 dt;
 
 	key_frame *FinalPose;

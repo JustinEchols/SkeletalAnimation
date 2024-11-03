@@ -97,6 +97,13 @@ U32ArraySum(u32 *A, u32 Count)
 	return(Result);
 }
 
+internal void
+PrintString(char *String)
+{
+	OutputDebugStringA(String);
+	OutputDebugStringA("\n");
+}
+
 #include "intrinsics.h"
 #include "math.h"
 #include "strings.h"
@@ -131,6 +138,7 @@ struct entity
 	v3 dP;
 	v3 ddP;
 	quaternion Orientation;
+	f32 dThetha;
 };
 
 struct quad_vertex
@@ -160,10 +168,10 @@ struct game_state
 	memory_arena Arena;
 	memory_arena TempArena;
 
+	u32 PlayerEntityIndex;
 	u32 EntityCount;
 	entity Entities[4096];
 
-	u32 PlayerEntityIndex;
 	model *XBot;
 	model *Cube;
 	model *Sphere;
@@ -182,13 +190,17 @@ struct game_state
 	f32 Aspect;
 	f32 ZNear;
 	f32 ZFar;
-	mat4 PerspectiveTransform;
-	mat4 OrthographicTransform;
+
+	mat4 Perspective;
+	mat4 Orthographic;
 
 	f32 Angle;
 
 	u32 Shaders[3];
 	texture Textures[32];
+
+	font_info Arial;
+	font_quad FontQuad;
 };
 
 #define GAME_H

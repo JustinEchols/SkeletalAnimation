@@ -6,6 +6,7 @@
 #include "animation.cpp"
 #include "asset.cpp"
 #include "opengl.cpp"
+#include "font.cpp"
 
 internal entity * 
 EntityAdd(game_state *GameState, entity_type Type)
@@ -50,6 +51,17 @@ EntityTransform(entity *Entity, f32 Scale = 1.0f)
 				  Entity->P);
 
 	return(Result);
+}
+
+inline void
+EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
+{
+	quaternion Orientation = Entity->Orientation;
+	v3 FacingDirection = Entity->dP;
+	FacingDirection.z *= -1.0f;
+	f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
+	quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
+	Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
 }
 
 internal quad
@@ -102,25 +114,21 @@ CameraTransformUpdate(game_state *GameState)
 internal void
 PerspectiveTransformUpdate(game_state *GameState)
 {
+	// TODO(Justin): Probably dont want to hide the fact that we are re-calculating aspect here..
 	GameState->Aspect = (f32)Win32GlobalWindowWidth / (f32)Win32GlobalWindowHeight;
-	GameState->PerspectiveTransform = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
+	GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 }
-
-internal void
-PrintString(char *String)
-{
-	OutputDebugStringA(String);
-	OutputDebugStringA("\n");
-}
-
-
 
 internal void
 GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 {
+
 	game_state *GameState = (game_state *)GameMemory->PermanentStorage;
 	if(!GameMemory->IsInitialized)
 	{
+
+		FontInit(&GameState->FontQuad.Info, "c:/windows/fonts/arial.ttf");
+
 		ArenaInitialize(&GameState->Arena, (u8 *)GameMemory->PermanentStorage + sizeof(game_state),
 												 GameMemory->PermanentStorageSize - sizeof(game_state)); 
 
@@ -196,6 +204,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 					Animation->DefaultFlags = AnimationFlags_Looping |
 											  AnimationFlags_RemoveLocomotion;
 				} break;
+				case Animation_IdleToSprint:
+				{
+					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
+				} break;
 			}
 		}
 
@@ -207,19 +219,22 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		GameState->Aspect = (f32)Win32GlobalWindowWidth / (f32)Win32GlobalWindowHeight;
 		GameState->ZNear = 0.1f;
 		GameState->ZFar = 100.0f;
-		GameState->PerspectiveTransform = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
+		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 
 		GameState->Shaders[0] = GLProgramCreate(MainVS, MainFS);
 		GameState->Shaders[1] = GLProgramCreate(BasicVS, BasicFS);
 		GameState->Shaders[2] = GLProgramCreate(FontVS, FontFS);
+
 		u32 MainShader = GameState->Shaders[0];
 		u32 BasicShader = GameState->Shaders[1];
+		u32 FontShader = GameState->Shaders[2];
 
 		OpenGLAllocateAnimatedModel(GameState->XBot, MainShader);
 		OpenGLAllocateModel(GameState->Cube, BasicShader);
 		OpenGLAllocateModel(GameState->Sphere, BasicShader);
 		OpenGLAllocateModel(GameState->Arrow, BasicShader);
 		OpenGLAllocateQuad(&GameState->Quad, BasicShader);
+		OpenGLAllocateFontQuad(&GameState->FontQuad, FontShader);
 
 		GameMemory->IsInitialized = true;
 	}
@@ -241,12 +256,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	if(Keyboard->D.EndedDown)
 	{
 		ddP += V3(1.0f, 0.0f, 0.0f);
-	}
-
-	b32 IsWaving = false;
-	if(Keyboard->E.EndedDown)
-	{
-		IsWaving = true;
 	}
 
 	b32 Sprinting = false;
@@ -292,12 +301,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				Entity->P = P;
 				Entity->dP = dP;
 
-				quaternion Orientation = Entity->Orientation;
-				v3 FacingDirection = Entity->dP;
-				FacingDirection.z *= -1.0f;
-				f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
-				quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
-				Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
+				EntityOrientationUpdate(Entity, dt, AngularSpeed);
 
 				switch(Entity->AnimationState)
 				{
@@ -308,6 +312,25 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 						{
 							if(Sprinting)
 							{
+								//Entity->AnimationState = AnimationState_Sprint;
+								Entity->AnimationState = AnimationState_IdleToSprint;
+							}
+							else
+							{
+								Entity->AnimationState = AnimationState_Running;
+							}
+						}
+					} break;
+					case AnimationState_IdleToSprint:
+					{
+						if(Equal(Entity->ddP, V3(0.0f)))
+						{
+							Entity->AnimationState = AnimationState_Idle;
+						}
+						else
+						{
+							if(Sprinting)
+							{
 								Entity->AnimationState = AnimationState_Sprint;
 							}
 							else
@@ -315,6 +338,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 								Entity->AnimationState = AnimationState_Running;
 							}
 						}
+
 					} break;
 					case AnimationState_Running:
 					{
@@ -356,16 +380,17 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		}
 	}
 
-	//
-	// NOTE(Justin): Render.
-	//
-
 	entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
 	camera *Camera = &GameState->Camera;
 	Camera->P = CameraFollowingEntity->P + GameState->CameraOffsetFromPlayer;
+
+	//
+	// NOTE(Justin): Render.
+	//
 	
-	CameraTransformUpdate(GameState);
 	PerspectiveTransformUpdate(GameState);
+	CameraTransformUpdate(GameState);
+	GameState->Orthographic = Mat4OrthographicProjection(-1.0f *GameState->Aspect, GameState->Aspect, -1.0f, 1.0f, -1.0f, 1.0f);
 
 	glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
 	glEnable(GL_DEPTH_TEST);
@@ -388,6 +413,8 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	u32 BasicShader = GameState->Shaders[1];
 	u32 FontShader = GameState->Shaders[2];
 
+
+
 	//
 	// NOTE(Justin): Ground quad.
 	//
@@ -398,7 +425,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	mat4 S = Mat4Scale(1000.0f);
 
 	UniformMatrixSet(BasicShader, "View", GameState->CameraTransform);
-	UniformMatrixSet(BasicShader, "Projection", GameState->PerspectiveTransform);
+	UniformMatrixSet(BasicShader, "Projection", GameState->Perspective);
 	UniformBoolSet(BasicShader, "OverRideTexture", false);
 	UniformV3Set(BasicShader, "Ambient", V3(0.1f));
 	UniformV3Set(BasicShader, "LightDir", LightDir);
@@ -412,7 +439,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 			{
 				glUseProgram(MainShader);
 				UniformMatrixSet(MainShader, "View", GameState->CameraTransform);
-				UniformMatrixSet(MainShader, "Projection", GameState->PerspectiveTransform);
+				UniformMatrixSet(MainShader, "Projection", GameState->Perspective);
 				UniformV3Set(MainShader, "CameraP", Camera->P);
 				UniformV3Set(MainShader, "Ambient", V3(0.1f));
 				UniformV3Set(MainShader, "CameraP", Camera->P);
@@ -421,7 +448,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				animation_player *AnimationPlayer = &GameState->AnimationPlayer;
 				Animate(GameState, AnimationPlayer, Entity->AnimationState);
 				AnimationPlayerUpdate(AnimationPlayer, &GameState->TempArena, dt);
-				ModelUpdate(AnimationPlayer);
+				ModelUpdateJoints(AnimationPlayer);
 
 				mat4 Transform = EntityTransform(Entity, 0.025f);
 				model *Model = GameState->XBot;
@@ -439,7 +466,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 				glUseProgram(BasicShader);
 				UniformMatrixSet(BasicShader, "View", GameState->CameraTransform);
-				UniformMatrixSet(BasicShader, "Projection", GameState->PerspectiveTransform);
+				UniformMatrixSet(BasicShader, "Projection", GameState->Perspective);
 				UniformBoolSet(BasicShader, "OverRideTexture", true);
 				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
 				UniformV3Set(BasicShader, "LightDir", LightDir);
@@ -454,12 +481,22 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				UniformV4Set(BasicShader, "Color", V4(1.0f));
 				//OpenGLDrawModel(GameState->Sphere, BasicShader, Transform);
 
+
+				//
+				// NOTE(Justin): Test font.
+				//
+
+				char Buff[64];
+				sprintf(Buff, "%f %f %f", Entity->P.x, Entity->P.y, Entity->P.z);
+				glUseProgram(FontShader);
+				OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, 0.0f), 0.5f, V3(1.0f), Win32GlobalWindowWidth, Win32GlobalWindowHeight);
+
 			} break;
 			case EntityType_Cube:
 			{
 				glUseProgram(BasicShader);
 				UniformMatrixSet(BasicShader, "View", GameState->CameraTransform);
-				UniformMatrixSet(BasicShader, "Projection", GameState->PerspectiveTransform);
+				UniformMatrixSet(BasicShader, "Projection", GameState->Perspective);
 				UniformBoolSet(BasicShader, "OverRideTexture", true);
 				UniformV3Set(BasicShader, "Ambient", V3(1.0f));
 				UniformV3Set(BasicShader, "LightDir", LightDir);
@@ -470,6 +507,8 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 			} break;
 		};
 	}
+
+
 
 	ArenaClear(&GameState->TempArena);
 }

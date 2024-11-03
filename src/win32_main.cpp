@@ -1,12 +1,19 @@
 
-#include "platform.h"
+// NOTE(Justin): Must include this here. Need to further investigate what is causing the conflicts..
+#include <ft2build.h>
+#include FT_FREETYPE_H
 
+#include "platform.h"
 #include <windows.h>
+
 #include <stdio.h>
 #include <math.h>
 #include <gl/gl.h>
 #include "wglext.h"
 #include "glext.h"
+
+
+
 
 #include "win32_file_io.cpp"
 #include "win32_opengl.cpp"
