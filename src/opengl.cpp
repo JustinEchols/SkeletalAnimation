@@ -124,39 +124,6 @@ void main()
 	Result = vec4(Ambient + Diffuse, A);
 })";
 
-#if 0
-char *FontVS = R"(
-#version 430 core
-layout (location = 0) in vec2 P;
-layout (location = 1) in vec2 Tex;
-
-uniform vec2 Offset;
-uniform vec2 Scale;
-
-out vec2 UV;
-void main()
-{
-	float X = Scale.x * (P.x + Offset.x);
-	float Y = Scale.y * (P.y + Offset.y);
-	gl_Position = vec4(X, Y, 0.0, 1.0);
-	UV = Tex;
-})";
-
-char *FontFS= R"(
-#version 430 core
-
-in vec2 UV;
-
-uniform sampler2D Texture;
-uniform vec4 Color;
-
-out vec4 Result;
-void main()
-{
-	float R = texture(Texture, UV).r;
-	Result = Color * vec4(1.0, 1.0, 1.0, R);
-})";
-#else
 char *FontVS = R"(
 #version 430 core
 layout (location = 0) in vec4 VertexXYUV;
@@ -185,7 +152,6 @@ void main()
 	float A = texture(Texture, UV).r;
 	Result = vec4(Color, A);
 })";
-#endif
 
 
 internal void 
