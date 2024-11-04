@@ -52,7 +52,7 @@ MemoryCopy(memory_index Size, void *SrcInit, void *DestInit)
 }
 
 internal void
-MemoryZero(memory_index Size, void *Src)
+MemoryZero(void * Src, memory_index Size)
 {
 	u8 *P = (u8 *)Src;
 	while(Size--)
@@ -83,18 +83,6 @@ TemporaryMemoryEnd(temporary_memory TempMemory)
 	Arena->Used = TempMemory.Used;
 	Assert(Arena->TempCount > 0);
 	Arena->TempCount--;
-}
-
-
-internal u32
-U32ArraySum(u32 *A, u32 Count)
-{
-	u32 Result = 0;
-	for(u32 Index = 0; Index < Count; ++Index)
-	{
-		Result += A[Index];
-	}
-	return(Result);
 }
 
 internal void
@@ -138,9 +126,11 @@ struct entity
 	v3 dP;
 	v3 ddP;
 	quaternion Orientation;
-	f32 dThetha;
+	f32 Theta;
+	f32 dTheta;
 };
 
+// TODO(Justin): quad_3d_vertex?
 struct quad_vertex
 {
 	v3 P;
@@ -148,6 +138,7 @@ struct quad_vertex
 	v2 UV;
 };
 
+// TODO(Justin): quad_3d?
 struct quad
 {
 	u32 VA;
@@ -162,6 +153,9 @@ struct camera
 	v3 P;
 	v3 Direction;
 };
+
+
+
 
 struct game_state
 {
@@ -186,20 +180,19 @@ struct game_state
 	v3 CameraOffsetFromPlayer;
 	mat4 CameraTransform;
 
+	f32 TimeScale;
 	f32 FOV;
 	f32 Aspect;
 	f32 ZNear;
 	f32 ZFar;
 
 	mat4 Perspective;
-	mat4 Orthographic;
 
 	f32 Angle;
 
-	u32 Shaders[3];
+	u32 Shaders[4];
 	texture Textures[32];
 
-	font_info Arial;
 	font_quad FontQuad;
 };
 

@@ -154,6 +154,29 @@ void main()
 })";
 
 
+char *QuadVS = R"(
+#version 430 core
+layout (location = 1) in vec2 Offset;
+layout (location = 2) in vec4 MinMax;
+void main()
+{
+	vec2 Center = 0.5*(MinMax.xy + MinMax.zw);
+	vec2 HalfDim = 0.5(MinMax.zy - MinMax.xy);
+	vec2 P = Center + Offset * HalfDim;
+	gl_Position = vec4(P, 0.0, 1.0);
+})";
+
+char *QuadFS = R"(
+#version 430 core
+uniform vec3 Color;
+uniform float Alpha;
+
+out vec4 Result;
+void main()
+{
+	Result = vec4(Color, Alpha);
+})";
+
 internal void 
 GLDebugCallback(GLenum Source, GLenum Type, GLuint ID, GLenum Severity, GLsizei Length, const GLchar *Message, const void *UserParam)
 {
@@ -395,8 +418,8 @@ OpenGLAllocateFontQuad(font_quad *Quad, u32 ShaderProgram)
 	glBindVertexArray(Quad->VA);
 	glGenBuffers(1, &Quad->VB);
 	glBindBuffer(GL_ARRAY_BUFFER, Quad->VB);
-	glBufferData(GL_ARRAY_BUFFER, ArrayCount(Quad->Vertices) * sizeof(font_quad_vertex), 0, GL_DYNAMIC_DRAW);
-	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, sizeof(font_quad_vertex), 0);
+	glBufferData(GL_ARRAY_BUFFER, 6 * (4 * sizeof(f32)), 0, GL_DYNAMIC_DRAW);
+	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(f32), 0);
 	glEnableVertexAttribArray(0);
 
 	s32 ExpectedAttributeCount = 1;
@@ -518,7 +541,8 @@ OpenGLDrawQuad(quad *Quad, u32 ShaderProgram, mat4 Transform, u32 TextureHandle)
 }
 
 internal void
-OpenGLDrawText(char *Text, u32 Shader, font_quad *Quad, v2 P, f32 Scale, v3 Color, s32 WindowWidth, s32 WindowHeight)
+OpenGLDrawText(char *Text, u32 Shader, font_quad *Quad, v2 P, f32 Scale, v3 Color,
+		s32 WindowWidth, s32 WindowHeight)
 {
 	glUseProgram(Shader);
 	UniformV3Set(Shader, "Color", Color);
@@ -527,31 +551,34 @@ OpenGLDrawText(char *Text, u32 Shader, font_quad *Quad, v2 P, f32 Scale, v3 Colo
 	{
 		glyph Glyph = Quad->Info.Glyphs[*C];
 
-		f32 X = P.x + Glyph.Bearing.x * Scale;
-		f32 Y = P.y - (Glyph.Dim.y - Glyph.Bearing.y) * Scale;
-
-		f32 Width = Glyph.Dim.x * Scale;
-		f32 Height = Glyph.Dim.y * Scale;
-
-		f32 Vertices[6][4] =
+		if(!IsSpace(*C))
 		{
-			{X,			Y + Height, 0.0f, 0.0f},
-			{X,			Y,			0.0f, 1.0f},
-			{X + Width, Y,			1.0f, 1.0f},
+			f32 X = P.x + Glyph.Bearing.x * Scale;
+			f32 Y = P.y - (Glyph.Dim.y - Glyph.Bearing.y) * Scale;
 
-			{X,			Y + Height, 0.0f, 0.0f},
-			{X + Width,	Y,			1.0f, 1.0f},
-			{X + Width, Y + Height,	1.0f, 0.0f},
-		};
+			f32 Width = Glyph.Dim.x * Scale;
+			f32 Height = Glyph.Dim.y * Scale;
 
-		glActiveTexture(GL_TEXTURE0);
-		UniformBoolSet(Shader, "Texture", 0);
-		UniformF32Set(Shader, "WindowWidth", (f32)WindowWidth);
-		UniformF32Set(Shader, "WindowHeight", (f32)WindowHeight);
-		glBindTexture(GL_TEXTURE_2D, Glyph.TextureHandle);
-		glBindBuffer(GL_ARRAY_BUFFER, Quad->VB);
-		glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+			f32 Vertices[6][4] =
+			{
+				{X,			Y + Height, 0.0f, 0.0f},
+				{X,			Y,			0.0f, 1.0f},
+				{X + Width, Y,			1.0f, 1.0f},
+
+				{X,			Y + Height, 0.0f, 0.0f},
+				{X + Width,	Y,			1.0f, 1.0f},
+				{X + Width, Y + Height,	1.0f, 0.0f},
+			};
+
+			glActiveTexture(GL_TEXTURE0);
+			UniformBoolSet(Shader, "Texture", 0);
+			UniformF32Set(Shader, "WindowWidth", (f32)WindowWidth);
+			UniformF32Set(Shader, "WindowHeight", (f32)WindowHeight);
+			glBindTexture(GL_TEXTURE_2D, Glyph.TextureHandle);
+			glBindBuffer(GL_ARRAY_BUFFER, Quad->VB);
+			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
+			glDrawArrays(GL_TRIANGLES, 0, 6);
+		}
 
 		P.x += (Glyph.Advance >> 6) * Scale;
 

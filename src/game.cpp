@@ -25,8 +25,10 @@ PlayerAdd(game_state *GameState)
 	Entity->P = V3(0.0f, 0.0f, -10.0f);
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
-	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
-	Entity->AnimationState = AnimationState_Invalid;
+	Entity->Theta = -180.0f;
+	Entity->dTheta = 0.0f;
+	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Entity->Theta);
+	Entity->AnimationState = AnimationState_Idle;
 }
 
 internal void
@@ -53,6 +55,7 @@ EntityTransform(entity *Entity, f32 Scale = 1.0f)
 	return(Result);
 }
 
+#if 1
 inline void
 EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 {
@@ -62,6 +65,19 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 	f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
 	quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
 	Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
+}
+#else
+#endif
+
+inline void
+OrientationUpdate(quaternion *Orientation, v3 FacingDirection, f32 dt, f32 AngularSpeed)
+{
+	//quaternion Orientation = Entity->Orientation;
+	//v3 FacingDirection = Entity->dP;
+	FacingDirection.z *= -1.0f;
+	f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
+	quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
+	*Orientation = RotateTowards(*Orientation, Target, dt, AngularSpeed);
 }
 
 internal quad
@@ -138,7 +154,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		memory_arena *Arena = &GameState->Arena;
 
 		GameState->Textures[0] = TextureLoad("..\\data\\textures\\tile_gray.bmp");
-		GameState->Textures[1] = TextureLoad("..\\data\\textures\\left-arrow.png");
+		GameState->Textures[1] = TextureLoad("..\\data\\textures\\left_arrow.png");
 		OpenGLAllocateTexture(&GameState->Textures[0]);
 		OpenGLAllocateTexture(&GameState->Textures[1]);
 
@@ -204,9 +220,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 					Animation->DefaultFlags = AnimationFlags_Looping |
 											  AnimationFlags_RemoveLocomotion;
 				} break;
-				case Animation_IdleToSprint:
+				case Animation_JumpForward:
 				{
-					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
+					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion |
+											  AnimationFlags_MustFinish;
 				} break;
 			}
 		}
@@ -215,6 +232,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		CameraTransformUpdate(GameState);
 		GameState->CameraOffsetFromPlayer = V3(0.0f, 5.0f, 10.0f);
 
+		GameState->TimeScale = 1.0f;
 		GameState->FOV = DegreeToRad(45.0f);
 		GameState->Aspect = (f32)Win32GlobalWindowWidth / (f32)Win32GlobalWindowHeight;
 		GameState->ZNear = 0.1f;
@@ -235,6 +253,48 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		OpenGLAllocateModel(GameState->Arrow, BasicShader);
 		OpenGLAllocateQuad(&GameState->Quad, BasicShader);
 		OpenGLAllocateFontQuad(&GameState->FontQuad, FontShader);
+
+#if 0
+		u32 FBO;
+		glGenFramebuffers(1, &FBO);
+		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
+
+
+		u32 FrameBufferTexture;
+		glGenTextures(1, &FrameBufferTexture);
+		glBindTexture(GL_TEXTURE_2D, FrameBufferTexture);
+		s32 TextureWidth = 256;
+		s32 TextureHeight = 256;
+
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+		glTexImage2D(GL_TEXTURE_2D,
+				0,
+				GL_RGBA8,
+				TextureWidth,
+				TextureHeight,
+				0,
+				GL_RGBA,
+				GL_UNSIGNED_BYTE,
+				0);
+
+		u32 RenderBO;
+		glGenRenderbuffers(1, &RenderBO);
+		glBindRenderbuffer(GL_RENDERBUFFER, RenderBO);
+		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, TextureWidth, TextureHeight);
+		glBindRenderbuffer(GL_RENDERBUFFER, 0);
+
+		glFramebuggerRenderbugger(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RenderBO);
+
+		if(glCheckFramebuggerStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+		{
+			PrintString("ERROR: Framebugger is not complete");
+			glBindFramebuffer(GL_FRAMEBUFFER, 0);
+		}
+
+#endif
+
 
 		GameMemory->IsInitialized = true;
 	}
@@ -263,6 +323,23 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	{
 		Sprinting = true;
 	}
+	
+	b32 Jumping = false;
+	if(Keyboard->Space.EndedDown)
+	{
+		Jumping = true;
+	}
+
+	if(Keyboard->Add.EndedDown)
+	{
+		GameState->TimeScale *= 1.1f;
+	}
+
+	if(Keyboard->Subtract.EndedDown)
+	{
+		GameState->TimeScale *= 0.9f;
+	}
+
 
 	if(!Equal(ddP, V3(0.0f)))
 	{
@@ -273,6 +350,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	}
 
 	f32 dt = GameInput->DtForFrame;
+	dt *= GameState->TimeScale;
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
 		entity *Entity = GameState->Entities + EntityIndex;
@@ -283,13 +361,14 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				v3 OldPlayerddP = Entity->ddP;
 				Entity->ddP = ddP;
 
-				f32 PlayerSpeed = 50.0f;
+				f32 PlayerSpeed = 100.0f;
+				//f32 PlayerSpeed = 50.0f;
 				if(Sprinting)
 				{
 					PlayerSpeed *= 1.5f;
 				}
 
-				f32 PlayerDrag = -7.0f;
+				f32 PlayerDrag = -9.0f;
 				f32 AngularSpeed = 10.0f;
 				ddP = PlayerSpeed * ddP;
 				ddP += PlayerDrag * Entity->dP;
@@ -312,25 +391,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 						{
 							if(Sprinting)
 							{
-								//Entity->AnimationState = AnimationState_Sprint;
-								Entity->AnimationState = AnimationState_IdleToSprint;
-							}
-							else
-							{
-								Entity->AnimationState = AnimationState_Running;
-							}
-						}
-					} break;
-					case AnimationState_IdleToSprint:
-					{
-						if(Equal(Entity->ddP, V3(0.0f)))
-						{
-							Entity->AnimationState = AnimationState_Idle;
-						}
-						else
-						{
-							if(Sprinting)
-							{
 								Entity->AnimationState = AnimationState_Sprint;
 							}
 							else
@@ -338,7 +398,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 								Entity->AnimationState = AnimationState_Running;
 							}
 						}
-
 					} break;
 					case AnimationState_Running:
 					{
@@ -351,6 +410,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 							if(Sprinting)
 							{
 								Entity->AnimationState = AnimationState_Sprint;
+							}
+
+							if(Jumping)
+							{
+								Entity->AnimationState = AnimationState_JumpForward;
 							}
 						}
 
@@ -369,12 +433,31 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 							}
 						}
 					} break;
+					case AnimationState_JumpForward:
+					{
+						if(!Jumping)
+						{
+							if(Equal(Entity->ddP, V3(0.0f)))
+							{
+								Entity->AnimationState = AnimationState_Idle;
+							}
+							else if(Sprinting)
+							{
+								Entity->AnimationState = AnimationState_Sprint;
+							}
+							else
+							{
+								Entity->AnimationState = AnimationState_Running;
+							}
+						}
+					} break;
 					case AnimationState_Invalid:
 					{
 						// NOTE(Justin): AnimationState is initalized to invalid.
 						// First time this is hit, we set the state to idle.
 						Entity->AnimationState = AnimationState_Idle;
 					} break;
+
 				};
 			} break;
 		}
@@ -384,13 +467,24 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	camera *Camera = &GameState->Camera;
 	Camera->P = CameraFollowingEntity->P + GameState->CameraOffsetFromPlayer;
 
+
+
 	//
 	// NOTE(Justin): Render.
+	//
+
+	//
+	// TODO(Justin): Shadow Pass.
+	//
+
+	v3 LightDir = V3(1.0f, -1.0f, 0.0f);
+
+	//
+	// NOTE(Justin): Final pass.
 	//
 	
 	PerspectiveTransformUpdate(GameState);
 	CameraTransformUpdate(GameState);
-	GameState->Orthographic = Mat4OrthographicProjection(-1.0f *GameState->Aspect, GameState->Aspect, -1.0f, 1.0f, -1.0f, 1.0f);
 
 	glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
 	glEnable(GL_DEPTH_TEST);
@@ -405,15 +499,9 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
-	GameState->Angle += dt;
-	f32 Angle = GameState->Angle;
-	v3 LightDir = V3(0.0f, -1.0f, 0.0f);
-
 	u32 MainShader = GameState->Shaders[0];
 	u32 BasicShader = GameState->Shaders[1];
 	u32 FontShader = GameState->Shaders[2];
-
-
 
 	//
 	// NOTE(Justin): Ground quad.
@@ -437,6 +525,14 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		{
 			case EntityType_Player:
 			{
+				animation_player *AnimationPlayer = &GameState->AnimationPlayer;
+				Animate(GameState, AnimationPlayer, Entity->AnimationState);
+				AnimationPlayerUpdate(AnimationPlayer, &GameState->TempArena, dt);
+				ModelJointsUpdate(AnimationPlayer);
+
+				mat4 Transform = EntityTransform(Entity, 0.025f);
+				model *Model = GameState->XBot;
+
 				glUseProgram(MainShader);
 				UniformMatrixSet(MainShader, "View", GameState->CameraTransform);
 				UniformMatrixSet(MainShader, "Projection", GameState->Perspective);
@@ -444,14 +540,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				UniformV3Set(MainShader, "Ambient", V3(0.1f));
 				UniformV3Set(MainShader, "CameraP", Camera->P);
 				UniformV3Set(MainShader, "LightDir", LightDir);
-
-				animation_player *AnimationPlayer = &GameState->AnimationPlayer;
-				Animate(GameState, AnimationPlayer, Entity->AnimationState);
-				AnimationPlayerUpdate(AnimationPlayer, &GameState->TempArena, dt);
-				ModelUpdateJoints(AnimationPlayer);
-
-				mat4 Transform = EntityTransform(Entity, 0.025f);
-				model *Model = GameState->XBot;
 				OpenGLDrawAnimatedModel(Model, MainShader, Transform);
 
 				//
@@ -481,16 +569,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				UniformV4Set(BasicShader, "Color", V4(1.0f));
 				//OpenGLDrawModel(GameState->Sphere, BasicShader, Transform);
 
-
-				//
-				// NOTE(Justin): Test font.
-				//
-
-				char Buff[64];
-				sprintf(Buff, "%f %f %f", Entity->P.x, Entity->P.y, Entity->P.z);
-				glUseProgram(FontShader);
-				OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, 0.0f), 0.5f, V3(1.0f), Win32GlobalWindowWidth, Win32GlobalWindowHeight);
-
 			} break;
 			case EntityType_Cube:
 			{
@@ -508,7 +586,31 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		};
 	}
 
+	//
+	// NOTE(Justin): Test font/ui.
+	//
 
+	entity *Entity = GameState->Entities + GameState->PlayerEntityIndex;
+
+	glUseProgram(FontShader);
+
+	char Buff[64];
+	sprintf(Buff, "%s %f", "time scale: ", GameState->TimeScale);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, (f32)Win32GlobalWindowHeight - 20.0f), 0.35f, V3(1.0f), Win32GlobalWindowWidth, Win32GlobalWindowHeight);
+
+	MemoryZero(Buff, sizeof(Buff));
+	sprintf(Buff, "%s %f %f %f", "p: ", Entity->P.x, Entity->P.y, Entity->P.z);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, (f32)Win32GlobalWindowHeight - 40.0f), 0.35f, V3(1.0f), Win32GlobalWindowWidth, Win32GlobalWindowHeight);
+
+	MemoryZero(Buff, sizeof(Buff));
+	f32 Angle = DirectionToEuler(-1.0f * Entity->dP).yaw;
+	sprintf(Buff, "%s %f", "yaw: ", Angle);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, (f32)Win32GlobalWindowHeight - 60.0f), 0.35f, V3(1.0f), Win32GlobalWindowWidth, Win32GlobalWindowHeight);
+
+	MemoryZero(Buff, sizeof(Buff));
+	f32 Speed = Length(Entity->dP);
+	sprintf(Buff, "%s %f", "speed: ", Speed);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, (f32)Win32GlobalWindowHeight - 80.0f), 0.35f, V3(1.0f), Win32GlobalWindowWidth, Win32GlobalWindowHeight);
 
 	ArenaClear(&GameState->TempArena);
 }

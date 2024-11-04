@@ -1,12 +1,14 @@
 #if !defined(MATH_UTIL_H)
 
-//#include "math.h"
-
 union v2
 {
 	struct
 	{
 		f32 x, y;
+	};
+	struct
+	{
+		f32 width, height;
 	};
 	f32 E[2];
 };
@@ -16,6 +18,10 @@ union v2i
 	struct
 	{
 		s32 x, y;
+	};
+	struct
+	{
+		s32 width, height;
 	};
 	s32 E[2];
 };
@@ -82,6 +88,11 @@ union quaternion
 		f32 z;
 		f32 w;
 	};
+	struct
+	{
+		v3 V;
+		f32 w;
+	};
 	f32 E[4];
 };
 
@@ -90,6 +101,23 @@ struct sqt
 	v3 Position;
 	quaternion Orientation;
 	v3 Scale;
+};
+
+union rect
+{
+	struct
+	{
+		f32 x0;
+		f32 y0;
+		f32 x1;
+		f32 y1;
+	};
+	struct 
+	{
+		v2 Min;
+		v2 Max;
+	};
+	f32 E[4];
 };
 
 inline v2
@@ -208,13 +236,6 @@ SQT(v3 Scale, quaternion Orientation, v3 Position)
 	Result.Position = Position;
 }
 
-inline f32
-Lerp(f32 A, f32 t, f32 B)
-{
-	f32 Result = (1 - t) * A + t * B;
-	return(Result);
-}
-
 inline v3
 V3(f32 C)
 {
@@ -251,6 +272,13 @@ inline f32
 Square(f32 C)
 {
 	f32 Result = C * C;
+	return(Result);
+}
+
+inline f32
+Lerp(f32 A, f32 t, f32 B)
+{
+	f32 Result = (1 - t) * A + t * B;
 	return(Result);
 }
 
@@ -293,6 +321,64 @@ Clamp(u32 Min, u32 X, u32 Max)
 	}
 
 	return(Result);
+}
+
+//
+// NOTE(Justin): v2 operations
+//
+
+inline v2
+operator +(v2 A, v2 B)
+{
+	v2 Result;
+
+	Result.x = A.x + B.x;
+	Result.y = A.y + B.y;
+
+	return(Result);
+}
+
+inline v2 &
+operator +=(v2 &A, v2 B)
+{
+	A = A + B;
+	return(A);
+}
+
+inline v2
+operator -(v2 A, v2 B)
+{
+	v2 Result;
+
+	Result.x = A.x - B.x;
+	Result.y = A.y - B.y;
+
+	return(Result);
+}
+
+inline v2
+operator *(f32 C, v2 V)
+{
+	v2 Result = {};
+
+	Result.x = C * V.x;
+	Result.y = C * V.y;
+
+	return(Result);
+}
+
+inline v2
+operator *(v2 V, f32 C)
+{
+	v2 Result = C * V;
+	return(Result);
+}
+
+inline v2 &
+operator *=(v2 &V, f32 C)
+{
+	V = C * V;
+	return(V);
 }
 
 //
@@ -881,6 +967,19 @@ Quaternion(v3 Axis, f32 Angle)
 }
 
 inline quaternion
+Quaternion(v3 V)
+{
+	quaternion Result;
+
+	Result.x = V.x;
+	Result.y = V.y;
+	Result.z = V.z;
+	Result.w = 0.0f;
+
+	return(Result);
+}
+
+inline quaternion
 Conjugate(quaternion Q)
 {
 	quaternion Result = Q;
@@ -902,6 +1001,14 @@ operator+(quaternion Q1, quaternion Q2)
 	Result.z = Q1.z + Q2.z;
 	Result.w = Q1.w + Q2.w;
 
+	return(Result);
+}
+
+inline v3
+operator*(quaternion Q, v3 V)
+{
+	v3 T = 2.0f * Cross(Q.V, V);
+	v3 Result = V + Q.w * T + Cross(Q.V, T);
 	return(Result);
 }
 
@@ -953,19 +1060,6 @@ inline void
 operator*=(quaternion &Q1, quaternion Q2)
 {
 	Q1 = Q1 * Q2;
-}
-
-inline quaternion
-Quaternion(v3 V)
-{
-	quaternion Result;
-
-	Result.x = V.x;
-	Result.y = V.y;
-	Result.z = V.z;
-	Result.w = 0.0f;
-
-	return(Result);
 }
 
 inline v3
@@ -1198,6 +1292,33 @@ RotateTowards(quaternion Current, quaternion Target, f32 dt, f32 AngularSpeed)
 	return(Result);
 }
 
+//
+// NOTE(Justin): rect operations
+//
+
+inline v2
+RectCenter(rect R)
+{
+	v2 Result = 0.5f*(R.Min + R.Max);
+	return(Result);
+}
+
+inline v2
+RectHalfDim(rect R)
+{
+	v2 Result = 0.5f*(R.Max - R.Min);
+	return(Result);
+}
+
+inline b32
+IsInRect(rect R, v2 P)
+{
+	b32 Result = ((R.Min.x <= P.x) &&
+			     (P.x <= R.Max.x) &&
+				 (R.Min.y <= P.y) &&
+				 (P.y <= R.Max.y));
+	return(Result);
+}
 
 #define MATH_UTIL_H 
 #endif

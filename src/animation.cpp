@@ -13,6 +13,13 @@ FlagIsSet(animation *Animation, u32 Flag)
 }
 
 inline b32
+Playing(animation *Animation)
+{
+	b32 Result = FlagIsSet(Animation, AnimationFlags_Playing);
+	return(Result);
+}
+
+inline b32
 Finished(animation *Animation)
 {
 	b32 Result = FlagIsSet(Animation, AnimationFlags_Finished);
@@ -70,6 +77,7 @@ JointTransformInterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 Jo
 	v3 Scale2 = Next->Scales[JointIndex];
 
 	v3 P = Lerp(P1, t, P2);
+
 	quaternion Q = LerpShortest(Q1, t, Q2);
 	v3 Scale = Lerp(Scale1, t, Scale2);
 
@@ -93,7 +101,7 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 {
 	if(Model)
 	{
-		AnimationPlayer->State = AnimationState_Invalid;
+		AnimationPlayer->State = AnimationState_Idle;
 		AnimationPlayer->Arena = Arena;
 		AnimationPlayer->Channels = 0;
 		AnimationPlayer->FreeChannels = 0;
@@ -138,8 +146,8 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 		{
 			//Current->BlendDuration = 0.2f;
 			Current->BlendDuration = BlendDuration;
-			Current->BlendingOut = true;
 			Current->BlendCurrentTime = 0.0f;
+			Current->BlendingOut = true;
 		}
 	}
 
@@ -306,6 +314,7 @@ Animate(game_state *GameState, animation_player *AnimationPlayer, animation_stat
 	//	return;
 	//}
 
+#if 1
 	animation_state OldState = AnimationPlayer->State;
 	AnimationPlayer->State = State;
 
@@ -313,31 +322,94 @@ Animate(game_state *GameState, animation_player *AnimationPlayer, animation_stat
 	{
 		case AnimationState_Idle:
 		{
+			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Idle), 0.2f);
+		} break;
+		case AnimationState_Running:
+		{
+			if(OldState == AnimationState_JumpForward)
+			{
+				if(AnimationPlayer->PlayingCount > 0)
+				{
+					AnimationPlayer->State = OldState;
+					//AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), 0.5f);
+				}
+			}
+			else
+			{
+				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), 0.2f);
+			}
+		} break;
+		case AnimationState_Sprint:
+		{
+			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Sprint), 0.2f);
+		} break;
+		case AnimationState_JumpForward:
+		{
+			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_JumpForward), 0.2f);
+		} break;
+	}
+#else
+	animation_state OldState = AnimationPlayer->State;
+	switch(OldState)
+	{
+		case AnimationState_Idle:
+		{
+			animation *Idle = AnimationGet(GameState, Animation_Idle);
+
 			if(OldState == AnimationState_Invalid)
 			{
 				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Idle));
+			}
+			else if(OldState == AnimationState_JumpForward)
+			{
+				animation *JumpForward = AnimationGet(GameState, Animation_JumpForward);
+				if(!Finished(JumpForward))
+				{
+				}
 			}
 			else
 			{
 				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Idle), 0.2f);
 			}
 		} break;
-		case AnimationState_IdleToSprint:
-		{
-			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleToSprint), 0.2f);
-			PrintString("AnimationState_IdleToSprint");
-		} break;
 		case AnimationState_Running:
 		{
-			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), 0.2f);
-			PrintString("AnimationState_Running");
+			if(OldState == AnimationState_JumpForward)
+			{
+				animation *JumpForward = AnimationGet(GameState, Animation_JumpForward);
+				if(!Finished(JumpForward))
+				{
+				}
+			}
+			else
+			{
+				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), 0.2f);
+			}
 		} break;
 		case AnimationState_Sprint:
 		{
-			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Sprint), 0.2f);
-			PrintString("AnimationState_Sprint");
+			if(OldState == AnimationState_JumpForward)
+			{
+				animation *JumpForward = AnimationGet(GameState, Animation_JumpForward);
+				if(!Finished(JumpForward))
+				{
+				}
+			}
+			else
+			{
+				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Sprint), 0.2f);
+			}
+		} break;
+		case AnimationState_JumpForward:
+		{
+			animation *JumpForward = AnimationGet(GameState, Animation_JumpForward);
+			if(Finished(JumpForward) && !CrossFading(JumpForward))
+			{
+				AnimationPlayer->State = State;
+			}
 		} break;
 	}
+#endif
 }
 
 
@@ -384,9 +456,9 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		key_frame *Pose = TempPose + MeshIndex;
 		mesh *Mesh = Model->Meshes + MeshIndex;
 		AllocateJointXforms(TempArena, Pose, Mesh->JointCount);
-		MemoryZero(Mesh->JointCount * sizeof(v3), Pose->Positions);
-		MemoryZero(Mesh->JointCount * sizeof(quaternion), Pose->Orientations);
-		MemoryZero(Mesh->JointCount * sizeof(v3), Pose->Scales);
+		MemoryZero(Pose->Positions, Mesh->JointCount * sizeof(v3));
+		MemoryZero(Pose->Orientations, Mesh->JointCount * sizeof(quaternion));
+		MemoryZero(Pose->Scales, Mesh->JointCount * sizeof(v3));
 		
 	}
 
@@ -455,7 +527,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 }
 
 internal void
-ModelUpdateJoints(animation_player *AnimationPlayer)
+ModelJointsUpdate(animation_player *AnimationPlayer)
 {
 	model *Model = AnimationPlayer->Model;
 	if(Model)

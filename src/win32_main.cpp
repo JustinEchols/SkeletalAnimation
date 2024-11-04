@@ -11,20 +11,40 @@
 #include <gl/gl.h>
 #include "wglext.h"
 #include "glext.h"
-
-
-
-
 #include "win32_file_io.cpp"
 #include "win32_opengl.cpp"
 
+// NOTE(Justin): Globals
 global_varible b32 Win32GlobalRunning;
 global_varible s64 Win32GlobalTicksPerSecond;
 global_varible int Win32GlobalWindowWidth;
 global_varible int Win32GlobalWindowHeight;
+global_varible f32 Win32GlobalMouseX;
+global_varible f32 Win32GlobalMouseY;
 
 #include "game.h"
 #include "game.cpp"
+
+// TODO(Justin): Routine hides the fact that globals are updated. Is this ok to do?
+internal void 
+Win32MousePositionGet(HWND Window)
+{
+	POINT Mouse;
+	GetCursorPos(&Mouse);
+	ScreenToClient(Window, &Mouse);
+	Win32GlobalMouseX = (f32)Mouse.x;
+	Win32GlobalMouseY = (f32)Win32GlobalWindowHeight - (f32)Mouse.y; // Invert MouseY st y=0 is the bottom of the client area
+}
+
+// TODO(Justin): Routine hides the fact that globals are updated. Is this ok to do?
+internal void
+Win32ClientRectGet(HWND Window)
+{
+	RECT ClientR = {};
+	GetClientRect(Window, &ClientR);
+	Win32GlobalWindowWidth = ClientR.right - ClientR.left;
+	Win32GlobalWindowHeight = ClientR.bottom - ClientR.top;
+}
 
 LRESULT CALLBACK
 Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
@@ -39,10 +59,7 @@ Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
 		} break;
 		case WM_SIZE:
 		{
-			RECT ClientR = {};
-			GetClientRect(Window, &ClientR);
-			Win32GlobalWindowWidth = ClientR.right - ClientR.left;
-			Win32GlobalWindowHeight = ClientR.bottom - ClientR.top;
+			Win32ClientRectGet(Window);
 			glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
 		} break;
 		case WM_MOVE:
@@ -61,6 +78,16 @@ Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
     }
 
 	return(Result);
+}
+
+internal void 
+Win32KeyStateUpdate(game_button *Button, b32 IsDown)
+{
+	if(Button->EndedDown != IsDown)
+	{
+		Button->EndedDown = IsDown;
+		Button->HalfTransitionCount++;
+	}
 }
 
 int WINAPI
@@ -112,6 +139,8 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		game_input *NewInput = &GameInput[0];
 		game_input *OldInput = &GameInput[1];
 
+		Win32MousePositionGet(Window);
+
 		Win32GlobalRunning = true;
 		f32 DtForFrame = 0.0f;
 		LARGE_INTEGER QueryTickCount;
@@ -147,63 +176,39 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 						{
 							if(KeyCode == 'W')
 							{
-								if(NewKeyboard->W.EndedDown != IsDown)
-								{
-									NewKeyboard->W.EndedDown = IsDown;
-									NewKeyboard->W.HalfTransitionCount++;
-								}
+								Win32KeyStateUpdate(&NewKeyboard->W, IsDown);
 							}
 							else if(KeyCode == 'A')
 							{
-								if(NewKeyboard->A.EndedDown != IsDown)
-								{
-									NewKeyboard->Buttons[Key_A].EndedDown = IsDown;
-									NewKeyboard->Buttons[Key_A].HalfTransitionCount++;
-								}
+								Win32KeyStateUpdate(&NewKeyboard->A, IsDown);
 							}
 							else if(KeyCode == 'S')
 							{
-
-								if(NewKeyboard->S.EndedDown != IsDown)
-								{
-									NewKeyboard->Buttons[Key_S].EndedDown = IsDown;
-									NewKeyboard->Buttons[Key_S].HalfTransitionCount++;
-								}
+								Win32KeyStateUpdate(&NewKeyboard->S, IsDown);
 							}
 							else if(KeyCode == 'D')
 							{
-
-								if(NewKeyboard->D.EndedDown != IsDown)
-								{
-									NewKeyboard->Buttons[Key_D].EndedDown = IsDown;
-									NewKeyboard->Buttons[Key_D].HalfTransitionCount++;
-								}
+								Win32KeyStateUpdate(&NewKeyboard->D, IsDown);
 							}
 							else if(KeyCode == 'E')
 							{
-
-								if(NewKeyboard->E.EndedDown != IsDown)
-								{
-									NewKeyboard->Buttons[Key_E].EndedDown = IsDown;
-									NewKeyboard->Buttons[Key_E].HalfTransitionCount++;
-								}
+								Win32KeyStateUpdate(&NewKeyboard->E, IsDown);
 							}
 							else if(KeyCode == VK_SHIFT)
 							{
-								if(NewKeyboard->Shift.EndedDown != IsDown)
-								{
-									NewKeyboard->Buttons[Key_Shift].EndedDown = IsDown;
-									NewKeyboard->Buttons[Key_Shift].HalfTransitionCount++;
-								}
+								Win32KeyStateUpdate(&NewKeyboard->Shift, IsDown);
 							}
 							else if(KeyCode == VK_SPACE)
 							{
-
-								if(NewKeyboard->Space.EndedDown != IsDown)
-								{
-									NewKeyboard->Buttons[Key_Space].EndedDown = IsDown;
-									NewKeyboard->Buttons[Key_Space].HalfTransitionCount++;
-								}
+								Win32KeyStateUpdate(&NewKeyboard->Space, IsDown);
+							}
+							else if(KeyCode == VK_ADD)
+							{
+								Win32KeyStateUpdate(&NewKeyboard->Add, IsDown);
+							}
+							else if(KeyCode == VK_SUBTRACT)
+							{
+								Win32KeyStateUpdate(&NewKeyboard->Subtract, IsDown);
 							}
 						}
 					} break;
@@ -214,6 +219,12 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 					} break;
 				};
 			}
+
+			Win32MousePositionGet(Window);
+			NewInput->dXMouse = Win32GlobalMouseX - OldInput->MouseX;
+			NewInput->dYMouse = Win32GlobalMouseY - OldInput->MouseY;
+			NewInput->MouseX  = Win32GlobalMouseX;
+			NewInput->MouseY  = Win32GlobalMouseY;
 
 			HDC WindowDC = GetDC(Window);
 
@@ -236,5 +247,3 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
     return(0);
 }
-
-

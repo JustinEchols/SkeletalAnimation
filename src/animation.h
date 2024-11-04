@@ -9,6 +9,7 @@ enum animation_name
 	Animation_Jump,
 	Animation_Wave,
 	Animation_IdleToSprint,
+	Animation_JumpForward,
 };
 
 char *AnimationFiles[] =
@@ -20,6 +21,7 @@ char *AnimationFiles[] =
 	"..\\data\\XBot_Jumping.animation",
 	"..\\data\\XBot_Waving.animation",
 	"..\\data\\XBot_IdleToSprint.animation",
+	"..\\data\\XBot_JumpForward.animation",
 	"..\\data\\XBot_IdleLookAround.animation",
 	"..\\data\\XBot_FemaleWalk.animation",
 	"..\\data\\XBot_RightTurn.animation",
@@ -45,6 +47,7 @@ enum animation_state
 	AnimationState_Sprint = 0x7,
 	AnimationState_SprintToIdle = 0x8,
 	AnimationState_SprintToRun = 0x9,
+	AnimationState_JumpForward = 0x10,
 
 };
 
@@ -75,12 +78,11 @@ struct animation_id
 
 enum animation_flags
 {
-	AnimationFlags_Looping = (1 << 1),
-	AnimationFlags_RemoveLocomotion = (1 << 2),
-	AnimationFlags_Finished = (1 << 3),
-	AnimationFlags_Playing = (1 << 4),
-	AnimationFlags_CrossFadeIn = (1 << 5),
-	AnimationFlags_CrossFadeOut = (1 << 6),
+	AnimationFlags_Playing = (1 << 1),
+	AnimationFlags_Finished = (1 << 2),
+	AnimationFlags_Looping = (1 << 3),
+	AnimationFlags_RemoveLocomotion = (1 << 4),
+	AnimationFlags_MustFinish = (1 << 5),
 };
 
 struct animation

@@ -1,4 +1,11 @@
 
+inline b32 
+IsNewLine(char C)
+{
+	b32 Result = ((C == '\n') || (C == '\r'));
+	return(Result);
+}
+
 inline b32
 IsNewLine(char *S)
 {
@@ -12,6 +19,7 @@ IsNewLine(u8 *S)
 	b32 Result = ((*S == '\n') || (*S == '\r'));
 	return(Result);
 }
+
 
 inline b32 
 IsSpace(char C)
@@ -65,6 +73,13 @@ String(u8 *Cstr)
 
 	string Result = StringFromRange(Cstr, C);
 
+	return(Result);
+}
+
+internal string
+String(char *Cstr)
+{
+	string Result = String((u8 *)Cstr);
 	return(Result);
 }
 

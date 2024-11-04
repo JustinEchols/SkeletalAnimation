@@ -2,7 +2,6 @@
 internal s32 
 FontInit(font_info *FontInfo, char *FileName)
 {
-	//font_info Result = {};
 	s32 Result = 1;
 
 	FT_Library Ft;
@@ -19,7 +18,9 @@ FontInit(font_info *FontInfo, char *FileName)
 		return(-1);
 	}
 
-	FontInfo->Name = FileName;
+	FontInfo->Name = String(FileName);
+	FontInfo->Ascender = Face->ascender;
+	FontInfo->Descender = Face->descender;
 
 	s32 Width = 0;
 	s32 Height = 48;

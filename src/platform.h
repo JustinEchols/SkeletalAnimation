@@ -11,6 +11,7 @@
 #define PushStruct(Arena, Type) (Type *)PushSize_(Arena, sizeof(Type))
 #define ArrayCopy(Count, Src, Dest) MemoryCopy((Count)*sizeof(*(Src)), (Src), (Dest))
 
+//////////////////////////////////////////
 // NOTE(Justin): Base Types
 
 typedef int8_t	 s8;
@@ -26,6 +27,7 @@ typedef double	 f64;
 typedef s32		 b32;
 typedef size_t	 memory_index;
 
+//////////////////////////////////////////
 // NOTE(Justin): Helper Macros 
 
 #define global_varible	static
@@ -77,6 +79,8 @@ enum
 	Key_E,
 	Key_Shift,
 	Key_Space,
+	Key_Add,
+	Key_Subtract,
 
 	Key_Count
 };
@@ -95,6 +99,8 @@ struct game_keyboard
 			game_button E;
 			game_button Shift;
 			game_button Space;
+			game_button Add;
+			game_button Subtract;
 		};
 	};
 };
@@ -103,6 +109,8 @@ struct game_input
 {
 	game_keyboard Keyboard;
 	f32 DtForFrame;
+	f32 MouseX, MouseY;
+	f32 dXMouse, dYMouse;
 };
 
 struct game_memory
