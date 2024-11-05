@@ -682,20 +682,20 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	sprintf(Buff, "%s %.2f", "speed: ", Speed);
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
+	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f %.2f", "p: ", Entity->P.x, Entity->P.y, Entity->P.z);
-	P.y -= (Gap + dY);
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
+	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f %.2f", "dP: ", Entity->dP.x, Entity->dP.y, Entity->dP.z);
-	P.y -= (Gap + dY);
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
+	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f %.2f", "ddP: ", Entity->ddP.x, Entity->ddP.y, Entity->ddP.z);
-	P.y -= (Gap + dY);
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
-	EntityAnimationState(Buff, Entity);
 	P.y -= (Gap + dY);
+	EntityAnimationState(Buff, Entity);
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
