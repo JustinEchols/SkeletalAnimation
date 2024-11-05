@@ -154,9 +154,6 @@ struct camera
 	v3 Direction;
 };
 
-
-
-
 struct game_state
 {
 	memory_arena Arena;

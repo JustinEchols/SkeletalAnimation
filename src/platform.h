@@ -42,6 +42,7 @@ typedef size_t	 memory_index;
 #define DegreeToRad(Degrees) ((Degrees) * (Pi32 / 180.0f))
 #define SmallNumber (1.e-8f)
 
+//////////////////////////////////////////
 // NOTE(Justin): Linked List Macros
 
 #define SLLQueuePush_N(First,Last,Node,Next) (((First)==0?\
@@ -85,6 +86,15 @@ enum
 	Key_Count
 };
 
+enum mouse_key
+{
+	MouseKey_Left,
+	MouseKey_Middle,
+	MouseKey_Right,
+
+	MouseKey_Count
+};
+
 struct game_keyboard
 {
 	union
@@ -111,6 +121,8 @@ struct game_input
 	f32 DtForFrame;
 	f32 MouseX, MouseY;
 	f32 dXMouse, dYMouse;
+	game_button MouseButtons[5];
+	s32 BackBufferWidth, BackBufferHeight;
 };
 
 struct game_memory

@@ -14,6 +14,13 @@ F32TruncateToS32(f32 X)
 	return(Result);
 }
 
+inline s32
+Floor(f32 X)
+{
+	s32 Result = (s32)floorf(X);
+	return(Result);
+}
+
 inline f32
 AbsVal(f32 X)
 {

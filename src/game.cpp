@@ -55,6 +55,30 @@ EntityTransform(entity *Entity, f32 Scale = 1.0f)
 	return(Result);
 }
 
+inline void 
+EntityAnimationState(char *Buffer, entity *Entity)
+{
+	switch(Entity->AnimationState)
+	{
+		case AnimationState_Idle:
+		{
+			sprintf(Buffer, "%s", "AnimationState: Idle");
+		} break;
+		case AnimationState_Running:
+		{
+			sprintf(Buffer, "%s", "AnimationState: Run");
+		} break;
+		case AnimationState_Sprint:
+		{
+			sprintf(Buffer, "%s", "AnimationState: Sprint");
+		} break;
+		case AnimationState_JumpForward:
+		{
+			sprintf(Buffer, "%s", "AnimationState: JumpForward");
+		} break;
+	}
+}
+
 #if 1
 inline void
 EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
@@ -594,23 +618,45 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	glUseProgram(FontShader);
 
-	char Buff[64];
+	
+	font_info *FontInfo =  &GameState->FontQuad.Info;
+	f32 Scale = 0.35f;
+	f32 Gap = Scale * (f32)FontInfo->LineHeight / 64.0f;
+	f32 X = 0.0f;
+	f32 Y = (f32)Win32GlobalWindowHeight - Gap;
+	f32 dY = 5.0f;
+	s32 WindowWidth = GameInput->BackBufferWidth;
+	s32 WindowHeight = GameInput->BackBufferHeight;
+	
+	char Buff[256];
 	sprintf(Buff, "%s %f", "time scale: ", GameState->TimeScale);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, (f32)Win32GlobalWindowHeight - 20.0f), 0.35f, V3(1.0f), Win32GlobalWindowWidth, Win32GlobalWindowHeight);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), Scale, V3(1.0f), WindowWidth, WindowHeight);
 
-	MemoryZero(Buff, sizeof(Buff));
-	sprintf(Buff, "%s %f %f %f", "p: ", Entity->P.x, Entity->P.y, Entity->P.z);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, (f32)Win32GlobalWindowHeight - 40.0f), 0.35f, V3(1.0f), Win32GlobalWindowWidth, Win32GlobalWindowHeight);
-
-	MemoryZero(Buff, sizeof(Buff));
 	f32 Angle = DirectionToEuler(-1.0f * Entity->dP).yaw;
+	Y -= (Gap + dY);
 	sprintf(Buff, "%s %f", "yaw: ", Angle);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, (f32)Win32GlobalWindowHeight - 60.0f), 0.35f, V3(1.0f), Win32GlobalWindowWidth, Win32GlobalWindowHeight);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
 
-	MemoryZero(Buff, sizeof(Buff));
+	Y -= (Gap + dY);
 	f32 Speed = Length(Entity->dP);
-	sprintf(Buff, "%s %f", "speed: ", Speed);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, (f32)Win32GlobalWindowHeight - 80.0f), 0.35f, V3(1.0f), Win32GlobalWindowWidth, Win32GlobalWindowHeight);
+	sprintf(Buff, "%s %.2f", "speed: ", Speed);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
+
+	sprintf(Buff, "%s %.2f %.2f %.2f", "p: ", Entity->P.x, Entity->P.y, Entity->P.z);
+	Y -= (Gap + dY);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
+
+	sprintf(Buff, "%s %.2f %.2f %.2f", "dP: ", Entity->dP.x, Entity->dP.y, Entity->dP.z);
+	Y -= (Gap + dY);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
+
+	sprintf(Buff, "%s %.2f %.2f %.2f", "ddP: ", Entity->ddP.x, Entity->ddP.y, Entity->ddP.z);
+	Y -= (Gap + dY);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
+
+	EntityAnimationState(Buff, Entity);
+	Y -= (Gap + dY);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
 
 	ArenaClear(&GameState->TempArena);
 }

@@ -21,6 +21,7 @@ FontInit(font_info *FontInfo, char *FileName)
 	FontInfo->Name = String(FileName);
 	FontInfo->Ascender = Face->ascender;
 	FontInfo->Descender = Face->descender;
+	FontInfo->LineHeight = Face->height;
 
 	s32 Width = 0;
 	s32 Height = 48;

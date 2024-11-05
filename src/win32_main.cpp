@@ -221,10 +221,18 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			}
 
 			Win32MousePositionGet(Window);
+			Win32KeyStateUpdate(&NewInput->MouseButtons[0], GetKeyState(VK_LBUTTON) & (1 << 15));
+			Win32KeyStateUpdate(&NewInput->MouseButtons[1], GetKeyState(VK_MBUTTON) & (1 << 15));
+			Win32KeyStateUpdate(&NewInput->MouseButtons[2], GetKeyState(VK_RBUTTON) & (1 << 15));
+			Win32KeyStateUpdate(&NewInput->MouseButtons[3], GetKeyState(VK_XBUTTON1) & (1 << 15));
+			Win32KeyStateUpdate(&NewInput->MouseButtons[4], GetKeyState(VK_XBUTTON2) & (1 << 15));
+
 			NewInput->dXMouse = Win32GlobalMouseX - OldInput->MouseX;
 			NewInput->dYMouse = Win32GlobalMouseY - OldInput->MouseY;
 			NewInput->MouseX  = Win32GlobalMouseX;
 			NewInput->MouseY  = Win32GlobalMouseY;
+			NewInput->BackBufferWidth = Win32GlobalWindowWidth;
+			NewInput->BackBufferHeight = Win32GlobalWindowHeight;
 
 			HDC WindowDC = GetDC(Window);
 

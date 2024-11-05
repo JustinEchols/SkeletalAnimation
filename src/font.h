@@ -14,6 +14,7 @@ struct font_info
 	glyph Glyphs[256];
 	s32 Ascender;
 	s32 Descender;
+	s32 LineHeight;
 };
 
 struct font_quad
