@@ -1307,6 +1307,17 @@ RectCenterDim(v2 C, v2 Dim)
 	return(Result);
 }
 
+inline rect
+RectMinDim(v2 Min, v2 Dim)
+{
+	rect Result;
+
+	Result.Min = Min;
+	Result.Max = Min + Dim;
+
+	return(Result);
+}
+
 inline v2
 RectCenter(rect R)
 {

@@ -656,11 +656,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	char Buff[256];
 	sprintf(Buff, "%s %.2f", "time scale: ", GameState->TimeScale);
 
-	v2 Dim = TextDim(FontInfo, Scale, Buff);
-	rect Rect;
-	Rect.Min = P;
-	Rect.Max = Rect.Min + Dim;
-
+	rect Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 	if(IsInRect(Rect, MouseP))
 	{
 		OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, HoverColor, WindowWidth, WindowHeight);
