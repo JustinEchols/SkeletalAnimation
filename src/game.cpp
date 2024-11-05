@@ -159,34 +159,6 @@ PerspectiveTransformUpdate(game_state *GameState)
 	GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 }
 
-internal v2 
-TextDim(font_info *FontInfo, f32 Scale, char *String)
-{	
-	v2 Result = {};
-
-	f32 Width = 0.0f;
-	f32 MaxHeight = 0.0f;
-	for(char *C = String; *C; ++C)
-	{
-		glyph Glyph = FontInfo->Glyphs[*C];
-
-		f32 Advance = (f32)(Glyph.Advance >> 6);
-		f32 W = (f32)Glyph.Dim.x;
-		f32 dX = Advance - W;
-
-		Width += W + dX;
-
-		if(Glyph.Dim.y > MaxHeight)
-		{
-			MaxHeight = (f32)Glyph.Dim.y;
-		}
-	}
-
-	Result = Scale * V2(Width, MaxHeight);
-
-	return(Result);
-}
-
 internal void
 GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 {
@@ -696,18 +668,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	P.y -= (Gap + dY);
 	EntityAnimationState(Buff, Entity);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
-
-	P.y -= (Gap + dY);
-	sprintf(Buff, "%s %.2f %.2f", "mouse p: ", MouseP.x, MouseP.y);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
-
-	P.y -= (Gap + dY);
-	sprintf(Buff, "%s %.2f %.2f", "rect min: ", Rect.Min.x, Rect.Min.y);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
-
-	P.y -= (Gap + dY);
-	sprintf(Buff, "%s %.2f %.2f", "rect max: ", Rect.Max.x, Rect.Max.y);
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	ArenaClear(&GameState->TempArena);

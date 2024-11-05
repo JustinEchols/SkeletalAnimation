@@ -76,3 +76,31 @@ FontInit(font_info *FontInfo, char *FileName)
 
 	return(Result);
 }
+
+internal v2 
+TextDim(font_info *FontInfo, f32 Scale, char *String)
+{	
+	v2 Result = {};
+
+	f32 Width = 0.0f;
+	f32 MaxHeight = 0.0f;
+	for(char *C = String; *C; ++C)
+	{
+		glyph Glyph = FontInfo->Glyphs[*C];
+
+		f32 Advance = (f32)(Glyph.Advance >> 6);
+		f32 W = (f32)Glyph.Dim.x;
+		f32 dX = Advance - W;
+
+		Width += W + dX;
+
+		if(Glyph.Dim.y > MaxHeight)
+		{
+			MaxHeight = (f32)Glyph.Dim.y;
+		}
+	}
+
+	Result = Scale * V2(Width, MaxHeight);
+
+	return(Result);
+}
