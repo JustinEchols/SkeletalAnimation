@@ -1333,7 +1333,7 @@ RectHalfDim(rect R)
 }
 
 inline b32
-IsInRect(rect R, v2 P)
+InRect(rect R, v2 P)
 {
 	b32 Result = ((R.Min.x <= P.x) &&
 			     (P.x <= R.Max.x) &&

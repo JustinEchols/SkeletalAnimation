@@ -169,7 +169,13 @@ TextDim(font_info *FontInfo, f32 Scale, char *String)
 	for(char *C = String; *C; ++C)
 	{
 		glyph Glyph = FontInfo->Glyphs[*C];
-		Width += (f32)Glyph.Dim.x;
+
+		f32 Advance = (f32)(Glyph.Advance >> 6);
+		f32 W = (f32)Glyph.Dim.x;
+		f32 dX = Advance - W;
+
+		Width += W + dX;
+
 		if(Glyph.Dim.y > MaxHeight)
 		{
 			MaxHeight = (f32)Glyph.Dim.y;
@@ -657,7 +663,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	sprintf(Buff, "%s %.2f", "time scale: ", GameState->TimeScale);
 
 	rect Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
-	if(IsInRect(Rect, MouseP))
+	if(InRect(Rect, MouseP))
 	{
 		OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, HoverColor, WindowWidth, WindowHeight);
 	}
@@ -668,7 +674,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	P.y -= (Gap + dY);
 	f32 Angle = DirectionToEuler(-1.0f * Entity->dP).yaw;
-	sprintf(Buff, "%s %f", "yaw: ", Angle);
+	sprintf(Buff, "%s%.2f", "yaw:", Angle);
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, V3(1.0f), WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
@@ -703,7 +709,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f", "rect max: ", Rect.Max.x, Rect.Max.y);
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
-
 
 	ArenaClear(&GameState->TempArena);
 }
