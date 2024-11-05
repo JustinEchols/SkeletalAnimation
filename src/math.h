@@ -1296,6 +1296,17 @@ RotateTowards(quaternion Current, quaternion Target, f32 dt, f32 AngularSpeed)
 // NOTE(Justin): rect operations
 //
 
+inline rect
+RectCenterDim(v2 C, v2 Dim)
+{
+	rect Result;
+
+	Result.Min = C - 0.5f * Dim;
+	Result.Max = C + 0.5f * Dim;
+	
+	return(Result);
+}
+
 inline v2
 RectCenter(rect R)
 {

@@ -159,6 +159,28 @@ PerspectiveTransformUpdate(game_state *GameState)
 	GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 }
 
+internal v2 
+TextDim(font_info *FontInfo, f32 Scale, char *String)
+{	
+	v2 Result = {};
+
+	f32 Width = 0.0f;
+	f32 MaxHeight = 0.0f;
+	for(char *C = String; *C; ++C)
+	{
+		glyph Glyph = FontInfo->Glyphs[*C];
+		Width += (f32)Glyph.Dim.x;
+		if(Glyph.Dim.y > MaxHeight)
+		{
+			MaxHeight = (f32)Glyph.Dim.y;
+		}
+	}
+
+	Result = Scale * V2(Width, MaxHeight);
+
+	return(Result);
+}
+
 internal void
 GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 {
@@ -618,7 +640,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	glUseProgram(FontShader);
 
-	
 	font_info *FontInfo =  &GameState->FontQuad.Info;
 	f32 Scale = 0.35f;
 	f32 Gap = Scale * (f32)FontInfo->LineHeight / 64.0f;
@@ -627,36 +648,66 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	f32 dY = 5.0f;
 	s32 WindowWidth = GameInput->BackBufferWidth;
 	s32 WindowHeight = GameInput->BackBufferHeight;
-	
+	v2 MouseP = V2(GameInput->MouseX, GameInput->MouseY);
+	v2 P = V2(0.0f, Y);
+	v3 HoverColor = V3(1.0f, 1.0f, 0.0f);
+	v3 DefaultColor = V3(1.0f);
+
 	char Buff[256];
-	sprintf(Buff, "%s %f", "time scale: ", GameState->TimeScale);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), Scale, V3(1.0f), WindowWidth, WindowHeight);
+	sprintf(Buff, "%s %.2f", "time scale: ", GameState->TimeScale);
 
+	v2 Dim = TextDim(FontInfo, Scale, Buff);
+	rect Rect;
+	Rect.Min = P;
+	Rect.Max = Rect.Min + Dim;
+
+	if(IsInRect(Rect, MouseP))
+	{
+		OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, HoverColor, WindowWidth, WindowHeight);
+	}
+	else
+	{
+		OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	}
+
+	P.y -= (Gap + dY);
 	f32 Angle = DirectionToEuler(-1.0f * Entity->dP).yaw;
-	Y -= (Gap + dY);
 	sprintf(Buff, "%s %f", "yaw: ", Angle);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, V3(1.0f), WindowWidth, WindowHeight);
 
-	Y -= (Gap + dY);
+	P.y -= (Gap + dY);
 	f32 Speed = Length(Entity->dP);
 	sprintf(Buff, "%s %.2f", "speed: ", Speed);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	sprintf(Buff, "%s %.2f %.2f %.2f", "p: ", Entity->P.x, Entity->P.y, Entity->P.z);
-	Y -= (Gap + dY);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
+	P.y -= (Gap + dY);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	sprintf(Buff, "%s %.2f %.2f %.2f", "dP: ", Entity->dP.x, Entity->dP.y, Entity->dP.z);
-	Y -= (Gap + dY);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
+	P.y -= (Gap + dY);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	sprintf(Buff, "%s %.2f %.2f %.2f", "ddP: ", Entity->ddP.x, Entity->ddP.y, Entity->ddP.z);
-	Y -= (Gap + dY);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
+	P.y -= (Gap + dY);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	EntityAnimationState(Buff, Entity);
-	Y -= (Gap + dY);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, V2(0.0f, Y), 0.35f, V3(1.0f), WindowWidth, WindowHeight);
+	P.y -= (Gap + dY);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+	P.y -= (Gap + dY);
+	sprintf(Buff, "%s %.2f %.2f", "mouse p: ", MouseP.x, MouseP.y);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+	P.y -= (Gap + dY);
+	sprintf(Buff, "%s %.2f %.2f", "rect min: ", Rect.Min.x, Rect.Min.y);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+	P.y -= (Gap + dY);
+	sprintf(Buff, "%s %.2f %.2f", "rect max: ", Rect.Max.x, Rect.Max.y);
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
 
 	ArenaClear(&GameState->TempArena);
 }
