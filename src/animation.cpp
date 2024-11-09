@@ -127,6 +127,7 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 }
 
 internal void
+//AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendFactor, f32 BlendDuration = 0.0f)
 AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendDuration = 0.0f)
 {
 	Assert(AnimationPlayer->IsInitialized);
@@ -137,6 +138,13 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 			// Animation is already playing, so return.
 			return;
 		}
+
+		// NOTE(Justin): This sort of works. We need a way to be able to complete 
+		// animation and blend out. Otherwise we get discontinuity 
+		if(FlagIsSet(Current, AnimationFlags_MustFinish) && !Finished(Current))
+		{
+			return;
+		}
 	}
 
 	if(BlendDuration != 0.0f)
@@ -144,7 +152,6 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 		// Blend out currently playing animations
 		for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
 		{
-			//Current->BlendDuration = 0.2f;
 			Current->BlendDuration = BlendDuration;
 			Current->BlendCurrentTime = 0.0f;
 			Current->BlendingOut = true;
@@ -162,6 +169,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 
 	Animation->Name = NewAnimation->Name;
 	Animation->Flags = NewAnimation->DefaultFlags | AnimationFlags_Playing;
+	Animation->Duration = NewAnimation->Info->Duration;
 	Animation->CurrentTime = 0.0f;
 	Animation->OldTime = 0.0f;
 	Animation->TimeScale = 1.0f;
@@ -179,6 +187,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 	}
 
 	Animation->BlendingOut = false;
+	Animation->BlendingComposite = true;
 
 
 	Animation->ID = NewAnimation->ID;
@@ -289,6 +298,7 @@ AnimationGet(game_state *GameState, animation_name Name)
 	return(Result);
 }
 
+#define DEFAULT_BLEND_FACTOR 1.0f
 internal void
 Animate(game_state *GameState, animation_player *AnimationPlayer, animation_state State)
 {
@@ -314,7 +324,6 @@ Animate(game_state *GameState, animation_player *AnimationPlayer, animation_stat
 	//	return;
 	//}
 
-#if 1
 	animation_state OldState = AnimationPlayer->State;
 	AnimationPlayer->State = State;
 
@@ -326,18 +335,7 @@ Animate(game_state *GameState, animation_player *AnimationPlayer, animation_stat
 		} break;
 		case AnimationState_Running:
 		{
-			if(OldState == AnimationState_JumpForward)
-			{
-				if(AnimationPlayer->PlayingCount > 0)
-				{
-					AnimationPlayer->State = OldState;
-					//AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), 0.5f);
-				}
-			}
-			else
-			{
-				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), 0.2f);
-			}
+			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), 0.2f);
 		} break;
 		case AnimationState_Sprint:
 		{
@@ -348,68 +346,6 @@ Animate(game_state *GameState, animation_player *AnimationPlayer, animation_stat
 			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_JumpForward), 0.2f);
 		} break;
 	}
-#else
-	animation_state OldState = AnimationPlayer->State;
-	switch(OldState)
-	{
-		case AnimationState_Idle:
-		{
-			animation *Idle = AnimationGet(GameState, Animation_Idle);
-
-			if(OldState == AnimationState_Invalid)
-			{
-				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Idle));
-			}
-			else if(OldState == AnimationState_JumpForward)
-			{
-				animation *JumpForward = AnimationGet(GameState, Animation_JumpForward);
-				if(!Finished(JumpForward))
-				{
-				}
-			}
-			else
-			{
-				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Idle), 0.2f);
-			}
-		} break;
-		case AnimationState_Running:
-		{
-			if(OldState == AnimationState_JumpForward)
-			{
-				animation *JumpForward = AnimationGet(GameState, Animation_JumpForward);
-				if(!Finished(JumpForward))
-				{
-				}
-			}
-			else
-			{
-				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), 0.2f);
-			}
-		} break;
-		case AnimationState_Sprint:
-		{
-			if(OldState == AnimationState_JumpForward)
-			{
-				animation *JumpForward = AnimationGet(GameState, Animation_JumpForward);
-				if(!Finished(JumpForward))
-				{
-				}
-			}
-			else
-			{
-				AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Sprint), 0.2f);
-			}
-		} break;
-		case AnimationState_JumpForward:
-		{
-			animation *JumpForward = AnimationGet(GameState, Animation_JumpForward);
-			if(Finished(JumpForward) && !CrossFading(JumpForward))
-			{
-				AnimationPlayer->State = State;
-			}
-		} break;
-	}
-#endif
 }
 
 

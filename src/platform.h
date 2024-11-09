@@ -41,6 +41,7 @@ typedef size_t	 memory_index;
 #define Pi32 3.1415926535897f
 #define DegreeToRad(Degrees) ((Degrees) * (Pi32 / 180.0f))
 #define SmallNumber (1.e-8f)
+#define KindaSmallNumber (1.e-4f)
 
 //////////////////////////////////////////
 // NOTE(Justin): Linked List Macros

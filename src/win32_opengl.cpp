@@ -73,6 +73,11 @@ OpenGLProc(glActiveTexture, GLACTIVETEXTURE)
 OpenGLProc(glGenFramebuffers, GLGENFRAMEBUFFERS)
 OpenGLProc(glBindFramebuffer, GLBINDFRAMEBUFFER)
 OpenGLProc(glFramebufferTexture2D, GLFRAMEBUFFERTEXTURE2D)
+OpenGLProc(glGenRenderbuffers, GLGENRENDERBUFFERS)
+OpenGLProc(glBindRenderbuffer, GLBINDRENDERBUFFER)
+OpenGLProc(glFramebufferRenderbuffer, GLFRAMEBUFFERRENDERBUFFER)
+OpenGLProc(glRenderbufferStorage, GLRENDERBUFFERSTORAGE)
+OpenGLProc(glCheckFramebufferStatus, GLCHECKFRAMEBUFFERSTATUS)
 #undef OpenGLProc
 
 internal void
@@ -122,7 +127,11 @@ OpenGLProc(glGenFramebuffers, GLGENFRAMEBUFFERS)
 OpenGLProc(glBindFramebuffer, GLBINDFRAMEBUFFER)
 OpenGLProc(glFramebufferTexture2D, GLFRAMEBUFFERTEXTURE2D)
 OpenGLProc(glBindFramebuffer, GLBINDFRAMEBUFFER)
-
+OpenGLProc(glGenRenderbuffers, GLGENRENDERBUFFERS)
+OpenGLProc(glBindRenderbuffer, GLBINDRENDERBUFFER)
+OpenGLProc(glFramebufferRenderbuffer, GLFRAMEBUFFERRENDERBUFFER)
+OpenGLProc(glRenderbufferStorage, GLRENDERBUFFERSTORAGE)
+OpenGLProc(glCheckFramebufferStatus, GLCHECKFRAMEBUFFERSTATUS)
 }
 
 internal void

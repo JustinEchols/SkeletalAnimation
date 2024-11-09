@@ -1,6 +1,6 @@
 
 internal s32 
-FontInit(font_info *FontInfo, char *FileName)
+FontInit(font *Font, char *FileName)
 {
 	s32 Result = 1;
 
@@ -18,10 +18,10 @@ FontInit(font_info *FontInfo, char *FileName)
 		return(-1);
 	}
 
-	FontInfo->Name = String(FileName);
-	FontInfo->Ascender = Face->ascender;
-	FontInfo->Descender = Face->descender;
-	FontInfo->LineHeight = Face->height;
+	Font->Name = String(FileName);
+	Font->Ascender = Face->ascender;
+	Font->Descender = Face->descender;
+	Font->LineHeight = Face->height;
 
 	s32 Width = 0;
 	s32 Height = 48;
@@ -62,10 +62,10 @@ FontInit(font_info *FontInfo, char *FileName)
 				GL_UNSIGNED_BYTE,
 				Face->glyph->bitmap.buffer);
 
-		FontInfo->Glyphs[CharIndex].TextureHandle = GlyphTexture;
-		FontInfo->Glyphs[CharIndex].Dim = V2I(Face->glyph->bitmap.width, Face->glyph->bitmap.rows);
-		FontInfo->Glyphs[CharIndex].Bearing = V2I(Face->glyph->bitmap_left, Face->glyph->bitmap_top);
-		FontInfo->Glyphs[CharIndex].Advance = Face->glyph->advance.x;
+		Font->Glyphs[CharIndex].TextureHandle = GlyphTexture;
+		Font->Glyphs[CharIndex].Dim = V2I(Face->glyph->bitmap.width, Face->glyph->bitmap.rows);
+		Font->Glyphs[CharIndex].Bearing = V2I(Face->glyph->bitmap_left, Face->glyph->bitmap_top);
+		Font->Glyphs[CharIndex].Advance = Face->glyph->advance.x;
 
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, 0);
@@ -78,7 +78,7 @@ FontInit(font_info *FontInfo, char *FileName)
 }
 
 internal v2 
-TextDim(font_info *FontInfo, f32 Scale, char *String)
+TextDim(font *Font, f32 Scale, char *String)
 {	
 	v2 Result = {};
 
@@ -86,7 +86,7 @@ TextDim(font_info *FontInfo, f32 Scale, char *String)
 	f32 MaxHeight = 0.0f;
 	for(char *C = String; *C; ++C)
 	{
-		glyph Glyph = FontInfo->Glyphs[*C];
+		glyph Glyph = Font->Glyphs[*C];
 
 		f32 Advance = (f32)(Glyph.Advance >> 6);
 		f32 W = (f32)Glyph.Dim.x;

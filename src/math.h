@@ -323,6 +323,7 @@ Clamp(u32 Min, u32 X, u32 Max)
 	return(Result);
 }
 
+
 //
 // NOTE(Justin): v2 operations
 //

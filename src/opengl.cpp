@@ -154,6 +154,7 @@ void main()
 })";
 
 
+#if 0
 char *QuadVS = R"(
 #version 430 core
 layout (location = 1) in vec2 Offset;
@@ -176,6 +177,35 @@ void main()
 {
 	Result = vec4(Color, Alpha);
 })";
+#endif
+
+char *ScreenVS = R"(
+#version 430 core
+layout (location = 0) in vec4 VertexXYUV;
+
+out vec2 UV;
+uniform float WindowWidth;
+uniform float WindowHeight;
+void main()
+{
+	float X = ((2.0 * VertexXYUV.x) / WindowWidth) - 1.0;
+	float Y = ((2.0 * VertexXYUV.y) / WindowHeight) - 1.0;
+	gl_Position = vec4(X, Y, 0.0, 1.0);
+	UV = VertexXYUV.zw;
+})";
+
+char *ScreenFS= R"(
+#version 430 core
+in vec2 UV;
+
+uniform sampler2D Texture;
+
+out vec4 Result;
+void main()
+{
+	Result = vec4(texture(Texture, UV).rgb, 1.0);
+})";
+
 
 internal void 
 GLDebugCallback(GLenum Source, GLenum Type, GLuint ID, GLenum Severity, GLsizei Length, const GLchar *Message, const void *UserParam)
@@ -283,6 +313,27 @@ OpenGLAllocateTexture(texture *Texture)
 	}
 }
 
+internal void 
+AttributesCheck(u32 ShaderProgram, s32 ExpectedAttributeCount)
+{
+	s32 AttrCount;
+	glGetProgramiv(ShaderProgram, GL_ACTIVE_ATTRIBUTES, &AttrCount);
+	Assert(ExpectedAttributeCount == AttrCount);
+
+	char Buff[512];
+	char Name[256];
+	s32 Size = 0;
+	GLsizei Length = 0;
+	GLenum Type;
+	for(s32 i = 0; i < AttrCount; ++i)
+	{
+		glGetActiveAttrib(ShaderProgram, i, sizeof(Name), &Length, &Size, &Type, Name);
+
+		sprintf(Buff, "Attribute:%d\nName:%s\nSize:%d\n\n", i, Name, Size);
+		PrintString(Buff);
+	}
+}
+
 internal void
 OpenGLAllocateAnimatedModel(model *Model, u32 ShaderProgram)
 {
@@ -316,19 +367,7 @@ OpenGLAllocateAnimatedModel(model *Model, u32 ShaderProgram)
 		GLIBOInit(&Model->IBO[MeshIndex], Mesh->Indices, Mesh->IndicesCount);
 		glBindVertexArray(0);
 
-		s32 AttrCount;
-		glGetProgramiv(ShaderProgram, GL_ACTIVE_ATTRIBUTES, &AttrCount);
-		Assert(ExpectedAttributeCount == AttrCount);
-
-		char Name[256];
-		s32 Size = 0;
-		GLsizei Length = 0;
-		GLenum Type;
-		for(s32 i = 0; i < AttrCount; ++i)
-		{
-			glGetActiveAttrib(ShaderProgram, i, sizeof(Name), &Length, &Size, &Type, Name);
-			printf("Attribute:%d\nName:%s\nSize:%d\n\n", i, Name, Size);
-		}
+		AttributesCheck(ShaderProgram, ExpectedAttributeCount);
 	}
 }
 
@@ -361,19 +400,7 @@ OpenGLAllocateModel(model *Model, u32 ShaderProgram)
 		GLIBOInit(&Model->IBO[MeshIndex], Mesh->Indices, Mesh->IndicesCount);
 		glBindVertexArray(0);
 
-		s32 AttrCount;
-		glGetProgramiv(ShaderProgram, GL_ACTIVE_ATTRIBUTES, &AttrCount);
-		Assert(ExpectedAttributeCount == AttrCount);
-
-		char Name[256];
-		s32 Size = 0;
-		GLsizei Length = 0;
-		GLenum Type;
-		for(s32 i = 0; i < AttrCount; ++i)
-		{
-			glGetActiveAttrib(ShaderProgram, i, sizeof(Name), &Length, &Size, &Type, Name);
-			//printf("Attribute:%d\nName:%s\nSize:%d\n\n", i, Name, Size);
-		}
+		AttributesCheck(ShaderProgram, ExpectedAttributeCount);
 	}
 }
 
@@ -391,54 +418,57 @@ OpenGLAllocateQuad(quad *Quad, u32 ShaderProgram)
 	glEnableVertexAttribArray(0);
 	glEnableVertexAttribArray(1);
 	glEnableVertexAttribArray(2);
-
 	s32 ExpectedAttributeCount = 3;
-
-	s32 AttrCount;
-	glGetProgramiv(ShaderProgram, GL_ACTIVE_ATTRIBUTES, &AttrCount);
-	Assert(ExpectedAttributeCount == AttrCount);
-
-	char Name[256];
-	s32 Size = 0;
-	GLsizei Length = 0;
-	GLenum Type;
-	for(s32 i = 0; i < AttrCount; ++i)
-	{
-		glGetActiveAttrib(ShaderProgram, i, sizeof(Name), &Length, &Size, &Type, Name);
-		//printf("Attribute:%d\nName:%s\nSize:%d\n\n", i, Name, Size);
-	}
-
+	AttributesCheck(ShaderProgram, ExpectedAttributeCount);
 	glBindVertexArray(0);
 }
 
 internal void
-OpenGLAllocateFontQuad(font_quad *Quad, u32 ShaderProgram)
+OpenGLAllocateQuad2d(u32 *VA, u32 *VB, u32 ShaderProgram)
 {
-	glGenVertexArrays(1, &Quad->VA);
-	glBindVertexArray(Quad->VA);
-	glGenBuffers(1, &Quad->VB);
-	glBindBuffer(GL_ARRAY_BUFFER, Quad->VB);
+	glGenVertexArrays(1, VA);
+	glBindVertexArray(*VA);
+	glGenBuffers(1, VB);
+	glBindBuffer(GL_ARRAY_BUFFER, *VB);
 	glBufferData(GL_ARRAY_BUFFER, 6 * (4 * sizeof(f32)), 0, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(f32), 0);
 	glEnableVertexAttribArray(0);
-
 	s32 ExpectedAttributeCount = 1;
+	AttributesCheck(ShaderProgram, ExpectedAttributeCount);
+	glBindVertexArray(0);
+}
 
-	s32 AttrCount;
-	glGetProgramiv(ShaderProgram, GL_ACTIVE_ATTRIBUTES, &AttrCount);
-	Assert(ExpectedAttributeCount == AttrCount);
+internal b32 
+OpenGLFrameBufferInit(u32 *FBO, u32 *Texture, u32 *RBO, u32 Width, u32 Height)
+{
+	b32 Result = true;
 
-	char Name[256];
-	s32 Size = 0;
-	GLsizei Length = 0;
-	GLenum Type;
-	for(s32 i = 0; i < AttrCount; ++i)
+	glGenFramebuffers(1, FBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, *FBO);
+
+	glGenTextures(1, Texture);
+	glBindTexture(GL_TEXTURE_2D, *Texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *Texture, 0);
+
+	glGenRenderbuffers(1, RBO);
+	glBindRenderbuffer(GL_RENDERBUFFER, *RBO); 
+	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Width, Height);  
+	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *RBO);
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		glGetActiveAttrib(ShaderProgram, i, sizeof(Name), &Length, &Size, &Type, Name);
-		//printf("Attribute:%d\nName:%s\nSize:%d\n\n", i, Name, Size);
+		PrintString("ERROR Framebuffer is not complete.");
+		Result = false;
 	}
 
-	glBindVertexArray(0);
+	return(Result);
+
 }
 
 internal void
@@ -541,15 +571,15 @@ OpenGLDrawQuad(quad *Quad, u32 ShaderProgram, mat4 Transform, u32 TextureHandle)
 }
 
 internal void
-OpenGLDrawText(char *Text, u32 Shader, font_quad *Quad, v2 P, f32 Scale, v3 Color,
+OpenGLDrawText(char *Text, u32 Shader, font *Font, v2 P, f32 Scale, v3 Color,
 		s32 WindowWidth, s32 WindowHeight)
 {
 	glUseProgram(Shader);
 	UniformV3Set(Shader, "Color", Color);
-	glBindVertexArray(Quad->VA);
+	glBindVertexArray(Font->VA);
 	for(char *C = Text; *C; ++C)
 	{
-		glyph Glyph = Quad->Info.Glyphs[*C];
+		glyph Glyph = Font->Glyphs[*C];
 
 		if(!IsSpace(*C))
 		{
@@ -575,7 +605,7 @@ OpenGLDrawText(char *Text, u32 Shader, font_quad *Quad, v2 P, f32 Scale, v3 Colo
 			UniformF32Set(Shader, "WindowWidth", (f32)WindowWidth);
 			UniformF32Set(Shader, "WindowHeight", (f32)WindowHeight);
 			glBindTexture(GL_TEXTURE_2D, Glyph.TextureHandle);
-			glBindBuffer(GL_ARRAY_BUFFER, Quad->VB);
+			glBindBuffer(GL_ARRAY_BUFFER, Font->VB);
 			glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
 			glDrawArrays(GL_TRIANGLES, 0, 6);
 		}

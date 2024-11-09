@@ -8,20 +8,18 @@ struct glyph
 	u32 Advance;
 };
 
-struct font_info
+// TODO(Justin): Glyph atlas
+// TODO(Justin): Kerning 
+struct font
 {
+	u32 VA;
+	u32 VB;
+
 	string Name;
 	glyph Glyphs[256];
 	s32 Ascender;
 	s32 Descender;
 	s32 LineHeight;
-};
-
-struct font_quad
-{
-	u32 VA;
-	u32 VB;
-	font_info Info;
 };
 
 #define FONT_H

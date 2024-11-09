@@ -48,6 +48,7 @@ enum animation_state
 	AnimationState_SprintToIdle = 0x8,
 	AnimationState_SprintToRun = 0x9,
 	AnimationState_JumpForward = 0x10,
+	AnimationState_IdleWalkRun = 0x11,
 
 };
 

@@ -167,7 +167,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	if(!GameMemory->IsInitialized)
 	{
 
-		FontInit(&GameState->FontQuad.Info, "c:/windows/fonts/arial.ttf");
+		FontInit(&GameState->Font, "c:/windows/fonts/arial.ttf");
 
 		ArenaInitialize(&GameState->Arena, (u8 *)GameMemory->PermanentStorage + sizeof(game_state),
 												 GameMemory->PermanentStorageSize - sizeof(game_state)); 
@@ -259,13 +259,14 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		GameState->TimeScale = 1.0f;
 		GameState->FOV = DegreeToRad(45.0f);
 		GameState->Aspect = (f32)Win32GlobalWindowWidth / (f32)Win32GlobalWindowHeight;
-		GameState->ZNear = 0.1f;
-		GameState->ZFar = 100.0f;
+		GameState->ZNear = 0.2f;
+		GameState->ZFar = 200.0f;
 		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 
 		GameState->Shaders[0] = GLProgramCreate(MainVS, MainFS);
 		GameState->Shaders[1] = GLProgramCreate(BasicVS, BasicFS);
 		GameState->Shaders[2] = GLProgramCreate(FontVS, FontFS);
+		GameState->Shaders[3] = GLProgramCreate(ScreenVS, ScreenFS);
 
 		u32 MainShader = GameState->Shaders[0];
 		u32 BasicShader = GameState->Shaders[1];
@@ -276,49 +277,12 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		OpenGLAllocateModel(GameState->Sphere, BasicShader);
 		OpenGLAllocateModel(GameState->Arrow, BasicShader);
 		OpenGLAllocateQuad(&GameState->Quad, BasicShader);
-		OpenGLAllocateFontQuad(&GameState->FontQuad, FontShader);
+		OpenGLAllocateQuad2d(&GameState->Font.VA, &GameState->Font.VB, FontShader);
+		OpenGLAllocateQuad2d(&GameState->Quad2d.VA, &GameState->Quad2d.VB, FontShader);
 
-#if 0
-		u32 FBO;
-		glGenFramebuffers(1, &FBO);
-		glBindFramebuffer(GL_FRAMEBUFFER, FBO);
-
-
-		u32 FrameBufferTexture;
-		glGenTextures(1, &FrameBufferTexture);
-		glBindTexture(GL_TEXTURE_2D, FrameBufferTexture);
-		s32 TextureWidth = 256;
-		s32 TextureHeight = 256;
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		glTexImage2D(GL_TEXTURE_2D,
-				0,
-				GL_RGBA8,
-				TextureWidth,
-				TextureHeight,
-				0,
-				GL_RGBA,
-				GL_UNSIGNED_BYTE,
-				0);
-
-		u32 RenderBO;
-		glGenRenderbuffers(1, &RenderBO);
-		glBindRenderbuffer(GL_RENDERBUFFER, RenderBO);
-		glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, TextureWidth, TextureHeight);
-		glBindRenderbuffer(GL_RENDERBUFFER, 0);
-
-		glFramebuggerRenderbugger(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, RenderBO);
-
-		if(glCheckFramebuggerStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
-		{
-			PrintString("ERROR: Framebugger is not complete");
-			glBindFramebuffer(GL_FRAMEBUFFER, 0);
-		}
-
-#endif
-
+		GameState->TextureWidth = 256;
+		GameState->TextureHeight = 256;
+		OpenGLFrameBufferInit(&GameState->FBO, &GameState->Texture, &GameState->RBO, GameState->TextureWidth, GameState->TextureHeight);
 
 		GameMemory->IsInitialized = true;
 	}
@@ -385,16 +349,16 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				v3 OldPlayerddP = Entity->ddP;
 				Entity->ddP = ddP;
 
-				f32 PlayerSpeed = 100.0f;
-				//f32 PlayerSpeed = 50.0f;
+				f32 a = 100.0f;
 				if(Sprinting)
 				{
-					PlayerSpeed *= 1.5f;
+					a *= 1.5f;
 				}
 
 				f32 PlayerDrag = -9.0f;
 				f32 AngularSpeed = 10.0f;
-				ddP = PlayerSpeed * ddP;
+				f32 Speed = Length(Entity->dP);
+				ddP = a * ddP;
 				ddP += PlayerDrag * Entity->dP;
 
 				v3 OldP = Entity->P;
@@ -405,7 +369,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				Entity->dP = dP;
 
 				EntityOrientationUpdate(Entity, dt, AngularSpeed);
-
 				switch(Entity->AnimationState)
 				{
 					case AnimationState_Idle:
@@ -487,10 +450,21 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		}
 	}
 
+	//
+	// NOTE(Justin): Animation update
+	//
+
+	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
+	animation_player *AnimationPlayer = &GameState->AnimationPlayer;
+	Animate(GameState, AnimationPlayer, Player->AnimationState);
+	AnimationPlayerUpdate(AnimationPlayer, &GameState->TempArena, dt);
+	ModelJointsUpdate(AnimationPlayer);
+
 	entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
+
+	// TODO(Justin): Camera position/direction update with player turning
 	camera *Camera = &GameState->Camera;
 	Camera->P = CameraFollowingEntity->P + GameState->CameraOffsetFromPlayer;
-
 
 
 	//
@@ -549,11 +523,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		{
 			case EntityType_Player:
 			{
-				animation_player *AnimationPlayer = &GameState->AnimationPlayer;
-				Animate(GameState, AnimationPlayer, Entity->AnimationState);
-				AnimationPlayerUpdate(AnimationPlayer, &GameState->TempArena, dt);
-				ModelJointsUpdate(AnimationPlayer);
-
 				mat4 Transform = EntityTransform(Entity, 0.025f);
 				model *Model = GameState->XBot;
 
@@ -618,7 +587,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	glUseProgram(FontShader);
 
-	font_info *FontInfo =  &GameState->FontQuad.Info;
+	font *FontInfo =  &GameState->Font;
 	f32 Scale = 0.35f;
 	f32 Gap = Scale * (f32)FontInfo->LineHeight / 64.0f;
 	f32 X = 0.0f;
@@ -627,7 +596,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	s32 WindowWidth = GameInput->BackBufferWidth;
 	s32 WindowHeight = GameInput->BackBufferHeight;
 	v2 MouseP = V2(GameInput->MouseX, GameInput->MouseY);
-	v2 P = V2(0.0f, Y);
+	v2 P = V2(X, Y);
 	v3 HoverColor = V3(1.0f, 1.0f, 0.0f);
 	v3 DefaultColor = V3(1.0f);
 
@@ -637,13 +606,14 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	rect Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 	if(InRect(Rect, MouseP))
 	{
-		OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, HoverColor, WindowWidth, WindowHeight);
+		OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, HoverColor, WindowWidth, WindowHeight);
 	}
 	else
 	{
-		OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+		OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 	}
 
+#if 0
 	P.y -= (Gap + dY);
 	f32 Angle = DirectionToEuler(-1.0f * Entity->dP).yaw;
 	sprintf(Buff, "%s%.2f", "yaw:", Angle);
@@ -667,8 +637,116 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
+	P.y -= (Gap + dY);
+	sprintf(Buff, "%s", "Animation Control");
+	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+	P.y -= (Gap + dY);
+	P.y -= (Gap + dY);
 	EntityAnimationState(Buff, Entity);
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+#endif
+	P.y -= (Gap + dY);
+	sprintf(Buff, "%s", "Animation Control");
+	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+
+	P.x += 20.0f;
+	P.y -= (Gap + dY);
+	EntityAnimationState(Buff, Entity);
+	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)
+	{
+		if(Animation)
+		{
+			P.y -= (Gap + dY);
+			sprintf(Buff, "Name: %s", Animation->Name);
+			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+			P.y -= (Gap + dY);
+			sprintf(Buff, "%s %.2f", "Duration: ", Animation->Duration);
+			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+			P.y -= (Gap + dY);
+			sprintf(Buff, "%s %.2f", "t: ", Animation->CurrentTime);
+			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+			P.y -= (Gap + dY);
+			sprintf(Buff, "%s %.2f", "blend duration: ", Animation->BlendDuration);
+			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+			P.y -= (Gap + dY);
+			sprintf(Buff, "%s %.2f", "blend_t: ", Animation->BlendCurrentTime);
+			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+			P.y -= (Gap + dY);
+			sprintf(Buff, "%s %.2f", "blend: ", Animation->BlendFactor);
+			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
+			P.y -= (Gap + dY);
+
+		}
+	}
+
+	//
+	// NOTE(Justin): Render to texture
+	//
+
+	glViewport(0, 0, GameState->TextureWidth, GameState->TextureHeight);
+	glBindFramebuffer(GL_FRAMEBUFFER, GameState->FBO);
+	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+	glEnable(GL_DEPTH_TEST);
+
+	mat4 Transform = EntityTransform(Entity, 0.025f);
+	model *Model = GameState->XBot;
+	glUseProgram(MainShader);
+	UniformMatrixSet(MainShader, "View", GameState->CameraTransform);
+
+	mat4 Persp = Mat4Perspective(GameState->FOV, ((f32)GameState->TextureWidth / (f32)GameState->TextureHeight), GameState->ZNear, GameState->ZFar);
+	UniformMatrixSet(MainShader, "Projection", Persp);
+	UniformV3Set(MainShader, "CameraP", Camera->P);
+	UniformV3Set(MainShader, "Ambient", V3(0.1f));
+	UniformV3Set(MainShader, "CameraP", Camera->P);
+	UniformV3Set(MainShader, "LightDir", LightDir);
+	OpenGLDrawAnimatedModel(Model, MainShader, Transform);
+
+	//
+	// NOTE(Justin): Display texture in default framebuffer
+	//
+
+	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	u32 ScreenShader = GameState->Shaders[3];
+	quad_2d *Quad2d = &GameState->Quad2d; 
+
+	P = V2(0.0f);
+	f32 Width = (f32)GameState->TextureWidth;
+	f32 Height = (f32)GameState->TextureHeight;
+
+	Rect = RectMinDim(P, V2(Width, Height));
+	f32 Vertices[6][4] =
+	{
+		{Rect.Min.x, Rect.Min.y, 0.0f, 0.0f},
+		{Rect.Max.x, Rect.Min.y, 1.0f, 0.0f},
+		{Rect.Max.x, Rect.Max.y, 1.0f, 1.0f},
+
+		{Rect.Max.x, Rect.Max.y, 1.0f, 1.0f},
+		{Rect.Min.x, Rect.Max.y, 0.0f, 1.0f},
+		{Rect.Min.x, Rect.Min.y, 0.0f, 0.0f},
+	};
+
+	glUseProgram(ScreenShader);
+	glActiveTexture(GL_TEXTURE0);
+	UniformBoolSet(ScreenShader, "Texture", 0);
+	UniformF32Set(ScreenShader, "WindowWidth", (f32)WindowWidth);
+	UniformF32Set(ScreenShader, "WindowHeight", (f32)WindowHeight);
+	glBindTexture(GL_TEXTURE_2D, GameState->Texture);
+	glBindVertexArray(Quad2d->VA);
+	glBindBuffer(GL_ARRAY_BUFFER, Quad2d->VB);
+	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
+	glDrawArrays(GL_TRIANGLES, 0, 6);
 
 	ArenaClear(&GameState->TempArena);
 }

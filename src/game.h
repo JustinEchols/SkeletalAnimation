@@ -61,7 +61,6 @@ MemoryZero(void * Src, memory_index Size)
 	}
 }
 
-
 inline temporary_memory
 TemporaryMemoryBegin(memory_arena *Arena)
 {
@@ -126,6 +125,7 @@ struct entity
 	v3 dP;
 	v3 ddP;
 	quaternion Orientation;
+	quaternion TargetOrientation;
 	f32 Theta;
 	f32 dTheta;
 };
@@ -148,11 +148,19 @@ struct quad
 	quad_vertex Vertices[6];
 };
 
+struct quad_2d
+{
+	u32 VA;
+	u32 VB;
+	u32 Texture;
+};
+
 struct camera
 {
 	v3 P;
 	v3 Direction;
 };
+
 
 struct game_state
 {
@@ -177,6 +185,7 @@ struct game_state
 	v3 CameraOffsetFromPlayer;
 	mat4 CameraTransform;
 
+	f32 Angle;
 	f32 TimeScale;
 	f32 FOV;
 	f32 Aspect;
@@ -185,12 +194,17 @@ struct game_state
 
 	mat4 Perspective;
 
-	f32 Angle;
-
 	u32 Shaders[4];
 	texture Textures[32];
 
-	font_quad FontQuad;
+	font Font;
+
+	u32 FBO;
+	u32 RBO;
+	u32 Texture;
+	u32 TextureWidth;
+	u32 TextureHeight;
+	quad_2d Quad2d;
 };
 
 #define GAME_H
