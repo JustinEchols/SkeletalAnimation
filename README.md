@@ -3,8 +3,11 @@ Skeletal animation example.
 
 ## Dependencies
 stb_image.h for loading texture
+
 freetype for font rendering
+
 OpenGL for graphics
+
 C runtime library
 
 ## Build
