@@ -2,7 +2,7 @@
 Skeletal animation example.
 
 ## Dependencies
-stb_image.h for loading texture
+stb_image.h for loading textures
 
 freetype for font rendering
 
