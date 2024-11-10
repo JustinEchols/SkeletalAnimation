@@ -218,7 +218,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 	}
 
 	Animation->BlendingOut = false;
-	Animation->BlendingComposite = true;
+	Animation->BlendingComposite = false;
 
 	Animation->ID = NewAnimation->ID;
 	Animation->Info = NewAnimation->Info;
@@ -652,12 +652,8 @@ AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
 // end graph node.
 internal void
 AnimationGraphNodeAddArc(animation_graph_node *Node, char *InboundMessage, animation_graph_node *Dest,
-																	arc_type Type,
-																	f32 t0 = 0.0f,
-																	f32 t1 = 0.0f,
-																	f32 RemainingTimeBeforeCrossFade = 0.2f,
-																	b32 BlendDurationSet = false,
-																	f32 BlendDuration = 0.0f)
+							arc_type Type, f32 t0 = 0.0f, f32 t1 = 0.0f, f32 RemainingTimeBeforeCrossFade = 0.2f,
+							b32 BlendDurationSet = false, f32 BlendDuration = 0.0f)
 {
 	Assert(Node->ArcCount < ArrayCount(Node->Arcs));
 	animation_graph_arc *Arc = Node->Arcs + Node->ArcCount++;
@@ -692,7 +688,6 @@ AnimationGraphInitialize(animation_graph *Graph, memory_arena *Arena)
 	animation_graph_node *SprintMirror	= AnimationGraphNodeAdd(Graph, "AnimationState_SprintMirror");
 	animation_graph_node *JumpForward	= AnimationGraphNodeAdd(Graph, "AnimationState_JumpForward");
 
-
 	AnimationGraphNodeAddArc(IdleRight, "go_state_run",		Running, ArcType_None);
 	AnimationGraphNodeAddArc(IdleRight, "go_state_sprint",  Sprint,  ArcType_None);
 
@@ -713,13 +708,15 @@ AnimationGraphInitialize(animation_graph *Graph, memory_arena *Arena)
 	AnimationGraphNodeAddArc(RunningMirror, "go_state_sprint",	 Sprint,	  ArcType_TimeInterval, 0.0f, 0.7f);
 	AnimationGraphNodeAddArc(RunningMirror, "go_state_jump",	 JumpForward, ArcType_None);
 
-	AnimationGraphNodeAddArc(Sprint, "go_state_idle", IdleRight, ArcType_None);
+	AnimationGraphNodeAddArc(Sprint, "go_state_idle", IdleRight, ArcType_TimeInterval, 0.0f, 0.25f);
+	AnimationGraphNodeAddArc(Sprint, "go_state_idle", IdleLeft,  ArcType_TimeInterval, 0.25f, 0.5f);
 	AnimationGraphNodeAddArc(Sprint, "go_state_run",  Running,	 ArcType_None);
 
-	AnimationGraphNodeAddArc(SprintMirror, "go_state_idle", IdleLeft,	 ArcType_None);
-	AnimationGraphNodeAddArc(SprintMirror, "go_state_run",  Running,	 ArcType_None);
+	AnimationGraphNodeAddArc(SprintMirror, "go_state_idle", IdleLeft,  ArcType_TimeInterval, 0.0f, 0.25f);
+	AnimationGraphNodeAddArc(SprintMirror, "go_state_idle", IdleRight, ArcType_TimeInterval, 0.25f, 0.5f);
+	AnimationGraphNodeAddArc(SprintMirror, "go_state_run",  Running,   ArcType_None);
 
-	AnimationGraphNodeAddWhenDoneArc(JumpForward, "go_state_run", Running,0.3f);
+	AnimationGraphNodeAddWhenDoneArc(JumpForward, "go_state_run", Running, 0.3f);
 
 	Graph->CurrentNode = *IdleRight;
 }
