@@ -532,8 +532,9 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 							}
 						}
 					} break;
-					case AnimationState_Invalid:
+					case MovementState_Invalid:
 					{
+						//Assert("Invalid movement state");
 						// NOTE(Justin): AnimationState is initalized to invalid.
 						// First time this is hit, we set the state to idle.
 						Entity->MovementState = MovementState_Invalid;

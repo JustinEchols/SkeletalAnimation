@@ -105,6 +105,8 @@ enum movement_state
 	MovementState_Run,
 	MovementState_Sprint,
 	MovementState_Jump,
+	MovementState_TurningRight,
+	MovementState_TurningLeft,
 };
 
 enum entity_type
@@ -113,8 +115,6 @@ enum entity_type
 	EntityType_Player,
 	EntityType_Cube,
 };
-
-
 
 #include "intrinsics.h"
 #include "math.h"
@@ -130,7 +130,6 @@ struct entity
 {
 	entity_type Type;
 	movement_state MovementState;
-	//animation_state AnimationState;
 
 	v3 P;
 	v3 dP;
@@ -172,7 +171,6 @@ struct camera
 	v3 P;
 	v3 Direction;
 };
-
 
 struct game_state
 {

@@ -1,16 +1,5 @@
 #if !defined(ANIMATION_H)
 
-#if 0
-struct animation_names
-{
-	string Name;
-	string FullPath;
-	b32 Loaded;
-	b32 Dirty;
-	table Table;
-};
-#endif
-
 enum animation_name
 {
 	Animation_IdleRight,
@@ -20,26 +9,30 @@ enum animation_name
 	Animation_JumpForward,
 	Animation_RunMirror,
 	Animation_SprintMirror,
+	Animation_StandingToIdleRight,
+	Animation_StandingToIdleLeft,
 };
+
+/*
+ * IdleRight -> Run
+ * IdleRight -> Sprint 
+ *
+ * IdleLeft -> RunMirror
+ * IdleRight-> SprintMirror
+*/
 
 char *AnimationFiles[] =
 {
-	"..\\data\\XBot_IdleRight.animation", // can transition to running and sprint
-	"..\\data\\XBot_IdleLeft.animation", // can transition to mirrored running and sprint
+	"..\\data\\XBot_IdleRight.animation",
+	"..\\data\\XBot_IdleLeft.animation",
 	"..\\data\\XBot_Running.animation",
 	"..\\data\\XBot_FastRun.animation",
 	"..\\data\\XBot_JumpForward.animation",
 	"..\\data\\XBot_RunningMirror.animation",
 	"..\\data\\XBot_FastRunMirror.animation",
-};
+	"..\\data\\XBot_StandingToIdleRight.animation",
+	"..\\data\\XBot_StandingToIdleLeft.animation",
 
-enum animation_state
-{
-	AnimationState_Invalid = 0x0,
-	AnimationState_Idle = 0x1,
-	AnimationState_Running = 0x3,
-	AnimationState_Sprint = 0x4,
-	AnimationState_JumpForward = 0x5,
 };
 
 struct key_frame
@@ -115,8 +108,11 @@ struct animation_graph_arc
 	f32 RemainingTimeBeforeCrossFade;
 	arc_type Type;
 	f32 t0, t1;
+	b32 BlendDurationSet;
+	f32 BlendDuration;
 };
 
+// TODO(Justin): Node type? Additive, nblend, composite...
 struct animation_graph_node
 {
 	string Name;
@@ -139,7 +135,6 @@ struct animation_graph
 struct animation_player
 {
 	b32 IsInitialized;
-	animation_state State;
 	movement_state MovementState;
 
 	memory_arena *Arena;

@@ -118,7 +118,7 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 {
 	if(Model)
 	{
-		AnimationPlayer->State = AnimationState_Idle;
+		AnimationPlayer->MovementState = MovementState_Idle;
 		AnimationPlayer->Arena = Arena;
 		AnimationPlayer->Channels = 0;
 		AnimationPlayer->FreeChannels = 0;
@@ -145,7 +145,7 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 
 internal void
 //AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendFactor, f32 BlendDuration = 0.0f)
-AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendDuration = 0.0f)
+AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendDuration = 0.0f, f32 TimeOffset = 0.0f)
 {
 	Assert(AnimationPlayer->IsInitialized);
 
@@ -162,7 +162,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 	{
 		if(Current->ID.Value == NewAnimation->ID.Value)
 		{
-#if 1
+#if 0
 			// TODO(Justin): Really think through the correct way to handle this....
 			// TODO(Justin): Really think through the correct way to handle this....
 			// TODO(Justin): Really think through the correct way to handle this....
@@ -172,13 +172,13 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 			// The solution right now is idle -> run -> 0
 			// Since the blend between the orginal idle is zeroed out, there exists a discontinuity pop.
 			animation *Channel = AnimationPlayer->Channels;
-			//Animation->CurrentTime = Current->CurrentTime;
+			Animation->CurrentTime = Current->CurrentTime;
 			Assert(Channel->Next->ID.Value == NewAnimation->ID.Value);
 			Channel->Next = Current->Next;
 			Current->Next = AnimationPlayer->FreeChannels;
 			AnimationPlayer->FreeChannels = Current;
 #else
-			return;
+			//return;
 #endif
 		}
 	}
@@ -200,7 +200,8 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 	Animation->Name = NewAnimation->Name;
 	Animation->Flags = NewAnimation->DefaultFlags | AnimationFlags_Playing;
 	Animation->Duration = NewAnimation->Info->Duration;
-	Animation->CurrentTime = 0.0f;
+	//Animation->CurrentTime = 0.0f;
+	Animation->CurrentTime = TimeOffset;
 	Animation->OldTime = 0.0f;
 	Animation->TimeScale = 1.0f;
 	Animation->BlendFactor = 1.0f;
@@ -328,7 +329,7 @@ AnimationGet(game_state *GameState, animation_name Name)
 
 internal void
 SwitchToNode(game_state *GameState, animation_player *AnimationPlayer,
-									animation_graph *Graph, string Dest, f32 BlendDuration = 0.2f)
+									animation_graph *Graph, string Dest, f32 BlendDuration)
 {
 	for(u32 Index = 0; Index < Graph->NodeCount; ++Index)
 	{
@@ -374,7 +375,7 @@ SwitchToNode(game_state *GameState, animation_player *AnimationPlayer,
 }
 
 internal animation *
-AnimationLastGet(animation_player *AnimationPlayer)
+AnimationOldestGet(animation_player *AnimationPlayer)
 {
 	animation *Result = 0;
 
@@ -394,6 +395,7 @@ MessageSend(game_state *GameState, animation_player *AnimationPlayer, animation_
 {
 	animation_graph_node *Node = &Graph->CurrentNode;
 	string Dest = {};
+	f32 DefaultBlendDuration = 0.2f;
 	for(u32 ArcIndex = 0; ArcIndex < Node->ArcCount; ++ArcIndex)
 	{
 		animation_graph_arc *Arc = Node->Arcs + ArcIndex;
@@ -402,7 +404,7 @@ MessageSend(game_state *GameState, animation_player *AnimationPlayer, animation_
 			b32 ShouldSend = true;
 			if(Arc->Type == ArcType_TimeInterval)
 			{
-				animation *Animation = AnimationLastGet(AnimationPlayer);
+				animation *Animation = AnimationOldestGet(AnimationPlayer);
 				f32 t = Animation->CurrentTime;
 				if((t < Arc->t0) || (t > Arc->t1))
 				{
@@ -413,6 +415,10 @@ MessageSend(game_state *GameState, animation_player *AnimationPlayer, animation_
 			if(ShouldSend)
 			{
 				Dest = Arc->Destination;
+				if(Arc->BlendDurationSet)
+				{
+					DefaultBlendDuration = Arc->BlendDuration;
+				}
 				break;
 			}
 		}
@@ -420,7 +426,7 @@ MessageSend(game_state *GameState, animation_player *AnimationPlayer, animation_
 
 	if(Dest.Size != 0)
 	{
-		SwitchToNode(GameState, AnimationPlayer, Graph, Dest);
+		SwitchToNode(GameState, AnimationPlayer, Graph, Dest, DefaultBlendDuration);
 	}
 }
 
@@ -642,12 +648,16 @@ AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
 	return(Node);
 }
 
+// TODO(Justin): Inseat of having a bunch of defaults. Should do begin graph node, then add parameters, then
+// end graph node.
 internal void
 AnimationGraphNodeAddArc(animation_graph_node *Node, char *InboundMessage, animation_graph_node *Dest,
 																	arc_type Type,
 																	f32 t0 = 0.0f,
 																	f32 t1 = 0.0f,
-																	f32 RemainingTimeBeforeCrossFade = 0.2f)
+																	f32 RemainingTimeBeforeCrossFade = 0.2f,
+																	b32 BlendDurationSet = false,
+																	f32 BlendDuration = 0.0f)
 {
 	Assert(Node->ArcCount < ArrayCount(Node->Arcs));
 	animation_graph_arc *Arc = Node->Arcs + Node->ArcCount++;
@@ -657,6 +667,8 @@ AnimationGraphNodeAddArc(animation_graph_node *Node, char *InboundMessage, anima
 	Arc->Type = Type;
 	Arc->t0 = t0;
 	Arc->t1 = t1;
+	Arc->BlendDurationSet = BlendDurationSet;
+	Arc->BlendDuration = BlendDuration;
 }
 
 internal void
@@ -672,13 +684,13 @@ AnimationGraphInitialize(animation_graph *Graph, memory_arena *Arena)
 {
 	Graph->Arena = Arena;
 
-	animation_graph_node *IdleRight = AnimationGraphNodeAdd(Graph, "AnimationState_IdleRight");
-	animation_graph_node *IdleLeft	= AnimationGraphNodeAdd(Graph, "AnimationState_IdleLeft");
-	animation_graph_node *Running	= AnimationGraphNodeAdd(Graph, "AnimationState_Running");
+	animation_graph_node *IdleRight		= AnimationGraphNodeAdd(Graph, "AnimationState_IdleRight");
+	animation_graph_node *IdleLeft		= AnimationGraphNodeAdd(Graph, "AnimationState_IdleLeft");
+	animation_graph_node *Running		= AnimationGraphNodeAdd(Graph, "AnimationState_Running");
 	animation_graph_node *RunningMirror	= AnimationGraphNodeAdd(Graph, "AnimationState_RunningMirror");
-	animation_graph_node *Sprint	= AnimationGraphNodeAdd(Graph, "AnimationState_Sprint");
+	animation_graph_node *Sprint		= AnimationGraphNodeAdd(Graph, "AnimationState_Sprint");
 	animation_graph_node *SprintMirror	= AnimationGraphNodeAdd(Graph, "AnimationState_SprintMirror");
-	animation_graph_node *JumpForward = AnimationGraphNodeAdd(Graph, "AnimationState_JumpForward");
+	animation_graph_node *JumpForward	= AnimationGraphNodeAdd(Graph, "AnimationState_JumpForward");
 
 
 	AnimationGraphNodeAddArc(IdleRight, "go_state_run",		Running, ArcType_None);
@@ -693,12 +705,12 @@ AnimationGraphInitialize(animation_graph *Graph, memory_arena *Arena)
 
 	AnimationGraphNodeAddArc(Running, "go_state_idle",	 IdleRight,	  ArcType_TimeInterval, 0.0f, 0.4f);
 	AnimationGraphNodeAddArc(Running, "go_state_idle",	 IdleLeft,	  ArcType_TimeInterval, 0.4f, 0.7f);
-	AnimationGraphNodeAddArc(Running, "go_state_sprint", Sprint,	  ArcType_None);
+	AnimationGraphNodeAddArc(Running, "go_state_sprint", Sprint,	  ArcType_TimeInterval, 0.0f, 0.7f);
 	AnimationGraphNodeAddArc(Running, "go_state_jump",	 JumpForward, ArcType_None);
 
 	AnimationGraphNodeAddArc(RunningMirror, "go_state_idle",	 IdleLeft,	  ArcType_TimeInterval, 0.0f, 0.4f);
 	AnimationGraphNodeAddArc(RunningMirror, "go_state_idle",	 IdleRight,	  ArcType_TimeInterval, 0.4f, 0.7f);
-	AnimationGraphNodeAddArc(RunningMirror, "go_state_sprint",	 Sprint,	  ArcType_None);
+	AnimationGraphNodeAddArc(RunningMirror, "go_state_sprint",	 Sprint,	  ArcType_TimeInterval, 0.0f, 0.7f);
 	AnimationGraphNodeAddArc(RunningMirror, "go_state_jump",	 JumpForward, ArcType_None);
 
 	AnimationGraphNodeAddArc(Sprint, "go_state_idle", IdleRight, ArcType_None);
@@ -717,7 +729,7 @@ AnimationGraphPerFrameUpdate(game_state *GameState, animation_player *AnimationP
 													animation_graph *Graph)
 {
 	//Find the channel playing the currently active animation.
-	animation *Oldest = AnimationLastGet(AnimationPlayer);
+	animation *Oldest = AnimationOldestGet(AnimationPlayer);
 	if(!Oldest)
 	{
 		return;
