@@ -1,4 +1,21 @@
 
+// NOTE(Justin): Calling animation play everytime is what allows
+// the animation system to "work" currently. If we only allow an animation to play during a 
+// state change then if a sudden state change happens such as idle -> run -> idle
+// what ends up happening is that the idle and run animation do not complete the cross fade.
+// Since the cross fade is not complete both animations are still active. Since both are still active
+// the idle animation is active. if the idle animation is still active and we try and play another idle 
+// animation then it will return immedialtey. The result is that the original blend between idle and run
+// will complete the cross fade. When this happens the idle animation drops and we are left with a running animation
+// that keeps looping even though from the game perspective the player is not moving.
+//
+// Q: How do we fix this without having to call animation play everytime?
+// Or is calling animation play everytime an ok solution?
+//
+// Q: Do we force the blend to complete before moving to another animation?
+// If we play animation that is currently blending with another then we already force the blend to complete before
+// playing the animation 
+
 inline void
 FlagAdd(animation *Animation, u32 Flag)
 {
@@ -131,32 +148,6 @@ internal void
 AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendDuration = 0.0f)
 {
 	Assert(AnimationPlayer->IsInitialized);
-	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
-	{
-		if(Current->ID.Value == NewAnimation->ID.Value)
-		{
-			// Animation is already playing, so return.
-			return;
-		}
-
-		// NOTE(Justin): This sort of works. We need a way to be able to complete 
-		// animation and blend out. Otherwise we get discontinuity 
-		if(FlagIsSet(Current, AnimationFlags_MustFinish) && !Finished(Current))
-		{
-			return;
-		}
-	}
-
-	if(BlendDuration != 0.0f)
-	{
-		// Blend out currently playing animations
-		for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
-		{
-			Current->BlendDuration = BlendDuration;
-			Current->BlendCurrentTime = 0.0f;
-			Current->BlendingOut = true;
-		}
-	}
 
 	if(!AnimationPlayer->FreeChannels)
 	{
@@ -166,6 +157,45 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 
 	animation *Animation = AnimationPlayer->FreeChannels;
 	AnimationPlayer->FreeChannels = Animation->Next;
+
+	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
+	{
+		if(Current->ID.Value == NewAnimation->ID.Value)
+		{
+#if 1
+			// TODO(Justin): Really think through the correct way to handle this....
+			// TODO(Justin): Really think through the correct way to handle this....
+			// TODO(Justin): Really think through the correct way to handle this....
+			// Most likely this is hack for now..
+			// Probably will force the player to complete at least one step if they transition quickly such as
+			// idle -> run -> idle
+			// The solution right now is idle -> run -> 0
+			// Since the blend between the orginal idle is zeroed out, there exists a discontinuity pop.
+			animation *Channel = AnimationPlayer->Channels;
+			//Animation->CurrentTime = Current->CurrentTime;
+			Assert(Channel->Next->ID.Value == NewAnimation->ID.Value);
+			Channel->Next = Current->Next;
+			Current->Next = AnimationPlayer->FreeChannels;
+			AnimationPlayer->FreeChannels = Current;
+#else
+			return;
+#endif
+		}
+	}
+
+	if(BlendDuration != 0.0f)
+	{
+		// Blend out currently playing animations
+		for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
+		{
+			if(!Current->BlendingOut)
+			{
+				Current->BlendDuration = BlendDuration;
+				Current->BlendCurrentTime = 0.0f;
+				Current->BlendingOut = true;
+			}
+		}
+	}
 
 	Animation->Name = NewAnimation->Name;
 	Animation->Flags = NewAnimation->DefaultFlags | AnimationFlags_Playing;
@@ -188,7 +218,6 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 
 	Animation->BlendingOut = false;
 	Animation->BlendingComposite = true;
-
 
 	Animation->ID = NewAnimation->ID;
 	Animation->Info = NewAnimation->Info;
@@ -290,7 +319,6 @@ AnimationUpdate(animation *Animation, f32 dt)
 	Animation->BlendFactor = Clamp01(BlendFactor);
 }
 
-
 inline animation *
 AnimationGet(game_state *GameState, animation_name Name)
 {
@@ -298,56 +326,140 @@ AnimationGet(game_state *GameState, animation_name Name)
 	return(Result);
 }
 
-#define DEFAULT_BLEND_FACTOR 1.0f
 internal void
-Animate(game_state *GameState, animation_player *AnimationPlayer, animation_state State)
+SwitchToNode(game_state *GameState, animation_player *AnimationPlayer,
+									animation_graph *Graph, string Dest, f32 BlendDuration = 0.2f)
 {
-	// NOTE(Justin): Calling animation play everytime is what allows
-	// the animation system to "work" currently. If we only allow an animation to play during a 
-	// state change then if a sudden state change happens such as idle -> run -> idle
-	// what ends up happening is that the idle and run animation do not complete the cross fade.
-	// Since the cross fade is not complete both animations are still active. Since both are still active
-	// the idle animation is active. if the idle animation is still active and we try and play another idle 
-	// animation then it will return immedialtey. The result is that the original blend between idle and run
-	// will complete the cross fade. When this happens the idle animation drops and we are left with a running animation
-	// that keeps looping even though from the game perspective the player is not moving.
-	//
-	// Q: How do we fix this without having to call animation play everytime?
-	// Or is calling animation play everytime an ok solution?
-	//
-	// Q: Do we force the blend to complete before moving to another animation?
-	// If we play animation that is currently blending with another then we already force the blend to complete before
-	// playing the animation 
-	
-	//if(AnimationPlayer->State == State)
-	//{
-	//	return;
-	//}
-
-	animation_state OldState = AnimationPlayer->State;
-	AnimationPlayer->State = State;
-
-	switch(AnimationPlayer->State)
+	for(u32 Index = 0; Index < Graph->NodeCount; ++Index)
 	{
-		case AnimationState_Idle:
+		animation_graph_node *Node = Graph->Nodes + Index;
+		if(StringsAreSame(Node->Name, Dest))
 		{
-			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Idle), 0.2f);
-		} break;
-		case AnimationState_Running:
-		{
-			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), 0.2f);
-		} break;
-		case AnimationState_Sprint:
-		{
-			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Sprint), 0.2f);
-		} break;
-		case AnimationState_JumpForward:
-		{
-			AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_JumpForward), 0.2f);
-		} break;
+			Graph->CurrentNode = *Node;
+			Graph->Index = Index;
+			break;
+		}
+	}
+
+	// TODO(Justin): Asset manager.
+	animation_graph_node *Node = &GameState->Graph.CurrentNode;
+	if(StringsAreSame(Node->Name, "AnimationState_IdleRight"))
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleRight), BlendDuration);
+	}
+	else if(StringsAreSame(Node->Name, "AnimationState_IdleLeft"))
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleLeft), BlendDuration);
+	}
+	else if(StringsAreSame(Node->Name, "AnimationState_Running"))
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), BlendDuration);
+	}
+	else if(StringsAreSame(Node->Name, "AnimationState_RunningMirror"))
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_RunMirror), BlendDuration);
+	}
+	else if(StringsAreSame(Node->Name, "AnimationState_Sprint"))
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Sprint), BlendDuration);
+	}
+	else if(StringsAreSame(Node->Name, "AnimationState_SprintMirror"))
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_SprintMirror), BlendDuration);
+	}
+	else if(StringsAreSame(Node->Name, "AnimationState_JumpForward"))
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_JumpForward), BlendDuration);
 	}
 }
 
+internal animation *
+AnimationLastGet(animation_player *AnimationPlayer)
+{
+	animation *Result = 0;
+
+	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
+	{
+		if(!Current->Next)
+		{
+			Result = Current;
+		}
+	}
+
+	return(Result);
+}
+
+internal void
+MessageSend(game_state *GameState, animation_player *AnimationPlayer, animation_graph *Graph, char *Message)
+{
+	animation_graph_node *Node = &Graph->CurrentNode;
+	string Dest = {};
+	for(u32 ArcIndex = 0; ArcIndex < Node->ArcCount; ++ArcIndex)
+	{
+		animation_graph_arc *Arc = Node->Arcs + ArcIndex;
+		if(StringsAreSame(Arc->Message, Message))
+		{
+			b32 ShouldSend = true;
+			if(Arc->Type == ArcType_TimeInterval)
+			{
+				animation *Animation = AnimationLastGet(AnimationPlayer);
+				f32 t = Animation->CurrentTime;
+				if((t < Arc->t0) || (t > Arc->t1))
+				{
+					ShouldSend = false;
+				}
+			}
+
+			if(ShouldSend)
+			{
+				Dest = Arc->Destination;
+				break;
+			}
+		}
+	}
+
+	if(Dest.Size != 0)
+	{
+		SwitchToNode(GameState, AnimationPlayer, Graph, Dest);
+	}
+}
+
+internal void
+Animate(game_state *GameState, animation_player *AnimationPlayer, movement_state State)
+{
+	if(AnimationPlayer->PlayingCount == 0)
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleRight), 0.2f);
+		return;
+	}
+
+	if(AnimationPlayer->MovementState == State)
+	{
+		return;
+	}
+
+	movement_state OldState = AnimationPlayer->MovementState;
+	AnimationPlayer->MovementState = State;
+	switch(AnimationPlayer->MovementState)
+	{
+		case MovementState_Idle:
+		{
+			MessageSend(GameState, AnimationPlayer, &GameState->Graph, "go_state_idle");
+		} break;
+		case MovementState_Run:
+		{
+			MessageSend(GameState, AnimationPlayer, &GameState->Graph, "go_state_run");
+		} break;
+		case MovementState_Sprint:
+		{
+			MessageSend(GameState, AnimationPlayer, &GameState->Graph, "go_state_sprint");
+		} break;
+		case MovementState_Jump:
+		{
+			MessageSend(GameState, AnimationPlayer, &GameState->Graph, "go_state_jump");
+		} break;
+	}
+}
 
 internal void
 AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena, f32 dt)
@@ -395,7 +507,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		MemoryZero(Pose->Positions, Mesh->JointCount * sizeof(v3));
 		MemoryZero(Pose->Orientations, Mesh->JointCount * sizeof(quaternion));
 		MemoryZero(Pose->Scales, Mesh->JointCount * sizeof(v3));
-		
 	}
 
 	f32 FactorSum = 0.0f;
@@ -462,6 +573,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	}
 }
 
+// TODO(Justin): Fold this into AnimationPlayerUpdate?
 internal void
 ModelJointsUpdate(animation_player *AnimationPlayer)
 {
@@ -514,5 +626,109 @@ ModelJointsUpdate(animation_player *AnimationPlayer)
 				Mesh->ModelSpaceTransforms[JointIndex] = JointTransform * InvBind;
 			}
 		}
+	}
+}
+
+
+internal animation_graph_node * 
+AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
+{
+	Assert(Graph->NodeCount < ArrayCount(Graph->Nodes));
+	animation_graph_node *Node = Graph->Nodes + Graph->NodeCount;
+	Node->Name = StringCopy(Graph->Arena, Name);
+	//Node->Tag = StringCopy(Graph->Arena, Animation);
+	Node->Index = Graph->NodeCount++;
+
+	return(Node);
+}
+
+internal void
+AnimationGraphNodeAddArc(animation_graph_node *Node, char *InboundMessage, animation_graph_node *Dest,
+																	arc_type Type,
+																	f32 t0 = 0.0f,
+																	f32 t1 = 0.0f,
+																	f32 RemainingTimeBeforeCrossFade = 0.2f)
+{
+	Assert(Node->ArcCount < ArrayCount(Node->Arcs));
+	animation_graph_arc *Arc = Node->Arcs + Node->ArcCount++;
+	Arc->Destination = Dest->Name;
+	Arc->Message = String(InboundMessage);
+	Arc->RemainingTimeBeforeCrossFade = RemainingTimeBeforeCrossFade;
+	Arc->Type = Type;
+	Arc->t0 = t0;
+	Arc->t1 = t1;
+}
+
+internal void
+AnimationGraphNodeAddWhenDoneArc(animation_graph_node *Node, char *Message, animation_graph_node *Dest, f32 RemainingTimeBeforeCrossFade= 0.2f)
+{
+	Node->WhenDone.Destination = Dest->Name;
+	Node->WhenDone.Message = String(Message);
+	Node->WhenDone.RemainingTimeBeforeCrossFade = RemainingTimeBeforeCrossFade;
+}
+
+internal void
+AnimationGraphInitialize(animation_graph *Graph, memory_arena *Arena)
+{
+	Graph->Arena = Arena;
+
+	animation_graph_node *IdleRight = AnimationGraphNodeAdd(Graph, "AnimationState_IdleRight");
+	animation_graph_node *IdleLeft	= AnimationGraphNodeAdd(Graph, "AnimationState_IdleLeft");
+	animation_graph_node *Running	= AnimationGraphNodeAdd(Graph, "AnimationState_Running");
+	animation_graph_node *RunningMirror	= AnimationGraphNodeAdd(Graph, "AnimationState_RunningMirror");
+	animation_graph_node *Sprint	= AnimationGraphNodeAdd(Graph, "AnimationState_Sprint");
+	animation_graph_node *SprintMirror	= AnimationGraphNodeAdd(Graph, "AnimationState_SprintMirror");
+	animation_graph_node *JumpForward = AnimationGraphNodeAdd(Graph, "AnimationState_JumpForward");
+
+
+	AnimationGraphNodeAddArc(IdleRight, "go_state_run",		Running, ArcType_None);
+	AnimationGraphNodeAddArc(IdleRight, "go_state_sprint",  Sprint,  ArcType_None);
+
+	AnimationGraphNodeAddArc(IdleLeft, "go_state_run",		RunningMirror, ArcType_None);
+	AnimationGraphNodeAddArc(IdleLeft, "go_state_sprint",	SprintMirror,  ArcType_None);
+																					   
+	// NOTE(Justin): The game movement state thinks about the player as idle only and should not have to care about 
+	// what animation is playing. This means that the idle movement state can be mapped to > 1 animation states and the 
+	// animation graph is responsible for choosing which idle animation based on certain parameters.
+
+	AnimationGraphNodeAddArc(Running, "go_state_idle",	 IdleRight,	  ArcType_TimeInterval, 0.0f, 0.4f);
+	AnimationGraphNodeAddArc(Running, "go_state_idle",	 IdleLeft,	  ArcType_TimeInterval, 0.4f, 0.7f);
+	AnimationGraphNodeAddArc(Running, "go_state_sprint", Sprint,	  ArcType_None);
+	AnimationGraphNodeAddArc(Running, "go_state_jump",	 JumpForward, ArcType_None);
+
+	AnimationGraphNodeAddArc(RunningMirror, "go_state_idle",	 IdleLeft,	  ArcType_TimeInterval, 0.0f, 0.4f);
+	AnimationGraphNodeAddArc(RunningMirror, "go_state_idle",	 IdleRight,	  ArcType_TimeInterval, 0.4f, 0.7f);
+	AnimationGraphNodeAddArc(RunningMirror, "go_state_sprint",	 Sprint,	  ArcType_None);
+	AnimationGraphNodeAddArc(RunningMirror, "go_state_jump",	 JumpForward, ArcType_None);
+
+	AnimationGraphNodeAddArc(Sprint, "go_state_idle", IdleRight, ArcType_None);
+	AnimationGraphNodeAddArc(Sprint, "go_state_run",  Running,	 ArcType_None);
+
+	AnimationGraphNodeAddArc(SprintMirror, "go_state_idle", IdleLeft,	 ArcType_None);
+	AnimationGraphNodeAddArc(SprintMirror, "go_state_run",  Running,	 ArcType_None);
+
+	AnimationGraphNodeAddWhenDoneArc(JumpForward, "go_state_run", Running,0.3f);
+
+	Graph->CurrentNode = *IdleRight;
+}
+
+internal void
+AnimationGraphPerFrameUpdate(game_state *GameState, animation_player *AnimationPlayer,
+													animation_graph *Graph)
+{
+	//Find the channel playing the currently active animation.
+	animation *Oldest = AnimationLastGet(AnimationPlayer);
+	if(!Oldest)
+	{
+		return;
+	}
+
+	f32 RemainingTime = Oldest->Info->Duration - Oldest->CurrentTime;
+	animation_graph_node *Node = &Graph->CurrentNode;
+	animation_graph_arc Arc = Node->WhenDone;
+	if((Arc.Destination.Size != 0) && (RemainingTime <= Arc.RemainingTimeBeforeCrossFade))
+	{
+		f32 FadeTime = Clamp01(RemainingTime);
+		SwitchToNode(GameState, AnimationPlayer, Graph, Arc.Destination, FadeTime);
 	}
 }

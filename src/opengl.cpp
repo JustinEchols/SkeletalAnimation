@@ -118,7 +118,7 @@ void main()
 	}
 	else
 	{
-		Diffuse = D * texture(Texture, UV).rgb;
+		Diffuse = D *  texture(Texture, UV).rgb;
 	}
 
 	Result = vec4(Ambient + Diffuse, A);
@@ -152,32 +152,6 @@ void main()
 	float A = texture(Texture, UV).r;
 	Result = vec4(Color, A);
 })";
-
-
-#if 0
-char *QuadVS = R"(
-#version 430 core
-layout (location = 1) in vec2 Offset;
-layout (location = 2) in vec4 MinMax;
-void main()
-{
-	vec2 Center = 0.5*(MinMax.xy + MinMax.zw);
-	vec2 HalfDim = 0.5(MinMax.zy - MinMax.xy);
-	vec2 P = Center + Offset * HalfDim;
-	gl_Position = vec4(P, 0.0, 1.0);
-})";
-
-char *QuadFS = R"(
-#version 430 core
-uniform vec3 Color;
-uniform float Alpha;
-
-out vec4 Result;
-void main()
-{
-	Result = vec4(Color, Alpha);
-})";
-#endif
 
 char *ScreenVS = R"(
 #version 430 core

@@ -47,3 +47,24 @@ Win32FileReadEntire(char *FileName)
 
 	return(Result);
 }
+
+internal FILETIME 
+Win32FileLastWriteTime(char *FileName)
+{
+	FILETIME LastWriteTime = {};
+
+	WIN32_FILE_ATTRIBUTE_DATA FileData;
+	if(GetFileAttributesExA(FileName, GetFileExInfoStandard, &FileData))
+	{
+		LastWriteTime = FileData.ftLastWriteTime;
+	}
+
+	return(LastWriteTime);
+}
+
+internal b32
+Win32FileTimeCompare(FILETIME T1, FILETIME T2)
+{
+	b32 Result = (CompareFileTime(&T1, &T2) != 0);
+	return(Result);
+}

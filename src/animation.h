@@ -1,55 +1,45 @@
 #if !defined(ANIMATION_H)
 
+#if 0
+struct animation_names
+{
+	string Name;
+	string FullPath;
+	b32 Loaded;
+	b32 Dirty;
+	table Table;
+};
+#endif
+
 enum animation_name
 {
-	Animation_Idle,
-	Animation_Walk,
+	Animation_IdleRight,
+	Animation_IdleLeft,
 	Animation_Run,
 	Animation_Sprint,
-	Animation_Jump,
-	Animation_Wave,
-	Animation_IdleToSprint,
 	Animation_JumpForward,
+	Animation_RunMirror,
+	Animation_SprintMirror,
 };
 
 char *AnimationFiles[] =
 {
-	"..\\data\\XBot_ActionIdle.animation",
-	"..\\data\\XBot_Walking.animation",
+	"..\\data\\XBot_IdleRight.animation", // can transition to running and sprint
+	"..\\data\\XBot_IdleLeft.animation", // can transition to mirrored running and sprint
 	"..\\data\\XBot_Running.animation",
 	"..\\data\\XBot_FastRun.animation",
-	"..\\data\\XBot_Jumping.animation",
-	"..\\data\\XBot_Waving.animation",
-	"..\\data\\XBot_IdleToSprint.animation",
 	"..\\data\\XBot_JumpForward.animation",
-	"..\\data\\XBot_IdleLookAround.animation",
-	"..\\data\\XBot_FemaleWalk.animation",
-	"..\\data\\XBot_RightTurn.animation",
-	"..\\data\\XBot_LeftTurn.animation",
-	"..\\data\\XBot_PushingStart.animation",
-	"..\\data\\XBot_Pushing.animation",
-	"..\\data\\XBot_PushingStop.animation",
-	"..\\data\\XBot_ActionIdleToStandingIdle.animation",
-	"..\\data\\XBot_RunningToTurn.animation",
-	"..\\data\\XBot_RunningChangeDirection.animation",
-	"..\\data\\XBot_RunToStop.animation",
+	"..\\data\\XBot_RunningMirror.animation",
+	"..\\data\\XBot_FastRunMirror.animation",
 };
 
 enum animation_state
 {
 	AnimationState_Invalid = 0x0,
 	AnimationState_Idle = 0x1,
-	AnimationState_IdleToRun = 0x2,
-	AnimationState_IdleToSprint = 0x3,
-	AnimationState_Running = 0x4,
-	AnimationState_RunningToIdle = 0x5,
-	AnimationState_RunningToSprint = 0x6,
-	AnimationState_Sprint = 0x7,
-	AnimationState_SprintToIdle = 0x8,
-	AnimationState_SprintToRun = 0x9,
-	AnimationState_JumpForward = 0x10,
-	AnimationState_IdleWalkRun = 0x11,
-
+	AnimationState_Running = 0x3,
+	AnimationState_Sprint = 0x4,
+	AnimationState_JumpForward = 0x5,
 };
 
 struct key_frame
@@ -112,10 +102,45 @@ struct animation
 	key_frame *BlendedPose;
 };
 
+enum arc_type 
+{
+	ArcType_None,
+	ArcType_TimeInterval,
+};
+
+struct animation_graph_arc
+{
+	string Destination;
+	string Message;
+	f32 RemainingTimeBeforeCrossFade;
+	arc_type Type;
+	f32 t0, t1;
+};
+
+struct animation_graph_node
+{
+	string Name;
+	string Tag;
+	u32 Index;
+	u32 ArcCount;
+	animation_graph_arc Arcs[16];
+	animation_graph_arc WhenDone;
+};
+
+struct animation_graph
+{
+	memory_arena *Arena;
+	u32 NodeCount;
+	u32 Index;
+	animation_graph_node CurrentNode;
+	animation_graph_node Nodes[64];
+};
+
 struct animation_player
 {
 	b32 IsInitialized;
 	animation_state State;
+	movement_state MovementState;
 
 	memory_arena *Arena;
 	animation *Channels;

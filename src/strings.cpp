@@ -360,7 +360,7 @@ ParseF32Array(memory_arena *Arena, f32 *Dest, u32 DestCount, string Str)
 }
 
 internal string
-StringAllocAndCopy(memory_arena *Arena, string Str)
+StringCopy(memory_arena *Arena, string Str)
 {
 	Assert(Str.Data);
 
@@ -376,16 +376,16 @@ StringAllocAndCopy(memory_arena *Arena, string Str)
 }
 
 internal string
-StringAllocAndCopy(memory_arena *Arena, char *Cstr)
+StringCopy(memory_arena *Arena, char *Cstr)
 {
-	string Result = StringAllocAndCopy(Arena, String((u8 *)Cstr));
+	string Result = StringCopy(Arena, String((u8 *)Cstr));
 	return(Result);
 }
 
 internal string
-StringAllocAndCopy(memory_arena *Arena, u8 *Str)
+StringCopy(memory_arena *Arena, u8 *Str)
 {
-	string Result = StringAllocAndCopy(Arena, String(Str));
+	string Result = StringCopy(Arena, String(Str));
 	return(Result);
 }
 
@@ -399,7 +399,7 @@ ParseStringArray(memory_arena *Arena, string *Dest, u32 DestCount, string Str)
 	u32 Index = 0;
 	if(!IsNewLine(Tok))
 	{
-		Dest[Index++] = StringAllocAndCopy(Arena, Tok);
+		Dest[Index++] = StringCopy(Arena, Tok);
 	}
 
 	while(Tok)
@@ -409,7 +409,7 @@ ParseStringArray(memory_arena *Arena, string *Dest, u32 DestCount, string Str)
 		{
 			if(!IsNewLine(Tok))
 			{
-				Dest[Index++] = StringAllocAndCopy(Arena, Tok);
+				Dest[Index++] = StringCopy(Arena, Tok);
 			}
 		}
 	}
@@ -428,7 +428,7 @@ StringSplitIntoArray(memory_arena *Arena, string Str, u8 *Delimeters, u32 DelimC
 	string_node *StrNode = List.First;
 	for(u32 Index = 0; Index < List.Count; ++Index)
 	{
-		string S = StringAllocAndCopy(Arena, StrNode->String);
+		string S = StringCopy(Arena, StrNode->String);
 		S.Data[S.Size] = 0;
 		Result.Strings[Index] = S;
 		StrNode = StrNode->Next;

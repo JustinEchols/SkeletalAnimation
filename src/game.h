@@ -30,6 +30,13 @@ ArenaClear(memory_arena *Arena)
 	ArenaInitialize(Arena, Arena->Base, Arena->Size);
 }
 
+internal void
+ArenaSubset(memory_arena *Parent, memory_arena *Child, memory_index Size)
+{
+	ArenaInitialize(Child, Parent->Base + Parent->Used, Size);
+	Parent->Used += Size;
+}
+
 internal void *
 PushSize_(memory_arena *Arena, memory_index Size)
 {
@@ -91,6 +98,24 @@ PrintString(char *String)
 	OutputDebugStringA("\n");
 }
 
+enum movement_state
+{
+	MovementState_Invalid,
+	MovementState_Idle,
+	MovementState_Run,
+	MovementState_Sprint,
+	MovementState_Jump,
+};
+
+enum entity_type
+{
+	EntityType_Invalid,
+	EntityType_Player,
+	EntityType_Cube,
+};
+
+
+
 #include "intrinsics.h"
 #include "math.h"
 #include "strings.h"
@@ -101,25 +126,11 @@ PrintString(char *String)
 #include "animation.h"
 #include "asset.h"
 
-enum movement_state
-{
-	MovementState_Idle,
-	MovementState_Walking,
-	MovementState_Sprinting,
-};
-
-enum entity_type
-{
-	EntityType_Invalid,
-	EntityType_Player,
-	EntityType_Cube,
-};
-
 struct entity
 {
 	entity_type Type;
 	movement_state MovementState;
-	animation_state AnimationState;
+	//animation_state AnimationState;
 
 	v3 P;
 	v3 dP;
@@ -129,6 +140,7 @@ struct entity
 	f32 Theta;
 	f32 dTheta;
 };
+
 
 // TODO(Justin): quad_3d_vertex?
 struct quad_vertex
@@ -180,6 +192,9 @@ struct game_state
 	animation_player AnimationPlayer;
 	animation_info *AnimationInfos;
 	animation *Animations;
+
+	memory_arena GraphArena;
+	animation_graph Graph;
 
 	camera Camera;
 	v3 CameraOffsetFromPlayer;

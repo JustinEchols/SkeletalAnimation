@@ -28,7 +28,8 @@ PlayerAdd(game_state *GameState)
 	Entity->Theta = -180.0f;
 	Entity->dTheta = 0.0f;
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Entity->Theta);
-	Entity->AnimationState = AnimationState_Idle;
+	//Entity->AnimationState = AnimationState_Idle;
+	Entity->MovementState = MovementState_Idle;
 }
 
 internal void
@@ -58,23 +59,23 @@ EntityTransform(entity *Entity, f32 Scale = 1.0f)
 inline void 
 EntityAnimationState(char *Buffer, entity *Entity)
 {
-	switch(Entity->AnimationState)
+	switch(Entity->MovementState)
 	{
-		case AnimationState_Idle:
+		case MovementState_Idle:
 		{
-			sprintf(Buffer, "%s", "AnimationState: Idle");
+			sprintf(Buffer, "%s", "MovementState: Idle");
 		} break;
-		case AnimationState_Running:
+		case MovementState_Run:
 		{
-			sprintf(Buffer, "%s", "AnimationState: Run");
+			sprintf(Buffer, "%s", "MovementState: Running");
 		} break;
-		case AnimationState_Sprint:
+		case MovementState_Sprint:
 		{
-			sprintf(Buffer, "%s", "AnimationState: Sprint");
+			sprintf(Buffer, "%s", "MovementState: Sprint");
 		} break;
-		case AnimationState_JumpForward:
+		case MovementState_Jump:
 		{
-			sprintf(Buffer, "%s", "AnimationState: JumpForward");
+			sprintf(Buffer, "%s", "MovementState: JumpForward");
 		} break;
 	}
 }
@@ -166,8 +167,9 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	game_state *GameState = (game_state *)GameMemory->PermanentStorage;
 	if(!GameMemory->IsInitialized)
 	{
-
-		FontInit(&GameState->Font, "c:/windows/fonts/arial.ttf");
+		//
+		// NOTE(Justin): Arenas.
+		//
 
 		ArenaInitialize(&GameState->Arena, (u8 *)GameMemory->PermanentStorage + sizeof(game_state),
 												 GameMemory->PermanentStorageSize - sizeof(game_state)); 
@@ -177,35 +179,33 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 		memory_arena *Arena = &GameState->Arena;
 
+		//
+		// NOTE(Justin): Assets.
+		//
+
 		GameState->Textures[0] = TextureLoad("..\\data\\textures\\tile_gray.bmp");
 		GameState->Textures[1] = TextureLoad("..\\data\\textures\\left_arrow.png");
+		GameState->Textures[2] = TextureLoad("..\\data\\textures\\texture_01.png");
+
 		OpenGLAllocateTexture(&GameState->Textures[0]);
 		OpenGLAllocateTexture(&GameState->Textures[1]);
+		OpenGLAllocateTexture(&GameState->Textures[2]);
 
 		GameState->XBot = PushStruct(Arena, model);
-		*GameState->XBot = ModelLoad(Arena, "..\\data\\XBot.mesh");
-
 		GameState->Cube = PushStruct(Arena, model);
-		*GameState->Cube = ModelLoad(Arena, "..\\data\\Cube.mesh");
-		GameState->Cube->Meshes[0].TextureHandle = GameState->Textures[0].Handle;
-
 		GameState->Sphere = PushStruct(Arena, model);
-		*GameState->Sphere = ModelLoad(Arena, "..\\data\\Sphere.mesh");
-
 		GameState->Arrow = PushStruct(Arena, model);
-		*GameState->Arrow = ModelLoad(Arena, "..\\data\\Arrow.mesh");
-
 		GameState->Quad = QuadDefault();
+
+		*GameState->XBot	= ModelLoad(Arena, "..\\data\\XBot.mesh");
+		*GameState->Cube	= ModelLoad(Arena, "..\\data\\Cube.mesh");
+		*GameState->Sphere	= ModelLoad(Arena, "..\\data\\Sphere.mesh");
+		*GameState->Arrow	= ModelLoad(Arena, "..\\data\\Arrow.mesh");
+
+		GameState->Cube->Meshes[0].TextureHandle = GameState->Textures[2].Handle;
 		GameState->Quad.Texture = GameState->Textures[0].Handle;
 
-		PlayerAdd(GameState);
-
-		RandInit(2024);
-		for(u32 Index = 0; Index < 10; ++Index)
-		{
-			v3 P = V3(RandBetween(-100.0f, 100.0f), RandBetween(1.0f, 2.0f), RandBetween(-10.0f, -100.0f));
-			CubeAdd(GameState, P);
-		}
+		FontInit(&GameState->Font, "c:/windows/fonts/arial.ttf");
 
 		model *Model = GameState->XBot;
 		AnimationPlayerInitialize(&GameState->AnimationPlayer, Model, Arena);
@@ -230,16 +230,19 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 			switch(AnimIndex)
 			{
-				case Animation_Idle:
+				case Animation_IdleRight:
+				case Animation_IdleLeft:
 				{
 					Animation->DefaultFlags = AnimationFlags_Looping;
 				} break;
 				case Animation_Run:
+				case Animation_RunMirror:
 				{
 					Animation->DefaultFlags = AnimationFlags_Looping |
 											  AnimationFlags_RemoveLocomotion;
 				} break;
 				case Animation_Sprint:
+				case Animation_SprintMirror:
 				{
 					Animation->DefaultFlags = AnimationFlags_Looping |
 											  AnimationFlags_RemoveLocomotion;
@@ -250,6 +253,19 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 											  AnimationFlags_MustFinish;
 				} break;
 			}
+		}
+
+		// TODO(Justin): Better arena partionting.
+		ArenaSubset(&GameState->Arena, &GameState->GraphArena, Kilobyte(8));
+		AnimationGraphInitialize(&GameState->Graph, &GameState->GraphArena);
+
+		PlayerAdd(GameState);
+
+		RandInit(2024);
+		for(u32 Index = 0; Index < 10; ++Index)
+		{
+			v3 P = V3(RandBetween(-100.0f, 100.0f), RandBetween(1.0f, 2.0f), RandBetween(-10.0f, -100.0f));
+			CubeAdd(GameState, P);
 		}
 
 		CameraSet(&GameState->Camera, V3(0.0f, 15.0f, 20.0f), -90.0f, -10.0f);
@@ -328,7 +344,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		GameState->TimeScale *= 0.9f;
 	}
 
-
 	if(!Equal(ddP, V3(0.0f)))
 	{
 		ddP = Normalize(ddP);
@@ -369,6 +384,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				Entity->dP = dP;
 
 				EntityOrientationUpdate(Entity, dt, AngularSpeed);
+#if 0
 				switch(Entity->AnimationState)
 				{
 					case AnimationState_Idle:
@@ -446,6 +462,85 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 					} break;
 
 				};
+#else
+				switch(Entity->MovementState)
+				{
+					case MovementState_Idle:
+					{
+						if(Equal(OldPlayerddP, V3(0.0f)) &&
+						  !Equal(Entity->ddP, OldPlayerddP))
+						{
+							if(Sprinting)
+							{
+								Entity->MovementState = MovementState_Sprint;
+							}
+							else
+							{
+								Entity->MovementState = MovementState_Run;
+							}
+						}
+					} break;
+					case MovementState_Run:
+					{
+						if(Equal(Entity->ddP, V3(0.0f)))
+						{
+							Entity->MovementState = MovementState_Idle;
+						}
+						else
+						{
+							if(Sprinting)
+							{
+								Entity->MovementState = MovementState_Sprint;
+							}
+
+							if(Jumping)
+							{
+								Entity->MovementState = MovementState_Jump;
+							}
+						}
+
+					} break;
+					case MovementState_Sprint:
+					{
+						if(Equal(Entity->ddP, V3(0.0f)))
+						{
+							Entity->MovementState = MovementState_Idle;
+						}
+						else
+						{
+							if(!Sprinting)
+							{
+								Entity->MovementState = MovementState_Run;
+							}
+						}
+					} break;
+					case MovementState_Jump:
+					{
+						if(!Jumping)
+						{
+							if(Equal(Entity->ddP, V3(0.0f)))
+							{
+								Entity->MovementState = MovementState_Idle;
+							}
+							else if(Sprinting)
+							{
+								Entity->MovementState = MovementState_Sprint;
+							}
+							else
+							{
+								Entity->MovementState = MovementState_Run;
+							}
+						}
+					} break;
+					case AnimationState_Invalid:
+					{
+						// NOTE(Justin): AnimationState is initalized to invalid.
+						// First time this is hit, we set the state to idle.
+						Entity->MovementState = MovementState_Invalid;
+					} break;
+
+				};
+#endif
 			} break;
 		}
 	}
@@ -456,16 +551,17 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	animation_player *AnimationPlayer = &GameState->AnimationPlayer;
-	Animate(GameState, AnimationPlayer, Player->AnimationState);
+	//Animate(GameState, AnimationPlayer, Player->AnimationState);
+	Animate(GameState, AnimationPlayer, Player->MovementState);
 	AnimationPlayerUpdate(AnimationPlayer, &GameState->TempArena, dt);
 	ModelJointsUpdate(AnimationPlayer);
+	AnimationGraphPerFrameUpdate(GameState, AnimationPlayer, &GameState->Graph);
 
 	entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
 
 	// TODO(Justin): Camera position/direction update with player turning
 	camera *Camera = &GameState->Camera;
 	Camera->P = CameraFollowingEntity->P + GameState->CameraOffsetFromPlayer;
-
 
 	//
 	// NOTE(Justin): Render.
@@ -475,7 +571,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	// TODO(Justin): Shadow Pass.
 	//
 
-	v3 LightDir = V3(1.0f, -1.0f, 0.0f);
+	v3 LightDir = V3(1.0f, -1.0f, -0.5f);
 
 	//
 	// NOTE(Justin): Final pass.
@@ -568,10 +664,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				glUseProgram(BasicShader);
 				UniformMatrixSet(BasicShader, "View", GameState->CameraTransform);
 				UniformMatrixSet(BasicShader, "Projection", GameState->Perspective);
-				UniformBoolSet(BasicShader, "OverRideTexture", true);
-				UniformV3Set(BasicShader, "Ambient", V3(1.0f));
+				UniformBoolSet(BasicShader, "OverRideTexture", false);
+				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
 				UniformV3Set(BasicShader, "LightDir", LightDir);
-				UniformV4Set(BasicShader, "Color", V4(0.5f));
+				UniformV4Set(BasicShader, "Color", V4(1.0f));
 				model *Cube = GameState->Cube;
 				mat4 Transform = EntityTransform(Entity, 1.0f);
 				OpenGLDrawModel(Cube, BasicShader, Transform);
@@ -602,7 +698,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	char Buff[256];
 	sprintf(Buff, "%s %.2f", "time scale: ", GameState->TimeScale);
-
 	rect Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 	if(InRect(Rect, MouseP))
 	{
@@ -611,6 +706,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	else
 	{
 		OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+
 	}
 
 #if 0
@@ -650,7 +746,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	sprintf(Buff, "%s", "Animation Control");
 	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
-
 	P.x += 20.0f;
 	P.y -= (Gap + dY);
 	EntityAnimationState(Buff, Entity);
@@ -689,6 +784,8 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		}
 	}
 
+#if 0
+
 	//
 	// NOTE(Justin): Render to texture
 	//
@@ -724,7 +821,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	P = V2(0.0f);
 	f32 Width = (f32)GameState->TextureWidth;
 	f32 Height = (f32)GameState->TextureHeight;
-
 	Rect = RectMinDim(P, V2(Width, Height));
 	f32 Vertices[6][4] =
 	{
@@ -747,6 +843,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	glBindBuffer(GL_ARRAY_BUFFER, Quad2d->VB);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+#endif
 
 	ArenaClear(&GameState->TempArena);
 }
