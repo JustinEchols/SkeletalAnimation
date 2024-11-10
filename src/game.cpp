@@ -28,7 +28,6 @@ PlayerAdd(game_state *GameState)
 	Entity->Theta = -180.0f;
 	Entity->dTheta = 0.0f;
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Entity->Theta);
-	//Entity->AnimationState = AnimationState_Idle;
 	Entity->MovementState = MovementState_Idle;
 }
 
@@ -97,8 +96,6 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 inline void
 OrientationUpdate(quaternion *Orientation, v3 FacingDirection, f32 dt, f32 AngularSpeed)
 {
-	//quaternion Orientation = Entity->Orientation;
-	//v3 FacingDirection = Entity->dP;
 	FacingDirection.z *= -1.0f;
 	f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
 	quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
@@ -384,85 +381,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				Entity->dP = dP;
 
 				EntityOrientationUpdate(Entity, dt, AngularSpeed);
-#if 0
-				switch(Entity->AnimationState)
-				{
-					case AnimationState_Idle:
-					{
-						if(Equal(OldPlayerddP, V3(0.0f)) &&
-						  !Equal(Entity->ddP, OldPlayerddP))
-						{
-							if(Sprinting)
-							{
-								Entity->AnimationState = AnimationState_Sprint;
-							}
-							else
-							{
-								Entity->AnimationState = AnimationState_Running;
-							}
-						}
-					} break;
-					case AnimationState_Running:
-					{
-						if(Equal(Entity->ddP, V3(0.0f)))
-						{
-							Entity->AnimationState = AnimationState_Idle;
-						}
-						else
-						{
-							if(Sprinting)
-							{
-								Entity->AnimationState = AnimationState_Sprint;
-							}
-
-							if(Jumping)
-							{
-								Entity->AnimationState = AnimationState_JumpForward;
-							}
-						}
-
-					} break;
-					case AnimationState_Sprint:
-					{
-						if(Equal(Entity->ddP, V3(0.0f)))
-						{
-							Entity->AnimationState = AnimationState_Idle;
-						}
-						else
-						{
-							if(!Sprinting)
-							{
-								Entity->AnimationState = AnimationState_Running;
-							}
-						}
-					} break;
-					case AnimationState_JumpForward:
-					{
-						if(!Jumping)
-						{
-							if(Equal(Entity->ddP, V3(0.0f)))
-							{
-								Entity->AnimationState = AnimationState_Idle;
-							}
-							else if(Sprinting)
-							{
-								Entity->AnimationState = AnimationState_Sprint;
-							}
-							else
-							{
-								Entity->AnimationState = AnimationState_Running;
-							}
-						}
-					} break;
-					case AnimationState_Invalid:
-					{
-						// NOTE(Justin): AnimationState is initalized to invalid.
-						// First time this is hit, we set the state to idle.
-						Entity->AnimationState = AnimationState_Idle;
-					} break;
-
-				};
-#else
 				switch(Entity->MovementState)
 				{
 					case MovementState_Idle:
@@ -541,7 +459,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 					} break;
 
 				};
-#endif
 			} break;
 		}
 	}
@@ -552,7 +469,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	animation_player *AnimationPlayer = &GameState->AnimationPlayer;
-	//Animate(GameState, AnimationPlayer, Player->AnimationState);
 	Animate(GameState, AnimationPlayer, Player->MovementState);
 	AnimationPlayerUpdate(AnimationPlayer, &GameState->TempArena, dt);
 	ModelJointsUpdate(AnimationPlayer);
@@ -655,9 +571,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				// NOTE(Justin): Debug sphere 
 				//
 
+#if 0
 				Transform = EntityTransform(Entity, 0.5f);
 				UniformV4Set(BasicShader, "Color", V4(1.0f));
-				//OpenGLDrawModel(GameState->Sphere, BasicShader, Transform);
+				OpenGLDrawModel(GameState->Sphere, BasicShader, Transform);
+#endif
 
 			} break;
 			case EntityType_Cube:
@@ -743,6 +661,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	EntityAnimationState(Buff, Entity);
 	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 #endif
+	
+	//
+	// NOTE(Jusitn): Animation information.
+	//
+
 	P.y -= (Gap + dY);
 	sprintf(Buff, "%s", "Animation Control");
 	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);

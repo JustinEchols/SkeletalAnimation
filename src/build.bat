@@ -17,7 +17,7 @@ REM   exit /b 1
 REM )
 
 set MainFile=win32_main.cpp
-set CommonCompilerFlags=-Od -fp:fast -W4 -wd4201 -wd4100 -wd4505 -wd4189 -Oi -Z7 -D_CRT_SECURE_NO_WARNINGS=1
+set CommonCompilerFlags=-O2 -fp:fast -W4 -wd4201 -wd4100 -wd4505 -wd4189 -Oi -Z7 -D_CRT_SECURE_NO_WARNINGS=1
 set CommonLinkerFlags=-incremental:no user32.lib gdi32.lib opengl32.lib kernel32.lib freetype.lib
 
 set IncludeDirectories= /I "../dependencies/freetype/include"

@@ -144,7 +144,6 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 }
 
 internal void
-//AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendFactor, f32 BlendDuration = 0.0f)
 AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendDuration = 0.0f, f32 TimeOffset = 0.0f)
 {
 	Assert(AnimationPlayer->IsInitialized);
@@ -200,7 +199,6 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 	Animation->Name = NewAnimation->Name;
 	Animation->Flags = NewAnimation->DefaultFlags | AnimationFlags_Playing;
 	Animation->Duration = NewAnimation->Info->Duration;
-	//Animation->CurrentTime = 0.0f;
 	Animation->CurrentTime = TimeOffset;
 	Animation->OldTime = 0.0f;
 	Animation->TimeScale = 1.0f;
@@ -716,7 +714,7 @@ AnimationGraphInitialize(animation_graph *Graph, memory_arena *Arena)
 	AnimationGraphNodeAddArc(SprintMirror, "go_state_idle", IdleRight, ArcType_TimeInterval, 0.25f, 0.5f);
 	AnimationGraphNodeAddArc(SprintMirror, "go_state_run",  Running,   ArcType_None);
 
-	AnimationGraphNodeAddWhenDoneArc(JumpForward, "go_state_run", Running, 0.3f);
+	AnimationGraphNodeAddWhenDoneArc(JumpForward, "go_state_run", Running, 0.33f);
 
 	Graph->CurrentNode = *IdleRight;
 }
