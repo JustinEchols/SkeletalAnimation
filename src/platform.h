@@ -1,5 +1,6 @@
 #if !defined(PLATFORM_H)
 
+//////////////////////////////////////////
 // NOTE(Justin): C Standard Library
 
 #include <stdint.h>
@@ -30,18 +31,18 @@ typedef size_t	 memory_index;
 //////////////////////////////////////////
 // NOTE(Justin): Helper Macros 
 
-#define global_varible	static
-#define internal		static
-#define local_persist	static
-#define Assert(Expression) if(!(Expression)) {*(int *)0 = 0;}
-#define ArrayCount(A) sizeof(A) / sizeof((A)[0])
-#define Kilobyte(Count) (1024 * Count)
-#define Megabyte(Count) (1024 * Kilobyte(Count))
-#define Gigabyte(Count) (1024 * Megabyte(Count))
-#define Pi32 3.1415926535897f
-#define DegreeToRad(Degrees) ((Degrees) * (Pi32 / 180.0f))
-#define SmallNumber (1.e-8f)
-#define KindaSmallNumber (1.e-4f)
+#define global_varible			static
+#define internal				static
+#define local_persist			static
+#define Assert(Expression)		if(!(Expression)) {*(int *)0 = 0;}
+#define ArrayCount(A)			sizeof(A) / sizeof((A)[0])
+#define Kilobyte(Count)			(1024 * Count)
+#define Megabyte(Count)			(1024 * Kilobyte(Count))
+#define Gigabyte(Count)			(1024 * Megabyte(Count))
+#define Pi32					3.1415926535897f
+#define DegreeToRad(Degrees)	((Degrees) * (Pi32 / 180.0f))
+#define SmallNumber				(1.e-8f)
+#define KindaSmallNumber		(1.e-4f)
 
 //////////////////////////////////////////
 // NOTE(Justin): Linked List Macros

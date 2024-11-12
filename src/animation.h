@@ -151,6 +151,5 @@ struct animation_player
 	model *Model; 
 };
 
-
 #define ANIMATION_H
 #endif

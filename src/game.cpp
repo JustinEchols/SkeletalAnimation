@@ -56,7 +56,7 @@ EntityTransform(entity *Entity, f32 Scale = 1.0f)
 }
 
 inline void 
-EntityAnimationState(char *Buffer, entity *Entity)
+EntityMovementState(char *Buffer, entity *Entity)
 {
 	switch(Entity->MovementState)
 	{
@@ -79,7 +79,6 @@ EntityAnimationState(char *Buffer, entity *Entity)
 	}
 }
 
-#if 1
 inline void
 EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 {
@@ -90,8 +89,6 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 	quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
 	Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
 }
-#else
-#endif
 
 inline void
 OrientationUpdate(quaternion *Orientation, v3 FacingDirection, f32 dt, f32 AngularSpeed)
@@ -188,7 +185,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		OpenGLAllocateTexture(&GameState->Textures[1]);
 		OpenGLAllocateTexture(&GameState->Textures[2]);
 
-		GameState->XBot = PushStruct(Arena, model);
+		GameState->XBot	= PushStruct(Arena, model);
 		GameState->Cube = PushStruct(Arena, model);
 		GameState->Sphere = PushStruct(Arena, model);
 		GameState->Arrow = PushStruct(Arena, model);
@@ -231,6 +228,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				case Animation_IdleLeft:
 				{
 					Animation->DefaultFlags = AnimationFlags_Looping;
+				} break;
+				case Animation_StandingToIdleRight:
+				case Animation_StandingToIdleLeft:
+				{
+					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
 				} break;
 				case Animation_Run:
 				case Animation_RunMirror:
@@ -629,6 +631,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	}
 
 #if 0
+
+	//
+	// NOTE(Jusitn): Entity information.
+	//
+
 	P.y -= (Gap + dY);
 	f32 Angle = DirectionToEuler(-1.0f * Entity->dP).yaw;
 	sprintf(Buff, "%s%.2f", "yaw:", Angle);
@@ -672,7 +679,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	P.x += 20.0f;
 	P.y -= (Gap + dY);
-	EntityAnimationState(Buff, Entity);
+	EntityMovementState(Buff, Entity);
 	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)

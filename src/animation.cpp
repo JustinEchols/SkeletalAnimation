@@ -16,6 +16,12 @@
 // If we play animation that is currently blending with another then we already force the blend to complete before
 // playing the animation 
 
+//
+// There seem to be a lot of problems in different places in the animation system that
+// arise from the case when two animations are blending and something else happens..
+// What is the best way to handle this?
+//
+
 inline void
 FlagAdd(animation *Animation, u32 Flag)
 {
@@ -182,16 +188,19 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 		}
 	}
 
+	// Blend out currently playing animations
 	if(BlendDuration != 0.0f)
 	{
-		// Blend out currently playing animations
 		for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
 		{
+			// TODO(Justin): How do we blend if current is blending in?
+			// TODO(Justin): How do we blend if current is blending out?
 			if(!Current->BlendingOut)
 			{
 				Current->BlendDuration = BlendDuration;
 				Current->BlendCurrentTime = 0.0f;
 				Current->BlendingOut = true;
+				Current->BlendingIn = false;
 			}
 		}
 	}
@@ -340,7 +349,8 @@ SwitchToNode(game_state *GameState, animation_player *AnimationPlayer,
 		}
 	}
 
-	// TODO(Justin): Asset manager.
+	// TODO(Justin): Asset manager and create a table lookup. Use the animation state name as a tag
+	// that is used to look up the actual animation. Once we have it, play it..
 	animation_graph_node *Node = &GameState->Graph.CurrentNode;
 	if(StringsAreSame(Node->Name, "AnimationState_IdleRight"))
 	{
@@ -402,7 +412,11 @@ MessageSend(game_state *GameState, animation_player *AnimationPlayer, animation_
 			b32 ShouldSend = true;
 			if(Arc->Type == ArcType_TimeInterval)
 			{
-				animation *Animation = AnimationOldestGet(AnimationPlayer);
+				// NOTE(Justin): We send a message and do work to determine what animation should be played
+				// and how to start playiang it. Therefore at this step the new animation has not been
+				// determined and is not playing. Moreoever the t value that we should look at to determine is
+				// the most recently added/playing animation. This is the top of the linked list.
+				animation *Animation = AnimationPlayer->Channels;
 				f32 t = Animation->CurrentTime;
 				if((t < Arc->t0) || (t > Arc->t1))
 				{
@@ -640,8 +654,10 @@ AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
 	Assert(Graph->NodeCount < ArrayCount(Graph->Nodes));
 	animation_graph_node *Node = Graph->Nodes + Graph->NodeCount;
 	Node->Name = StringCopy(Graph->Arena, Name);
-	//Node->Tag = StringCopy(Graph->Arena, Animation);
+	// TODO(justin): This is supposed to be a tag that maps to a string which is the name of the animation..
+	//Node->Tag = StringCopy(Graph->Arena, Animation); 
 	Node->Index = Graph->NodeCount++;
+	Node->WhenDone = {};
 
 	return(Node);
 }
@@ -723,6 +739,9 @@ internal void
 AnimationGraphPerFrameUpdate(game_state *GameState, animation_player *AnimationPlayer,
 													animation_graph *Graph)
 {
+	// NOTE(Justin): This does not work 100% in the current system. The oldest is not necessarily the same
+	// as the current node. The oldest may be another animation that is currently being blended out
+	// whild the current node is blending in. So any work that is done is invalid.
 	//Find the channel playing the currently active animation.
 	animation *Oldest = AnimationOldestGet(AnimationPlayer);
 	if(!Oldest)

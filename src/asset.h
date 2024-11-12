@@ -66,5 +66,10 @@ struct asset_animation_header
 };
 #pragma pack(pop)
 
+struct asset_manager
+{
+
+};
+
 #define ASSET_H
 #endif
