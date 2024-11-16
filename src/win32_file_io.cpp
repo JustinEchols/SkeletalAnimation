@@ -48,6 +48,35 @@ Win32FileReadEntire(char *FileName)
 	return(Result);
 }
 
+internal void
+Win32FileWriteEntire(char *FileName, void *Source, u32 BytesToWrite)
+{
+	HANDLE FileHandle = CreateFileA(FileName,
+			(GENERIC_READ | GENERIC_WRITE),
+			0,
+			0,
+			CREATE_ALWAYS,
+			FILE_ATTRIBUTE_NORMAL,
+			0);
+
+	if(FileHandle != INVALID_HANDLE_VALUE)
+	{
+		DWORD BytesWritten;
+		b32 Result = WriteFile(FileHandle, Source, BytesToWrite, &BytesWritten, 0);
+		if(!Result)
+		{
+			Assert(0);
+		}
+		else
+		{
+			Assert(BytesWritten == BytesToWrite);
+		}
+
+		CloseHandle(FileHandle);
+	}
+
+}
+
 internal FILETIME 
 Win32FileLastWriteTime(char *FileName)
 {

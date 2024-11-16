@@ -210,7 +210,8 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 	Animation->Duration = NewAnimation->Info->Duration;
 	Animation->CurrentTime = TimeOffset;
 	Animation->OldTime = 0.0f;
-	Animation->TimeScale = 1.0f;
+	//Animation->TimeScale = 1.0f;
+	Animation->TimeScale = NewAnimation->TimeScale;
 	Animation->BlendFactor = 1.0f;
 	Animation->BlendDuration = BlendDuration;
 	Animation->BlendCurrentTime = 0.0f;
@@ -352,33 +353,38 @@ SwitchToNode(game_state *GameState, animation_player *AnimationPlayer,
 	// TODO(Justin): Asset manager and create a table lookup. Use the animation state name as a tag
 	// that is used to look up the actual animation. Once we have it, play it..
 	animation_graph_node *Node = &GameState->Graph.CurrentNode;
-	if(StringsAreSame(Node->Name, "AnimationState_IdleRight"))
+	if(StringsAreSame(Node->Name, "StateIdleRight"))
 	{
+		//AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleToSprint), BlendDuration);
 		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleRight), BlendDuration);
 	}
-	else if(StringsAreSame(Node->Name, "AnimationState_IdleLeft"))
+	else if(StringsAreSame(Node->Name, "StateIdleLeft"))
 	{
 		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleLeft), BlendDuration);
 	}
-	else if(StringsAreSame(Node->Name, "AnimationState_Running"))
+	else if(StringsAreSame(Node->Name, "StateRunning"))
 	{
 		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), BlendDuration);
 	}
-	else if(StringsAreSame(Node->Name, "AnimationState_RunningMirror"))
+	else if(StringsAreSame(Node->Name, "StateRunningMirror"))
 	{
 		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_RunMirror), BlendDuration);
 	}
-	else if(StringsAreSame(Node->Name, "AnimationState_Sprint"))
+	else if(StringsAreSame(Node->Name, "StateSprint"))
 	{
 		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Sprint), BlendDuration);
 	}
-	else if(StringsAreSame(Node->Name, "AnimationState_SprintMirror"))
+	else if(StringsAreSame(Node->Name, "StateSprintMirror"))
 	{
 		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_SprintMirror), BlendDuration);
 	}
-	else if(StringsAreSame(Node->Name, "AnimationState_JumpForward"))
+	else if(StringsAreSame(Node->Name, "StateJumpForward"))
 	{
 		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_JumpForward), BlendDuration);
+	}
+	else if(StringsAreSame(Node->Name, "StateIdleToSprint"))
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleToSprint), BlendDuration);
 	}
 }
 
@@ -414,13 +420,24 @@ MessageSend(game_state *GameState, animation_player *AnimationPlayer, animation_
 			{
 				// NOTE(Justin): We send a message and do work to determine what animation should be played
 				// and how to start playiang it. Therefore at this step the new animation has not been
-				// determined and is not playing. Moreoever the t value that we should look at to determine is
-				// the most recently added/playing animation. This is the top of the linked list.
+				// determined and is not playing. This means that we should look at the most recent animation
+				// to determine what the next animation should be. Thus the t value that we should look at
+				// is the t value of the most recently added/playing animation. This animation is
+				// the animation at the top of the linked list.
 				animation *Animation = AnimationPlayer->Channels;
 				f32 t = Animation->CurrentTime;
 				if((t < Arc->t0) || (t > Arc->t1))
 				{
 					ShouldSend = false;
+				}
+
+				if(Arc->RemainingTimeBeforeCrossFade != 0.0f)
+				{
+					f32 RemainingTime = Animation->Duration - t;
+					if(RemainingTime > Arc->RemainingTimeBeforeCrossFade)
+					{
+						ShouldSend = false;
+					}
 				}
 			}
 
@@ -656,7 +673,8 @@ AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
 	Node->Name = StringCopy(Graph->Arena, Name);
 	// TODO(justin): This is supposed to be a tag that maps to a string which is the name of the animation..
 	//Node->Tag = StringCopy(Graph->Arena, Animation); 
-	Node->Index = Graph->NodeCount++;
+	// TODO(Justin): Increment node count on node end;
+	//Node->Index = Graph->NodeCount++;
 	Node->WhenDone = {};
 
 	return(Node);
@@ -665,14 +683,14 @@ AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
 // TODO(Justin): Inseat of having a bunch of defaults. Should do begin graph node, then add parameters, then
 // end graph node.
 internal void
-AnimationGraphNodeAddArc(animation_graph_node *Node, char *InboundMessage, animation_graph_node *Dest,
-							arc_type Type, f32 t0 = 0.0f, f32 t1 = 0.0f, f32 RemainingTimeBeforeCrossFade = 0.2f,
+AnimationGraphNodeAddArc(memory_arena *Arena, animation_graph_node *Node, char *InboundMessage, char *Dest,
+							arc_type Type, f32 t0 = 0.0f, f32 t1 = 0.0f, f32 RemainingTimeBeforeCrossFade = 0.0f,
 							b32 BlendDurationSet = false, f32 BlendDuration = 0.0f)
 {
 	Assert(Node->ArcCount < ArrayCount(Node->Arcs));
 	animation_graph_arc *Arc = Node->Arcs + Node->ArcCount++;
-	Arc->Destination = Dest->Name;
-	Arc->Message = String(InboundMessage);
+	Arc->Destination = StringCopy(Arena, Dest);
+	Arc->Message = StringCopy(Arena, InboundMessage);
 	Arc->RemainingTimeBeforeCrossFade = RemainingTimeBeforeCrossFade;
 	Arc->Type = Type;
 	Arc->t0 = t0;
@@ -682,57 +700,22 @@ AnimationGraphNodeAddArc(animation_graph_node *Node, char *InboundMessage, anima
 }
 
 internal void
-AnimationGraphNodeAddWhenDoneArc(animation_graph_node *Node, char *Message, animation_graph_node *Dest, f32 RemainingTimeBeforeCrossFade= 0.2f)
+AnimationGraphNodeAddWhenDoneArc(memory_arena *Arena, animation_graph_node *Node, char *Message, char *Dest,
+		f32 RemainingTimeBeforeCrossFade= 0.2f,
+		arc_type Type = ArcType_None,
+		f32 t0 = 0.0f,
+		f32 t1 = 0.0f,
+		b32 BlendDurationSet = false,
+		f32 BlendDuration = 0.2f)
 {
-	Node->WhenDone.Destination = Dest->Name;
-	Node->WhenDone.Message = String(Message);
+	Node->WhenDone.Destination = StringCopy(Arena, Dest);
+	Node->WhenDone.Message = StringCopy(Arena, Message);
 	Node->WhenDone.RemainingTimeBeforeCrossFade = RemainingTimeBeforeCrossFade;
-}
-
-internal void
-AnimationGraphInitialize(animation_graph *Graph, memory_arena *Arena)
-{
-	Graph->Arena = Arena;
-
-	animation_graph_node *IdleRight		= AnimationGraphNodeAdd(Graph, "AnimationState_IdleRight");
-	animation_graph_node *IdleLeft		= AnimationGraphNodeAdd(Graph, "AnimationState_IdleLeft");
-	animation_graph_node *Running		= AnimationGraphNodeAdd(Graph, "AnimationState_Running");
-	animation_graph_node *RunningMirror	= AnimationGraphNodeAdd(Graph, "AnimationState_RunningMirror");
-	animation_graph_node *Sprint		= AnimationGraphNodeAdd(Graph, "AnimationState_Sprint");
-	animation_graph_node *SprintMirror	= AnimationGraphNodeAdd(Graph, "AnimationState_SprintMirror");
-	animation_graph_node *JumpForward	= AnimationGraphNodeAdd(Graph, "AnimationState_JumpForward");
-
-	AnimationGraphNodeAddArc(IdleRight, "go_state_run",		Running, ArcType_None);
-	AnimationGraphNodeAddArc(IdleRight, "go_state_sprint",  Sprint,  ArcType_None);
-
-	AnimationGraphNodeAddArc(IdleLeft, "go_state_run",		RunningMirror, ArcType_None);
-	AnimationGraphNodeAddArc(IdleLeft, "go_state_sprint",	SprintMirror,  ArcType_None);
-																					   
-	// NOTE(Justin): The game movement state thinks about the player as idle only and should not have to care about 
-	// what animation is playing. This means that the idle movement state can be mapped to > 1 animation states and the 
-	// animation graph is responsible for choosing which idle animation based on certain parameters.
-
-	AnimationGraphNodeAddArc(Running, "go_state_idle",	 IdleRight,	  ArcType_TimeInterval, 0.0f, 0.4f);
-	AnimationGraphNodeAddArc(Running, "go_state_idle",	 IdleLeft,	  ArcType_TimeInterval, 0.4f, 0.7f);
-	AnimationGraphNodeAddArc(Running, "go_state_sprint", Sprint,	  ArcType_TimeInterval, 0.0f, 0.7f);
-	AnimationGraphNodeAddArc(Running, "go_state_jump",	 JumpForward, ArcType_None);
-
-	AnimationGraphNodeAddArc(RunningMirror, "go_state_idle",	 IdleLeft,	  ArcType_TimeInterval, 0.0f, 0.4f);
-	AnimationGraphNodeAddArc(RunningMirror, "go_state_idle",	 IdleRight,	  ArcType_TimeInterval, 0.4f, 0.7f);
-	AnimationGraphNodeAddArc(RunningMirror, "go_state_sprint",	 Sprint,	  ArcType_TimeInterval, 0.0f, 0.7f);
-	AnimationGraphNodeAddArc(RunningMirror, "go_state_jump",	 JumpForward, ArcType_None);
-
-	AnimationGraphNodeAddArc(Sprint, "go_state_idle", IdleRight, ArcType_TimeInterval, 0.0f, 0.25f);
-	AnimationGraphNodeAddArc(Sprint, "go_state_idle", IdleLeft,  ArcType_TimeInterval, 0.25f, 0.5f);
-	AnimationGraphNodeAddArc(Sprint, "go_state_run",  Running,	 ArcType_None);
-
-	AnimationGraphNodeAddArc(SprintMirror, "go_state_idle", IdleLeft,  ArcType_TimeInterval, 0.0f, 0.25f);
-	AnimationGraphNodeAddArc(SprintMirror, "go_state_idle", IdleRight, ArcType_TimeInterval, 0.25f, 0.5f);
-	AnimationGraphNodeAddArc(SprintMirror, "go_state_run",  Running,   ArcType_None);
-
-	AnimationGraphNodeAddWhenDoneArc(JumpForward, "go_state_run", Running, 0.33f);
-
-	Graph->CurrentNode = *IdleRight;
+	Node->WhenDone.Type = Type;
+	Node->WhenDone.t0 = t0;
+	Node->WhenDone.t1 = t1;
+	Node->WhenDone.BlendDurationSet = BlendDurationSet;
+	Node->WhenDone.BlendDuration = BlendDuration;
 }
 
 internal void
@@ -743,7 +726,8 @@ AnimationGraphPerFrameUpdate(game_state *GameState, animation_player *AnimationP
 	// as the current node. The oldest may be another animation that is currently being blended out
 	// whild the current node is blending in. So any work that is done is invalid.
 	//Find the channel playing the currently active animation.
-	animation *Oldest = AnimationOldestGet(AnimationPlayer);
+	//animation *Oldest = AnimationOldestGet(AnimationPlayer);
+	animation *Oldest = AnimationPlayer->Channels;
 	if(!Oldest)
 	{
 		return;
@@ -757,4 +741,210 @@ AnimationGraphPerFrameUpdate(game_state *GameState, animation_player *AnimationP
 		f32 FadeTime = Clamp01(RemainingTime);
 		SwitchToNode(GameState, AnimationPlayer, Graph, Arc.Destination, FadeTime);
 	}
+}
+
+internal void
+NodeBegin(animation_graph *Graph, char *NodeName)
+{
+	AnimationGraphNodeAdd(Graph, NodeName);
+	Graph->CurrentNode = Graph->Nodes[Graph->NodeCount];
+	Graph->Index = Graph->NodeCount;
+}
+
+internal void
+NodeEnd(animation_graph *Graph)
+{
+	Graph->NodeCount++;
+	Graph->Index = 0;
+	Graph->CurrentNode = Graph->Nodes[0];
+}
+
+// TODO(Justin): This is dangerous as if the arguements get passed in the incorrect order
+// then bad things can happen... Also there is no size checking on the buffer
+internal void
+BufferLine(u8 **Content, u8 *Buffer)
+{
+	u32 At = 0;
+	while(!IsNewLine(**Content))
+	{
+		Buffer[At++] = **Content;
+		(*Content)++;
+	}
+	Buffer[At] = '\0';
+}
+
+internal void
+AdvanceLine(u8 **Content)
+{
+	while(IsNewLine(**Content))
+	{
+		(*Content)++;
+	}
+}
+
+internal animation_graph
+AnimationGraphLoad(memory_arena *Arena, char *FileName)
+{
+	animation_graph G = {};
+	G.Arena = Arena;
+	debug_file File = Win32FileReadEntire(FileName);
+	if(File.Size != 0)
+	{
+		u8 *Content = (u8 *)File.Content;
+		u8 Buffer_[4096];
+		u8 *Buffer = &Buffer_[0];
+		MemoryZero(Buffer, sizeof(Buffer));
+		u32 At = 0;
+		b32 ProcessingNode = false;
+		while(*Content)
+		{
+			BufferLine(&Content, Buffer);
+			AdvanceLine(&Content);
+
+			switch(Buffer[0])
+			{
+				case ' ':
+				case '\r':
+				case '\n':
+				case '\t':
+				case '#':
+				{
+					// Comment, do nothing.
+				} break;
+				case ':':
+				{
+					if(ProcessingNode)
+					{
+						NodeEnd(&G);
+						ProcessingNode = false;
+					}
+
+					EatUntilSpace(&Buffer);
+					EatSpaces(&Buffer);
+					NodeBegin(&G, (char *)Buffer);
+					ProcessingNode = true;
+					BufferLine(&Content, Buffer);
+
+				} break;
+			}
+
+			if(ProcessingNode)
+			{
+				char *Word = strtok((char *)Buffer, " ");
+				if(StringsAreSame(Word, "message"))
+				{
+					char *InBoundMessage = strtok(0, " ");
+					char *DestNodeName = strtok(0, " ");
+					char *Param = strtok(0, " ");
+					arc_type Type = ArcType_None;
+					f32 t0 = 0.0f;
+					f32 t1 = 0.0f;
+					if(Param)
+					{
+						t0 = F32FromASCII(Param);
+						Param = strtok(0, " ");
+						t1 = F32FromASCII(Param);
+						Type = ArcType_TimeInterval;
+					}
+
+					AnimationGraphNodeAddArc(G.Arena, &G.Nodes[G.Index], InBoundMessage, DestNodeName, Type, t0, t1);
+				}
+				else if(StringsAreSame(Word, "when_done"))
+				{
+					char *InBoundMessage = strtok(0, " ");
+					char *DestNodeName = strtok(0, " ");
+					char *Param = strtok(0, " ");
+					arc_type Type = ArcType_None;
+					f32 RemainingTimeBeforeCrossFade = 0.0f;
+					if(Param)
+					{
+						RemainingTimeBeforeCrossFade = F32FromASCII(Param);
+					}
+
+					AnimationGraphNodeAddWhenDoneArc(G.Arena, &G.Nodes[G.Index], InBoundMessage, DestNodeName, RemainingTimeBeforeCrossFade);
+				}
+				else if(*Word == '#')
+				{
+					// Comment, do nothing.
+				}
+
+				AdvanceLine(&Content);
+			}
+		}
+	}
+	else
+	{
+		
+	}
+
+	G.CurrentNode = G.Nodes[0];
+	G.Index = 0;
+
+	return(G);
+}
+
+internal void
+AnimationGraphSave(animation_graph *Graph, char *FileName)
+{
+	char Buff[4096];
+	MemoryZero(Buff, sizeof(Buff));
+
+	for(u32 NodeIndex = 0; NodeIndex < Graph->NodeCount; ++NodeIndex)
+	{
+		animation_graph_node *Node = Graph->Nodes + NodeIndex;
+		strcat(Buff, ": ");
+		strcat(Buff, (char *)Node->Name.Data);
+		strcat(Buff, "\n");
+		for(u32 ArcIndex = 0; ArcIndex < Node->ArcCount; ++ArcIndex)
+		{
+			animation_graph_arc *Arc = Node->Arcs + ArcIndex;
+			switch(Arc->Type)
+			{
+				case ArcType_None:
+				{
+					strcat(Buff, "message ");
+					strcat(Buff, (char *)Arc->Message.Data);
+					strcat(Buff, " ");
+					strcat(Buff, (char *)Arc->Destination.Data);
+				} break;
+				case ArcType_TimeInterval:
+				{
+					char FloatBuff[32];
+
+					strcat(Buff, "message ");
+					strcat(Buff, (char *)Arc->Message.Data);
+					strcat(Buff, " ");
+					strcat(Buff, (char *)Arc->Destination.Data);
+					strcat(Buff, " ");
+
+					F32ToString(FloatBuff, "%.1f", Arc->t0);
+					strcat(Buff, FloatBuff); 
+					strcat(Buff, " ");
+
+					F32ToString(FloatBuff, "%.1f", Arc->t1);
+					strcat(Buff, FloatBuff); 
+				} break;
+			}
+
+			strcat(Buff, "\n");
+		}
+
+		if(Node->WhenDone.Message.Size != 0)
+		{
+			char FloatBuff[32];
+
+			strcat(Buff, "when_done ");
+			strcat(Buff, (char *)Node->WhenDone.Message.Data);
+			strcat(Buff, " ");
+			strcat(Buff, (char *)Node->WhenDone.Destination.Data);
+			strcat(Buff, " ");
+
+			F32ToString(FloatBuff, "%.1f", Node->WhenDone.RemainingTimeBeforeCrossFade);
+			strcat(Buff, FloatBuff); 
+		}
+
+		strcat(Buff, "\n");
+	}
+
+	Win32FileWriteEntire(FileName, Buff, (u32)String(Buff).Size);
 }

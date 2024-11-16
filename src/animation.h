@@ -11,6 +11,8 @@ enum animation_name
 	Animation_SprintMirror,
 	Animation_StandingToIdleRight,
 	Animation_StandingToIdleLeft,
+	Animation_IdleToSprint,
+	Animation_RunToStop,
 };
 
 /*
@@ -32,6 +34,8 @@ char *AnimationFiles[] =
 	"..\\data\\XBot_FastRunMirror.animation",
 	"..\\data\\XBot_StandingToIdleRight.animation",
 	"..\\data\\XBot_StandingToIdleLeft.animation",
+	"..\\data\\XBot_IdleToSprint.animation",
+	"..\\data\\XBot_RunToStop.animation"
 
 };
 
@@ -103,8 +107,8 @@ enum arc_type
 
 struct animation_graph_arc
 {
-	string Destination;
 	string Message;
+	string Destination;
 	f32 RemainingTimeBeforeCrossFade;
 	arc_type Type;
 	f32 t0, t1;

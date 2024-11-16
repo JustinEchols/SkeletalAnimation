@@ -172,6 +172,12 @@ struct camera
 	v3 Direction;
 };
 
+enum game_mode
+{
+	GameMode_Play,
+	GameMode_Editor,
+};
+
 struct game_state
 {
 	memory_arena Arena;

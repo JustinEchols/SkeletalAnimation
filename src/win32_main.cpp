@@ -25,6 +25,8 @@ global_varible f32 Win32GlobalMouseY;
 #include "game.h"
 #include "game.cpp"
 
+
+
 // TODO(Justin): Routine hides the fact that globals are updated. Is this ok to do?
 internal void 
 Win32MousePositionGet(HWND Window)

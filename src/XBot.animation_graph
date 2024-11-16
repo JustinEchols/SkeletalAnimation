@@ -1,0 +1,37 @@
+# Hello, Sailor! This is a comment
+# TODO specify animation after node
+: StateIdleRight
+message go_state_run StateRunning
+message go_state_sprint StateSprint
+
+: StateIdleLeft
+message go_state_run StateRunningMirror
+message go_state_sprint StateSprintMirror
+
+: StateRunning
+message go_state_idle StateIdleLeft 0.0 0.4
+message go_state_idle StateIdleRight 0.4 0.7
+message go_state_sprint StateSprint 0.0 0.7
+message go_state_jump StateJumpForward
+
+: StateRunningMirror
+message go_state_idle StateIdleRight 0.0 0.4
+message go_state_idle StateIdleLeft 0.4 0.7
+message go_state_sprint StateSprint 0.0 0.7
+message go_state_jump StateJumpForward
+
+: StateSprint
+message go_state_idle StateIdleLeft 0.0 0.25
+message go_state_idle StateIdleRight 0.25 0.5
+message go_state_run StateRunning
+
+: StateSprintMirror
+message go_state_idle StateIdleRight 0.0 0.25
+message go_state_idle StateIdleLeft 0.25 0.5
+message go_state_run  StateRunning
+
+: StateJumpForward
+when_done go_state_run StateRunning 0.33
+
+: StateIdleToSprint
+when_done go_state_sprint StateSprint 0.1

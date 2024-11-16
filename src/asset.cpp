@@ -59,6 +59,10 @@ ModelLoad(memory_arena *Arena, char *FileName)
 			MeshSource++;
 		}
 	}
+	else
+	{
+		PrintString("ERROR: Could not open file!");
+	}
 
 	return(Model);
 }
@@ -109,7 +113,12 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 			AnimationSource++;
 		}
 	}
+	else
+	{
+		PrintString("ERROR: Could not open file!");
+	}
 
 	return(Info);
 }
+
 

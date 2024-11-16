@@ -17,6 +17,7 @@ REM   exit /b 1
 REM )
 
 set MainFile=win32_main.cpp
+set GameFile=game.cpp
 set CommonCompilerFlags=-Od -fp:fast -W4 -wd4201 -wd4100 -wd4505 -wd4189 -Oi -Z7 -D_CRT_SECURE_NO_WARNINGS=1
 set CommonLinkerFlags=-incremental:no user32.lib gdi32.lib opengl32.lib kernel32.lib freetype.lib
 
@@ -27,5 +28,7 @@ set LibDirectories= /LIBPATH:"../dependencies/freetype"
 if not exist ..\build mkdir ..\build
 pushd ..\build
 
-cl ..\src\%MainFile% %CommonCompilerFlags% %IncludeDirectories% /link %LibDirectories% %CommonLinkerFlags%
+cl %CommonCompilerFlags% ..\src\%GameFile% -Fmgame.map /LD /link -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender
+cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map %IncludeDirectories% /link %LibDirectories% %CommonLinkerFlags%
+
 popd

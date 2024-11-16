@@ -228,26 +228,34 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				case Animation_IdleLeft:
 				{
 					Animation->DefaultFlags = AnimationFlags_Looping;
+					Animation->TimeScale = 1.0f;
+				} break;
+				case Animation_IdleToSprint:
+				{
+					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
+					Animation->TimeScale = 1.0f;
 				} break;
 				case Animation_StandingToIdleRight:
 				case Animation_StandingToIdleLeft:
 				{
-					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
 				} break;
 				case Animation_Run:
 				case Animation_RunMirror:
 				{
+					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = AnimationFlags_Looping |
 											  AnimationFlags_RemoveLocomotion;
 				} break;
 				case Animation_Sprint:
 				case Animation_SprintMirror:
 				{
+					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = AnimationFlags_Looping |
 											  AnimationFlags_RemoveLocomotion;
 				} break;
 				case Animation_JumpForward:
 				{
+					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion |
 											  AnimationFlags_MustFinish;
 				} break;
@@ -256,7 +264,9 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 		// TODO(Justin): Better arena partionting.
 		ArenaSubset(&GameState->Arena, &GameState->GraphArena, Kilobyte(8));
-		AnimationGraphInitialize(&GameState->Graph, &GameState->GraphArena);
+		animation_graph G = AnimationGraphLoad(&GameState->GraphArena, "../src/XBot.animation_graph");
+		//AnimationGraphSave(&G, "test.out");
+		GameState->Graph = G;
 
 		PlayerAdd(GameState);
 
@@ -454,9 +464,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 					} break;
 					case MovementState_Invalid:
 					{
-						//Assert("Invalid movement state");
-						// NOTE(Justin): AnimationState is initalized to invalid.
-						// First time this is hit, we set the state to idle.
 						Entity->MovementState = MovementState_Invalid;
 					} break;
 
@@ -630,7 +637,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	}
 
-#if 0
+#if 1
 
 	//
 	// NOTE(Jusitn): Entity information.
@@ -639,34 +646,25 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	P.y -= (Gap + dY);
 	f32 Angle = DirectionToEuler(-1.0f * Entity->dP).yaw;
 	sprintf(Buff, "%s%.2f", "yaw:", Angle);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, V3(1.0f), WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, V3(1.0f), WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
 	f32 Speed = Length(Entity->dP);
 	sprintf(Buff, "%s %.2f", "speed: ", Speed);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f %.2f", "p: ", Entity->P.x, Entity->P.y, Entity->P.z);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f %.2f", "dP: ", Entity->dP.x, Entity->dP.y, Entity->dP.z);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f %.2f", "ddP: ", Entity->ddP.x, Entity->ddP.y, Entity->ddP.z);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
-	P.y -= (Gap + dY);
-	P.y -= (Gap + dY);
-	sprintf(Buff, "%s", "Animation Control");
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
-
-	P.y -= (Gap + dY);
-	P.y -= (Gap + dY);
-	EntityAnimationState(Buff, Entity);
-	OpenGLDrawText(Buff, FontShader, &GameState->FontQuad, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 #endif
 	
 	//

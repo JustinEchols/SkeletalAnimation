@@ -45,6 +45,24 @@ EatSpaces(u8 **Buff)
 }
 
 inline void
+EatUntilSpace(u8 **Buff)
+{
+	while(**Buff != ' ')
+	{
+		(*Buff)++;
+	}
+}
+
+inline void
+EatSpaces(char **Buff)
+{
+	while(**Buff == ' ')
+	{
+		(*Buff)++;
+	}
+}
+
+inline void
 BufferNextWord(u8 **C, u8 *Buff)
 {
 	u32 Index = 0;
@@ -56,7 +74,6 @@ BufferNextWord(u8 **C, u8 *Buff)
 	}
 	Buff[Index] = 0;
 }
-
 
 internal string
 StringFromRange(u8 *First, u8 *Last)
@@ -281,6 +298,13 @@ U32FromASCII(string S)
 }
 
 inline f32
+F32FromASCII(char *S)
+{
+	f32 Result = (f32)atof(S);
+	return(Result);
+}
+
+inline f32
 F32FromASCII(u8 *S)
 {
 	f32 Result = (f32)atof((char *)S);
@@ -292,6 +316,12 @@ F32FromASCII(string S)
 {
 	f32 Result = F32FromASCII(S.Data);
 	return(Result);
+}
+
+inline void 
+F32ToString(char *Dest, char *Format, f32 F32)
+{
+	sprintf(Dest, Format, F32);
 }
 
 internal void
