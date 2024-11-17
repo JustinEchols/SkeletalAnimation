@@ -343,15 +343,6 @@ AnimationUpdate(animation *Animation, f32 dt)
 	Animation->BlendFactor = Clamp01(BlendFactor);
 }
 
-#if 0
-inline animation *
-AnimationGet(game_state *GameState, animation_name Name)
-{
-	animation *Result = &GameState->Animations[Name];
-	return(Result);
-}
-#endif
-
 internal void
 SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
 										  animation_graph *Graph, string Dest, f32 BlendDuration)
@@ -481,7 +472,6 @@ Animate(game_state *GameState, asset_manager *AssetManager, animation_player *An
 {
 	if(AnimationPlayer->PlayingCount == 0)
 	{
-		//AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleRight), 0.2f);
 		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleRight"), 0.2f);
 		return;
 	}
@@ -691,8 +681,6 @@ AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
 	Node->Name = StringCopy(&Graph->Arena, Name);
 	// TODO(justin): This is supposed to be a tag that maps to a string which is the name of the animation..
 	//Node->Tag = StringCopy(Graph->Arena, Animation); 
-	// TODO(Justin): Increment node count on node end;
-	//Node->Index = Graph->NodeCount++;
 	Node->WhenDone = {};
 
 	return(Node);

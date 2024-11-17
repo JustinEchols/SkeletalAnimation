@@ -139,7 +139,7 @@ struct entity
 	f32 Theta;
 	f32 dTheta;
 
-	animation_player *AnimationPlayer;
+	// TODO(Justin): Animation player per entity
 };
 
 
@@ -219,7 +219,6 @@ struct game_state
 	quad_2d Quad2d;
 
 	asset_manager AssetManager;
-
 };
 
 #define GAME_H

@@ -8,9 +8,6 @@
 #include "mesh.cpp"
 #include "animation.cpp"
 
-
-
-
 internal entity * 
 EntityAdd(game_state *GameState, entity_type Type)
 {
@@ -160,13 +157,9 @@ PerspectiveTransformUpdate(game_state *GameState)
 internal void
 GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 {
-
-
 	game_state *GameState = (game_state *)GameMemory->PermanentStorage;
 	if(!GameMemory->IsInitialized)
 	{
-
-
 		//
 		// NOTE(Justin): Arenas.
 		//
@@ -197,78 +190,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		model *Sphere	= LookupModel(Assets, "Sphere");
 
 		AnimationPlayerInitialize(&GameState->AnimationPlayer, XBot, Arena);
-#if 0
-		GameState->AnimationInfos = PushArray(Arena, ArrayCount(AnimationFiles), animation_info);
-		GameState->Animations = PushArray(Arena, ArrayCount(AnimationFiles), animation);
-		for(u32 AnimIndex = 0; AnimIndex < ArrayCount(AnimationFiles); ++AnimIndex)
-		{
-			GameState->AnimationInfos[AnimIndex] = AnimationLoad(Arena, AnimationFiles[AnimIndex]);
-
-			animation_info *Info = GameState->AnimationInfos + AnimIndex;
-			animation *Animation = GameState->Animations + AnimIndex;
-
-			if(Info)
-			{
-				Animation->Name = AnimationFiles[AnimIndex];
-				Animation->ID.Value = AnimIndex;
-				Animation->Info = Info;
-				Animation->BlendedPose = PushStruct(Arena, key_frame);
-				key_frame *BlendedPose = Animation->BlendedPose;
-				AllocateJointXforms(Arena, BlendedPose, Info->JointCount);
-			}
-
-			switch(AnimIndex)
-			{
-				case Animation_IdleRight:
-				case Animation_IdleLeft:
-				{
-					Animation->DefaultFlags = AnimationFlags_Looping;
-					Animation->TimeScale = 1.0f;
-				} break;
-				case Animation_IdleToSprint:
-				{
-					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
-					Animation->TimeScale = 1.0f;
-				} break;
-				case Animation_StandingToIdleRight:
-				case Animation_StandingToIdleLeft:
-				{
-				} break;
-				case Animation_Run:
-				case Animation_RunMirror:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_Looping |
-											  AnimationFlags_RemoveLocomotion;
-				} break;
-				case Animation_RunToStop:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->TimeOffset = 0.6f;
-					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
-				} break;
-				case Animation_Sprint:
-				case Animation_SprintMirror:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_Looping |
-											  AnimationFlags_RemoveLocomotion;
-				} break;
-				case Animation_JumpForward:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion |
-											  AnimationFlags_MustFinish;
-				} break;
-			}
-		}
-#endif
 
 		// TODO(Justin): Better arena partionting.
 		ArenaSubset(&GameState->Arena, &GameState->Graph.Arena, Kilobyte(8));
-		//animation_graph G = AnimationGraphLoad("../src/XBot.animation_graph");
 		AnimationGraphInit(&GameState->Graph, "../src/XBot.animation_graph");
-		//GameState->Graph = G;
 
 		PlayerAdd(GameState);
 
@@ -486,9 +411,12 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	ModelJointsUpdate(AnimationPlayer);
 	AnimationGraphPerFrameUpdate(Assets, AnimationPlayer, &GameState->Graph);
 
-	entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
+	//
+	// NOTE(Justin): Camera update
+	//
 
 	// TODO(Justin): Camera position/direction update with player turning
+	entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
 	camera *Camera = &GameState->Camera;
 	Camera->P = CameraFollowingEntity->P + GameState->CameraOffsetFromPlayer;
 
@@ -541,6 +469,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	UniformV3Set(BasicShader, "Ambient", V3(0.1f));
 	UniformV3Set(BasicShader, "LightDir", LightDir);
 	OpenGLDrawQuad(&GameState->Quad, BasicShader, T*R*S, LookupTexture(Assets, "tile_gray")->Handle);
+
+	//
+	// NOTE(Justin): Entities.
+	//
+
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
 		entity *Entity = GameState->Entities + EntityIndex;
@@ -640,8 +573,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	}
 
-#if 1
-
+#if 0
 	//
 	// NOTE(Jusitn): Entity information.
 	//
@@ -667,7 +599,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f %.2f", "ddP: ", Entity->ddP.x, Entity->ddP.y, Entity->ddP.z);
 	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
-
 #endif
 	
 	//
@@ -717,7 +648,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	}
 
 #if 0
-
 	//
 	// NOTE(Justin): Render to texture
 	//
@@ -729,7 +659,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	glEnable(GL_DEPTH_TEST);
 
 	mat4 Transform = EntityTransform(Entity, 0.025f);
-	model *Model = GameState->XBot;
+	model *Model = LookupModel(Assets, "XBot");
 	glUseProgram(MainShader);
 	UniformMatrixSet(MainShader, "View", GameState->CameraTransform);
 
