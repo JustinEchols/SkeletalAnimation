@@ -121,4 +121,138 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 	return(Info);
 }
 
+char *GraphFiles[] =
+{
+	"../src/XBot.animation_graph",
+};
 
+char *TextureFiles[] =
+{
+	"../data/textures/tile_gray.bmp",
+	"../data/textures/left_arrow.png",
+	"../data/textures/texture_01.png",
+};
+
+char *ModelFiles[] =
+{
+	"../data/XBot.mesh",
+	"../data/Cube.mesh",
+	"../data/Sphere.mesh",
+	"../data/Arrow.mesh",
+};
+
+char *FontFiles[] =
+{
+	"c:/windows/fonts/arial.ttf",
+};
+
+internal void 
+AssetNameFromFullPath(char *FullPath, char *Buff)
+{
+	u64 OPLSlash = 0;
+	for(char *C = FullPath; *C; ++C)
+	{
+		if(*C == '/')
+		{
+			OPLSlash = (C - FullPath) + 1;
+		}
+	}
+
+	u32 At = 0;
+	for(char *C = (FullPath + OPLSlash); *C; ++C)
+	{
+		if(*C == '.')
+		{
+			break;
+		}
+
+		Buff[At++] = *C;
+	}
+	Buff[At] = '\0';
+}
+
+internal texture *
+LookupTexture(asset_manager *AssetManager, char *TextureName)
+{
+	texture *Result = 0;
+	u32 Index = StringHashLookup(&AssetManager->TextureNames, TextureName);
+	if(Index != -1)
+	{
+		Result = AssetManager->Textures + Index;
+	}
+
+	return(Result);
+}
+
+internal model *
+LookupModel(asset_manager *AssetManager, char *ModelName)
+{
+	model *Result = 0;
+	u32 Index = StringHashLookup(&AssetManager->ModelNames, ModelName);
+	if(Index != -1)
+	{
+		Result = AssetManager->Models + Index;
+	}
+
+	return(Result);
+}
+
+internal void
+AssetManagerInit(asset_manager *Manager)
+{
+	char Buffer[256];
+
+	ArenaSubset(&Manager->Arena, &Manager->TextureNames.Arena, Kilobyte(8));
+	StringHashInit(&Manager->TextureNames);
+	for(u32 NameIndex = 0; NameIndex < ArrayCount(TextureFiles); ++NameIndex)
+	{
+		char *FullPath = TextureFiles[NameIndex];
+		AssetNameFromFullPath(FullPath, Buffer);
+		StringHashAdd(&Manager->TextureNames, Buffer, NameIndex);
+		s32 Index = StringHashLookup(&Manager->TextureNames, Buffer);
+		Assert(Index != -1);
+		texture *Texture = Manager->Textures + Index;
+		*Texture = TextureLoad(FullPath);
+		OpenGLAllocateTexture(Texture);
+	}
+
+	ArenaSubset(&Manager->Arena, &Manager->ModelNames.Arena, Kilobyte(8));
+	StringHashInit(&Manager->ModelNames);
+	for(u32 NameIndex = 0; NameIndex < ArrayCount(ModelFiles); ++NameIndex)
+	{
+		char *FullPath = ModelFiles[NameIndex];
+		AssetNameFromFullPath(FullPath, Buffer);
+		StringHashAdd(&Manager->ModelNames, Buffer, NameIndex);
+		s32 Index = StringHashLookup(&Manager->ModelNames, Buffer);
+		Assert(Index != -1);
+		model *Model = Manager->Models + Index;
+		*Model = ModelLoad(&Manager->Arena, FullPath);
+	}
+
+	ArenaSubset(&Manager->Arena, &Manager->AnimationNames.Arena, Kilobyte(8));
+	StringHashInit(&Manager->AnimationNames);
+	for(u32 NameIndex = 0; NameIndex < ArrayCount(AnimationFiles); ++NameIndex)
+	{
+		char *FullPath = AnimationFiles[NameIndex];
+		AssetNameFromFullPath(FullPath, Buffer);
+		StringHashAdd(&Manager->AnimationNames, Buffer, NameIndex);
+		s32 Index = StringHashLookup(&Manager->AnimationNames, Buffer);
+		Assert(Index != -1);
+	}
+
+#if 0
+	ArenaSubset(&Manager->Arena, &Manager->GraphNames.Arena, Kilobyte(4));
+	StringHashInit(&Manager->GraphNames);
+	for(u32 NameIndex = 0; NameIndex < ArrayCount(GraphFiles); ++NameIndex)
+	{
+		char *FullPath = GraphFiles[NameIndex];
+		AssetNameFromFullPath(FullPath, Buffer);
+		StringHashAdd(&Manager->GraphNames, Buffer, NameIndex);
+		s32 Index = StringHashLookup(&Manager->GraphNames, Buffer);
+		Assert(Index != -1);
+		animation_graph *G = Manager->Graphs + Index;
+		ArenaSubset(Manager->Arena, G->Arena, Kilobyte(4));
+		AnimationGraphInit(G, FullPath);
+	}
+#endif
+}

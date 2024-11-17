@@ -28,7 +28,7 @@ set LibDirectories= /LIBPATH:"../dependencies/freetype"
 if not exist ..\build mkdir ..\build
 pushd ..\build
 
-cl %CommonCompilerFlags% ..\src\%GameFile% -Fmgame.map /LD /link -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender
+REM %CommonCompilerFlags% ..\src\%GameFile% -Fmgame.map /LD /link -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender
 cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map %IncludeDirectories% /link %LibDirectories% %CommonLinkerFlags%
 
 popd

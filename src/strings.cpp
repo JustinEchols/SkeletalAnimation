@@ -467,3 +467,94 @@ StringSplitIntoArray(memory_arena *Arena, string Str, u8 *Delimeters, u32 DelimC
 	return(Result);
 }
 
+internal u32
+StringHashIndex(char *String, u32 EntryCount)
+{
+	u32 Hash = 5381;
+	char *C = String;
+	while(*C++)
+	{
+		Hash = (((Hash << 5) + Hash) + *C);
+	}
+
+	Hash = Hash % (EntryCount - 1);
+
+	return(Hash);
+}
+
+#define INVALID_DEFAULT_VALUE -1
+internal void
+StringHashInit(string_hash *StringHash)
+{
+	StringHash->Count = 0;
+	for(u32 Index = 0; Index < ArrayCount(StringHash->Entries); ++Index)
+	{
+		string_hash_entry *Entry = StringHash->Entries + Index;
+		Entry->Index = INVALID_DEFAULT_VALUE;
+	}
+}
+
+internal void
+StringHashAdd(string_hash *Hash, char *String, u32 Index)
+{
+	u32 HashIndex = StringHashIndex(String, ArrayCount(Hash->Entries));
+	Assert(HashIndex < ArrayCount(Hash->Entries));
+	string_hash_entry *Entry = Hash->Entries + HashIndex;
+	if(Entry->Index == INVALID_DEFAULT_VALUE)
+	{
+		Entry->Index = Index;
+		Entry->Key = StringCopy(&Hash->Arena, String);
+		Hash->Count++;
+	}
+	else
+	{
+		for(string_hash_entry *E = Entry;; E = E->Next)
+		{
+			if(E)
+			{
+				if(E->Index == INVALID_DEFAULT_VALUE)
+				{
+					E->Index = Index;
+					E->Key = StringCopy(&Hash->Arena, String);
+					Hash->Count++;
+					break;
+				}
+			}
+
+			if(!E->Next)
+			{
+				E->Next = PushStruct(&Hash->Arena, string_hash_entry);
+				E = E->Next;
+				E->Index = Index;
+				E->Key = StringCopy(&Hash->Arena, String);
+				Hash->Count++;
+				break;
+			}
+		}
+	}
+}
+
+internal s32
+StringHashLookup(string_hash *Hash, char *String)
+{
+	s32 Result = -1;
+	u32 HashIndex = StringHashIndex(String, ArrayCount(Hash->Entries));
+	Assert(HashIndex < ArrayCount(Hash->Entries));
+	string_hash_entry *Entry = Hash->Entries + HashIndex;
+	if(StringsAreSame(Entry->Key, String))
+	{
+		Result = Entry->Index;
+	}
+	else
+	{
+		for(string_hash_entry *E = Entry; E; E = E->Next)
+		{
+			if(StringsAreSame(E->Key, String))
+			{
+				Result = E->Index;
+			}
+		}
+	}
+
+	return(Result);
+}

@@ -25,18 +25,17 @@ enum animation_name
 
 char *AnimationFiles[] =
 {
-	"..\\data\\XBot_IdleRight.animation",
-	"..\\data\\XBot_IdleLeft.animation",
-	"..\\data\\XBot_Running.animation",
-	"..\\data\\XBot_FastRun.animation",
-	"..\\data\\XBot_JumpForward.animation",
-	"..\\data\\XBot_RunningMirror.animation",
-	"..\\data\\XBot_FastRunMirror.animation",
-	"..\\data\\XBot_StandingToIdleRight.animation",
-	"..\\data\\XBot_StandingToIdleLeft.animation",
-	"..\\data\\XBot_IdleToSprint.animation",
-	"..\\data\\XBot_RunToStop.animation"
-
+	"../data/XBot_IdleRight.animation",
+	"../data/XBot_IdleLeft.animation",
+	"../data/XBot_Running.animation",
+	"../data/XBot_FastRun.animation",
+	"../data/XBot_JumpForward.animation",
+	"../data/XBot_RunningMirror.animation",
+	"../data/XBot_FastRunMirror.animation",
+	"../data/XBot_StandingToIdleRight.animation",
+	"../data/XBot_StandingToIdleLeft.animation",
+	"../data/XBot_IdleToSprint.animation",
+	"../data/XBot_RunToStop.animation"
 };
 
 struct key_frame
@@ -84,6 +83,7 @@ struct animation
 	f32 CurrentTime; 
 	f32 OldTime; 
 	f32 TimeScale; 
+	f32 TimeOffset;
 
 	f32 BlendFactor;
 	f32 BlendDuration;
@@ -129,7 +129,8 @@ struct animation_graph_node
 
 struct animation_graph
 {
-	memory_arena *Arena;
+	//memory_arena *Arena;
+	memory_arena Arena;
 	u32 NodeCount;
 	u32 Index;
 	animation_graph_node CurrentNode;

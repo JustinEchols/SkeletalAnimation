@@ -4,9 +4,9 @@
 #include "texture.cpp"
 #include "mesh.cpp"
 #include "animation.cpp"
-#include "asset.cpp"
 #include "opengl.cpp"
 #include "font.cpp"
+#include "asset.cpp"
 
 internal entity * 
 EntityAdd(game_state *GameState, entity_type Type)
@@ -158,9 +158,12 @@ internal void
 GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 {
 
+
 	game_state *GameState = (game_state *)GameMemory->PermanentStorage;
 	if(!GameMemory->IsInitialized)
 	{
+
+
 		//
 		// NOTE(Justin): Arenas.
 		//
@@ -177,32 +180,22 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		// NOTE(Justin): Assets.
 		//
 
-		GameState->Textures[0] = TextureLoad("..\\data\\textures\\tile_gray.bmp");
-		GameState->Textures[1] = TextureLoad("..\\data\\textures\\left_arrow.png");
-		GameState->Textures[2] = TextureLoad("..\\data\\textures\\texture_01.png");
-
-		OpenGLAllocateTexture(&GameState->Textures[0]);
-		OpenGLAllocateTexture(&GameState->Textures[1]);
-		OpenGLAllocateTexture(&GameState->Textures[2]);
-
-		GameState->XBot	= PushStruct(Arena, model);
-		GameState->Cube = PushStruct(Arena, model);
-		GameState->Sphere = PushStruct(Arena, model);
-		GameState->Arrow = PushStruct(Arena, model);
-		GameState->Quad = QuadDefault();
-
-		*GameState->XBot	= ModelLoad(Arena, "..\\data\\XBot.mesh");
-		*GameState->Cube	= ModelLoad(Arena, "..\\data\\Cube.mesh");
-		*GameState->Sphere	= ModelLoad(Arena, "..\\data\\Sphere.mesh");
-		*GameState->Arrow	= ModelLoad(Arena, "..\\data\\Arrow.mesh");
-
-		GameState->Cube->Meshes[0].TextureHandle = GameState->Textures[2].Handle;
-		GameState->Quad.Texture = GameState->Textures[0].Handle;
+		ArenaSubset(&GameState->Arena, &GameState->AssetManager.Arena, Kilobyte(256));
+		AssetManagerInit(&GameState->AssetManager);
+		asset_manager *Assets = &GameState->AssetManager;
 
 		FontInit(&GameState->Font, "c:/windows/fonts/arial.ttf");
 
-		model *Model = GameState->XBot;
-		AnimationPlayerInitialize(&GameState->AnimationPlayer, Model, Arena);
+		GameState->Quad = QuadDefault();
+		GameState->Quad.Texture = LookupTexture(Assets, "left_arrow")->Handle;
+
+		model *Cube = LookupModel(Assets, "Cube");
+		Cube->Meshes[0].TextureHandle = LookupTexture(Assets, "texture_01")->Handle;
+
+		model *XBot		= LookupModel(Assets, "XBot");
+		model *Sphere	= LookupModel(Assets, "Sphere");
+
+		AnimationPlayerInitialize(&GameState->AnimationPlayer, XBot, Arena);
 		GameState->AnimationInfos = PushArray(Arena, ArrayCount(AnimationFiles), animation_info);
 		GameState->Animations = PushArray(Arena, ArrayCount(AnimationFiles), animation);
 		for(u32 AnimIndex = 0; AnimIndex < ArrayCount(AnimationFiles); ++AnimIndex)
@@ -246,6 +239,12 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 					Animation->DefaultFlags = AnimationFlags_Looping |
 											  AnimationFlags_RemoveLocomotion;
 				} break;
+				case Animation_RunToStop:
+				{
+					Animation->TimeScale = 1.0f;
+					Animation->TimeOffset = 0.6f;
+					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
+				} break;
 				case Animation_Sprint:
 				case Animation_SprintMirror:
 				{
@@ -263,10 +262,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		}
 
 		// TODO(Justin): Better arena partionting.
-		ArenaSubset(&GameState->Arena, &GameState->GraphArena, Kilobyte(8));
-		animation_graph G = AnimationGraphLoad(&GameState->GraphArena, "../src/XBot.animation_graph");
-		//AnimationGraphSave(&G, "test.out");
-		GameState->Graph = G;
+		ArenaSubset(&GameState->Arena, &GameState->Graph.Arena, Kilobyte(8));
+		//animation_graph G = AnimationGraphLoad("../src/XBot.animation_graph");
+		AnimationGraphInit(&GameState->Graph, "../src/XBot.animation_graph");
+		//GameState->Graph = G;
 
 		PlayerAdd(GameState);
 
@@ -297,10 +296,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		u32 BasicShader = GameState->Shaders[1];
 		u32 FontShader = GameState->Shaders[2];
 
-		OpenGLAllocateAnimatedModel(GameState->XBot, MainShader);
-		OpenGLAllocateModel(GameState->Cube, BasicShader);
-		OpenGLAllocateModel(GameState->Sphere, BasicShader);
-		OpenGLAllocateModel(GameState->Arrow, BasicShader);
+
+		OpenGLAllocateAnimatedModel(XBot, MainShader);
+		OpenGLAllocateModel(Cube, BasicShader);
+		OpenGLAllocateModel(Sphere, BasicShader);
 		OpenGLAllocateQuad(&GameState->Quad, BasicShader);
 		OpenGLAllocateQuad2d(&GameState->Font.VA, &GameState->Font.VB, FontShader);
 		OpenGLAllocateQuad2d(&GameState->Quad2d.VA, &GameState->Quad2d.VB, FontShader);
@@ -472,6 +471,8 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		}
 	}
 
+	asset_manager *Assets = &GameState->AssetManager;
+
 	//
 	// NOTE(Justin): Animation update
 	//
@@ -537,7 +538,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	UniformBoolSet(BasicShader, "OverRideTexture", false);
 	UniformV3Set(BasicShader, "Ambient", V3(0.1f));
 	UniformV3Set(BasicShader, "LightDir", LightDir);
-	OpenGLDrawQuad(&GameState->Quad, BasicShader, T*R*S, GameState->Textures[0].Handle);
+	OpenGLDrawQuad(&GameState->Quad, BasicShader, T*R*S, LookupTexture(Assets, "tile_gray")->Handle);
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
 		entity *Entity = GameState->Entities + EntityIndex;
@@ -546,7 +547,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 			case EntityType_Player:
 			{
 				mat4 Transform = EntityTransform(Entity, 0.025f);
-				model *Model = GameState->XBot;
+				model *Model = LookupModel(Assets, "XBot");
 
 				glUseProgram(MainShader);
 				UniformMatrixSet(MainShader, "View", GameState->CameraTransform);
@@ -574,7 +575,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
 				UniformV3Set(BasicShader, "LightDir", LightDir);
 				UniformV4Set(BasicShader, "Color", V4(1.0f, 0.0f, 0.0f));
-				OpenGLDrawQuad(&GameState->Quad, BasicShader, T*R*S, GameState->Textures[1].Handle);
+				OpenGLDrawQuad(&GameState->Quad, BasicShader, T*R*S, LookupTexture(Assets, "left_arrow")->Handle);
 
 				//
 				// NOTE(Justin): Debug sphere 
@@ -596,7 +597,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
 				UniformV3Set(BasicShader, "LightDir", LightDir);
 				UniformV4Set(BasicShader, "Color", V4(1.0f));
-				model *Cube = GameState->Cube;
+				model *Cube = LookupModel(Assets, "Cube");
 				mat4 Transform = EntityTransform(Entity, 1.0f);
 				OpenGLDrawModel(Cube, BasicShader, Transform);
 			} break;

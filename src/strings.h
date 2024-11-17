@@ -26,5 +26,19 @@ struct string_array
 	string *Strings;
 };
 
+struct string_hash_entry
+{
+	s32 Index;
+	string Key;
+	string_hash_entry *Next;
+};
+
+struct string_hash
+{
+	u32 Count;
+	string_hash_entry Entries[256];
+	memory_arena Arena;
+};
+
 #define STRINGS_H
 #endif

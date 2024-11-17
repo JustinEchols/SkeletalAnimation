@@ -68,7 +68,17 @@ struct asset_animation_header
 
 struct asset_manager
 {
+	memory_arena Arena;
 
+	string_hash TextureNames;
+	string_hash ModelNames;
+	string_hash AnimationNames;
+	string_hash GraphNames;
+
+	texture Textures[32];
+	model Models[16];
+	animation_graph Graphs[2];
+	font Font;
 };
 
 #define ASSET_H

@@ -276,6 +276,13 @@ Square(f32 C)
 }
 
 inline f32
+Cube(f32 C)
+{
+	f32 Result = C * C * C;
+	return(Result);
+}
+
+inline f32
 Lerp(f32 A, f32 t, f32 B)
 {
 	f32 Result = (1 - t) * A + t * B;

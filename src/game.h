@@ -138,6 +138,7 @@ struct entity
 	quaternion TargetOrientation;
 	f32 Theta;
 	f32 dTheta;
+
 };
 
 
@@ -187,10 +188,6 @@ struct game_state
 	u32 EntityCount;
 	entity Entities[4096];
 
-	model *XBot;
-	model *Cube;
-	model *Sphere;
-	model *Arrow;
 	quad Quad;
 
 	animation_player AnimationPlayer;
@@ -214,7 +211,6 @@ struct game_state
 	mat4 Perspective;
 
 	u32 Shaders[4];
-	texture Textures[32];
 
 	font Font;
 
@@ -224,6 +220,9 @@ struct game_state
 	u32 TextureWidth;
 	u32 TextureHeight;
 	quad_2d Quad2d;
+
+	asset_manager AssetManager;
+
 };
 
 #define GAME_H

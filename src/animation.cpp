@@ -150,7 +150,9 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 }
 
 internal void
-AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendDuration = 0.0f, f32 TimeOffset = 0.0f)
+AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
+		f32 BlendDuration = 0.0f,
+		f32 TimeOffset = 0.0f)
 {
 	Assert(AnimationPlayer->IsInitialized);
 
@@ -237,6 +239,15 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 Bl
 	AnimationPlayer->PlayingCount++;
 }
 
+// TODO(Justin): Better cubic?
+inline f32
+EaseFactor(f32 CurrentTime, f32 Duration)
+{
+	f32 tNormal = CurrentTime / Duration;
+	f32 Result = 3.0f * Square(tNormal) - 2.0f * Cube(tNormal);
+	return(Result);
+}
+
 internal void
 AnimationUpdate(animation *Animation, f32 dt)
 {
@@ -314,11 +325,13 @@ AnimationUpdate(animation *Animation, f32 dt)
 	f32 BlendFactor = 1.0f;
 	if(Animation->BlendingOut)
 	{
-		BlendFactor = 1.0f - (Animation->BlendCurrentTime / Animation->BlendDuration);
+		//BlendFactor = 1.0f - (Animation->BlendCurrentTime / Animation->BlendDuration);
+		BlendFactor = 1.0f - EaseFactor(Animation->BlendCurrentTime, Animation->BlendDuration);
 	}
 	else if(Animation->BlendingIn)
 	{
-		BlendFactor = (Animation->BlendCurrentTime / Animation->BlendDuration);
+		//BlendFactor = (Animation->BlendCurrentTime / Animation->BlendDuration);
+		BlendFactor = EaseFactor(Animation->BlendCurrentTime, Animation->BlendDuration);
 	}
 	else
 	{
@@ -352,15 +365,19 @@ SwitchToNode(game_state *GameState, animation_player *AnimationPlayer,
 
 	// TODO(Justin): Asset manager and create a table lookup. Use the animation state name as a tag
 	// that is used to look up the actual animation. Once we have it, play it..
-	animation_graph_node *Node = &GameState->Graph.CurrentNode;
+	//animation_graph_node *Node = &GameState->Graph.CurrentNode;
+	animation_graph_node *Node = &Graph->CurrentNode;
 	if(StringsAreSame(Node->Name, "StateIdleRight"))
 	{
-		//AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleToSprint), BlendDuration);
 		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleRight), BlendDuration);
 	}
 	else if(StringsAreSame(Node->Name, "StateIdleLeft"))
 	{
 		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleLeft), BlendDuration);
+	}
+	else if(StringsAreSame(Node->Name, "StateIdleToSprint"))
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleToSprint), BlendDuration);
 	}
 	else if(StringsAreSame(Node->Name, "StateRunning"))
 	{
@@ -385,6 +402,10 @@ SwitchToNode(game_state *GameState, animation_player *AnimationPlayer,
 	else if(StringsAreSame(Node->Name, "StateIdleToSprint"))
 	{
 		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleToSprint), BlendDuration);
+	}
+	else if(StringsAreSame(Node->Name, "StateRunToIdle"))
+	{
+		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_RunToStop), BlendDuration);
 	}
 }
 
@@ -670,7 +691,7 @@ AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
 {
 	Assert(Graph->NodeCount < ArrayCount(Graph->Nodes));
 	animation_graph_node *Node = Graph->Nodes + Graph->NodeCount;
-	Node->Name = StringCopy(Graph->Arena, Name);
+	Node->Name = StringCopy(&Graph->Arena, Name);
 	// TODO(justin): This is supposed to be a tag that maps to a string which is the name of the animation..
 	//Node->Tag = StringCopy(Graph->Arena, Animation); 
 	// TODO(Justin): Increment node count on node end;
@@ -782,8 +803,9 @@ AdvanceLine(u8 **Content)
 	}
 }
 
+#if 0
 internal animation_graph
-AnimationGraphLoad(memory_arena *Arena, char *FileName)
+AnimationGraphInit(*Arena, char *FileName)
 {
 	animation_graph G = {};
 	G.Arena = Arena;
@@ -882,6 +904,104 @@ AnimationGraphLoad(memory_arena *Arena, char *FileName)
 
 	return(G);
 }
+#else
+internal void 
+AnimationGraphInit(animation_graph *G, char *FileName)
+{
+	debug_file File = Win32FileReadEntire(FileName);
+	if(File.Size != 0)
+	{
+		u8 *Content = (u8 *)File.Content;
+		u8 Buffer_[4096];
+		u8 *Buffer = &Buffer_[0];
+		MemoryZero(Buffer, sizeof(Buffer));
+		u32 At = 0;
+		b32 ProcessingNode = false;
+		while(*Content)
+		{
+			BufferLine(&Content, Buffer);
+			AdvanceLine(&Content);
+
+			switch(Buffer[0])
+			{
+				case ' ':
+				case '\r':
+				case '\n':
+				case '\t':
+				case '#':
+				{
+					// Comment, do nothing.
+				} break;
+				case ':':
+				{
+					if(ProcessingNode)
+					{
+						NodeEnd(G);
+						ProcessingNode = false;
+					}
+
+					EatUntilSpace(&Buffer);
+					EatSpaces(&Buffer);
+					NodeBegin(G, (char *)Buffer);
+					ProcessingNode = true;
+					BufferLine(&Content, Buffer);
+
+				} break;
+			}
+
+			if(ProcessingNode)
+			{
+				char *Word = strtok((char *)Buffer, " ");
+				if(StringsAreSame(Word, "message"))
+				{
+					char *InBoundMessage = strtok(0, " ");
+					char *DestNodeName = strtok(0, " ");
+					char *Param = strtok(0, " ");
+					arc_type Type = ArcType_None;
+					f32 t0 = 0.0f;
+					f32 t1 = 0.0f;
+					if(Param)
+					{
+						t0 = F32FromASCII(Param);
+						Param = strtok(0, " ");
+						t1 = F32FromASCII(Param);
+						Type = ArcType_TimeInterval;
+					}
+
+					AnimationGraphNodeAddArc(&G->Arena, &G->Nodes[G->Index], InBoundMessage, DestNodeName, Type, t0, t1);
+				}
+				else if(StringsAreSame(Word, "when_done"))
+				{
+					char *InBoundMessage = strtok(0, " ");
+					char *DestNodeName = strtok(0, " ");
+					char *Param = strtok(0, " ");
+					arc_type Type = ArcType_None;
+					f32 RemainingTimeBeforeCrossFade = 0.0f;
+					if(Param)
+					{
+						RemainingTimeBeforeCrossFade = F32FromASCII(Param);
+					}
+
+					AnimationGraphNodeAddWhenDoneArc(&G->Arena, &G->Nodes[G->Index], InBoundMessage, DestNodeName, RemainingTimeBeforeCrossFade);
+				}
+				else if(*Word == '#')
+				{
+					// Comment, do nothing.
+				}
+
+				AdvanceLine(&Content);
+			}
+		}
+	}
+	else
+	{
+		
+	}
+
+	G->CurrentNode = G->Nodes[0];
+	G->Index = 0;
+}
+#endif
 
 internal void
 AnimationGraphSave(animation_graph *Graph, char *FileName)
