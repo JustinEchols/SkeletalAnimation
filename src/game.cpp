@@ -1,12 +1,15 @@
 
 #include "game.h"
 #include "strings.cpp"
-#include "texture.cpp"
-#include "mesh.cpp"
-#include "animation.cpp"
 #include "opengl.cpp"
+#include "texture.cpp"
 #include "font.cpp"
 #include "asset.cpp"
+#include "mesh.cpp"
+#include "animation.cpp"
+
+
+
 
 internal entity * 
 EntityAdd(game_state *GameState, entity_type Type)
@@ -184,8 +187,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		AssetManagerInit(&GameState->AssetManager);
 		asset_manager *Assets = &GameState->AssetManager;
 
-		FontInit(&GameState->Font, "c:/windows/fonts/arial.ttf");
-
 		GameState->Quad = QuadDefault();
 		GameState->Quad.Texture = LookupTexture(Assets, "left_arrow")->Handle;
 
@@ -196,6 +197,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		model *Sphere	= LookupModel(Assets, "Sphere");
 
 		AnimationPlayerInitialize(&GameState->AnimationPlayer, XBot, Arena);
+#if 0
 		GameState->AnimationInfos = PushArray(Arena, ArrayCount(AnimationFiles), animation_info);
 		GameState->Animations = PushArray(Arena, ArrayCount(AnimationFiles), animation);
 		for(u32 AnimIndex = 0; AnimIndex < ArrayCount(AnimationFiles); ++AnimIndex)
@@ -260,6 +262,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				} break;
 			}
 		}
+#endif
 
 		// TODO(Justin): Better arena partionting.
 		ArenaSubset(&GameState->Arena, &GameState->Graph.Arena, Kilobyte(8));
@@ -296,12 +299,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		u32 BasicShader = GameState->Shaders[1];
 		u32 FontShader = GameState->Shaders[2];
 
-
 		OpenGLAllocateAnimatedModel(XBot, MainShader);
 		OpenGLAllocateModel(Cube, BasicShader);
 		OpenGLAllocateModel(Sphere, BasicShader);
 		OpenGLAllocateQuad(&GameState->Quad, BasicShader);
-		OpenGLAllocateQuad2d(&GameState->Font.VA, &GameState->Font.VB, FontShader);
+		OpenGLAllocateQuad2d(&Assets->Font.VA, &Assets->Font.VB, FontShader);
 		OpenGLAllocateQuad2d(&GameState->Quad2d.VA, &GameState->Quad2d.VB, FontShader);
 
 		GameState->TextureWidth = 256;
@@ -479,10 +481,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	animation_player *AnimationPlayer = &GameState->AnimationPlayer;
-	Animate(GameState, AnimationPlayer, Player->MovementState);
+	Animate(GameState, Assets, AnimationPlayer, Player->MovementState);
 	AnimationPlayerUpdate(AnimationPlayer, &GameState->TempArena, dt);
 	ModelJointsUpdate(AnimationPlayer);
-	AnimationGraphPerFrameUpdate(GameState, AnimationPlayer, &GameState->Graph);
+	AnimationGraphPerFrameUpdate(Assets, AnimationPlayer, &GameState->Graph);
 
 	entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
 
@@ -612,7 +614,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	glUseProgram(FontShader);
 
-	font *FontInfo =  &GameState->Font;
+	font *FontInfo =  &Assets->Font;
 	f32 Scale = 0.35f;
 	f32 Gap = Scale * (f32)FontInfo->LineHeight / 64.0f;
 	f32 X = 0.0f;
@@ -630,11 +632,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	rect Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 	if(InRect(Rect, MouseP))
 	{
-		OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, HoverColor, WindowWidth, WindowHeight);
+		OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, HoverColor, WindowWidth, WindowHeight);
 	}
 	else
 	{
-		OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+		OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	}
 
@@ -647,24 +649,24 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	P.y -= (Gap + dY);
 	f32 Angle = DirectionToEuler(-1.0f * Entity->dP).yaw;
 	sprintf(Buff, "%s%.2f", "yaw:", Angle);
-	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, V3(1.0f), WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, V3(1.0f), WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
 	f32 Speed = Length(Entity->dP);
 	sprintf(Buff, "%s %.2f", "speed: ", Speed);
-	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f %.2f", "p: ", Entity->P.x, Entity->P.y, Entity->P.z);
-	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f %.2f", "dP: ", Entity->dP.x, Entity->dP.y, Entity->dP.z);
-	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
 	sprintf(Buff, "%s %.2f %.2f %.2f", "ddP: ", Entity->ddP.x, Entity->ddP.y, Entity->ddP.z);
-	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 #endif
 	
@@ -674,12 +676,12 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	P.y -= (Gap + dY);
 	sprintf(Buff, "%s", "Animation Control");
-	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	P.x += 20.0f;
 	P.y -= (Gap + dY);
 	EntityMovementState(Buff, Entity);
-	OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)
 	{
@@ -687,27 +689,27 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		{
 			P.y -= (Gap + dY);
 			sprintf(Buff, "Name: %s", Animation->Name);
-			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+			OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 			P.y -= (Gap + dY);
 			sprintf(Buff, "%s %.2f", "Duration: ", Animation->Duration);
-			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+			OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 			P.y -= (Gap + dY);
 			sprintf(Buff, "%s %.2f", "t: ", Animation->CurrentTime);
-			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+			OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 			P.y -= (Gap + dY);
 			sprintf(Buff, "%s %.2f", "blend duration: ", Animation->BlendDuration);
-			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+			OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 			P.y -= (Gap + dY);
 			sprintf(Buff, "%s %.2f", "blend_t: ", Animation->BlendCurrentTime);
-			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+			OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 			P.y -= (Gap + dY);
 			sprintf(Buff, "%s %.2f", "blend: ", Animation->BlendFactor);
-			OpenGLDrawText(Buff, FontShader, &GameState->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+			OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 			P.y -= (Gap + dY);
 

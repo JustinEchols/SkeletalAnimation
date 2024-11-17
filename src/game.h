@@ -139,6 +139,7 @@ struct entity
 	f32 Theta;
 	f32 dTheta;
 
+	animation_player *AnimationPlayer;
 };
 
 
@@ -191,8 +192,6 @@ struct game_state
 	quad Quad;
 
 	animation_player AnimationPlayer;
-	animation_info *AnimationInfos;
-	animation *Animations;
 
 	memory_arena GraphArena;
 	animation_graph Graph;
@@ -211,8 +210,6 @@ struct game_state
 	mat4 Perspective;
 
 	u32 Shaders[4];
-
-	font Font;
 
 	u32 FBO;
 	u32 RBO;

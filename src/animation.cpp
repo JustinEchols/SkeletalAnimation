@@ -111,6 +111,7 @@ JointTransformInterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 Jo
 	return(Result);
 }
 
+#if 0
 inline void 
 AllocateJointXforms(memory_arena *Arena, key_frame *KeyFrame, u32 JointCount)
 {
@@ -118,6 +119,7 @@ AllocateJointXforms(memory_arena *Arena, key_frame *KeyFrame, u32 JointCount)
 	KeyFrame->Orientations	= PushArray(Arena, JointCount, quaternion);
 	KeyFrame->Scales		= PushArray(Arena, JointCount, v3);
 }
+#endif
 
 internal void
 AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memory_arena *Arena)
@@ -341,16 +343,18 @@ AnimationUpdate(animation *Animation, f32 dt)
 	Animation->BlendFactor = Clamp01(BlendFactor);
 }
 
+#if 0
 inline animation *
 AnimationGet(game_state *GameState, animation_name Name)
 {
 	animation *Result = &GameState->Animations[Name];
 	return(Result);
 }
+#endif
 
 internal void
-SwitchToNode(game_state *GameState, animation_player *AnimationPlayer,
-									animation_graph *Graph, string Dest, f32 BlendDuration)
+SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
+										  animation_graph *Graph, string Dest, f32 BlendDuration)
 {
 	for(u32 Index = 0; Index < Graph->NodeCount; ++Index)
 	{
@@ -369,43 +373,35 @@ SwitchToNode(game_state *GameState, animation_player *AnimationPlayer,
 	animation_graph_node *Node = &Graph->CurrentNode;
 	if(StringsAreSame(Node->Name, "StateIdleRight"))
 	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleRight), BlendDuration);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleRight"), BlendDuration);
 	}
 	else if(StringsAreSame(Node->Name, "StateIdleLeft"))
 	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleLeft), BlendDuration);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleLeft"), BlendDuration);
 	}
 	else if(StringsAreSame(Node->Name, "StateIdleToSprint"))
 	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleToSprint), BlendDuration);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleToSprint"), BlendDuration);
 	}
 	else if(StringsAreSame(Node->Name, "StateRunning"))
 	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Run), BlendDuration);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_Running"), BlendDuration);
 	}
 	else if(StringsAreSame(Node->Name, "StateRunningMirror"))
 	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_RunMirror), BlendDuration);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_RunningMirror"), BlendDuration);
 	}
 	else if(StringsAreSame(Node->Name, "StateSprint"))
 	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_Sprint), BlendDuration);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_FastRun"), BlendDuration);
 	}
 	else if(StringsAreSame(Node->Name, "StateSprintMirror"))
 	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_SprintMirror), BlendDuration);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_FastRunMirror"), BlendDuration);
 	}
 	else if(StringsAreSame(Node->Name, "StateJumpForward"))
 	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_JumpForward), BlendDuration);
-	}
-	else if(StringsAreSame(Node->Name, "StateIdleToSprint"))
-	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleToSprint), BlendDuration);
-	}
-	else if(StringsAreSame(Node->Name, "StateRunToIdle"))
-	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_RunToStop), BlendDuration);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_JumpForward"), BlendDuration);
 	}
 }
 
@@ -426,7 +422,7 @@ AnimationOldestGet(animation_player *AnimationPlayer)
 }
 
 internal void
-MessageSend(game_state *GameState, animation_player *AnimationPlayer, animation_graph *Graph, char *Message)
+MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, animation_graph *Graph, char *Message)
 {
 	animation_graph_node *Node = &Graph->CurrentNode;
 	string Dest = {};
@@ -476,16 +472,17 @@ MessageSend(game_state *GameState, animation_player *AnimationPlayer, animation_
 
 	if(Dest.Size != 0)
 	{
-		SwitchToNode(GameState, AnimationPlayer, Graph, Dest, DefaultBlendDuration);
+		SwitchToNode(AssetManager, AnimationPlayer, Graph, Dest, DefaultBlendDuration);
 	}
 }
 
 internal void
-Animate(game_state *GameState, animation_player *AnimationPlayer, movement_state State)
+Animate(game_state *GameState, asset_manager *AssetManager, animation_player *AnimationPlayer, movement_state State)
 {
 	if(AnimationPlayer->PlayingCount == 0)
 	{
-		AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleRight), 0.2f);
+		//AnimationPlay(AnimationPlayer, AnimationGet(GameState, Animation_IdleRight), 0.2f);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleRight"), 0.2f);
 		return;
 	}
 
@@ -500,19 +497,19 @@ Animate(game_state *GameState, animation_player *AnimationPlayer, movement_state
 	{
 		case MovementState_Idle:
 		{
-			MessageSend(GameState, AnimationPlayer, &GameState->Graph, "go_state_idle");
+			MessageSend(AssetManager, AnimationPlayer, &GameState->Graph, "go_state_idle");
 		} break;
 		case MovementState_Run:
 		{
-			MessageSend(GameState, AnimationPlayer, &GameState->Graph, "go_state_run");
+			MessageSend(AssetManager, AnimationPlayer, &GameState->Graph, "go_state_run");
 		} break;
 		case MovementState_Sprint:
 		{
-			MessageSend(GameState, AnimationPlayer, &GameState->Graph, "go_state_sprint");
+			MessageSend(AssetManager, AnimationPlayer, &GameState->Graph, "go_state_sprint");
 		} break;
 		case MovementState_Jump:
 		{
-			MessageSend(GameState, AnimationPlayer, &GameState->Graph, "go_state_jump");
+			MessageSend(AssetManager, AnimationPlayer, &GameState->Graph, "go_state_jump");
 		} break;
 	}
 }
@@ -740,7 +737,7 @@ AnimationGraphNodeAddWhenDoneArc(memory_arena *Arena, animation_graph_node *Node
 }
 
 internal void
-AnimationGraphPerFrameUpdate(game_state *GameState, animation_player *AnimationPlayer,
+AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *AnimationPlayer,
 													animation_graph *Graph)
 {
 	// NOTE(Justin): This does not work 100% in the current system. The oldest is not necessarily the same
@@ -760,7 +757,7 @@ AnimationGraphPerFrameUpdate(game_state *GameState, animation_player *AnimationP
 	if((Arc.Destination.Size != 0) && (RemainingTime <= Arc.RemainingTimeBeforeCrossFade))
 	{
 		f32 FadeTime = Clamp01(RemainingTime);
-		SwitchToNode(GameState, AnimationPlayer, Graph, Arc.Destination, FadeTime);
+		SwitchToNode(AssetManager, AnimationPlayer, Graph, Arc.Destination, FadeTime);
 	}
 }
 
@@ -803,108 +800,6 @@ AdvanceLine(u8 **Content)
 	}
 }
 
-#if 0
-internal animation_graph
-AnimationGraphInit(*Arena, char *FileName)
-{
-	animation_graph G = {};
-	G.Arena = Arena;
-	debug_file File = Win32FileReadEntire(FileName);
-	if(File.Size != 0)
-	{
-		u8 *Content = (u8 *)File.Content;
-		u8 Buffer_[4096];
-		u8 *Buffer = &Buffer_[0];
-		MemoryZero(Buffer, sizeof(Buffer));
-		u32 At = 0;
-		b32 ProcessingNode = false;
-		while(*Content)
-		{
-			BufferLine(&Content, Buffer);
-			AdvanceLine(&Content);
-
-			switch(Buffer[0])
-			{
-				case ' ':
-				case '\r':
-				case '\n':
-				case '\t':
-				case '#':
-				{
-					// Comment, do nothing.
-				} break;
-				case ':':
-				{
-					if(ProcessingNode)
-					{
-						NodeEnd(&G);
-						ProcessingNode = false;
-					}
-
-					EatUntilSpace(&Buffer);
-					EatSpaces(&Buffer);
-					NodeBegin(&G, (char *)Buffer);
-					ProcessingNode = true;
-					BufferLine(&Content, Buffer);
-
-				} break;
-			}
-
-			if(ProcessingNode)
-			{
-				char *Word = strtok((char *)Buffer, " ");
-				if(StringsAreSame(Word, "message"))
-				{
-					char *InBoundMessage = strtok(0, " ");
-					char *DestNodeName = strtok(0, " ");
-					char *Param = strtok(0, " ");
-					arc_type Type = ArcType_None;
-					f32 t0 = 0.0f;
-					f32 t1 = 0.0f;
-					if(Param)
-					{
-						t0 = F32FromASCII(Param);
-						Param = strtok(0, " ");
-						t1 = F32FromASCII(Param);
-						Type = ArcType_TimeInterval;
-					}
-
-					AnimationGraphNodeAddArc(G.Arena, &G.Nodes[G.Index], InBoundMessage, DestNodeName, Type, t0, t1);
-				}
-				else if(StringsAreSame(Word, "when_done"))
-				{
-					char *InBoundMessage = strtok(0, " ");
-					char *DestNodeName = strtok(0, " ");
-					char *Param = strtok(0, " ");
-					arc_type Type = ArcType_None;
-					f32 RemainingTimeBeforeCrossFade = 0.0f;
-					if(Param)
-					{
-						RemainingTimeBeforeCrossFade = F32FromASCII(Param);
-					}
-
-					AnimationGraphNodeAddWhenDoneArc(G.Arena, &G.Nodes[G.Index], InBoundMessage, DestNodeName, RemainingTimeBeforeCrossFade);
-				}
-				else if(*Word == '#')
-				{
-					// Comment, do nothing.
-				}
-
-				AdvanceLine(&Content);
-			}
-		}
-	}
-	else
-	{
-		
-	}
-
-	G.CurrentNode = G.Nodes[0];
-	G.Index = 0;
-
-	return(G);
-}
-#else
 internal void 
 AnimationGraphInit(animation_graph *G, char *FileName)
 {
@@ -1001,7 +896,6 @@ AnimationGraphInit(animation_graph *G, char *FileName)
 	G->CurrentNode = G->Nodes[0];
 	G->Index = 0;
 }
-#endif
 
 internal void
 AnimationGraphSave(animation_graph *Graph, char *FileName)

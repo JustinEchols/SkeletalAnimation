@@ -79,6 +79,10 @@ struct asset_manager
 	model Models[16];
 	animation_graph Graphs[2];
 	font Font;
+
+	// TODO(Justin): Clean this up
+	animation_info *AnimationInfos;
+	animation *Animations;
 };
 
 #define ASSET_H

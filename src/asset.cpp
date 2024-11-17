@@ -171,6 +171,14 @@ AssetNameFromFullPath(char *FullPath, char *Buff)
 	Buff[At] = '\0';
 }
 
+inline void 
+AllocateJointXforms(memory_arena *Arena, key_frame *KeyFrame, u32 JointCount)
+{
+	KeyFrame->Positions		= PushArray(Arena, JointCount, v3);
+	KeyFrame->Orientations	= PushArray(Arena, JointCount, quaternion);
+	KeyFrame->Scales		= PushArray(Arena, JointCount, v3);
+}
+
 internal texture *
 LookupTexture(asset_manager *AssetManager, char *TextureName)
 {
@@ -192,6 +200,19 @@ LookupModel(asset_manager *AssetManager, char *ModelName)
 	if(Index != -1)
 	{
 		Result = AssetManager->Models + Index;
+	}
+
+	return(Result);
+}
+
+internal animation *
+LookupAnimation(asset_manager *AssetManager, char *AnimationName)
+{
+	animation *Result = 0;
+	u32 Index = StringHashLookup(&AssetManager->AnimationNames, AnimationName);
+	if(Index != -1)
+	{
+		Result = AssetManager->Animations + Index;
 	}
 
 	return(Result);
@@ -229,8 +250,12 @@ AssetManagerInit(asset_manager *Manager)
 		*Model = ModelLoad(&Manager->Arena, FullPath);
 	}
 
+
 	ArenaSubset(&Manager->Arena, &Manager->AnimationNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->AnimationNames);
+
+	Manager->AnimationInfos = PushArray(&Manager->Arena, ArrayCount(AnimationFiles), animation_info);
+	Manager->Animations		= PushArray(&Manager->Arena, ArrayCount(AnimationFiles), animation);
 	for(u32 NameIndex = 0; NameIndex < ArrayCount(AnimationFiles); ++NameIndex)
 	{
 		char *FullPath = AnimationFiles[NameIndex];
@@ -238,7 +263,67 @@ AssetManagerInit(asset_manager *Manager)
 		StringHashAdd(&Manager->AnimationNames, Buffer, NameIndex);
 		s32 Index = StringHashLookup(&Manager->AnimationNames, Buffer);
 		Assert(Index != -1);
+
+		animation_info *Info = Manager->AnimationInfos + Index;
+		animation *Animation = Manager->Animations + Index;
+		*Info = AnimationLoad(&Manager->Arena, FullPath);
+		if(Info)
+		{
+			Animation->Name = Buffer;
+			Animation->ID.Value = NameIndex;
+			Animation->Info = Info;
+			Animation->BlendedPose = PushStruct(&Manager->Arena, key_frame);
+			key_frame *BlendedPose = Animation->BlendedPose;
+			AllocateJointXforms(&Manager->Arena, BlendedPose, Info->JointCount);
+
+			switch(NameIndex)
+			{
+				case Animation_IdleRight:
+				case Animation_IdleLeft:
+				{
+					Animation->DefaultFlags = AnimationFlags_Looping;
+					Animation->TimeScale = 1.0f;
+				} break;
+				case Animation_IdleToSprint:
+				{
+					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
+					Animation->TimeScale = 1.0f;
+				} break;
+				case Animation_StandingToIdleRight:
+				case Animation_StandingToIdleLeft:
+				{
+				} break;
+				case Animation_Run:
+				case Animation_RunMirror:
+				{
+					Animation->TimeScale = 1.0f;
+					Animation->DefaultFlags = AnimationFlags_Looping |
+											  AnimationFlags_RemoveLocomotion;
+				} break;
+				case Animation_RunToStop:
+				{
+					Animation->TimeScale = 1.0f;
+					Animation->TimeOffset = 0.6f;
+					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
+				} break;
+				case Animation_Sprint:
+				case Animation_SprintMirror:
+				{
+					Animation->TimeScale = 1.0f;
+					Animation->DefaultFlags = AnimationFlags_Looping |
+											  AnimationFlags_RemoveLocomotion;
+				} break;
+				case Animation_JumpForward:
+				{
+					Animation->TimeScale = 1.0f;
+					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion |
+											  AnimationFlags_MustFinish;
+				} break;
+			}
+		}
 	}
+
+	FontInit(&Manager->Font, FontFiles[0]);
 
 #if 0
 	ArenaSubset(&Manager->Arena, &Manager->GraphNames.Arena, Kilobyte(4));
