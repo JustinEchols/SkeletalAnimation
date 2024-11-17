@@ -183,7 +183,7 @@ internal texture *
 LookupTexture(asset_manager *AssetManager, char *TextureName)
 {
 	texture *Result = 0;
-	u32 Index = StringHashLookup(&AssetManager->TextureNames, TextureName);
+	s32 Index = StringHashLookup(&AssetManager->TextureNames, TextureName);
 	if(Index != -1)
 	{
 		Result = AssetManager->Textures + Index;
@@ -196,7 +196,7 @@ internal model *
 LookupModel(asset_manager *AssetManager, char *ModelName)
 {
 	model *Result = 0;
-	u32 Index = StringHashLookup(&AssetManager->ModelNames, ModelName);
+	s32 Index = StringHashLookup(&AssetManager->ModelNames, ModelName);
 	if(Index != -1)
 	{
 		Result = AssetManager->Models + Index;
@@ -209,7 +209,7 @@ internal animation *
 LookupAnimation(asset_manager *AssetManager, char *AnimationName)
 {
 	animation *Result = 0;
-	u32 Index = StringHashLookup(&AssetManager->AnimationNames, AnimationName);
+	s32 Index = StringHashLookup(&AssetManager->AnimationNames, AnimationName);
 	if(Index != -1)
 	{
 		Result = AssetManager->Animations + Index;
