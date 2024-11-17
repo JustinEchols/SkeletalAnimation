@@ -111,16 +111,6 @@ JointTransformInterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 Jo
 	return(Result);
 }
 
-#if 0
-inline void 
-AllocateJointXforms(memory_arena *Arena, key_frame *KeyFrame, u32 JointCount)
-{
-	KeyFrame->Positions		= PushArray(Arena, JointCount, v3);
-	KeyFrame->Orientations	= PushArray(Arena, JointCount, quaternion);
-	KeyFrame->Scales		= PushArray(Arena, JointCount, v3);
-}
-#endif
-
 internal void
 AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memory_arena *Arena)
 {
@@ -171,24 +161,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 	{
 		if(Current->ID.Value == NewAnimation->ID.Value)
 		{
-#if 0
 			// TODO(Justin): Really think through the correct way to handle this....
-			// TODO(Justin): Really think through the correct way to handle this....
-			// TODO(Justin): Really think through the correct way to handle this....
-			// Most likely this is hack for now..
-			// Probably will force the player to complete at least one step if they transition quickly such as
-			// idle -> run -> idle
-			// The solution right now is idle -> run -> 0
-			// Since the blend between the orginal idle is zeroed out, there exists a discontinuity pop.
-			animation *Channel = AnimationPlayer->Channels;
-			Animation->CurrentTime = Current->CurrentTime;
-			Assert(Channel->Next->ID.Value == NewAnimation->ID.Value);
-			Channel->Next = Current->Next;
-			Current->Next = AnimationPlayer->FreeChannels;
-			AnimationPlayer->FreeChannels = Current;
-#else
-			//return;
-#endif
 		}
 	}
 
@@ -214,7 +187,6 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 	Animation->Duration = NewAnimation->Info->Duration;
 	Animation->CurrentTime = TimeOffset;
 	Animation->OldTime = 0.0f;
-	//Animation->TimeScale = 1.0f;
 	Animation->TimeScale = NewAnimation->TimeScale;
 	Animation->BlendFactor = 1.0f;
 	Animation->BlendDuration = BlendDuration;
@@ -276,13 +248,11 @@ AnimationUpdate(animation *Animation, f32 dt)
 		Animation->BlendCurrentTime += dt;
 		if((Animation->BlendCurrentTime > Animation->BlendDuration) && Animation->BlendingOut)
 		{
-			// Done blending out animation
 			FlagAdd(Animation, AnimationFlags_Finished);
 		}
 
 		if((Animation->BlendCurrentTime > Animation->BlendDuration) && Animation->BlendingIn)
 		{
-			// Done blending in new animation
 			Animation->BlendingIn = false;
 		}
 	}
@@ -429,8 +399,7 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 				// NOTE(Justin): We send a message and do work to determine what animation should be played
 				// and how to start playiang it. Therefore at this step the new animation has not been
 				// determined and is not playing. This means that we should look at the most recent animation
-				// to determine what the next animation should be. Thus the t value that we should look at
-				// is the t value of the most recently added/playing animation. This animation is
+				// to determine what the next animation should be. This animation is
 				// the animation at the top of the linked list.
 				animation *Animation = AnimationPlayer->Channels;
 				f32 t = Animation->CurrentTime;
