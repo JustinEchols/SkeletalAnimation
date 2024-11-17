@@ -121,6 +121,21 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 	return(Info);
 }
 
+char *AnimationFiles[] =
+{
+	"../data/XBot_IdleRight.animation",
+	"../data/XBot_IdleLeft.animation",
+	"../data/XBot_Running.animation",
+	"../data/XBot_FastRun.animation",
+	"../data/XBot_JumpForward.animation",
+	"../data/XBot_RunningMirror.animation",
+	"../data/XBot_FastRunMirror.animation",
+	"../data/XBot_StandingToIdleRight.animation",
+	"../data/XBot_StandingToIdleLeft.animation",
+	"../data/XBot_IdleToSprint.animation",
+	"../data/XBot_RunToStop.animation"
+};
+
 char *GraphFiles[] =
 {
 	"../src/XBot.animation_graph",
