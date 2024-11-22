@@ -272,6 +272,12 @@ OpenGLAllocateTexture(texture *Texture)
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
+		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+
+		f32 maxAniso = 0.0f;
+		glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
+		glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
+
 		glTexImage2D(GL_TEXTURE_2D,
 				0,
 				Texture->StoredFormat,
@@ -281,6 +287,7 @@ OpenGLAllocateTexture(texture *Texture)
 				Texture->SrcFormat,
 				GL_UNSIGNED_BYTE,
 				Texture->Memory);
+
 
 		glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, 0);

@@ -1,20 +1,5 @@
 #if !defined(ANIMATION_H)
 
-enum animation_name
-{
-	Animation_IdleRight,
-	Animation_IdleLeft,
-	Animation_Run,
-	Animation_Sprint,
-	Animation_JumpForward,
-	Animation_RunMirror,
-	Animation_SprintMirror,
-	Animation_StandingToIdleRight,
-	Animation_StandingToIdleLeft,
-	Animation_IdleToSprint,
-	Animation_RunToStop,
-};
-
 struct key_frame
 {
 	v3 *Positions;
@@ -46,12 +31,12 @@ enum animation_flags
 	AnimationFlags_Finished = (1 << 2),
 	AnimationFlags_Looping = (1 << 3),
 	AnimationFlags_RemoveLocomotion = (1 << 4),
-	AnimationFlags_MustFinish = (1 << 5),
+	AnimationFlags_JointMask = (1 << 5),
 };
 
 struct animation
 {
-	char *Name;
+	string Name;
 
 	u32 DefaultFlags;
 	u32 Flags;
@@ -68,6 +53,8 @@ struct animation
 	b32 BlendingIn;
 	b32 BlendingOut;
 	b32 BlendingComposite;
+	b32 MaskingJoints;
+	b32 *JointMasks;
 
 	animation_id ID;
 	animation_info *Info;
@@ -106,7 +93,6 @@ struct animation_graph_node
 
 struct animation_graph
 {
-	//memory_arena *Arena;
 	memory_arena Arena;
 	u32 NodeCount;
 	u32 Index;
@@ -128,6 +114,8 @@ struct animation_player
 
 	f32 CurrentTime;
 	f32 dt;
+
+	v3 DeltaP;
 
 	key_frame *FinalPose;
 	model *Model; 

@@ -4,9 +4,9 @@
 #include "opengl.cpp"
 #include "texture.cpp"
 #include "font.cpp"
-#include "asset.cpp"
 #include "mesh.cpp"
 #include "animation.cpp"
+#include "asset.cpp"
 
 internal entity * 
 EntityAdd(game_state *GameState, entity_type Type)
@@ -189,13 +189,12 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		model *XBot		= LookupModel(Assets, "XBot");
 		model *Sphere	= LookupModel(Assets, "Sphere");
 
-		AnimationPlayerInitialize(&GameState->AnimationPlayer, XBot, Arena);
-
-		// TODO(Justin): Better arena partionting.
-		ArenaSubset(&GameState->Arena, &GameState->Graph.Arena, Kilobyte(8));
-		AnimationGraphInit(&GameState->Graph, "../src/XBot.animation_graph");
-
 		PlayerAdd(GameState);
+		entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
+		Player->AnimationPlayer = PushStruct(Arena, animation_player);
+		Player->AnimationGraph = PushStruct(Arena, animation_graph);
+		AnimationPlayerInitialize(Player->AnimationPlayer, XBot, Arena);
+		Player->AnimationGraph = LookupGraph(Assets, "XBot_AnimationGraph");
 
 		RandInit(2024);
 		for(u32 Index = 0; Index < 10; ++Index)
@@ -305,7 +304,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 					a *= 1.5f;
 				}
 
-				f32 PlayerDrag = -9.0f;
+				f32 PlayerDrag = -10.0f;
 				f32 AngularSpeed = 10.0f;
 				f32 Speed = Length(Entity->dP);
 				ddP = a * ddP;
@@ -405,20 +404,19 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	//
 
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
-	animation_player *AnimationPlayer = &GameState->AnimationPlayer;
-	Animate(GameState, Assets, AnimationPlayer, Player->MovementState);
-	AnimationPlayerUpdate(AnimationPlayer, &GameState->TempArena, dt);
-	ModelJointsUpdate(AnimationPlayer);
-	AnimationGraphPerFrameUpdate(Assets, AnimationPlayer, &GameState->Graph);
+	Animate(Player->AnimationGraph, Assets, Player->AnimationPlayer, Player->MovementState);
+	AnimationPlayerUpdate(Player->AnimationPlayer, &GameState->TempArena, dt);
+	ModelJointsUpdate(Player->AnimationPlayer);
+	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);
 
 	//
 	// NOTE(Justin): Camera update
 	//
 
 	// TODO(Justin): Camera position/direction update with player turning
-	entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
+	//entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
 	camera *Camera = &GameState->Camera;
-	Camera->P = CameraFollowingEntity->P + GameState->CameraOffsetFromPlayer;
+	Camera->P = Player->P + GameState->CameraOffsetFromPlayer;
 
 	//
 	// NOTE(Justin): Render.
@@ -447,7 +445,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+	glClearColor(0.3f, 0.4f, 0.4f, 1.0f);
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	u32 MainShader = GameState->Shaders[0];
@@ -573,7 +571,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	}
 
-#if 0
+#if 1
 	//
 	// NOTE(Jusitn): Entity information.
 	//
@@ -581,7 +579,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	P.y -= (Gap + dY);
 	f32 Angle = DirectionToEuler(-1.0f * Entity->dP).yaw;
 	sprintf(Buff, "%s%.2f", "yaw:", Angle);
-	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, V3(1.0f), WindowWidth, WindowHeight);
+	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 	P.y -= (Gap + dY);
 	f32 Speed = Length(Entity->dP);
@@ -614,12 +612,12 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	EntityMovementState(Buff, Entity);
 	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
-	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)
+	for(animation *Animation = Player->AnimationPlayer->Channels; Animation; Animation = Animation->Next)
 	{
 		if(Animation)
 		{
 			P.y -= (Gap + dY);
-			sprintf(Buff, "Name: %s", Animation->Name);
+			sprintf(Buff, "Name: %s", Animation->Name.Data);
 			OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
 
 			P.y -= (Gap + dY);

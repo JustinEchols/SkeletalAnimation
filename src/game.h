@@ -131,6 +131,7 @@ struct entity
 	entity_type Type;
 	movement_state MovementState;
 
+	// Gameplay
 	v3 P;
 	v3 dP;
 	v3 ddP;
@@ -139,7 +140,9 @@ struct entity
 	f32 Theta;
 	f32 dTheta;
 
-	// TODO(Justin): Animation player per entity
+	// Animation
+	animation_player *AnimationPlayer;
+	animation_graph *AnimationGraph;
 };
 
 
@@ -174,12 +177,6 @@ struct camera
 	v3 Direction;
 };
 
-enum game_mode
-{
-	GameMode_Play,
-	GameMode_Editor,
-};
-
 struct game_state
 {
 	memory_arena Arena;
@@ -190,11 +187,6 @@ struct game_state
 	entity Entities[4096];
 
 	quad Quad;
-
-	animation_player AnimationPlayer;
-
-	memory_arena GraphArena;
-	animation_graph Graph;
 
 	camera Camera;
 	v3 CameraOffsetFromPlayer;

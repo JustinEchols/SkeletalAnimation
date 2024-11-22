@@ -70,6 +70,13 @@ RemoveLocomotion(animation *Animation)
 	return(Result);
 }
 
+inline b32
+MaskingJoints(animation *Animation)
+{
+	b32 Result = FlagIsSet(Animation, AnimationFlags_JointMask);
+	return(Result);
+}
+
 inline mat4
 JointTransformFromSQT(sqt SQT)
 {
@@ -111,6 +118,14 @@ JointTransformInterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 Jo
 	return(Result);
 }
 
+inline void 
+AllocateJointXforms(memory_arena *Arena, key_frame *KeyFrame, u32 JointCount)
+{
+	KeyFrame->Positions		= PushArray(Arena, JointCount, v3);
+	KeyFrame->Orientations	= PushArray(Arena, JointCount, quaternion);
+	KeyFrame->Scales		= PushArray(Arena, JointCount, v3);
+}
+
 internal void
 AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memory_arena *Arena)
 {
@@ -120,7 +135,6 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 		AnimationPlayer->Arena = Arena;
 		AnimationPlayer->Channels = 0;
 		AnimationPlayer->FreeChannels = 0;
-
 		AnimationPlayer->CurrentTime = 0.0f;
 		AnimationPlayer->dt = 0.0f;
 
@@ -144,7 +158,8 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 internal void
 AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 		f32 BlendDuration = 0.0f,
-		f32 TimeOffset = 0.0f)
+		f32 TimeOffset = 0.0f,
+		b32 MaskingJoints = false)
 {
 	Assert(AnimationPlayer->IsInitialized);
 
@@ -203,6 +218,9 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 
 	Animation->BlendingOut = false;
 	Animation->BlendingComposite = false;
+	Animation->MaskingJoints = MaskingJoints;
+
+	Animation->JointMasks = NewAnimation->JointMasks;
 
 	Animation->ID = NewAnimation->ID;
 	Animation->Info = NewAnimation->Info;
@@ -287,22 +305,39 @@ AnimationUpdate(animation *Animation, f32 dt)
 
 		for(u32 JointIndex = 1; JointIndex < Info->JointCount; ++JointIndex)
 		{
+#if 0
+			b32 Mask = true;
+			if(Animation->JointMasks)
+			{
+				Mask = Animation->JointMasks[JointIndex];
+			}
+
+			if(Mask)
+			{
+				sqt Transform = JointTransformInterpolatedSQT(KeyFrame, t, NextKeyFrame, JointIndex);
+				BlendedPose->Positions[JointIndex]	  = Transform.Position;
+				BlendedPose->Orientations[JointIndex] = Transform.Orientation;
+				BlendedPose->Scales[JointIndex]		  = Transform.Scale;
+			}
+			else
+			{
+			}
+#else
 			sqt Transform = JointTransformInterpolatedSQT(KeyFrame, t, NextKeyFrame, JointIndex);
 			BlendedPose->Positions[JointIndex]	  = Transform.Position;
 			BlendedPose->Orientations[JointIndex] = Transform.Orientation;
 			BlendedPose->Scales[JointIndex]		  = Transform.Scale;
+#endif
 		}
 	}
 
 	f32 BlendFactor = 1.0f;
 	if(Animation->BlendingOut)
 	{
-		//BlendFactor = 1.0f - (Animation->BlendCurrentTime / Animation->BlendDuration);
 		BlendFactor = 1.0f - EaseFactor(Animation->BlendCurrentTime, Animation->BlendDuration);
 	}
 	else if(Animation->BlendingIn)
 	{
-		//BlendFactor = (Animation->BlendCurrentTime / Animation->BlendDuration);
 		BlendFactor = EaseFactor(Animation->BlendCurrentTime, Animation->BlendDuration);
 	}
 	else
@@ -328,41 +363,14 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
 		}
 	}
 
-	// TODO(Justin): Asset manager and create a table lookup. Use the animation state name as a tag
-	// that is used to look up the actual animation. Once we have it, play it..
-	//animation_graph_node *Node = &GameState->Graph.CurrentNode;
+	// TODO(Justin): Asset manager and create a table lookup. Use the animation state name as a tag.
+	// Right now the tag is the actual name of the animation...
+
 	animation_graph_node *Node = &Graph->CurrentNode;
-	if(StringsAreSame(Node->Name, "StateIdleRight"))
+	animation *Animation = LookupAnimation(AssetManager, (char *)Node->Tag.Data);
+	if(Animation)
 	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleRight"), BlendDuration);
-	}
-	else if(StringsAreSame(Node->Name, "StateIdleLeft"))
-	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleLeft"), BlendDuration);
-	}
-	else if(StringsAreSame(Node->Name, "StateIdleToSprint"))
-	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleToSprint"), BlendDuration);
-	}
-	else if(StringsAreSame(Node->Name, "StateRunning"))
-	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_Running"), BlendDuration);
-	}
-	else if(StringsAreSame(Node->Name, "StateRunningMirror"))
-	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_RunningMirror"), BlendDuration);
-	}
-	else if(StringsAreSame(Node->Name, "StateSprint"))
-	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_FastRun"), BlendDuration);
-	}
-	else if(StringsAreSame(Node->Name, "StateSprintMirror"))
-	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_FastRunMirror"), BlendDuration);
-	}
-	else if(StringsAreSame(Node->Name, "StateJumpForward"))
-	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_JumpForward"), BlendDuration);
+		AnimationPlay(AnimationPlayer, Animation, BlendDuration);
 	}
 }
 
@@ -437,7 +445,7 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 }
 
 internal void
-Animate(game_state *GameState, asset_manager *AssetManager, animation_player *AnimationPlayer, movement_state State)
+Animate(animation_graph *Graph, asset_manager *AssetManager, animation_player *AnimationPlayer, movement_state State)
 {
 	if(AnimationPlayer->PlayingCount == 0)
 	{
@@ -456,19 +464,19 @@ Animate(game_state *GameState, asset_manager *AssetManager, animation_player *An
 	{
 		case MovementState_Idle:
 		{
-			MessageSend(AssetManager, AnimationPlayer, &GameState->Graph, "go_state_idle");
+			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_idle");
 		} break;
 		case MovementState_Run:
 		{
-			MessageSend(AssetManager, AnimationPlayer, &GameState->Graph, "go_state_run");
+			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_run");
 		} break;
 		case MovementState_Sprint:
 		{
-			MessageSend(AssetManager, AnimationPlayer, &GameState->Graph, "go_state_sprint");
+			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint");
 		} break;
 		case MovementState_Jump:
 		{
-			MessageSend(AssetManager, AnimationPlayer, &GameState->Graph, "go_state_jump");
+			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
 		} break;
 	}
 }
@@ -540,8 +548,8 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 				s32 JointIndex = JointIndexGet(Info->JointNames, Info->JointCount, Joint->Name);
 				if(JointIndex != -1)
 				{
-					FinalPose->Positions[Index]		+= Factor * BlendedPose->Positions[JointIndex];
-					FinalPose->Scales[Index]		+= Factor * BlendedPose->Scales[JointIndex];
+					FinalPose->Positions[Index]	+= Factor * BlendedPose->Positions[JointIndex];
+					FinalPose->Scales[Index]	+= Factor * BlendedPose->Scales[JointIndex];
 
 					// TODO(Justin): Pre-process the aniamtions so that the orientations are in the known correct neighborhood.
 					quaternion Scaled = Factor * BlendedPose->Orientations[JointIndex];
@@ -550,7 +558,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 						Scaled *= -1.0f;
 					}
 
-					FinalPose->Orientations[Index]	+= Scaled;
+					FinalPose->Orientations[Index] += Scaled;
 				}
 			}
 		}
@@ -602,9 +610,9 @@ ModelJointsUpdate(animation_player *AnimationPlayer)
 			mat4 RootInvBind = Mesh->InvBindTransforms[0];
 
 			sqt Xform;
-			Xform.Position = FinalPose->Positions[0];
-			Xform.Orientation = FinalPose->Orientations[0];
-			Xform.Scale = FinalPose->Scales[0];
+			Xform.Position		= FinalPose->Positions[0];
+			Xform.Orientation	= FinalPose->Orientations[0];
+			Xform.Scale			= FinalPose->Scales[0];
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
 			   !Equal(Xform.Scale, V3(0.0f)))
@@ -659,8 +667,12 @@ AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
 // end graph node.
 internal void
 AnimationGraphNodeAddArc(memory_arena *Arena, animation_graph_node *Node, char *InboundMessage, char *Dest,
-							arc_type Type, f32 t0 = 0.0f, f32 t1 = 0.0f, f32 RemainingTimeBeforeCrossFade = 0.0f,
-							b32 BlendDurationSet = false, f32 BlendDuration = 0.0f)
+		arc_type Type,
+		f32 t0 = 0.0f,
+		f32 t1 = 0.0f,
+		f32 RemainingTimeBeforeCrossFade = 0.0f,
+		b32 BlendDurationSet = false,
+		f32 BlendDuration = 0.0f)
 {
 	Assert(Node->ArcCount < ArrayCount(Node->Arcs));
 	animation_graph_arc *Arc = Node->Arcs + Node->ArcCount++;
@@ -676,7 +688,7 @@ AnimationGraphNodeAddArc(memory_arena *Arena, animation_graph_node *Node, char *
 
 internal void
 AnimationGraphNodeAddWhenDoneArc(memory_arena *Arena, animation_graph_node *Node, char *Message, char *Dest,
-		f32 RemainingTimeBeforeCrossFade= 0.2f,
+		f32 RemainingTimeBeforeCrossFade = 0.2f,
 		arc_type Type = ArcType_None,
 		f32 t0 = 0.0f,
 		f32 t1 = 0.0f,
@@ -821,6 +833,12 @@ AnimationGraphInit(animation_graph *G, char *FileName)
 					}
 
 					AnimationGraphNodeAddArc(&G->Arena, &G->Nodes[G->Index], InBoundMessage, DestNodeName, Type, t0, t1);
+				}
+				else if(StringsAreSame(Word, "animation"))
+				{
+					// TODO(Justin): This should be a tag. E.g. idle not the actual name of the animaation?
+					char *AnimationName = strtok(0, " ");
+					G->Nodes[G->Index].Tag = StringCopy(&G->Arena, AnimationName);
 				}
 				else if(StringsAreSame(Word, "when_done"))
 				{

@@ -8,39 +8,58 @@
 # StateSprintMirror		XBot_FastRunMirror
 # StateJumpForward		XBot_JumpForward
 # StateIdleToSprint		XBot_IdleToSprint
-#
+
 : StateIdleRight
+animation XBot_IdleRight
 message go_state_run StateRunning
 message go_state_sprint StateSprint
 
+
 : StateIdleLeft
+animation XBot_IdleLeft
 message go_state_run StateRunningMirror
-message go_state_sprint StateSprintMirror
+message go_state_sprint StateIdleToSprint
 
 : StateRunning
+animation XBot_Running
 message go_state_idle StateIdleLeft 0.0 0.4
 message go_state_idle StateIdleRight 0.4 0.7
 message go_state_sprint StateSprint 0.0 0.7
 message go_state_jump StateJumpForward
 
 : StateRunningMirror
+animation XBot_RunningMirror
 message go_state_idle StateIdleRight 0.0 0.4
 message go_state_idle StateIdleLeft 0.4 0.7
 message go_state_sprint StateSprint 0.0 0.7
 message go_state_jump StateJumpForward
 
 : StateSprint
+animation XBot_FastRun
 message go_state_idle StateIdleLeft 0.0 0.25
 message go_state_idle StateIdleRight 0.25 0.5
 message go_state_run StateRunning
 
 : StateSprintMirror
+animation XBot_FastRunMirror
 message go_state_idle StateIdleRight 0.0 0.25
 message go_state_idle StateIdleLeft 0.25 0.5
 message go_state_run  StateRunning
 
 : StateJumpForward
+animation XBot_JumpForward
 when_done go_state_run StateRunning 0.33
 
 : StateIdleToSprint
+animation XBot_IdleToSprint
+message go_state_idle StateIdleLeft 0.0 0.4
+message go_state_idle StateIdleRight 0.4 0.8
 when_done go_state_sprint StateSprint 0.1
+
+: StateStandingToIdleLeft
+animation XBot_StandingToIdleLeft
+when_done go_state_idle StateIdleLeft 0.1
+
+: StateStandingToIdleRight
+animation XBot_StandingToIdleRight
+when_done go_state_idle StateIdleRight 0.1

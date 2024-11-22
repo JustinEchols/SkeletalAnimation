@@ -80,10 +80,17 @@ struct asset_manager
 	animation_graph Graphs[2];
 	font Font;
 
+
 	// TODO(Justin): Clean this up
 	animation_info *AnimationInfos;
 	animation *Animations;
 };
 
+internal texture *			LookupTexture(asset_manager *AssetManager, char *TextureName);
+internal model *			LookupModel(asset_manager *AssetManager, char *ModelName);
+internal animation *		LookupAnimation(asset_manager *AssetManager, char *AnimationName);
+internal animation_graph *	LookupGraph(asset_manager *AssetManager, char *GraphName);
+
 #define ASSET_H
 #endif
+
