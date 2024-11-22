@@ -266,6 +266,10 @@ AssetManagerInit(asset_manager *Manager)
 {
 	char Buffer[256];
 
+	//
+	// Textures
+	//
+
 	ArenaSubset(&Manager->Arena, &Manager->TextureNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->TextureNames);
 	for(u32 NameIndex = 0; NameIndex < ArrayCount(TextureFiles); ++NameIndex)
@@ -281,6 +285,10 @@ AssetManagerInit(asset_manager *Manager)
 		OpenGLAllocateTexture(Texture);
 	}
 
+	//
+	// Models
+	//
+
 	ArenaSubset(&Manager->Arena, &Manager->ModelNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->ModelNames);
 	for(u32 NameIndex = 0; NameIndex < ArrayCount(ModelFiles); ++NameIndex)
@@ -294,9 +302,12 @@ AssetManagerInit(asset_manager *Manager)
 		*Model = ModelLoad(&Manager->Arena, FullPath);
 	}
 
+	//
+	// Animations
+	//
+
 	ArenaSubset(&Manager->Arena, &Manager->AnimationNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->AnimationNames);
-
 	Manager->AnimationInfos = PushArray(&Manager->Arena, ArrayCount(AnimationFiles), animation_info);
 	Manager->Animations		= PushArray(&Manager->Arena, ArrayCount(AnimationFiles), animation);
 	for(u32 NameIndex = 0; NameIndex < ArrayCount(AnimationFiles); ++NameIndex)
@@ -319,7 +330,7 @@ AssetManagerInit(asset_manager *Manager)
 			key_frame *BlendedPose = Animation->BlendedPose;
 			AllocateJointXforms(&Manager->Arena, BlendedPose, Info->JointCount);
 
-			// TODO(Justin): Load this from a file?
+			// TODO(Justin): Load this from a file.
 			switch(NameIndex)
 			{
 				case Animation_IdleRight:
@@ -370,12 +381,7 @@ AssetManagerInit(asset_manager *Manager)
 				case Animation_RunMirror:
 				{
 					Animation->TimeScale = 1.0f;
-#if 0
-					Animation->DefaultFlags = AnimationFlags_Looping |
-											  AnimationFlags_RemoveLocomotion;
-#else
 					Animation->DefaultFlags = AnimationFlags_Looping;
-#endif
 				} break;
 				case Animation_RunToStop:
 				{
@@ -387,12 +393,7 @@ AssetManagerInit(asset_manager *Manager)
 				case Animation_SprintMirror:
 				{
 					Animation->TimeScale = 1.0f;
-#if 0
-					Animation->DefaultFlags = AnimationFlags_Looping |
-											  AnimationFlags_RemoveLocomotion;
-#else
 					Animation->DefaultFlags = AnimationFlags_Looping;
-#endif
 				} break;
 				case Animation_JumpForward:
 				{
@@ -403,9 +404,10 @@ AssetManagerInit(asset_manager *Manager)
 		}
 	}
 
-	FontInit(&Manager->Font, FontFiles[0]);
+	//
+	// Graphs
+	//
 
-#if 1
 	ArenaSubset(&Manager->Arena, &Manager->GraphNames.Arena, Kilobyte(4));
 	StringHashInit(&Manager->GraphNames);
 	for(u32 NameIndex = 0; NameIndex < ArrayCount(GraphFiles); ++NameIndex)
@@ -419,7 +421,12 @@ AssetManagerInit(asset_manager *Manager)
 		ArenaSubset(&Manager->Arena, &G->Arena, Kilobyte(4));
 		AnimationGraphInit(G, FullPath);
 	}
-#endif
+
+	//
+	// Font
+	//
+
+	FontInit(&Manager->Font, FontFiles[0]);
 }
 
 
