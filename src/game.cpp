@@ -559,6 +559,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	v3 DefaultColor = V3(1.0f);
 
 	char Buff[256];
+	sprintf(Buff, "%s", "Controls: wasd to move, shift to sprint, +- to scale time");
+	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, HoverColor, WindowWidth, WindowHeight);
+	P.y -= (Gap + dY);
+
 	sprintf(Buff, "%s %.2f", "time scale: ", GameState->TimeScale);
 	rect Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 	if(InRect(Rect, MouseP))
@@ -571,7 +575,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	}
 
-#if 1
+#if 0
 	//
 	// NOTE(Jusitn): Entity information.
 	//
