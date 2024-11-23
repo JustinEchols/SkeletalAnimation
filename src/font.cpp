@@ -7,14 +7,12 @@ FontInit(font *Font, char *FileName)
 	FT_Library Ft;
 	if(FT_Init_FreeType(&Ft))
 	{
-		PrintString("ERROR: Unable to load free type library");
 		return(-1);
 	}
 
 	FT_Face Face;
 	if(FT_New_Face(Ft, FileName, 0, &Face))
 	{
-		PrintString("ERROR: Unable to load font.");
 		return(-1);
 	}
 
@@ -32,7 +30,6 @@ FontInit(font *Font, char *FileName)
 	{
 		if(FT_Load_Char(Face, CharIndex, FT_LOAD_RENDER))
 		{
-			PrintString("ERROR: Unable to glyph.");
 			return(-1);
 		}
 

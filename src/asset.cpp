@@ -61,7 +61,6 @@ ModelLoad(memory_arena *Arena, char *FileName)
 	}
 	else
 	{
-		PrintString("ERROR: Could not open file!");
 	}
 
 	return(Model);
@@ -115,7 +114,6 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 	}
 	else
 	{
-		PrintString("ERROR: Could not open file!");
 	}
 
 	return(Info);

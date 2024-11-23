@@ -7,6 +7,7 @@
 #include "mesh.cpp"
 #include "animation.cpp"
 #include "asset.cpp"
+#include "render.cpp"
 
 internal entity * 
 EntityAdd(game_state *GameState, entity_type Type)
@@ -161,14 +162,11 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	if(!GameMemory->IsInitialized)
 	{
 		//
-		// NOTE(Justin): Arenas.
+		// NOTE(Justin): Arena.
 		//
 
 		ArenaInitialize(&GameState->Arena, (u8 *)GameMemory->PermanentStorage + sizeof(game_state),
 												 GameMemory->PermanentStorageSize - sizeof(game_state)); 
-
-		ArenaInitialize(&GameState->TempArena, (u8 *)GameMemory->TemporaryStorage,
-													 GameMemory->TemporaryStorageSize);
 
 		memory_arena *Arena = &GameState->Arena;
 
@@ -235,6 +233,16 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		OpenGLFrameBufferInit(&GameState->FBO, &GameState->Texture, &GameState->RBO, GameState->TextureWidth, GameState->TextureHeight);
 
 		GameMemory->IsInitialized = true;
+	}
+
+	temp_state *TempState = (temp_state *)GameMemory->TemporaryStorage;
+	if(!TempState->IsInitialized)
+	{
+		ArenaInitialize(&TempState->Arena,
+				(u8 *)GameMemory->TemporaryStorage + sizeof(temp_state),
+					  GameMemory->TemporaryStorageSize - sizeof(temp_state));
+
+		TempState->IsInitialized = true;
 	}
 
 	v3 ddP = {};
@@ -405,7 +413,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	Animate(Player->AnimationGraph, Assets, Player->AnimationPlayer, Player->MovementState);
-	AnimationPlayerUpdate(Player->AnimationPlayer, &GameState->TempArena, dt);
+	AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
 	ModelJointsUpdate(Player->AnimationPlayer);
 	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);
 
@@ -414,7 +422,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	//
 
 	// TODO(Justin): Camera position/direction update with player turning
-	//entity *CameraFollowingEntity = GameState->Entities + GameState->PlayerEntityIndex;
 	camera *Camera = &GameState->Camera;
 	Camera->P = Player->P + GameState->CameraOffsetFromPlayer;
 
@@ -431,42 +438,28 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	//
 	// NOTE(Justin): Final pass.
 	//
-	
+
+
 	PerspectiveTransformUpdate(GameState);
 	CameraTransformUpdate(GameState);
-
-	glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
-	glEnable(GL_DEPTH_TEST);
-	glDepthFunc(GL_LESS);
-	glFrontFace(GL_CCW);
-	glEnable(GL_CULL_FACE);
-	glCullFace(GL_BACK);
-	glEnable(GL_MULTISAMPLE);
-	glEnable(GL_SAMPLE_ALPHA_TO_COVERAGE);
-	glEnable(GL_BLEND);
-	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-	glClearColor(0.3f, 0.4f, 0.4f, 1.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-
 	u32 MainShader = GameState->Shaders[0];
 	u32 BasicShader = GameState->Shaders[1];
 	u32 FontShader = GameState->Shaders[2];
+	render_buffer *RenderBuffer = RenderBufferAllocate(&TempState->Arena, Megabyte(512),
+									GameState->CameraTransform, GameState->Perspective,
+									MainShader, BasicShader, Assets, Camera->P
+									);
+
+	PushClear(RenderBuffer, V4(0.3f, 0.4f, 0.4f, 1.0f));
 
 	//
 	// NOTE(Justin): Ground quad.
 	//
 
-	glUseProgram(BasicShader);
 	mat4 T = Mat4Translate(V3(0.0f, 0.0f, -500.0f));
 	mat4 R = Mat4Identity();
 	mat4 S = Mat4Scale(1000.0f);
-
-	UniformMatrixSet(BasicShader, "View", GameState->CameraTransform);
-	UniformMatrixSet(BasicShader, "Projection", GameState->Perspective);
-	UniformBoolSet(BasicShader, "OverRideTexture", false);
-	UniformV3Set(BasicShader, "Ambient", V3(0.1f));
-	UniformV3Set(BasicShader, "LightDir", LightDir);
-	OpenGLDrawQuad(&GameState->Quad, BasicShader, T*R*S, LookupTexture(Assets, "tile_gray")->Handle);
+	PushQuad3D(RenderBuffer, GameState->Quad.VA, T*R*S, LookupTexture(Assets, "tile_gray")->Handle);
 
 	//
 	// NOTE(Justin): Entities.
@@ -481,15 +474,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 			{
 				mat4 Transform = EntityTransform(Entity, 0.025f);
 				model *Model = LookupModel(Assets, "XBot");
-
-				glUseProgram(MainShader);
-				UniformMatrixSet(MainShader, "View", GameState->CameraTransform);
-				UniformMatrixSet(MainShader, "Projection", GameState->Perspective);
-				UniformV3Set(MainShader, "CameraP", Camera->P);
-				UniformV3Set(MainShader, "Ambient", V3(0.1f));
-				UniformV3Set(MainShader, "CameraP", Camera->P);
-				UniformV3Set(MainShader, "LightDir", LightDir);
-				OpenGLDrawAnimatedModel(Model, MainShader, Transform);
+				PushModel(RenderBuffer, Model, Transform);
 
 				//
 				// NOTE(Justin): Debug orientation arrow 
@@ -501,14 +486,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(V3(1.0f));
 
-				glUseProgram(BasicShader);
-				UniformMatrixSet(BasicShader, "View", GameState->CameraTransform);
-				UniformMatrixSet(BasicShader, "Projection", GameState->Perspective);
-				UniformBoolSet(BasicShader, "OverRideTexture", true);
-				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
-				UniformV3Set(BasicShader, "LightDir", LightDir);
-				UniformV4Set(BasicShader, "Color", V4(1.0f, 0.0f, 0.0f));
-				OpenGLDrawQuad(&GameState->Quad, BasicShader, T*R*S, LookupTexture(Assets, "left_arrow")->Handle);
+				PushQuad3D(RenderBuffer, GameState->Quad.VA, T*R*S, LookupTexture(Assets, "left_arrow")->Handle);
 
 				//
 				// NOTE(Justin): Debug sphere 
@@ -516,26 +494,22 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 #if 0
 				Transform = EntityTransform(Entity, 0.5f);
-				UniformV4Set(BasicShader, "Color", V4(1.0f));
-				OpenGLDrawModel(GameState->Sphere, BasicShader, Transform);
+				Model = LookupModel(Assets, "Sphere");
+				//UniformV4Set(BasicShader, "Color", V4(1.0f));
+				PushModel(RenderBuffer, Model, Transform);
 #endif
 
 			} break;
 			case EntityType_Cube:
 			{
-				glUseProgram(BasicShader);
-				UniformMatrixSet(BasicShader, "View", GameState->CameraTransform);
-				UniformMatrixSet(BasicShader, "Projection", GameState->Perspective);
-				UniformBoolSet(BasicShader, "OverRideTexture", false);
-				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
-				UniformV3Set(BasicShader, "LightDir", LightDir);
-				UniformV4Set(BasicShader, "Color", V4(1.0f));
 				model *Cube = LookupModel(Assets, "Cube");
 				mat4 Transform = EntityTransform(Entity, 1.0f);
-				OpenGLDrawModel(Cube, BasicShader, Transform);
+				PushModel(RenderBuffer, Cube, Transform);
 			} break;
 		};
 	}
+
+	RenderBufferToOutput(RenderBuffer, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
 
 	//
 	// NOTE(Justin): Test font/ui.
@@ -709,5 +683,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 #endif
 
-	ArenaClear(&GameState->TempArena);
+
+	ArenaClear(&TempState->Arena);
 }

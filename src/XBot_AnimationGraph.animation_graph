@@ -1,5 +1,5 @@
 # Hello, Sailor! This is a comment
-# TODO specify animation after node
+# TODO specify animation/tag after node
 # StateIdleRight		XBot_IdleRight
 # StateIdleLeft			XBot_IdleLeft
 # StateRunning			XBot_Running
@@ -14,11 +14,10 @@ animation XBot_IdleRight
 message go_state_run StateRunning
 message go_state_sprint StateSprint
 
-
 : StateIdleLeft
 animation XBot_IdleLeft
 message go_state_run StateRunningMirror
-message go_state_sprint StateIdleToSprint
+message go_state_sprint StateSprintMirror
 
 : StateRunning
 animation XBot_Running

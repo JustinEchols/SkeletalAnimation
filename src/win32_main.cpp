@@ -23,6 +23,8 @@ global_varible f32 Win32GlobalMouseX;
 global_varible f32 Win32GlobalMouseY;
 
 #include "game.h"
+//#include "render.h"
+//#include "render.cpp"
 #include "game.cpp"
 
 
@@ -132,9 +134,9 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		game_memory GameMemory = {};
 		GameMemory.IsInitialized = false;
-		GameMemory.PermanentStorageSize = Megabyte(512);
+		GameMemory.PermanentStorageSize = Megabyte(64);
 		GameMemory.PermanentStorage = VirtualAlloc(0, GameMemory.PermanentStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
-		GameMemory.TemporaryStorageSize = Megabyte(512);
+		GameMemory.TemporaryStorageSize = Gigabyte(1);
 		GameMemory.TemporaryStorage = VirtualAlloc(0, GameMemory.TemporaryStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
 		game_input GameInput[2] = {};

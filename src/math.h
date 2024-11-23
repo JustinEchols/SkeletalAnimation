@@ -48,6 +48,10 @@ union v4
 	};
 	struct
 	{
+		f32 r, g, b, a;
+	};
+	struct
+	{
 		union
 		{
 			v3 xyz;

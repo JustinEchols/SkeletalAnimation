@@ -1,5 +1,7 @@
 #if !defined(GAME_H)
 
+#include "platform.h"
+
 struct memory_arena
 {
 	u8 *Base;
@@ -91,12 +93,14 @@ TemporaryMemoryEnd(temporary_memory TempMemory)
 	Arena->TempCount--;
 }
 
+#if 0
 internal void
 PrintString(char *String)
 {
 	OutputDebugStringA(String);
 	OutputDebugStringA("\n");
 }
+#endif
 
 enum movement_state
 {
@@ -125,6 +129,7 @@ enum entity_type
 #include "mesh.h"
 #include "animation.h"
 #include "asset.h"
+#include "render.h"
 
 struct entity
 {
@@ -180,7 +185,6 @@ struct camera
 struct game_state
 {
 	memory_arena Arena;
-	memory_arena TempArena;
 
 	u32 PlayerEntityIndex;
 	u32 EntityCount;
@@ -211,6 +215,12 @@ struct game_state
 	quad_2d Quad2d;
 
 	asset_manager AssetManager;
+};
+
+struct temp_state
+{
+	b32 IsInitialized;
+	memory_arena Arena;
 };
 
 #define GAME_H

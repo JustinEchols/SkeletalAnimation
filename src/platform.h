@@ -4,6 +4,8 @@
 // NOTE(Justin): C Standard Library
 
 #include <stdint.h>
+#include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #define MemorySet(Source, Value, Size) memset(Source, Value, Size)

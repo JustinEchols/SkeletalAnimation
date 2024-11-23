@@ -1,5 +1,7 @@
 #if !defined(INTRINSICS_H)
 
+#include <math.h>
+
 inline u32 
 F32RoundToU32(f32 X)
 {
@@ -67,7 +69,7 @@ ACos(f32 X)
 inline f32
 Max(f32 X, f32 Y)
 {
-	f32 Result = max(X, Y);
+	f32 Result = fmaxf(X, Y);
 	return(Result);
 }
 

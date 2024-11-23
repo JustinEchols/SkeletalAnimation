@@ -311,7 +311,6 @@ AttributesCheck(u32 ShaderProgram, s32 ExpectedAttributeCount)
 		glGetActiveAttrib(ShaderProgram, i, sizeof(Name), &Length, &Size, &Type, Name);
 
 		sprintf(Buff, "Attribute:%d\nName:%s\nSize:%d\n\n", i, Name, Size);
-		PrintString(Buff);
 	}
 }
 
@@ -444,7 +443,6 @@ OpenGLFrameBufferInit(u32 *FBO, u32 *Texture, u32 *RBO, u32 Width, u32 Height)
 
 	if(glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
-		PrintString("ERROR Framebuffer is not complete.");
 		Result = false;
 	}
 
@@ -538,14 +536,14 @@ OpenGLDrawModel(model *Model, u32 ShaderProgram, mat4 Transform)
 }
 
 internal void
-OpenGLDrawQuad(quad *Quad, u32 ShaderProgram, mat4 Transform, u32 TextureHandle)
+OpenGLDrawQuad(u32 VA, u32 ShaderProgram, mat4 Transform, u32 TextureHandle)
 {
 	glUseProgram(ShaderProgram);
 	UniformMatrixSet(ShaderProgram, "Model", Transform);
 	glActiveTexture(GL_TEXTURE0);
 	UniformBoolSet(ShaderProgram, "Texture", 0);
 	glBindTexture(GL_TEXTURE_2D, TextureHandle);
-	glBindVertexArray(Quad->VA);
+	glBindVertexArray(VA);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	glBindVertexArray(0);
 	glBindTexture(GL_TEXTURE_2D, 0);
