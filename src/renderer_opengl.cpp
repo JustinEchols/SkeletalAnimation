@@ -471,7 +471,6 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 				BaseOffset += sizeof(*Entry);
 			} break;
-
 			case RenderBuffer_render_entry_texture:
 			{
 				render_entry_texture *Entry = (render_entry_texture *)Data;
@@ -505,19 +504,18 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				OpenGLDrawQuad(Quad->VA, BasicShader, Entry->Transform, Texture->Handle);
 				BaseOffset += sizeof(*Entry);
 			} break;
-
 			case RenderBuffer_render_entry_model:
 			{
 				render_entry_model *Entry = (render_entry_model *)Data;
 				model *Model = Entry->Model;
-				if(!Model->UploadedToGPU)
-				{
-					OpenGLAllocateAnimatedModel(Entry->Model, MainShader);
-					Model->UploadedToGPU = true;
-				}
-
 				if(Model->HasSkeleton)
 				{
+					if(!Model->UploadedToGPU)
+					{
+						OpenGLAllocateAnimatedModel(Entry->Model, MainShader);
+						Model->UploadedToGPU = true;
+					}
+
 					OpenGL.glUseProgram(MainShader);
 					UniformMatrixSet(MainShader, "View", View);
 					UniformMatrixSet(MainShader, "Projection", Perspective);
@@ -529,6 +527,12 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				}
 				else
 				{
+					if(!Model->UploadedToGPU)
+					{
+						OpenGLAllocateModel(Entry->Model, BasicShader);
+						Model->UploadedToGPU = true;
+					}
+
 					OpenGL.glUseProgram(BasicShader);
 					UniformMatrixSet(BasicShader, "View", View);
 					UniformMatrixSet(BasicShader, "Projection", Perspective);
