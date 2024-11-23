@@ -132,45 +132,6 @@ AttributesCheck(u32 ShaderProgram, s32 ExpectedAttributeCount)
 	}
 }
 
-#if 0
-internal void
-OpenGLAllocateAnimatedModel(model *Model, u32 ShaderProgram)
-{
-	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
-	{
-		s32 ExpectedAttributeCount = 0;
-
-		mesh *Mesh = Model->Meshes + MeshIndex;
-
-		OpenGL.glGenVertexArrays(1, &Model->VA[MeshIndex]);
-		OpenGL.glBindVertexArray(Model->VA[MeshIndex]);
-
-		OpenGL.glGenBuffers(1, &Model->VB[MeshIndex]);
-		OpenGL.glBindBuffer(GL_ARRAY_BUFFER, Model->VB[MeshIndex]);
-		OpenGL.glBufferData(GL_ARRAY_BUFFER, Mesh->VertexCount * sizeof(vertex), Mesh->Vertices, GL_STATIC_DRAW);
-
-		OpenGL.glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
-		OpenGL.glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(3 * sizeof(f32)));
-		OpenGL.glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(vertex), (void *)(8 * sizeof(f32)));
-		OpenGL.glVertexAttribIPointer(3, 3, GL_UNSIGNED_INT, sizeof(vertex), (void *)(9 * sizeof(u32)));
-		OpenGL.glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(12 * sizeof(u32)));
-
-		OpenGL.glEnableVertexAttribArray(0);
-		OpenGL.glEnableVertexAttribArray(1);
-		OpenGL.glEnableVertexAttribArray(2);
-		OpenGL.glEnableVertexAttribArray(3);
-		OpenGL.glEnableVertexAttribArray(4);
-
-		ExpectedAttributeCount = 5;
-
-		GLIBOInit(&Model->IBO[MeshIndex], Mesh->Indices, Mesh->IndicesCount);
-		OpenGL.glBindVertexArray(0);
-
-		AttributesCheck(ShaderProgram, ExpectedAttributeCount);
-	}
-}
-#else
-
 internal void
 OpenGLAllocateAnimatedMesh(mesh *Mesh, u32 ShaderProgram)
 {
@@ -212,42 +173,6 @@ OpenGLAllocateAnimatedModel(model *Model, u32 ShaderProgram)
 		OpenGLAllocateAnimatedMesh(Mesh, ShaderProgram);
 	}
 }
-#endif
-
-#if 0
-internal void
-OpenGLAllocateModel(model *Model, u32 ShaderProgram)
-{
-	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
-	{
-		s32 ExpectedAttributeCount = 0;
-
-		mesh *Mesh = Model->Meshes + MeshIndex;
-
-		OpenGL.glGenVertexArrays(1, &Model->VA[MeshIndex]);
-		OpenGL.glBindVertexArray(Model->VA[MeshIndex]);
-
-		OpenGL.glGenBuffers(1, &Model->VB[MeshIndex]);
-		OpenGL.glBindBuffer(GL_ARRAY_BUFFER, Model->VB[MeshIndex]);
-		OpenGL.glBufferData(GL_ARRAY_BUFFER, Mesh->VertexCount * sizeof(vertex), Mesh->Vertices, GL_STATIC_DRAW);
-
-		OpenGL.glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
-		OpenGL.glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(3 * sizeof(f32)));
-		OpenGL.glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(6 * sizeof(f32)));
-
-		OpenGL.glEnableVertexAttribArray(0);
-		OpenGL.glEnableVertexAttribArray(1);
-		OpenGL.glEnableVertexAttribArray(2);
-
-		ExpectedAttributeCount = 3;
-
-		GLIBOInit(&Model->IBO[MeshIndex], Mesh->Indices, Mesh->IndicesCount);
-		OpenGL.glBindVertexArray(0);
-
-		AttributesCheck(ShaderProgram, ExpectedAttributeCount);
-	}
-}
-#else
 
 internal void
 OpenGLAllocateMesh(mesh *Mesh, u32 ShaderProgram)
@@ -286,7 +211,6 @@ OpenGLAllocateModel(model *Model, u32 ShaderProgram)
 		OpenGLAllocateMesh(Mesh, ShaderProgram);
 	}
 }
-#endif
 
 internal void
 OpenGLAllocateQuad(quad *Quad, u32 ShaderProgram)
