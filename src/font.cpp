@@ -64,7 +64,7 @@ FontInit(font *Font, char *FileName)
 		Font->Glyphs[CharIndex].Bearing = V2I(Face->glyph->bitmap_left, Face->glyph->bitmap_top);
 		Font->Glyphs[CharIndex].Advance = Face->glyph->advance.x;
 
-		glGenerateMipmap(GL_TEXTURE_2D);
+		OpenGL.glGenerateMipmap(GL_TEXTURE_2D);
 		glBindTexture(GL_TEXTURE_2D, 0);
 	}
 

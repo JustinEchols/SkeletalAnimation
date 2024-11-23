@@ -36,15 +36,15 @@ struct mesh
 {
 	string Name;
 
+	// Vertex
 	u32 IndicesCount;
 	u32 VertexCount;
 	u32 JointCount;
-
 	u32 *Indices;
 	vertex *Vertices;
 
+	// Skeleton 
 	joint *Joints;
-
 	mat4 BindTransform;
 	mat4 *InvBindTransforms;
 	mat4 *JointTransforms;
@@ -52,21 +52,22 @@ struct mesh
 
 	material_spec MaterialSpec;
 
+	// Data modified by renderer.
+	u32 VA;
+	u32 VB;
+	u32 IBO;
+
 	u32 TextureHandle;
 };
 
-// NOTE(Justin): Should the model have a basis?
 struct model
 {
 	b32 HasSkeleton;
-
 	u32 MeshCount;
 	mesh *Meshes;
 
-	// TODO(Justin): Should this be stored at the mesh level?
-	u32 VA[2];
-	u32 VB[2];
-	u32 IBO[2];
+	// Data modified by renderer.
+	b32 UploadedToGPU;
 };
 
 #define MESH_H

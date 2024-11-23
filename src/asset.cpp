@@ -279,8 +279,6 @@ AssetManagerInit(asset_manager *Manager)
 		Assert(Index != -1);
 		texture *Texture = Manager->Textures + Index;
 		*Texture = TextureLoad(FullPath);
-		// TODO(Justin): All opengl allocations required on start up should be pooled together!
-		OpenGLAllocateTexture(Texture);
 	}
 
 	//

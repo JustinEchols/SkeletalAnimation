@@ -1,7 +1,6 @@
 
 #include "game.h"
 #include "strings.cpp"
-#include "opengl.cpp"
 #include "texture.cpp"
 #include "font.cpp"
 #include "mesh.cpp"
@@ -181,18 +180,13 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		GameState->Quad = QuadDefault();
 		GameState->Quad.Texture = LookupTexture(Assets, "left_arrow")->Handle;
 
-		model *Cube = LookupModel(Assets, "Cube");
-		Cube->Meshes[0].TextureHandle = LookupTexture(Assets, "texture_01")->Handle;
-
-		model *XBot		= LookupModel(Assets, "XBot");
-		model *Sphere	= LookupModel(Assets, "Sphere");
-
 		PlayerAdd(GameState);
-		entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
+		entity *Player			= GameState->Entities + GameState->PlayerEntityIndex;
 		Player->AnimationPlayer = PushStruct(Arena, animation_player);
-		Player->AnimationGraph = PushStruct(Arena, animation_graph);
+		Player->AnimationGraph	= PushStruct(Arena, animation_graph);
+		model *XBot				= LookupModel(Assets, "XBot");
 		AnimationPlayerInitialize(Player->AnimationPlayer, XBot, Arena);
-		Player->AnimationGraph = LookupGraph(Assets, "XBot_AnimationGraph");
+		Player->AnimationGraph	= LookupGraph(Assets, "XBot_AnimationGraph");
 
 		RandInit(2024);
 		for(u32 Index = 0; Index < 10; ++Index)
@@ -212,15 +206,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		GameState->ZFar = 200.0f;
 		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 
-		GameState->Shaders[0] = GLProgramCreate(MainVS, MainFS);
-		GameState->Shaders[1] = GLProgramCreate(BasicVS, BasicFS);
-		GameState->Shaders[2] = GLProgramCreate(FontVS, FontFS);
-		GameState->Shaders[3] = GLProgramCreate(ScreenVS, ScreenFS);
-
-		u32 MainShader = GameState->Shaders[0];
-		u32 BasicShader = GameState->Shaders[1];
-		u32 FontShader = GameState->Shaders[2];
-
+#if 0
 		OpenGLAllocateAnimatedModel(XBot, MainShader);
 		OpenGLAllocateModel(Cube, BasicShader);
 		OpenGLAllocateModel(Sphere, BasicShader);
@@ -231,7 +217,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 		GameState->TextureWidth = 256;
 		GameState->TextureHeight = 256;
 		OpenGLFrameBufferInit(&GameState->FBO, &GameState->Texture, &GameState->RBO, GameState->TextureWidth, GameState->TextureHeight);
-
+#endif
 		GameMemory->IsInitialized = true;
 	}
 
@@ -417,11 +403,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	ModelJointsUpdate(Player->AnimationPlayer);
 	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);
 
-	//
-	// NOTE(Justin): Camera update
-	//
-
-	// TODO(Justin): Camera position/direction update with player turning
 	camera *Camera = &GameState->Camera;
 	Camera->P = Player->P + GameState->CameraOffsetFromPlayer;
 
@@ -439,16 +420,14 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	// NOTE(Justin): Final pass.
 	//
 
-
 	PerspectiveTransformUpdate(GameState);
 	CameraTransformUpdate(GameState);
-	u32 MainShader = GameState->Shaders[0];
-	u32 BasicShader = GameState->Shaders[1];
-	u32 FontShader = GameState->Shaders[2];
+	u32 FontShader	= GameState->Shaders[2];
 	render_buffer *RenderBuffer = RenderBufferAllocate(&TempState->Arena, Megabyte(512),
-									GameState->CameraTransform, GameState->Perspective,
-									MainShader, BasicShader, Assets, Camera->P
-									);
+														GameState->CameraTransform,
+														GameState->Perspective,
+														Assets,
+														Camera->P);
 
 	PushClear(RenderBuffer, V4(0.3f, 0.4f, 0.4f, 1.0f));
 
@@ -459,7 +438,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	mat4 T = Mat4Translate(V3(0.0f, 0.0f, -500.0f));
 	mat4 R = Mat4Identity();
 	mat4 S = Mat4Scale(1000.0f);
-	PushQuad3D(RenderBuffer, GameState->Quad.VA, T*R*S, LookupTexture(Assets, "tile_gray")->Handle);
+
+	s32 TextureIndex = StringHashLookup(&Assets->TextureNames, "tile_gray");
+	PushTexture(RenderBuffer, LookupTexture(Assets, "tile_gray"), TextureIndex);
+	PushQuad3D(RenderBuffer, &GameState->Quad, T*R*S, TextureIndex);
 
 	//
 	// NOTE(Justin): Entities.
@@ -486,7 +468,9 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(V3(1.0f));
 
-				PushQuad3D(RenderBuffer, GameState->Quad.VA, T*R*S, LookupTexture(Assets, "left_arrow")->Handle);
+				TextureIndex = StringHashLookup(&Assets->TextureNames, "left_arrow");
+				PushTexture(RenderBuffer, LookupTexture(Assets, "left_arrow"), TextureIndex);
+				PushQuad3D(RenderBuffer, &GameState->Quad, T*R*S, TextureIndex);
 
 				//
 				// NOTE(Justin): Debug sphere 
@@ -504,6 +488,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 			{
 				model *Cube = LookupModel(Assets, "Cube");
 				mat4 Transform = EntityTransform(Entity, 1.0f);
+				PushTexture(RenderBuffer, LookupTexture(Assets, "texture_01"), StringHashLookup(&Assets->TextureNames, "texture_01"));
 				PushModel(RenderBuffer, Cube, Transform);
 			} break;
 		};
@@ -511,6 +496,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	RenderBufferToOutput(RenderBuffer, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
 
+#if 0
 	//
 	// NOTE(Justin): Test font/ui.
 	//
@@ -681,6 +667,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	glBindBuffer(GL_ARRAY_BUFFER, Quad2d->VB);
 	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
+#endif
 #endif
 
 

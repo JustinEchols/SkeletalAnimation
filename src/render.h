@@ -3,6 +3,7 @@
 enum render_buffer_entry_type
 {
 	RenderBuffer_render_entry_clear,
+	RenderBuffer_render_entry_texture,
 	RenderBuffer_render_entry_quad_3d,
 	RenderBuffer_render_entry_model,
 };
@@ -17,16 +18,21 @@ struct render_entry_clear
 	v4 Color;
 };
 
+struct render_entry_texture
+{
+	s32 Index;
+};
+
 struct render_entry_quad_3d
 {
-	u32 VA;
+	quad *Quad;
 	mat4 Transform;
-	u32 TextureHandle;
+	u32 TextureIndex;
 };
 
 struct render_entry_model
 {
-	b32 Animated;
+	b32 Allocated;
 	mat4 Transform;
 	model *Model;
 };
@@ -41,8 +47,9 @@ struct render_buffer
 	mat4 Perspective;
 	v3 CameraP;
 
-	u32 MainShader;
-	u32 BasicShader;
+	u32 TextureCount;
+	u32 MaxTextureCount;
+	texture **Textures;
 
 	asset_manager *Assets;
 };

@@ -5,8 +5,6 @@
 
 #include "platform.h"
 #include <windows.h>
-
-#include <stdio.h>
 #include <math.h>
 #include <gl/gl.h>
 #include "wglext.h"
@@ -17,22 +15,21 @@
 // NOTE(Justin): Globals
 global_varible b32 Win32GlobalRunning;
 global_varible s64 Win32GlobalTicksPerSecond;
-global_varible int Win32GlobalWindowWidth;
-global_varible int Win32GlobalWindowHeight;
+global_varible s32 Win32GlobalWindowWidth;
+global_varible s32 Win32GlobalWindowHeight;
 global_varible f32 Win32GlobalMouseX;
 global_varible f32 Win32GlobalMouseY;
+static open_gl OpenGL;
 
 #include "game.h"
-//#include "render.h"
-//#include "render.cpp"
+#include "renderer_opengl.h"
+#include "renderer_opengl.cpp"
 #include "game.cpp"
 
-
-
-// TODO(Justin): Routine hides the fact that globals are updated. Is this ok to do?
 internal void 
 Win32MousePositionGet(HWND Window)
 {
+	// TODO(Justin): Routine hides the fact that globals are updated. Is this ok to do?
 	POINT Mouse;
 	GetCursorPos(&Mouse);
 	ScreenToClient(Window, &Mouse);
@@ -40,10 +37,10 @@ Win32MousePositionGet(HWND Window)
 	Win32GlobalMouseY = (f32)Win32GlobalWindowHeight - (f32)Mouse.y; // Invert MouseY st y=0 is the bottom of the client area
 }
 
-// TODO(Justin): Routine hides the fact that globals are updated. Is this ok to do?
 internal void
 Win32ClientRectGet(HWND Window)
 {
+	// TODO(Justin): Routine hides the fact that globals are updated. Is this ok to do?
 	RECT ClientR = {};
 	GetClientRect(Window, &ClientR);
 	Win32GlobalWindowWidth = ClientR.right - ClientR.left;
@@ -130,7 +127,12 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		f32 TargetSecondsPerFrame = 1.0f / (f32)MonitorRefreshRate;
 
-		HGLRC OpenGLRC = Win32OpenGLInit(GetDC(Window));
+		HGLRC OpenGLRC		= Win32OpenGLInit(GetDC(Window), &OpenGL);
+		OpenGL.MainShader	= GLProgramCreate(MainVS, MainFS);
+		OpenGL.BasicShader	= GLProgramCreate(BasicVS, BasicFS);
+		OpenGL.FontShader	= GLProgramCreate(FontVS, FontFS);
+		OpenGL.ScreenShader = GLProgramCreate(ScreenVS, ScreenFS);
+		glGenTextures(1, &OpenGL.NullTexture);
 
 		game_memory GameMemory = {};
 		GameMemory.IsInitialized = false;

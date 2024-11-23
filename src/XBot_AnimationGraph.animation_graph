@@ -47,7 +47,7 @@ message go_state_run  StateRunning
 
 : StateJumpForward
 animation XBot_JumpForward
-when_done go_state_run StateRunning 0.33
+when_done go_state_run StateRunningMirror 0.1
 
 : StateIdleToSprint
 animation XBot_IdleToSprint

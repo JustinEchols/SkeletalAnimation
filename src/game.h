@@ -93,6 +93,8 @@ TemporaryMemoryEnd(temporary_memory TempMemory)
 	Arena->TempCount--;
 }
 
+
+
 #if 0
 internal void
 PrintString(char *String)
@@ -123,13 +125,41 @@ enum entity_type
 #include "intrinsics.h"
 #include "math.h"
 #include "strings.h"
-#include "opengl.h"
 #include "texture.h"
 #include "font.h"
 #include "mesh.h"
 #include "animation.h"
 #include "asset.h"
+
+// TODO(Justin): quad_3d_vertex?
+struct quad_vertex
+{
+	v3 P;
+	v3 N;
+	v2 UV;
+};
+
+// TODO(Justin): quad_3d?
+struct quad
+{
+	b32 UploadedToGPU;
+	u32 VA;
+	u32 VB;
+	u32 Texture;
+
+	quad_vertex Vertices[6];
+};
+
+struct quad_2d
+{
+	u32 VA;
+	u32 VB;
+	u32 Texture;
+};
+
 #include "render.h"
+
+
 
 struct entity
 {
@@ -151,30 +181,9 @@ struct entity
 };
 
 
-// TODO(Justin): quad_3d_vertex?
-struct quad_vertex
-{
-	v3 P;
-	v3 N;
-	v2 UV;
-};
 
-// TODO(Justin): quad_3d?
-struct quad
-{
-	u32 VA;
-	u32 VB;
-	u32 Texture;
 
-	quad_vertex Vertices[6];
-};
 
-struct quad_2d
-{
-	u32 VA;
-	u32 VB;
-	u32 Texture;
-};
 
 struct camera
 {
