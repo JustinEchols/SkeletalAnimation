@@ -84,7 +84,7 @@ Win32FileLastWriteTime(char *FileName)
 	FILETIME LastWriteTime = {};
 
 	WIN32_FILE_ATTRIBUTE_DATA FileData;
-	if(GetFileAttributesExA(FileName, GetFileExInfoStandard, &FileData))
+	if(GetFileAttributesEx(FileName, GetFileExInfoStandard, &FileData))
 	{
 		LastWriteTime = FileData.ftLastWriteTime;
 	}
@@ -92,9 +92,19 @@ Win32FileLastWriteTime(char *FileName)
 	return(LastWriteTime);
 }
 
+inline b32
+Win32FileHasUpdated(char *FileName, FILETIME LastWriteTime)
+{
+	FILETIME CurrentWriteTime = Win32FileLastWriteTime(FileName);
+	b32 Result = (CompareFileTime(&CurrentWriteTime, &LastWriteTime) != 0);
+	return(Result);
+}
+
+#if 0
 internal b32
-Win32FileTimeCompare(FILETIME T1, FILETIME T2)
+Win32FileHasUpdated(FILETIME T1, FILETIME T2)
 {
 	b32 Result = (CompareFileTime(&T1, &T2) != 0);
 	return(Result);
 }
+#endif

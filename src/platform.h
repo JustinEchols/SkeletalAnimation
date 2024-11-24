@@ -73,6 +73,9 @@ typedef DEBUG_PLATFORM_FILE_WRITE_ENTIRE(debug_platform_file_write_entire);
 
 #define DEBUG_PLATFORM_FILE_FREE(FunctionName) void FunctionName(void *Memory)
 typedef DEBUG_PLATFORM_FILE_FREE(debug_platform_file_free);
+
+#define DEBUG_PLATFORM_FILE_HAS_UPDATED(FunctionName) b32 FunctionName(char *FileName)
+typedef DEBUG_PLATFORM_FILE_HAS_UPDATED(debug_platform_file_has_updated);
 #endif
 
 typedef void platform_render_to_opengl(struct render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight);
@@ -84,6 +87,7 @@ typedef struct
 	debug_platform_file_read_entire		*DebugFileReadEntire;
 	debug_platform_file_write_entire	*DebugFileWriteEntire;
 	debug_platform_file_free			*DebugFileFree;
+	//debug_platform_file_has_updated		*DebugFileHasupdated;
 #endif
 } platform_api;
 

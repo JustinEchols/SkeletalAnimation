@@ -9,7 +9,6 @@
 #include "mesh.h"
 
 #include <windows.h>
-#include <math.h>
 #include <gl/gl.h>
 #include "wglext.h"
 #include "glext.h"
@@ -23,8 +22,8 @@ global_varible s32 Win32GlobalWindowWidth;
 global_varible s32 Win32GlobalWindowHeight;
 global_varible f32 Win32GlobalMouseX;
 global_varible f32 Win32GlobalMouseY;
-static open_gl OpenGL;
 
+static open_gl OpenGL;
 #include "renderer_opengl.h"
 #include "renderer_opengl.cpp"
 
@@ -32,20 +31,26 @@ struct win32_game_code
 {
 	b32 Valid;
 	HMODULE DLL;
+	FILETIME DLLLastWriteTime;
 	game_update_and_render *UpdateAndRender;
 };
 
 internal win32_game_code 
-Win32GameCodeLoad(char *FileName)
+Win32GameCodeLoad(char *SrcDLLName, char *TempDLLName, char *LockFileName)
 {
 	win32_game_code Result = {};
 
-	Result.DLL = LoadLibraryA(FileName);
-
-	if(Result.DLL)
+	WIN32_FILE_ATTRIBUTE_DATA Ignored;
+	if(!GetFileAttributesEx(LockFileName, GetFileExInfoStandard, &Ignored))
 	{
-		Result.UpdateAndRender = (game_update_and_render *)GetProcAddress(Result.DLL, "GameUpdateAndRender");
-		Result.Valid = (Result.UpdateAndRender != 0);
+		Result.DLLLastWriteTime = Win32FileLastWriteTime(SrcDLLName);
+		CopyFile(SrcDLLName, TempDLLName, FALSE);
+		Result.DLL = LoadLibraryA(TempDLLName);
+		if(Result.DLL)
+		{
+			Result.UpdateAndRender = (game_update_and_render *)GetProcAddress(Result.DLL, "GameUpdateAndRender");
+			Result.Valid = (Result.UpdateAndRender != 0);
+		}
 	}
 
 	if(!Result.Valid)
@@ -54,6 +59,16 @@ Win32GameCodeLoad(char *FileName)
 	}
 
 	return(Result);
+}
+
+internal void 
+Win32GameCodeUnload(win32_game_code *Game)
+{
+	if(Game->DLL)
+	{
+		FreeLibrary(Game->DLL);
+		Game->DLL = 0;
+	}
 }
 
 internal void 
@@ -175,6 +190,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		GameMemory.PlatformAPI.DebugFileReadEntire	= DebugPlatformFileReadEntire;
 		GameMemory.PlatformAPI.DebugFileWriteEntire = DebugPlatformFileWriteEntire;
 		GameMemory.PlatformAPI.DebugFileFree		= DebugPlatformFileFree;
+		//GameMemory.PlatformAPI.DebugFileHasUpdated	= DebugPlatformFileHasUpdated;
 
 		game_input GameInput[2] = {};
 		game_input *NewInput = &GameInput[0];
@@ -182,7 +198,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		Win32MousePositionGet(Window);
 
-		win32_game_code Game = Win32GameCodeLoad("../build/game.dll");
+		win32_game_code Game = Win32GameCodeLoad("../build/game.dll", "../build/game_temp.dll", "../build/lock.tmp");
 
 		Win32GlobalRunning = true;
 		f32 DtForFrame = 0.0f;
@@ -191,6 +207,13 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		s64 TickCountStart = QueryTickCount.QuadPart;
 		while(Win32GlobalRunning)
 		{
+			FILETIME NewDLLWriteTime = Win32FileLastWriteTime("../build/game.dll");
+			if(Win32FileHasUpdated("../build/game.dll", Game.DLLLastWriteTime))
+			{
+				Win32GameCodeUnload(&Game);
+				Game = Win32GameCodeLoad("../build/game.dll", "../build/game_temp.dll", "../build/lock.tmp");
+			}
+
 			NewInput->DtForFrame = TargetSecondsPerFrame;
 			game_keyboard *OldKeyboard = &OldInput->Keyboard;
 			game_keyboard *NewKeyboard = &NewInput->Keyboard;
@@ -206,7 +229,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			{
 				switch(Message.message)
 				{
-					// NOTE(Justin): All these cases are bundled together!
 					case WM_SYSKEYDOWN:
 					case WM_SYSKEYUP:
 					case WM_KEYDOWN:
@@ -277,10 +299,12 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			NewInput->BackBufferWidth = Win32GlobalWindowWidth;
 			NewInput->BackBufferHeight = Win32GlobalWindowHeight;
 
+			if(Game.UpdateAndRender)
+			{
+				Game.UpdateAndRender(&GameMemory, NewInput);
+			}
+
 			HDC WindowDC = GetDC(Window);
-
-			Game.UpdateAndRender(&GameMemory, NewInput);
-
 			SwapBuffers(WindowDC);
 			ReleaseDC(Window, WindowDC);
 
