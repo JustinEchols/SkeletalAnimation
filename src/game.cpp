@@ -25,7 +25,8 @@ PlayerAdd(game_state *GameState)
 	Entity->P = V3(0.0f, 0.0f, -10.0f);
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
-	Entity->Theta = -180.0f;
+	//Entity->Theta = 180.0f;
+	Entity->Theta = 0.0f;
 	Entity->dTheta = 0.0f;
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Entity->Theta);
 	Entity->MovementState = MovementState_Idle;
@@ -82,12 +83,18 @@ EntityMovementState(char *Buffer, entity *Entity)
 inline void
 EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 {
+	f32 OldTheta = Entity->Theta;
 	quaternion Orientation = Entity->Orientation;
 	v3 FacingDirection = Entity->dP;
+	f32 Len = Length(FacingDirection);
+	if(Len != 0.0f)
+	{
 	FacingDirection.z *= -1.0f;
 	f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
+	Entity->dTheta = Yaw - OldTheta;
 	quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
 	Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
+	}
 }
 
 inline void
@@ -147,16 +154,14 @@ CameraTransformUpdate(game_state *GameState)
 }
 
 internal void
-PerspectiveTransformUpdate(game_state *GameState)
+PerspectiveTransformUpdate(game_state *GameState, f32 WindowWidth, f32 WindowHeight)
 {
 	// TODO(Justin): Probably dont want to hide the fact that we are re-calculating aspect here..
-	GameState->Aspect = (f32)Win32GlobalWindowWidth / (f32)Win32GlobalWindowHeight;
+	GameState->Aspect = WindowWidth / WindowHeight;
 	GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 }
 
-
-internal void
-GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
+extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
 	Assert(sizeof(game_state) <= GameMemory->PermanentStorageSize);
 	game_state *GameState = (game_state *)GameMemory->PermanentStorage;
@@ -204,7 +209,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 		GameState->TimeScale = 1.0f;
 		GameState->FOV = DegreeToRad(45.0f);
-		GameState->Aspect = (f32)Win32GlobalWindowWidth / (f32)Win32GlobalWindowHeight;
+		GameState->Aspect = (f32)GameInput->BackBufferWidth / (f32)GameInput->BackBufferHeight;
 		GameState->ZNear = 0.2f;
 		GameState->ZFar = 200.0f;
 		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
@@ -303,7 +308,12 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 				v3 OldP = Entity->P;
 				v3 dP = Entity->dP + dt * ddP;
-				v3 P =  Entity->P + 0.5f * dt * dt * ddP + dt * Entity->dP;
+
+				v3 P = OldP;
+				if(Entity->MovementState != MovementState_Idle)
+				{
+					P =  Entity->P + 0.5f * dt * dt * ddP + dt * Entity->dP;
+				}
 
 				Entity->P = P;
 				Entity->dP = dP;
@@ -417,7 +427,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	// NOTE(Justin): Final pass.
 	//
 
-	PerspectiveTransformUpdate(GameState);
+	PerspectiveTransformUpdate(GameState, (f32)GameInput->BackBufferWidth, (f32)GameInput->BackBufferHeight);
 	CameraTransformUpdate(GameState);
 	render_buffer *RenderBuffer = RenderBufferAllocate(&TempState->Arena, Megabyte(512),
 														GameState->CameraTransform,
@@ -489,7 +499,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	f32 Scale = 0.35f;
 	f32 Gap = Scale * (f32)FontInfo->LineHeight / 64.0f;
 	f32 X = 0.0f;
-	f32 Y = (f32)Win32GlobalWindowHeight - Gap;
+	f32 Y = (f32)GameInput->BackBufferHeight - Gap;
 	f32 dY = 5.0f;
 	s32 WindowWidth = GameInput->BackBufferWidth;
 	s32 WindowHeight = GameInput->BackBufferHeight;
@@ -515,6 +525,18 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	{
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 	}
+	P.y -= (Gap + dY);
+
+	f32 Yaw = DirectionToEuler(Entity->dP).yaw;
+	sprintf(Buff, "yaw: %.2f", Yaw);
+	Text = StringCopy(&TempState->Arena, Buff);
+	PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
+	P.y -= (Gap + dY);
+
+	sprintf(Buff, "dTheta: %.2f", Entity->dTheta);
+	Text = StringCopy(&TempState->Arena, Buff);
+	PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
+	P.y -= (Gap + dY);
 
 	//
 	// NOTE(Jusitn): Animation information.

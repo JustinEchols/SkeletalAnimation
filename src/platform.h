@@ -1,5 +1,9 @@
 #if !defined(PLATFORM_H)
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 //////////////////////////////////////////
 // NOTE(Justin): C Standard Library
 
@@ -163,6 +167,13 @@ struct game_memory
 
 	platform_api PlatformAPI;
 };
+
+#define GAME_UPDATE_AND_RENDER(FunctionName) void FunctionName(game_memory *GameMemory, game_input *GameInput)
+typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
+
+#ifdef __cplusplus
+}
+#endif
 
 #define PLATFORM_H
 #endif

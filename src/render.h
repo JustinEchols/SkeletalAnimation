@@ -1,5 +1,31 @@
 #if !defined(RENDER_H)
 
+// TODO(Justin): quad_3d_vertex?
+struct quad_vertex
+{
+	v3 P;
+	v3 N;
+	v2 UV;
+};
+
+// TODO(Justin): quad_3d?
+struct quad
+{
+	b32 UploadedToGPU;
+	u32 VA;
+	u32 VB;
+	u32 Texture;
+
+	quad_vertex Vertices[6];
+};
+
+struct quad_2d
+{
+	u32 VA;
+	u32 VB;
+	u32 Texture;
+};
+
 enum render_buffer_entry_type
 {
 	RenderBuffer_render_entry_clear,
@@ -60,7 +86,7 @@ struct render_buffer
 	u32 MaxTextureCount;
 	texture **Textures;
 
-	asset_manager *Assets;
+	struct asset_manager *Assets;
 };
 
 #define RENDER_H

@@ -1,9 +1,13 @@
 
-// NOTE(Justin): Must include this here. Need to further investigate what is causing the conflicts..
-#include <ft2build.h>
-#include FT_FREETYPE_H
-
 #include "platform.h"
+#include "memory.h"
+#include "intrinsics.h"
+#include "math.h"
+#include "strings.h"
+#include "texture.h"
+#include "font.h"
+#include "mesh.h"
+
 #include <windows.h>
 #include <math.h>
 #include <gl/gl.h>
@@ -21,10 +25,36 @@ global_varible f32 Win32GlobalMouseX;
 global_varible f32 Win32GlobalMouseY;
 static open_gl OpenGL;
 
-#include "game.h"
 #include "renderer_opengl.h"
 #include "renderer_opengl.cpp"
-#include "game.cpp"
+
+struct win32_game_code
+{
+	b32 Valid;
+	HMODULE DLL;
+	game_update_and_render *UpdateAndRender;
+};
+
+internal win32_game_code 
+Win32GameCodeLoad(char *FileName)
+{
+	win32_game_code Result = {};
+
+	Result.DLL = LoadLibraryA(FileName);
+
+	if(Result.DLL)
+	{
+		Result.UpdateAndRender = (game_update_and_render *)GetProcAddress(Result.DLL, "GameUpdateAndRender");
+		Result.Valid = (Result.UpdateAndRender != 0);
+	}
+
+	if(!Result.Valid)
+	{
+		Result.UpdateAndRender = 0;
+	}
+
+	return(Result);
+}
 
 internal void 
 Win32MousePositionGet(HWND Window)
@@ -152,6 +182,8 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		Win32MousePositionGet(Window);
 
+		win32_game_code Game = Win32GameCodeLoad("../build/game.dll");
+
 		Win32GlobalRunning = true;
 		f32 DtForFrame = 0.0f;
 		LARGE_INTEGER QueryTickCount;
@@ -247,7 +279,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 			HDC WindowDC = GetDC(Window);
 
-			GameUpdateAndRender(&GameMemory, NewInput);
+			Game.UpdateAndRender(&GameMemory, NewInput);
 
 			SwapBuffers(WindowDC);
 			ReleaseDC(Window, WindowDC);
