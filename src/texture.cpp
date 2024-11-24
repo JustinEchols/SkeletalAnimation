@@ -10,8 +10,10 @@ TextureLoad(char *FileName)
 	Result.Memory = stbi_load(FileName, &Result.Width, &Result.Height, &Result.ChannelCount, 4);
 	if(Result.Memory)
 	{
-		Result.StoredFormat = GL_RGBA8;
-		Result.SrcFormat = GL_RGBA;
+		//Result.StoredFormat = GL_RGBA8;
+		//Result.SrcFormat = GL_RGBA;
+		Result.GPUFormat = TextureGPUFormat_RGBA8;
+		Result.SrcFormat = TextureSrcFormat_RGBA;
 	}
 	else
 	{

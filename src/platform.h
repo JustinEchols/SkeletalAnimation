@@ -9,7 +9,6 @@
 #include <string.h>
 
 #define MemorySet(Source, Value, Size) memset(Source, Value, Size)
-
 #define PushArray(Arena, Count, Type) (Type *)PushSize_(Arena, Count * sizeof(Type))
 #define PushStruct(Arena, Type) (Type *)PushSize_(Arena, sizeof(Type))
 #define ArrayCopy(Count, Src, Dest) MemoryCopy((Count)*sizeof(*(Src)), (Src), (Dest))
@@ -73,7 +72,6 @@ typedef DEBUG_PLATFORM_FILE_FREE(debug_platform_file_free);
 #endif
 
 typedef void platform_render_to_opengl(struct render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight);
-
 
 typedef struct 
 {

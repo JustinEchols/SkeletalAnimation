@@ -22,6 +22,7 @@
 // What is the best way to handle this?
 //
 
+
 inline void
 FlagAdd(animation *Animation, u32 Flag)
 {

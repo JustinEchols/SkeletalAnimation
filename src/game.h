@@ -1,5 +1,10 @@
 #if !defined(GAME_H)
 
+// 11.24.2024 12:42 PM Animation player does not change states until switch to node is called.
+// This allows to not switch nodes until certain conditions are true. For example, transitioning between
+// running and sprinting states needs to happen at the proper times and until the animation time is within
+// a valid interval the state remains the same.
+
 #include "platform.h"
 
 struct memory_arena

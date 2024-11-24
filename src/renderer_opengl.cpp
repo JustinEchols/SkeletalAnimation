@@ -98,11 +98,13 @@ OpenGLAllocateTexture(texture *Texture)
 
 		glTexImage2D(GL_TEXTURE_2D,
 				0,
-				Texture->StoredFormat,
+				GL_RGBA8,
+				//Texture->StoredFormat,
 				Texture->Width,
 				Texture->Height,
 				0,
-				Texture->SrcFormat,
+				//Texture->SrcFormat,
+				GL_RGBA,
 				GL_UNSIGNED_BYTE,
 				Texture->Memory);
 

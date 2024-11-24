@@ -323,7 +323,8 @@ AssetManagerInit(asset_manager *Manager)
 				case Animation_IdleToSprint:
 				{
 					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = (AnimationFlags_JointMask | AnimationFlags_RemoveLocomotion);
+					Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion);
+#if 0
 					Animation->JointMasks = PushArray(&Manager->Arena, Info->JointCount, b32);
 					for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
 					{
@@ -337,6 +338,7 @@ AssetManagerInit(asset_manager *Manager)
 							}
 						}
 					}
+#endif
 
 				} break;
 				case Animation_StandingToIdleRight:
