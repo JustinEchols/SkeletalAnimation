@@ -80,7 +80,6 @@ struct asset_manager
 	animation_graph Graphs[2];
 	font Font;
 
-
 	// TODO(Justin): Clean this up
 	animation_info *AnimationInfos;
 	animation *Animations;

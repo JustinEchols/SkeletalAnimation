@@ -356,7 +356,7 @@ OpenGLDrawMesh(mesh *Mesh, u32 ShaderProgram, mat4 Transform)
 	UniformMatrixSet(ShaderProgram, "Model", Transform);
 	OpenGL.glActiveTexture(GL_TEXTURE0);
 	UniformBoolSet(ShaderProgram, "Texture", 0);
-	glBindTexture(GL_TEXTURE_2D, Mesh->TextureHandle);
+	glBindTexture(GL_TEXTURE_2D, Mesh->Texture->Handle);
 	OpenGL.glBindVertexArray(Mesh->VA);
 	glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
 	OpenGL.glBindVertexArray(0);
@@ -384,6 +384,38 @@ OpenGLDrawQuad(u32 VA, u32 ShaderProgram, mat4 Transform, u32 TextureHandle)
 	OpenGL.glBindVertexArray(VA);
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 	OpenGL.glBindVertexArray(0);
+	glBindTexture(GL_TEXTURE_2D, 0);
+}
+
+internal void
+OpenGLAllocateGlyph(glyph *Glyph)
+{
+	glGenTextures(1, &Glyph->TextureHandle);
+	glBindTexture(GL_TEXTURE_2D, Glyph->TextureHandle);
+
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+#if 0
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+	f32 maxAniso = 0.0f;
+	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
+#endif
+
+	glTexImage2D(GL_TEXTURE_2D,
+			0,
+			GL_R8,
+			Glyph->Dim.width,
+			Glyph->Dim.height,
+			0,
+			GL_RED,
+			GL_UNSIGNED_BYTE,
+			Glyph->Memory);
+
+	OpenGL.glGenerateMipmap(GL_TEXTURE_2D);
 	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
@@ -449,8 +481,9 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 	glEnable(GL_BLEND);
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-	u32 MainShader = OpenGL.MainShader;
+	u32 MainShader	= OpenGL.MainShader;
 	u32 BasicShader = OpenGL.BasicShader;
+	u32 FontShader	= OpenGL.FontShader;
 	mat4 View = RenderBuffer->View;
 	mat4 Perspective = RenderBuffer->Perspective;
 	v3 LightDir = V3(1.0f, -1.0f, -0.5f);
@@ -545,6 +578,34 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 
 				BaseOffset += sizeof(*Entry);
 			} break;
+			case RenderBuffer_render_entry_text:
+			{
+				render_entry_text *Entry = (render_entry_text *)Data;
+				if(!Entry->Font->UploadedToGPU)
+				{
+#if 0
+					OpenGL.glGenVertexArrays(1, &Entry->Font->VA);
+					OpenGL.glBindVertexArray(Entry->Font->VA);
+					OpenGL.glGenBuffers(1, &Entry->Font->VB);
+					OpenGL.glBindBuffer(GL_ARRAY_BUFFER, Entry->Font->VB);
+					OpenGL.glBindVertexArray(0);
+#else
+					OpenGLAllocateQuad2d(&Entry->Font->VA, &Entry->Font->VB, FontShader);
+#endif
+					
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+					for(char CharIndex = ' '; CharIndex < '~'; ++CharIndex)
+					{
+						glyph *Glyph = Entry->Font->Glyphs + CharIndex;
+						OpenGLAllocateGlyph(Glyph);
+					}
+					Entry->Font->UploadedToGPU = true;
+					glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
+				}
+
+				OpenGLDrawText(Entry->Text, FontShader, Entry->Font, Entry->P, Entry->Scale, Entry->Color, WindowWidth, WindowHeight);
+				BaseOffset += sizeof(*Entry);
+			};
 		}
 	}
 }

@@ -2,7 +2,8 @@
 
 struct texture
 {
-	char *FileName;
+	string Name;
+	//char *FileName;
 	u32 Handle;
 	GLint StoredFormat;
 	GLenum SrcFormat;

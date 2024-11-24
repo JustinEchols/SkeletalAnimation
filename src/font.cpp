@@ -1,6 +1,6 @@
 
 internal s32 
-FontInit(font *Font, char *FileName)
+FontInit(memory_arena *Arena, font *Font, char *FileName)
 {
 	s32 Result = 1;
 
@@ -16,7 +16,9 @@ FontInit(font *Font, char *FileName)
 		return(-1);
 	}
 
-	Font->Name = String(FileName);
+	char Buffer[64];
+	FileNameFromFullPath(FileName, Buffer);
+	Font->Name = StringCopy(Arena, Buffer);
 	Font->Ascender = Face->ascender;
 	Font->Descender = Face->descender;
 	Font->LineHeight = Face->height;
@@ -25,7 +27,6 @@ FontInit(font *Font, char *FileName)
 	s32 Height = 48;
 
 	FT_Set_Pixel_Sizes(Face, Width, Height);
-	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 	for(char CharIndex = ' '; CharIndex < '~'; ++CharIndex)
 	{
 		if(FT_Load_Char(Face, CharIndex, FT_LOAD_RENDER))
@@ -40,32 +41,12 @@ FontInit(font *Font, char *FileName)
 			Assert(Face->glyph->bitmap.buffer);
 		}
 
-		u32 GlyphTexture;
-		glGenTextures(1, &GlyphTexture);
-		glBindTexture(GL_TEXTURE_2D, GlyphTexture);
-
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-		glTexImage2D(GL_TEXTURE_2D,
-				0,
-				GL_R8,
-				Face->glyph->bitmap.width,
-				Face->glyph->bitmap.rows,
-				0,
-				GL_RED,
-				GL_UNSIGNED_BYTE,
-				Face->glyph->bitmap.buffer);
-
-		Font->Glyphs[CharIndex].TextureHandle = GlyphTexture;
-		Font->Glyphs[CharIndex].Dim = V2I(Face->glyph->bitmap.width, Face->glyph->bitmap.rows);
-		Font->Glyphs[CharIndex].Bearing = V2I(Face->glyph->bitmap_left, Face->glyph->bitmap_top);
-		Font->Glyphs[CharIndex].Advance = Face->glyph->advance.x;
-
-		OpenGL.glGenerateMipmap(GL_TEXTURE_2D);
-		glBindTexture(GL_TEXTURE_2D, 0);
+		glyph *Glyph = Font->Glyphs + CharIndex;
+		Glyph->Dim = V2I(Face->glyph->bitmap.width, Face->glyph->bitmap.rows);
+		Glyph->Bearing = V2I(Face->glyph->bitmap_left, Face->glyph->bitmap_top);
+		Glyph->Advance = Face->glyph->advance.x;
+		Glyph->Memory = (u8 *)PushSize_(Arena, Glyph->Dim.x * Glyph->Dim.y * sizeof(u8));
+		MemoryCopy(Glyph->Dim.x * Glyph->Dim.y * sizeof(u8), Face->glyph->bitmap.buffer, Glyph->Memory);
 	}
 
 	FT_Done_Face(Face);

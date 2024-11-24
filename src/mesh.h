@@ -56,8 +56,8 @@ struct mesh
 	u32 VA;
 	u32 VB;
 	u32 IBO;
-
-	u32 TextureHandle;
+	//u32 TextureIndex;
+	texture *Texture;
 };
 
 struct model

@@ -67,6 +67,20 @@ PushModel(render_buffer *RenderBuffer, model *Model, mat4 Transform)
 	}
 }
 
+inline void
+PushText(render_buffer *RenderBuffer, string Text, font *Font, v2 P, f32 Scale, v3 Color)
+{
+	render_entry_text *Entry = (render_entry_text *)PushRenderElement(RenderBuffer, render_entry_text);
+	if(Entry)
+	{
+		Entry->Text = (char *)Text.Data;
+		Entry->Font = Font;
+		Entry->P = P;
+		Entry->Scale = Scale;
+		Entry->Color = Color;
+	}
+}
+
 internal render_buffer * 
 RenderBufferAllocate(memory_arena *Arena, u32 MaxSize,
 		mat4 View, mat4 Perspective,

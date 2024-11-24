@@ -182,31 +182,6 @@ char *FontFiles[] =
 	"c:/windows/fonts/arial.ttf",
 };
 
-internal void 
-FileNameFromFullPath(char *FullPath, char *Buff)
-{
-	u64 OPLSlash = 0;
-	for(char *C = FullPath; *C; ++C)
-	{
-		if(*C == '/')
-		{
-			OPLSlash = (C - FullPath) + 1;
-		}
-	}
-
-	u32 At = 0;
-	for(char *C = (FullPath + OPLSlash); *C; ++C)
-	{
-		if(*C == '.')
-		{
-			break;
-		}
-
-		Buff[At++] = *C;
-	}
-	Buff[At] = '\0';
-}
-
 internal texture *
 LookupTexture(asset_manager *AssetManager, char *TextureName)
 {
@@ -279,6 +254,7 @@ AssetManagerInit(asset_manager *Manager)
 		Assert(Index != -1);
 		texture *Texture = Manager->Textures + Index;
 		*Texture = TextureLoad(FullPath);
+		Texture->Name = StringCopy(&Manager->Arena, (char *)Buffer);
 	}
 
 	//
@@ -296,6 +272,15 @@ AssetManagerInit(asset_manager *Manager)
 		Assert(Index != -1);
 		model *Model = Manager->Models + Index;
 		*Model = ModelLoad(&Manager->Arena, FullPath);
+
+		if(StringsAreSame(Buffer, "Cube"))
+		{
+			texture *Texture = LookupTexture(Manager, "texture_01");
+			if(Texture)
+			{
+				Model->Meshes[0].Texture = Texture;
+			}
+		}
 	}
 
 	//
@@ -422,7 +407,7 @@ AssetManagerInit(asset_manager *Manager)
 	// Font
 	//
 
-	FontInit(&Manager->Font, FontFiles[0]);
+	FontInit(&Manager->Arena, &Manager->Font, FontFiles[0]);
 }
 
 

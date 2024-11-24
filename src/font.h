@@ -6,6 +6,7 @@ struct glyph
 	v2i Dim;
 	v2i Bearing;
 	u32 Advance;
+	u8 *Memory;
 };
 
 // TODO(Justin): Glyph atlas
@@ -14,6 +15,7 @@ struct font
 {
 	u32 VA;
 	u32 VB;
+	b32 UploadedToGPU;
 
 	string Name;
 	glyph Glyphs[256];

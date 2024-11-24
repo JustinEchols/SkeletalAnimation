@@ -93,17 +93,6 @@ TemporaryMemoryEnd(temporary_memory TempMemory)
 	Arena->TempCount--;
 }
 
-
-
-#if 0
-internal void
-PrintString(char *String)
-{
-	OutputDebugStringA(String);
-	OutputDebugStringA("\n");
-}
-#endif
-
 enum movement_state
 {
 	MovementState_Invalid,
@@ -159,8 +148,6 @@ struct quad_2d
 
 #include "render.h"
 
-
-
 struct entity
 {
 	entity_type Type;
@@ -179,11 +166,6 @@ struct entity
 	animation_player *AnimationPlayer;
 	animation_graph *AnimationGraph;
 };
-
-
-
-
-
 
 struct camera
 {
