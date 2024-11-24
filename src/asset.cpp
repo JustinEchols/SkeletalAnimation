@@ -139,6 +139,7 @@ enum animation_name
 	Animation_StandingToIdleRight,
 	Animation_StandingToIdleLeft,
 	Animation_IdleToSprint,
+	Animation_IdleToSprintMirror,
 	Animation_RunToStop,
 };
 
@@ -154,6 +155,7 @@ char *AnimationFiles[] =
 	"../data/XBot_StandingToIdleRight.animation",
 	"../data/XBot_StandingToIdleLeft.animation",
 	"../data/XBot_IdleToSprint.animation",
+	"../data/XBot_IdleToSprintMirror.animation",
 	"../data/XBot_RunToStop.animation"
 };
 
@@ -321,6 +323,7 @@ AssetManagerInit(asset_manager *Manager)
 					Animation->DefaultFlags = AnimationFlags_Looping;
 				} break;
 				case Animation_IdleToSprint:
+				case Animation_IdleToSprintMirror:
 				{
 					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion);
