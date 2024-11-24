@@ -154,10 +154,13 @@ PerspectiveTransformUpdate(game_state *GameState)
 	GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 }
 
+
 internal void
 GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 {
+	Assert(sizeof(game_state) <= GameMemory->PermanentStorageSize);
 	game_state *GameState = (game_state *)GameMemory->PermanentStorage;
+	Platform = GameMemory->PlatformAPI;
 	if(!GameMemory->IsInitialized)
 	{
 		//
@@ -416,7 +419,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 
 	PerspectiveTransformUpdate(GameState);
 	CameraTransformUpdate(GameState);
-	u32 FontShader	= GameState->Shaders[2];
 	render_buffer *RenderBuffer = RenderBufferAllocate(&TempState->Arena, Megabyte(512),
 														GameState->CameraTransform,
 														GameState->Perspective,
@@ -499,7 +501,6 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	char Buff[256];
 	sprintf(Buff, "%s", "Controls: wasd to move, shift to sprint, +- to scale time");
 	string Text = StringCopy(&TempState->Arena, Buff);
-
 	PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 	P.y -= (Gap + dY);
 
@@ -525,8 +526,10 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 	PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 
 	P.x += 20.0f;
+	P.y -= (Gap + dY);
 	EntityMovementState(Buff, Entity);
-	OpenGLDrawText(Buff, FontShader, &Assets->Font, P, Scale, DefaultColor, WindowWidth, WindowHeight);
+	Text = StringCopy(&TempState->Arena, Buff);
+	PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 
 	for(animation *Animation = Player->AnimationPlayer->Channels; Animation; Animation = Animation->Next)
 	{
@@ -627,7 +630,7 @@ GameUpdateAndRender(game_memory *GameMemory, game_input *GameInput)
 #endif
 #endif
 
-	RenderBufferToOutput(RenderBuffer, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
+	Platform.RenderToOpenGL(RenderBuffer, (u32)WindowWidth, (u32)WindowHeight);
 
 	ArenaClear(&TempState->Arena);
 }

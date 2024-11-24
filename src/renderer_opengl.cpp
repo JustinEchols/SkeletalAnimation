@@ -398,13 +398,6 @@ OpenGLAllocateGlyph(glyph *Glyph)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 
-#if 0
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-	f32 maxAniso = 0.0f;
-	glGetFloatv(GL_MAX_TEXTURE_MAX_ANISOTROPY, &maxAniso);
-	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAX_ANISOTROPY, maxAniso);
-#endif
-
 	glTexImage2D(GL_TEXTURE_2D,
 			0,
 			GL_R8,
@@ -583,16 +576,7 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				render_entry_text *Entry = (render_entry_text *)Data;
 				if(!Entry->Font->UploadedToGPU)
 				{
-#if 0
-					OpenGL.glGenVertexArrays(1, &Entry->Font->VA);
-					OpenGL.glBindVertexArray(Entry->Font->VA);
-					OpenGL.glGenBuffers(1, &Entry->Font->VB);
-					OpenGL.glBindBuffer(GL_ARRAY_BUFFER, Entry->Font->VB);
-					OpenGL.glBindVertexArray(0);
-#else
 					OpenGLAllocateQuad2d(&Entry->Font->VA, &Entry->Font->VB, FontShader);
-#endif
-					
 					glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 					for(char CharIndex = ' '; CharIndex < '~'; ++CharIndex)
 					{

@@ -305,7 +305,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 
 		for(u32 JointIndex = 1; JointIndex < Info->JointCount; ++JointIndex)
 		{
-#if 0
+#if 1
 			b32 Mask = true;
 			if(Animation->JointMasks)
 			{
@@ -372,6 +372,8 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
 	{
 		AnimationPlay(AnimationPlayer, Animation, BlendDuration);
 	}
+
+	AnimationPlayer->MovementState = AnimationPlayer->NewState;
 }
 
 internal animation *
@@ -458,9 +460,10 @@ Animate(animation_graph *Graph, asset_manager *AssetManager, animation_player *A
 		return;
 	}
 
-	movement_state OldState = AnimationPlayer->MovementState;
-	AnimationPlayer->MovementState = State;
-	switch(AnimationPlayer->MovementState)
+	AnimationPlayer->NewState = State;
+	//AnimationPlayer->MovementState = State;
+	//switch(AnimationPlayer->MovementState)
+	switch(State)
 	{
 		case MovementState_Idle:
 		{
@@ -772,7 +775,7 @@ AdvanceLine(u8 **Content)
 internal void 
 AnimationGraphInit(animation_graph *G, char *FileName)
 {
-	debug_file File = Win32FileReadEntire(FileName);
+	debug_file File = Platform.DebugFileReadEntire(FileName);
 	if(File.Size != 0)
 	{
 		u8 *Content = (u8 *)File.Content;
@@ -935,5 +938,5 @@ AnimationGraphSave(animation_graph *Graph, char *FileName)
 		strcat(Buff, "\n");
 	}
 
-	Win32FileWriteEntire(FileName, Buff, (u32)String(Buff).Size);
+	Platform.DebugFileWriteEntire(FileName, Buff, (u32)String(Buff).Size);
 }

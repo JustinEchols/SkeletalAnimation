@@ -55,11 +55,35 @@ typedef size_t	 memory_index;
 (Node)->Next=0)
 #define SLLQueuePush(First,Last,Node) SLLQueuePush_N(First,Last,Node,Next)
 
+#if DEVELOPER
 struct debug_file
 {
 	void *Content;
 	u64 Size;
 };
+
+#define DEBUG_PLATFORM_FILE_READ_ENTIRE(FunctionName) debug_file FunctionName(char *FileName)
+typedef DEBUG_PLATFORM_FILE_READ_ENTIRE(debug_platform_file_read_entire);
+
+#define DEBUG_PLATFORM_FILE_WRITE_ENTIRE(FunctionName) b32 FunctionName(char *FileName, void *Memory, u32 MemorySize)
+typedef DEBUG_PLATFORM_FILE_WRITE_ENTIRE(debug_platform_file_write_entire);
+
+#define DEBUG_PLATFORM_FILE_FREE(FunctionName) void FunctionName(void *Memory)
+typedef DEBUG_PLATFORM_FILE_FREE(debug_platform_file_free);
+#endif
+
+typedef void platform_render_to_opengl(struct render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight);
+
+
+typedef struct 
+{
+	platform_render_to_opengl *RenderToOpenGL;
+#if DEVELOPER
+	debug_platform_file_read_entire		*DebugFileReadEntire;
+	debug_platform_file_write_entire	*DebugFileWriteEntire;
+	debug_platform_file_free			*DebugFileFree;
+#endif
+} platform_api;
 
 inline u32
 U64TruncateToU32(u64 U64)
@@ -138,6 +162,8 @@ struct game_memory
 
 	u64 TemporaryStorageSize;
 	void *TemporaryStorage;
+
+	platform_api PlatformAPI;
 };
 
 #define PLATFORM_H

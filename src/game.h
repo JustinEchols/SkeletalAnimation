@@ -214,5 +214,7 @@ struct temp_state
 	memory_arena Arena;
 };
 
+global_varible platform_api Platform;
+
 #define GAME_H
 #endif

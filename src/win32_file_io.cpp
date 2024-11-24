@@ -1,5 +1,4 @@
-internal void
-Win32FileFree(void *Memory)
+DEBUG_PLATFORM_FILE_FREE(DebugPlatformFileFree)
 {
 	if(Memory)
 	{
@@ -7,8 +6,7 @@ Win32FileFree(void *Memory)
 	}
 }
 
-internal debug_file
-Win32FileReadEntire(char *FileName)
+DEBUG_PLATFORM_FILE_READ_ENTIRE(DebugPlatformFileReadEntire)
 {
 	debug_file Result = {};
 	HANDLE FileHandle = CreateFileA(FileName, GENERIC_READ, FILE_SHARE_READ, 0, OPEN_EXISTING, 0, 0);
@@ -28,7 +26,7 @@ Win32FileReadEntire(char *FileName)
 				}
 				else
 				{
-					Win32FileFree(Result.Content);
+					DebugPlatformFileFree(Result.Content);
 					Result.Content = 0;
 				}
 			}
@@ -48,33 +46,36 @@ Win32FileReadEntire(char *FileName)
 	return(Result);
 }
 
-internal void
-Win32FileWriteEntire(char *FileName, void *Source, u32 BytesToWrite)
+//Win32FileWriteEntire(char *FileName, void *Memory, u32 MemorySize)
+DEBUG_PLATFORM_FILE_WRITE_ENTIRE(DebugPlatformFileWriteEntire)
 {
+	b32 Result = false;
 	HANDLE FileHandle = CreateFileA(FileName,
-			(GENERIC_READ | GENERIC_WRITE),
-			0,
-			0,
-			CREATE_ALWAYS,
-			FILE_ATTRIBUTE_NORMAL,
-			0);
+									(GENERIC_READ | GENERIC_WRITE),
+									0,
+									0,
+									CREATE_ALWAYS,
+									FILE_ATTRIBUTE_NORMAL,
+									0);
 
 	if(FileHandle != INVALID_HANDLE_VALUE)
 	{
 		DWORD BytesWritten;
-		b32 Result = WriteFile(FileHandle, Source, BytesToWrite, &BytesWritten, 0);
+		Result = WriteFile(FileHandle, Memory, MemorySize, &BytesWritten, 0);
 		if(!Result)
 		{
 			Assert(0);
 		}
 		else
 		{
-			Assert(BytesWritten == BytesToWrite);
+			//Assert(BytesWritten == MemorySize);
+			Result = (BytesWritten == MemorySize);
 		}
 
 		CloseHandle(FileHandle);
 	}
 
+	return(Result);
 }
 
 internal FILETIME 

@@ -4,7 +4,7 @@ ModelLoad(memory_arena *Arena, char *FileName)
 {
 	model Model = {};
 
-	debug_file File = Win32FileReadEntire(FileName);
+	debug_file File = Platform.DebugFileReadEntire(FileName);
 	if(File.Size != 0)
 	{
 		u8 *Content = (u8 *)File.Content;
@@ -71,7 +71,7 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 {
 	animation_info Info = {};
 
-	debug_file File = Win32FileReadEntire(FileName);
+	debug_file File = Platform.DebugFileReadEntire(FileName);
 	if(File.Size != 0)
 	{
 		u8 *Content = (u8 *)File.Content;
@@ -343,7 +343,9 @@ AssetManagerInit(asset_manager *Manager)
 				case Animation_StandingToIdleLeft:
 				{
 					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = (AnimationFlags_JointMask | AnimationFlags_RemoveLocomotion);
+#if 0
+					//Animation->DefaultFlags = (AnimationFlags_JointMask | AnimationFlags_RemoveLocomotion);
+					Animation->DefaultFlags = AnimationFlags_JointMask;// | AnimationFlags_RemoveLocomotion);
 					Animation->JointMasks = PushArray(&Manager->Arena, Info->JointCount, b32);
 					for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
 					{
@@ -357,6 +359,7 @@ AssetManagerInit(asset_manager *Manager)
 							}
 						}
 					}
+#endif
 				} break;
 				case Animation_Run:
 				case Animation_RunMirror:

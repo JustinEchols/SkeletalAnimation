@@ -104,6 +104,7 @@ struct animation_player
 {
 	b32 IsInitialized;
 	movement_state MovementState;
+	movement_state NewState;
 
 	memory_arena *Arena;
 	animation *Channels;

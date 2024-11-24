@@ -137,9 +137,14 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		game_memory GameMemory = {};
 		GameMemory.IsInitialized = false;
 		GameMemory.PermanentStorageSize = Megabyte(64);
-		GameMemory.PermanentStorage = VirtualAlloc(0, GameMemory.PermanentStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+		GameMemory.PermanentStorage		= VirtualAlloc(0, GameMemory.PermanentStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 		GameMemory.TemporaryStorageSize = Gigabyte(1);
-		GameMemory.TemporaryStorage = VirtualAlloc(0, GameMemory.TemporaryStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+		GameMemory.TemporaryStorage		= VirtualAlloc(0, GameMemory.TemporaryStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
+
+		GameMemory.PlatformAPI.RenderToOpenGL		= RenderBufferToOutput;
+		GameMemory.PlatformAPI.DebugFileReadEntire	= DebugPlatformFileReadEntire;
+		GameMemory.PlatformAPI.DebugFileWriteEntire = DebugPlatformFileWriteEntire;
+		GameMemory.PlatformAPI.DebugFileFree		= DebugPlatformFileFree;
 
 		game_input GameInput[2] = {};
 		game_input *NewInput = &GameInput[0];
