@@ -348,7 +348,7 @@ AssetManagerInit(asset_manager *Manager)
 				case Animation_StandingToIdleLeft:
 				{
 					Animation->TimeScale = 1.0f;
-#if 0
+#if 1
 					//Animation->DefaultFlags = (AnimationFlags_JointMask | AnimationFlags_RemoveLocomotion);
 					Animation->DefaultFlags = AnimationFlags_JointMask;// | AnimationFlags_RemoveLocomotion);
 					Animation->JointMasks = PushArray(&Manager->Arena, Info->JointCount, b32);

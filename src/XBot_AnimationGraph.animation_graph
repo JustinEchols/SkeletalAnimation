@@ -12,13 +12,11 @@
 : StateIdleRight
 animation XBot_IdleRight
 message go_state_run StateRunning
-#message go_state_sprint StateSprint
 message go_state_sprint StateIdleToSprintMirror
 
 : StateIdleLeft
 animation XBot_IdleLeft
 message go_state_run StateRunningMirror
-#message go_state_sprint StateSprintMirror
 message go_state_sprint StateIdleToSprint
 
 : StateRunning
@@ -69,8 +67,8 @@ when_done go_state_sprint StateSprintMirror 0.6
 
 : StateStandingToIdleLeft
 animation XBot_StandingToIdleLeft
-when_done go_state_idle StateIdleLeft 0.1
+when_done go_state_idle StateIdleLeft 0.9
 
 : StateStandingToIdleRight
 animation XBot_StandingToIdleRight
-when_done go_state_idle StateIdleRight 0.1
+when_done go_state_idle StateIdleRight 0.9

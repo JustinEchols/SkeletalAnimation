@@ -25,8 +25,8 @@ PlayerAdd(game_state *GameState)
 	Entity->P = V3(0.0f, 0.0f, -10.0f);
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
-	//Entity->Theta = 180.0f;
-	Entity->Theta = 0.0f;
+	Entity->Theta = DirectionToEuler(V3(0.0f, 0.0f, -1.0f)).yaw;
+	//Entity->Theta = 0.0f;
 	Entity->dTheta = 0.0f;
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Entity->Theta);
 	Entity->MovementState = MovementState_Idle;
@@ -89,11 +89,12 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 	f32 Len = Length(FacingDirection);
 	if(Len != 0.0f)
 	{
-	FacingDirection.z *= -1.0f;
-	f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
-	Entity->dTheta = Yaw - OldTheta;
-	quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
-	Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
+		FacingDirection.z *= -1.0f;
+		f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
+		Entity->dTheta = Yaw - OldTheta;
+		Entity->Theta = Yaw;
+		quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
+		Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
 	}
 }
 
@@ -213,9 +214,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->ZNear = 0.2f;
 		GameState->ZFar = 200.0f;
 		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
-
 #if 0
-		OpenGLAllocateQuad2d(&GameState->Quad2d.VA, &GameState->Quad2d.VB, FontShader);
 		GameState->TextureWidth = 256;
 		GameState->TextureHeight = 256;
 		OpenGLFrameBufferInit(&GameState->FBO, &GameState->Texture, &GameState->RBO, GameState->TextureWidth, GameState->TextureHeight);

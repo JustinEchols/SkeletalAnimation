@@ -46,7 +46,6 @@ DEBUG_PLATFORM_FILE_READ_ENTIRE(DebugPlatformFileReadEntire)
 	return(Result);
 }
 
-//Win32FileWriteEntire(char *FileName, void *Memory, u32 MemorySize)
 DEBUG_PLATFORM_FILE_WRITE_ENTIRE(DebugPlatformFileWriteEntire)
 {
 	b32 Result = false;
@@ -68,7 +67,6 @@ DEBUG_PLATFORM_FILE_WRITE_ENTIRE(DebugPlatformFileWriteEntire)
 		}
 		else
 		{
-			//Assert(BytesWritten == MemorySize);
 			Result = (BytesWritten == MemorySize);
 		}
 
@@ -99,12 +97,3 @@ Win32FileHasUpdated(char *FileName, FILETIME LastWriteTime)
 	b32 Result = (CompareFileTime(&CurrentWriteTime, &LastWriteTime) != 0);
 	return(Result);
 }
-
-#if 0
-internal b32
-Win32FileHasUpdated(FILETIME T1, FILETIME T2)
-{
-	b32 Result = (CompareFileTime(&T1, &T2) != 0);
-	return(Result);
-}
-#endif
