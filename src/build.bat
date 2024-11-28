@@ -31,5 +31,5 @@ del *.pdb > NUL 2> NUL
 echo WAITING FOR PDB > lock.tmp
 cl %CommonCompilerFlags% ..\src\%GameFile% -Fmgame.map %IncludeDirectories% /LD /link %LibDirectories% freetype.lib -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender
 del lock.tmp
-cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map  /link %LibDirectories% %CommonLinkerFlags%
+cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map  /link %CommonLinkerFlags%
 popd

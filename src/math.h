@@ -1,4 +1,4 @@
-#if !defined(MATH_UTIL_H)
+#if !defined(MATH_H)
 
 union v2
 {
@@ -1354,5 +1354,5 @@ InRect(rect R, v2 P)
 	return(Result);
 }
 
-#define MATH_UTIL_H 
+#define MATH_H
 #endif

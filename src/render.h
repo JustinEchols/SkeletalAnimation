@@ -33,6 +33,7 @@ enum render_buffer_entry_type
 	RenderBuffer_render_entry_quad_3d,
 	RenderBuffer_render_entry_model,
 	RenderBuffer_render_entry_text,
+	RenderBuffer_render_entry_aabb,
 };
 
 struct render_buffer_entry_header
@@ -69,6 +70,14 @@ struct render_entry_text
 	font *Font;
 	v2 P;
 	f32 Scale;
+	v3 Color;
+};
+
+struct render_entry_aabb
+{
+	mat4 Transform;
+	model *Model;
+	v3 Dim;
 	v3 Color;
 };
 

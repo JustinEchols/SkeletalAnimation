@@ -1,4 +1,3 @@
-
 #include "platform.h"
 #include "memory.h"
 #include "intrinsics.h"
@@ -179,6 +178,13 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		OpenGL.ScreenShader = GLProgramCreate(ScreenVS, ScreenFS);
 		glGenTextures(1, &OpenGL.NullTexture);
 
+		OpenGL.TextureWidth = 256;
+		OpenGL.TextureHeight = 256;
+		OpenGLFrameBufferInit(&OpenGL.FBO,
+							  &OpenGL.TextureHandle,
+							  &OpenGL.RBO,
+							  OpenGL.TextureWidth, OpenGL.TextureHeight);
+
 		game_memory GameMemory = {};
 		GameMemory.IsInitialized = false;
 		GameMemory.PermanentStorageSize = Megabyte(64);
@@ -190,7 +196,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		GameMemory.PlatformAPI.DebugFileReadEntire	= DebugPlatformFileReadEntire;
 		GameMemory.PlatformAPI.DebugFileWriteEntire = DebugPlatformFileWriteEntire;
 		GameMemory.PlatformAPI.DebugFileFree		= DebugPlatformFileFree;
-		//GameMemory.PlatformAPI.DebugFileHasUpdated	= DebugPlatformFileHasUpdated;
 
 		game_input GameInput[2] = {};
 		game_input *NewInput = &GameInput[0];
@@ -207,7 +212,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		s64 TickCountStart = QueryTickCount.QuadPart;
 		while(Win32GlobalRunning)
 		{
-			FILETIME NewDLLWriteTime = Win32FileLastWriteTime("../build/game.dll");
 			if(Win32FileHasUpdated("../build/game.dll", Game.DLLLastWriteTime))
 			{
 				Win32GameCodeUnload(&Game);
@@ -275,6 +279,10 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 							{
 								Win32KeyStateUpdate(&NewKeyboard->Subtract, IsDown);
 							}
+							else if(KeyCode == VK_CONTROL)
+							{
+								Win32KeyStateUpdate(&NewKeyboard->Ctrl, IsDown);
+							}
 						}
 					} break;
 					default:
@@ -285,13 +293,23 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 				};
 			}
 
-			Win32MousePositionGet(Window);
-			Win32KeyStateUpdate(&NewInput->MouseButtons[0], GetKeyState(VK_LBUTTON) & (1 << 15));
-			Win32KeyStateUpdate(&NewInput->MouseButtons[1], GetKeyState(VK_MBUTTON) & (1 << 15));
-			Win32KeyStateUpdate(&NewInput->MouseButtons[2], GetKeyState(VK_RBUTTON) & (1 << 15));
-			Win32KeyStateUpdate(&NewInput->MouseButtons[3], GetKeyState(VK_XBUTTON1) & (1 << 15));
-			Win32KeyStateUpdate(&NewInput->MouseButtons[4], GetKeyState(VK_XBUTTON2) & (1 << 15));
+			DWORD Win32MouseKeyCodes[] = 
+			{
+				VK_LBUTTON,
+				VK_MBUTTON,
+				VK_RBUTTON,
+				VK_XBUTTON1,
+				VK_XBUTTON2
+			};
 
+			for(u32 ButtonIndex = 0; ButtonIndex < ArrayCount(NewInput->MouseButtons); ++ButtonIndex)
+			{
+				NewInput->MouseButtons[ButtonIndex] = OldInput->MouseButtons[ButtonIndex];
+				NewInput->MouseButtons[ButtonIndex].HalfTransitionCount = 0;
+				Win32KeyStateUpdate(&NewInput->MouseButtons[ButtonIndex], GetKeyState(Win32MouseKeyCodes[ButtonIndex]) & (1 << 15));
+			}
+
+			Win32MousePositionGet(Window);
 			NewInput->dXMouse = Win32GlobalMouseX - OldInput->MouseX;
 			NewInput->dYMouse = Win32GlobalMouseY - OldInput->MouseY;
 			NewInput->MouseX  = Win32GlobalMouseX;

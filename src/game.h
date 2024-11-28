@@ -20,6 +20,7 @@ enum movement_state
 	MovementState_Jump,
 	MovementState_TurningRight,
 	MovementState_TurningLeft,
+	MovementState_Crouch,
 };
 
 enum entity_type
@@ -36,26 +37,29 @@ enum entity_type
 #include "font.h"
 #include "mesh.h"
 #include "animation.h"
+#include "ui.h"
 #include "asset.h"
 #include "render.h"
 
 struct entity
 {
 	entity_type Type;
-	movement_state MovementState;
 
 	// Gameplay
 	v3 P;
 	v3 dP;
 	v3 ddP;
-	quaternion Orientation;
-	quaternion TargetOrientation;
 	f32 Theta;
 	f32 dTheta;
+	quaternion Orientation;
+	movement_state MovementState;
 
 	// Animation
 	animation_player *AnimationPlayer;
 	animation_graph *AnimationGraph;
+
+	// Should this be part of the game asset?
+	f32 Scale;
 };
 
 struct camera
@@ -76,7 +80,9 @@ struct game_state
 
 	camera Camera;
 	v3 CameraOffsetFromPlayer;
+
 	mat4 CameraTransform;
+	mat4 Perspective;
 
 	f32 Angle;
 	f32 TimeScale;
@@ -85,18 +91,9 @@ struct game_state
 	f32 ZNear;
 	f32 ZFar;
 
-	mat4 Perspective;
-
-	u32 Shaders[4];
-
-	u32 FBO;
-	u32 RBO;
-	u32 Texture;
-	u32 TextureWidth;
-	u32 TextureHeight;
-	quad_2d Quad2d;
-
 	asset_manager AssetManager;
+
+	ui UI;
 };
 
 struct temp_state
@@ -106,6 +103,7 @@ struct temp_state
 };
 
 global_varible platform_api Platform;
+//global_varible ui UI;
 
 #define GAME_H
 #endif

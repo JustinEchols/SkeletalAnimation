@@ -101,11 +101,9 @@ OpenGLAllocateTexture(texture *Texture)
 		glTexImage2D(GL_TEXTURE_2D,
 				0,
 				GL_RGBA8,
-				//Texture->StoredFormat,
 				Texture->Width,
 				Texture->Height,
 				0,
-				//Texture->SrcFormat,
 				GL_RGBA,
 				GL_UNSIGNED_BYTE,
 				Texture->Memory);
@@ -265,7 +263,7 @@ OpenGLFrameBufferInit(u32 *FBO, u32 *Texture, u32 *RBO, u32 Width, u32 Height)
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *Texture, 0);
+	OpenGL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *Texture, 0);
 
 	OpenGL.glGenRenderbuffers(1, RBO);
 	OpenGL.glBindRenderbuffer(GL_RENDERBUFFER, *RBO); 
@@ -481,6 +479,7 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 	u32 MainShader	= OpenGL.MainShader;
 	u32 BasicShader = OpenGL.BasicShader;
 	u32 FontShader	= OpenGL.FontShader;
+	u32 ScreenShader = OpenGL.ScreenShader;
 	mat4 View = RenderBuffer->View;
 	mat4 Perspective = RenderBuffer->Perspective;
 	v3 LightDir = V3(1.0f, -1.0f, -0.5f);
@@ -593,7 +592,30 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 
 				OpenGLDrawText(Entry->Text, FontShader, Entry->Font, Entry->P, Entry->Scale, Entry->Color, WindowWidth, WindowHeight);
 				BaseOffset += sizeof(*Entry);
-			};
+			} break;
+			case RenderBuffer_render_entry_aabb:
+			{
+				render_entry_aabb *Entry = (render_entry_aabb *)Data;
+				model *Model = Entry->Model;
+				if(!Model->UploadedToGPU)
+				{
+					OpenGLAllocateModel(Entry->Model, BasicShader);
+					Model->UploadedToGPU = true;
+				}
+
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				OpenGL.glUseProgram(BasicShader);
+				UniformMatrixSet(BasicShader, "View", View);
+				UniformMatrixSet(BasicShader, "Projection", Perspective);
+				UniformBoolSet(BasicShader, "OverRideTexture", true);
+				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
+				UniformV3Set(BasicShader, "LightDir", LightDir);
+				UniformV4Set(BasicShader, "Color", V4(Entry->Color, 1.0f));
+				OpenGLDrawModel(Model, BasicShader, Entry->Transform);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+				BaseOffset += sizeof(*Entry);
+			} break;
 		}
 	}
 }

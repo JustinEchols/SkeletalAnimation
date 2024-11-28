@@ -160,7 +160,8 @@ internal void
 AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 		f32 BlendDuration = 0.0f,
 		f32 TimeOffset = 0.0f,
-		b32 MaskingJoints = false)
+		b32 MaskingJoints = false,
+		b32 BlendingComposite = false)
 {
 	Assert(AnimationPlayer->IsInitialized);
 
@@ -218,7 +219,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 	}
 
 	Animation->BlendingOut = false;
-	Animation->BlendingComposite = false;
+	Animation->BlendingComposite = BlendingComposite;
 	Animation->MaskingJoints = MaskingJoints;
 
 	Animation->JointMasks = NewAnimation->JointMasks;
@@ -367,6 +368,7 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
 	// TODO(Justin): Asset manager and create a table lookup. Use the animation state name as a tag.
 	// Right now the tag is the actual name of the animation...
 
+
 	animation_graph_node *Node = &Graph->CurrentNode;
 	animation *Animation = LookupAnimation(AssetManager, (char *)Node->Tag.Data);
 	if(Animation)
@@ -448,7 +450,7 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 }
 
 internal void
-Animate(animation_graph *Graph, asset_manager *AssetManager, animation_player *AnimationPlayer, movement_state State)
+Animate(animation_graph *Graph, asset_manager *AssetManager, animation_player *AnimationPlayer, movement_state State, f32 dTheta)
 {
 	if(AnimationPlayer->PlayingCount == 0)
 	{
@@ -462,13 +464,15 @@ Animate(animation_graph *Graph, asset_manager *AssetManager, animation_player *A
 	}
 
 	AnimationPlayer->NewState = State;
-	//AnimationPlayer->MovementState = State;
-	//switch(AnimationPlayer->MovementState)
 	switch(State)
 	{
 		case MovementState_Idle:
 		{
 			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_idle");
+		} break;
+		case MovementState_Crouch:
+		{
+			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_crouch");
 		} break;
 		case MovementState_Run:
 		{
@@ -660,6 +664,7 @@ AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
 	Assert(Graph->NodeCount < ArrayCount(Graph->Nodes));
 	animation_graph_node *Node = Graph->Nodes + Graph->NodeCount;
 	Node->Name = StringCopy(&Graph->Arena, Name);
+	Node->Index = Graph->NodeCount;
 	// TODO(justin): This is supposed to be a tag that maps to a string which is the name of the animation..
 	//Node->Tag = StringCopy(Graph->Arena, Animation); 
 	Node->WhenDone = {};
@@ -872,8 +877,8 @@ AnimationGraphInit(animation_graph *G, char *FileName)
 		
 	}
 
-	G->CurrentNode = G->Nodes[0];
-	G->Index = 0;
+	// TODO(Justin): Fix the ending of the last node. This is a hack
+	NodeEnd(G);
 }
 
 internal void

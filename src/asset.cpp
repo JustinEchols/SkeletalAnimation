@@ -1,4 +1,4 @@
-
+;
 internal model 
 ModelLoad(memory_arena *Arena, char *FileName)
 {
@@ -141,22 +141,36 @@ enum animation_name
 	Animation_IdleToSprint,
 	Animation_IdleToSprintMirror,
 	Animation_RunToStop,
+	Animation_Running180,
+	Animation_CrouchedToIdleLeft,
+	Animation_CrouchedToIdleRight,
+	Animation_IdleLeftToCrouched,
+	Animation_IdleRightToCrouched,
+	Animation_CrouchingIdleLeft,
+	Animation_CrouchingIdleRight,
 };
 
 char *AnimationFiles[] =
 {
-	"../data/XBot_IdleRight.animation",
-	"../data/XBot_IdleLeft.animation",
-	"../data/XBot_Running.animation",
-	"../data/XBot_FastRun.animation",
-	"../data/XBot_JumpForward.animation",
-	"../data/XBot_RunningMirror.animation",
-	"../data/XBot_FastRunMirror.animation",
-	"../data/XBot_StandingToIdleRight.animation",
-	"../data/XBot_StandingToIdleLeft.animation",
-	"../data/XBot_IdleToSprint.animation",
-	"../data/XBot_IdleToSprintMirror.animation",
-	"../data/XBot_RunToStop.animation"
+	"../data/animations/XBot_IdleRight.animation",
+	"../data/animations/XBot_IdleLeft.animation",
+	"../data/animations/XBot_Running.animation",
+	"../data/animations/XBot_FastRun.animation",
+	"../data/animations/XBot_JumpForward.animation",
+	"../data/animations/XBot_RunningMirror.animation",
+	"../data/animations/XBot_FastRunMirror.animation",
+	"../data/animations/XBot_StandingToIdleRight.animation",
+	"../data/animations/XBot_StandingToIdleLeft.animation",
+	"../data/animations/XBot_IdleToSprint.animation",
+	"../data/animations/XBot_IdleToSprintMirror.animation",
+	"../data/animations/XBot_RunToStop.animation",
+	"../data/animations/XBot_Running180.animation",
+	"../data/animations/XBot_CrouchedToIdleLeft.animation",
+	"../data/animations/XBot_CrouchedToIdleRight.animation",
+	"../data/animations/XBot_IdleLeftToCrouched.animation",
+	"../data/animations/XBot_IdleRightToCrouched.animation",
+	"../data/animations/XBot_CrouchingIdleLeft.animation",
+	"../data/animations/XBot_CrouchingIdleRight.animation",
 };
 
 char *GraphFiles[] =
@@ -173,10 +187,10 @@ char *TextureFiles[] =
 
 char *ModelFiles[] =
 {
-	"../data/XBot.mesh",
-	"../data/Cube.mesh",
-	"../data/Sphere.mesh",
-	"../data/Arrow.mesh",
+	"../data/models/XBot.mesh",
+	"../data/models/Cube.mesh",
+	"../data/models/Sphere.mesh",
+	"../data/models/Arrow.mesh",
 };
 
 char *FontFiles[] =
@@ -348,7 +362,7 @@ AssetManagerInit(asset_manager *Manager)
 				case Animation_StandingToIdleLeft:
 				{
 					Animation->TimeScale = 1.0f;
-#if 1
+#if 0
 					//Animation->DefaultFlags = (AnimationFlags_JointMask | AnimationFlags_RemoveLocomotion);
 					Animation->DefaultFlags = AnimationFlags_JointMask;// | AnimationFlags_RemoveLocomotion);
 					Animation->JointMasks = PushArray(&Manager->Arena, Info->JointCount, b32);
@@ -389,6 +403,24 @@ AssetManagerInit(asset_manager *Manager)
 					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
 				} break;
+				case Animation_Running180:
+				{
+					Animation->TimeScale = 1.0f;
+				} break;
+
+				case Animation_CrouchedToIdleLeft:
+				case Animation_CrouchedToIdleRight:
+				case Animation_IdleLeftToCrouched:
+				case Animation_IdleRightToCrouched:
+				{
+					Animation->TimeScale = 1.0f;
+				} break;
+				case Animation_CrouchingIdleLeft:
+				case Animation_CrouchingIdleRight:
+				{
+					Animation->TimeScale = 1.0f;
+					Animation->DefaultFlags = AnimationFlags_Looping;
+				} break;
 			}
 		}
 	}
@@ -417,5 +449,3 @@ AssetManagerInit(asset_manager *Manager)
 
 	FontInit(&Manager->Arena, &Manager->Font, FontFiles[0]);
 }
-
-

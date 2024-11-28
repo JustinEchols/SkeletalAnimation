@@ -87,7 +87,6 @@ typedef struct
 	debug_platform_file_read_entire		*DebugFileReadEntire;
 	debug_platform_file_write_entire	*DebugFileWriteEntire;
 	debug_platform_file_free			*DebugFileFree;
-	//debug_platform_file_has_updated		*DebugFileHasupdated;
 #endif
 } platform_api;
 
@@ -105,6 +104,21 @@ struct game_button
 	u32 HalfTransitionCount;
 };
 
+inline b32
+IsDown(game_button Button)
+{
+	b32 Result = (Button.EndedDown);
+	return(Result);
+}
+
+inline b32
+WasPressed(game_button Button)
+{
+	b32 Result = (Button.HalfTransitionCount > 1) ||
+				((Button.HalfTransitionCount == 1) && Button.EndedDown);
+	return(Result);
+}
+
 enum 
 {
 	Key_W,
@@ -116,17 +130,18 @@ enum
 	Key_Space,
 	Key_Add,
 	Key_Subtract,
+	Key_Control,
 
 	Key_Count
 };
 
-enum mouse_key
+enum mouse_button
 {
-	MouseKey_Left,
-	MouseKey_Middle,
-	MouseKey_Right,
+	MouseButton_Left,
+	MouseButton_Middle,
+	MouseButton_Right,
 
-	MouseKey_Count
+	MouseButton_Count
 };
 
 struct game_keyboard
@@ -145,6 +160,7 @@ struct game_keyboard
 			game_button Space;
 			game_button Add;
 			game_button Subtract;
+			game_button Ctrl;
 		};
 	};
 };
