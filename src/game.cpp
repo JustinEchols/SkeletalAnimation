@@ -467,10 +467,20 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	mat4 T = Mat4Translate(V3(0.0f, 0.0f, -250.0f));
 	mat4 R = Mat4Identity();
 	mat4 S = Mat4Scale(500.0f);
+	quad GroundQuad = GameState->Quad;
+	for(u32 Index = 0; Index < ArrayCount(GroundQuad.Vertices); ++Index)
+	{
+		GroundQuad.Vertices[Index].UV *= 50.0f;
+	}
 
+#if 0
 	s32 TextureIndex = StringHashLookup(&Assets->TextureNames, "tile_gray");
 	PushTexture(RenderBuffer, LookupTexture(Assets, "tile_gray"), TextureIndex);
-	PushQuad3D(RenderBuffer, &GameState->Quad, T*R*S, TextureIndex);
+#else
+	s32 TextureIndex = StringHashLookup(&Assets->TextureNames, "texture_01");
+	PushTexture(RenderBuffer, LookupTexture(Assets, "texture_01"), TextureIndex);
+#endif
+	PushQuad3D(RenderBuffer, &GroundQuad, T*R*S, TextureIndex);
 
 	//
 	// NOTE(Justin): Entities.
@@ -493,7 +503,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				T = Mat4Translate(Entity->P);
 				S = Mat4Identity();
-				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f), V3(1.0f));
+				//PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f), V3(1.0f));
 
 				v3 P = Entity->P;
 				P.y += 0.25f;

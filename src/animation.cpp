@@ -874,10 +874,9 @@ AnimationGraphInit(animation_graph *G, char *FileName)
 	}
 	else
 	{
-		
 	}
 
-	// TODO(Justin): Fix the ending of the last node. This is a hack
+	// TODO(Justin): Fix the ending of the last node. This is a hack?
 	NodeEnd(G);
 }
 
