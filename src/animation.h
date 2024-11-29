@@ -78,6 +78,7 @@ struct animation_graph_arc
 	f32 t0, t1;
 	b32 BlendDurationSet;
 	f32 BlendDuration;
+
 };
 
 // TODO(Justin): Node type? Additive, nblend, composite...
@@ -87,6 +88,8 @@ struct animation_graph_node
 	string Tag;
 	u32 Index;
 	u32 ArcCount;
+	b32 ControlsPosition;
+	b32 ControlsTurning;
 	animation_graph_arc Arcs[16];
 	animation_graph_arc WhenDone;
 };
@@ -117,6 +120,7 @@ struct animation_player
 	f32 dt;
 
 	v3 DeltaP;
+	quaternion DeltaOrientation;
 
 	key_frame *FinalPose;
 	model *Model; 

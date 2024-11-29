@@ -63,6 +63,22 @@ ModelLoad(memory_arena *Arena, char *FileName)
 	{
 	}
 
+	f32 MaxHeight = 0.0f;
+	for(u32 MeshIndex = 0; MeshIndex < Model.MeshCount; ++MeshIndex)
+	{
+		mesh *Mesh = Model.Meshes + MeshIndex;
+		for(u32 VertexIndex = 0; VertexIndex < Mesh->VertexCount; ++VertexIndex)
+		{
+			vertex *Vertex = Mesh->Vertices + VertexIndex;
+			if(Vertex->P.y > MaxHeight)
+			{
+				MaxHeight = Vertex->P.y;
+			}
+		}
+	}
+
+	Model.Height = MaxHeight;
+
 	return(Model);
 }
 
@@ -183,6 +199,7 @@ char *TextureFiles[] =
 	"../data/textures/tile_gray.bmp",
 	"../data/textures/left_arrow.png",
 	"../data/textures/texture_01.png",
+	"../data/textures/orange_texture_02.png",
 };
 
 char *ModelFiles[] =
@@ -291,7 +308,15 @@ AssetManagerInit(asset_manager *Manager)
 
 		if(StringsAreSame(Buffer, "Cube"))
 		{
-			texture *Texture = LookupTexture(Manager, "texture_01");
+			texture *Texture = LookupTexture(Manager, "orange_texture_02");
+			if(Texture)
+			{
+				Model->Meshes[0].Texture = Texture;
+			}
+		}
+		else if(StringsAreSame(Buffer, "Sphere"))
+		{
+			texture *Texture = LookupTexture(Manager, "orange_texture_02");
 			if(Texture)
 			{
 				Model->Meshes[0].Texture = Texture;
@@ -425,8 +450,7 @@ AssetManagerInit(asset_manager *Manager)
 		}
 	}
 
-	//
-	// Graphs
+	// // Graphs
 	//
 
 	ArenaSubset(&Manager->Arena, &Manager->GraphNames.Arena, Kilobyte(4));

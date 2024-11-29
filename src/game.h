@@ -103,7 +103,6 @@ struct temp_state
 };
 
 global_varible platform_api Platform;
-//global_varible ui UI;
 
 #define GAME_H
 #endif

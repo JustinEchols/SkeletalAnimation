@@ -519,6 +519,8 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		}
 	}
 
+	v3 OldP = AnimationPlayer->FinalPose->Positions[0];
+
 	//
 	// NOTE(Justin): Use scratch pose to mix all channels into, then copy to the final pose.
 	//
@@ -599,6 +601,9 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			DestPose->Scales[JointIndex]		= SrcPose->Scales[JointIndex];
 		}
 	}
+
+	v3 NewP = AnimationPlayer->FinalPose->Positions[0];
+	AnimationPlayer->DeltaP = NewP - OldP;
 }
 
 // TODO(Justin): Fold this into AnimationPlayerUpdate?
@@ -862,6 +867,10 @@ AnimationGraphInit(animation_graph *G, char *FileName)
 					}
 
 					AnimationGraphNodeAddWhenDoneArc(&G->Arena, &G->Nodes[G->Index], InBoundMessage, DestNodeName, RemainingTimeBeforeCrossFade);
+				}
+				else if(StringsAreSame(Word, "controls_position"))
+				{
+					G->Nodes[G->Index].ControlsPosition = true;
 				}
 				else if(*Word == '#')
 				{

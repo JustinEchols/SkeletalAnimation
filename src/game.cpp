@@ -429,7 +429,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	Animate(Player->AnimationGraph, Assets, Player->AnimationPlayer, Player->MovementState, Player->dTheta);
+
+	v3 OldP = Player->AnimationPlayer->FinalPose->Positions[0];
 	AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
+	if(Player->AnimationGraph->CurrentNode.ControlsPosition)
+	{
+		v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
+		v3 Delta = NewP - OldP;
+		Player->P += Player->Scale*Delta;
+	};
+
 	ModelJointsUpdate(Player->AnimationPlayer);
 	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);
 
@@ -501,9 +510,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				// NOTE(Justin): Debug  
 				//
 
-				T = Mat4Translate(Entity->P);
-				S = Mat4Identity();
-				//PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f), V3(1.0f));
+				T = Mat4Translate(Entity->P + V3(0.0f, (Model->Height * Entity->Scale), 0.0f));
+				S = Mat4Scale(0.1f);
+
+				model *Sphere = LookupModel(Assets, "Sphere");
+				//PushModel(RenderBuffer, Sphere, T * S);
+				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f), V3(1.0f));
 
 				v3 P = Entity->P;
 				P.y += 0.25f;
@@ -731,7 +743,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		P.y -= (Gap + dY);
 	}
 
-
 	sprintf(Buff, "%s", "+Animation");
 	Text = StringCopy(&TempState->Arena, Buff);
 	Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
@@ -830,7 +841,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	glDrawArrays(GL_TRIANGLES, 0, 6);
 #else
 #endif
-
 	Platform.RenderToOpenGL(RenderBuffer, (u32)WindowWidth, (u32)WindowHeight);
 
 	ArenaClear(&TempState->Arena);

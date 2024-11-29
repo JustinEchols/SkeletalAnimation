@@ -50,6 +50,8 @@ struct mesh
 	mat4 *JointTransforms;
 	mat4 *ModelSpaceTransforms;
 
+
+
 	material_spec MaterialSpec;
 
 	// Data modified by renderer.
@@ -65,6 +67,8 @@ struct model
 	b32 HasSkeleton;
 	u32 MeshCount;
 	mesh *Meshes;
+
+	f32 Height;
 
 	// Data modified by renderer.
 	b32 UploadedToGPU;
