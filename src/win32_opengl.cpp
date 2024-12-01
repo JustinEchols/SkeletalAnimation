@@ -3,39 +3,51 @@ char *MainVS = R"(
 #version 430 core
 layout (location = 0) in vec3 P;
 layout (location = 1) in vec3 Normal;
-layout (location = 2) in uint JointCount;
-layout (location = 3) in uvec3 JointTransformIndices;
-layout (location = 4) in vec3 Weights;
+layout (location = 2) in vec2 Tex;
+layout (location = 3) in uint JointCount;
+layout (location = 4) in uvec3 JointTransformIndices;
+layout (location = 5) in vec3 Weights;
 
 uniform mat4 Model;
 uniform mat4 View;
 uniform mat4 Projection;
+uniform bool UsingRig;
 
 #define MAX_JOINT_COUNT 70
 uniform mat4 Transforms[MAX_JOINT_COUNT];
 
 out vec3 SurfaceP;
 out vec3 SurfaceN;
+out vec2 UV;
 
 void main()
 {
 	vec4 Pos = vec4(0.0);
 	vec4 Norm = vec4(0.0);
-	for(uint i = 0; i < 3; ++i)
+	if(UsingRig)
 	{
-		if(i < JointCount)
+		for(uint i = 0; i < 3; ++i)
 		{
-			uint JointIndex = JointTransformIndices[i];
-			float Weight = Weights[i];
-			mat4 Xform = Transforms[JointIndex];
-			Pos += Weight * Xform * vec4(P, 1.0);
-			Norm += Weight * Xform * vec4(Normal, 0.0);
+			if(i < JointCount)
+			{
+				uint JointIndex = JointTransformIndices[i];
+				float Weight = Weights[i];
+				mat4 Xform = Transforms[JointIndex];
+				Pos += Weight * Xform * vec4(P, 1.0);
+				Norm += Weight * Xform * vec4(Normal, 0.0);
+			}
 		}
+	}
+	else
+	{
+		Pos = vec4(P, 1.0f);
+		Norm = vec4(Normal, 0.0f);
 	}
 
 	gl_Position = Projection * View * Model * Pos;
 	SurfaceP = vec3(Model * Pos);
 	SurfaceN = vec3(transpose(inverse(Model)) * Norm);
+	UV = Tex;
 })";
 
 char *MainFS= R"(
@@ -43,15 +55,18 @@ char *MainFS= R"(
 
 in vec3 SurfaceP;
 in vec3 SurfaceN;
+in vec2 UV;
+
+uniform bool OverRideTexture;
+uniform sampler2D Texture;
 
 uniform vec3 Ambient;
+uniform vec3 LightDir;
+uniform vec3 CameraP;
 uniform vec4 Diffuse;
 uniform vec4 Specular;
 
 uniform float Shininess;
-
-uniform vec3 LightDir;
-uniform vec3 CameraP;
 
 out vec4 Result;
 void main()
@@ -66,7 +81,16 @@ void main()
 	float D = max(dot(-LightDir, Normal), 0.0);
 	float S = pow(max(dot(ReflectedDirection, Normal), 0.0), Shininess);
 
-	vec3 Diff = D * LightColor * Diffuse.xyz;
+	vec3 Diff = vec3(0.0);
+	if(OverRideTexture)
+	{
+		Diff = D * LightColor * Diffuse.xyz;
+	}
+	else
+	{
+		Diff = D * LightColor * texture(Texture, UV).rgb;
+	}
+
 	vec3 Spec = S * LightColor * Specular.xyz;
 
 	Result = vec4(Ambient + Diff + Spec, 1.0);
@@ -180,6 +204,27 @@ void main()
 	Result = vec4(texture(Texture, UV).rgb, 1.0);
 })";
 
+char *ShadowMapVS = R"(
+#version 430 core
+layout (location = 0) in vec3 P;
+
+uniform mat4 Model;
+uniform mat4 View;
+uniform mat4 Projection;
+
+void main()
+{
+	gl_Position = Projection * View * Model * vec4(P, 1.0);
+})";
+
+char *ShadowMapFS = R"(
+#version 430 core
+
+void main()
+{
+})";
+
+
 #define OpenGLFunctionDeclare(Name, Type) PFN##Type##PROC Name
 struct open_gl
 {
@@ -187,6 +232,7 @@ struct open_gl
 	u32 BasicShader;
 	u32 FontShader;
 	u32 ScreenShader;
+	u32 ShadowMapShader;
 	u32 NullTexture;
 
 	u32 FBO;
@@ -194,9 +240,15 @@ struct open_gl
 	u32 TextureHandle;
 	u32 TextureWidth;
 	u32 TextureHeight;
+
+	u32 ShadowMapFBO;
+	u32 ShadowMapRBO;
+	u32 ShadowMapHandle;
+	u32 ShadowMapWidth;
+	u32 ShadowMapHeight;
+
 	u32 Quad2dVA;
 	u32 Quad2dVB;
-	//quad_2d Quad2d;
 
 	OpenGLFunctionDeclare(glGenBuffers, GLGENBUFFERS);
 	OpenGLFunctionDeclare(glBindBuffer, GLBINDBUFFER);

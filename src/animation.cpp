@@ -22,7 +22,6 @@
 // What is the best way to handle this?
 //
 
-
 inline void
 FlagAdd(animation *Animation, u32 Flag)
 {
@@ -450,18 +449,26 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 }
 
 internal void
-Animate(animation_graph *Graph, asset_manager *AssetManager, animation_player *AnimationPlayer, movement_state State, f32 dTheta)
+Animate(entity *Entity, asset_manager *AssetManager)//animation_graph *Graph, asset_manager *AssetManager, animation_player *AnimationPlayer, movement_state State, f32 dTheta)
 {
+	animation_graph *Graph = Entity->AnimationGraph;
+	animation_player *AnimationPlayer = Entity->AnimationPlayer;
+	Assert(Graph);
+	Assert(AnimationPlayer);
+
+
 	if(AnimationPlayer->PlayingCount == 0)
 	{
 		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleRight"), 0.2f);
 		return;
 	}
 
-	if(AnimationPlayer->MovementState == State)
+	movement_state State = Entity->MovementState;
+	if(AnimationPlayer->MovementState == State && Equal(Entity->dTheta, 0.0f))
 	{
 		return;
 	}
+
 
 	AnimationPlayer->NewState = State;
 	switch(State)
@@ -480,7 +487,22 @@ Animate(animation_graph *Graph, asset_manager *AssetManager, animation_player *A
 		} break;
 		case MovementState_Sprint:
 		{
+#if 0
+			if(Entity->dTheta > 0.0f)
+			{
+				MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint_to_180");
+			}
+			else if(Entity->dTheta < 0.0f)
+			{
+				MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint_to_180");
+			}
+			else
+			{
+				MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint");
+			}
+#else
 			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint");
+#endif
 		} break;
 		case MovementState_Jump:
 		{
@@ -518,8 +540,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			AnimationPtr = &Animation->Next;
 		}
 	}
-
-	v3 OldP = AnimationPlayer->FinalPose->Positions[0];
 
 	//
 	// NOTE(Justin): Use scratch pose to mix all channels into, then copy to the final pose.
@@ -601,9 +621,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			DestPose->Scales[JointIndex]		= SrcPose->Scales[JointIndex];
 		}
 	}
-
-	v3 NewP = AnimationPlayer->FinalPose->Positions[0];
-	AnimationPlayer->DeltaP = NewP - OldP;
 }
 
 // TODO(Justin): Fold this into AnimationPlayerUpdate?

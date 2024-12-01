@@ -20,18 +20,19 @@ extern "C" {
 //////////////////////////////////////////
 // NOTE(Justin): Base Types
 
-typedef int8_t	 s8;
-typedef int16_t  s16;
-typedef int32_t  s32;
-typedef int64_t  s64;
-typedef uint8_t	 u8;
-typedef uint16_t u16;
-typedef uint32_t u32;
-typedef uint64_t u64;
-typedef float	 f32;
-typedef double	 f64;
-typedef s32		 b32;
-typedef size_t	 memory_index;
+typedef int8_t		s8;
+typedef int16_t  	s16;
+typedef int32_t  	s32;
+typedef int64_t  	s64;
+typedef uint8_t	 	u8;
+typedef uint16_t 	u16;
+typedef uint32_t 	u32;
+typedef uint64_t 	u64;
+typedef float	 	f32;
+typedef double	 	f64;
+typedef s32			b32;
+typedef size_t		memory_index;
+typedef uintptr_t	umm;
 
 //////////////////////////////////////////
 // NOTE(Justin): Helper Macros 
@@ -46,8 +47,10 @@ typedef size_t	 memory_index;
 #define Gigabyte(Count)			(1024 * Megabyte(Count))
 #define Pi32					3.1415926535897f
 #define DegreeToRad(Degrees)	((Degrees) * (Pi32 / 180.0f))
+#define RadToDegrees(Rad)		((Rad) * (180.0f / Pi32))
 #define SmallNumber				(1.e-8f)
 #define KindaSmallNumber		(1.e-4f)
+#define OffsetOf(type, Member) (umm)&(((type *)0)->Member)
 
 //////////////////////////////////////////
 // NOTE(Justin): Linked List Macros

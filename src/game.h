@@ -41,6 +41,23 @@ enum entity_type
 #include "asset.h"
 #include "render.h"
 
+struct capsule_collider
+{
+	v3 Min;
+	v3 Max;
+	f32 Radius;
+};
+
+#if 0
+struct collision_volume_group
+{
+	v3 P;
+	orientation Orientation;
+	u32 Count;
+	capsule_collider *Capsules;
+};
+#endif
+
 struct entity
 {
 	entity_type Type;
@@ -50,9 +67,13 @@ struct entity
 	v3 dP;
 	v3 ddP;
 	f32 Theta;
+	f32 ThetaTarget;
 	f32 dTheta;
 	quaternion Orientation;
 	movement_state MovementState;
+	//collision_volume_group *CollisionVolumes;
+	capsule_collider CapsuleCollider;
+
 
 	// Animation
 	animation_player *AnimationPlayer;
@@ -94,6 +115,8 @@ struct game_state
 	asset_manager AssetManager;
 
 	ui UI;
+
+	texture Texture;
 };
 
 struct temp_state

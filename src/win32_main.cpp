@@ -176,7 +176,10 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		OpenGL.BasicShader	= GLProgramCreate(BasicVS, BasicFS);
 		OpenGL.FontShader	= GLProgramCreate(FontVS, FontFS);
 		OpenGL.ScreenShader = GLProgramCreate(ScreenVS, ScreenFS);
+		OpenGL.ShadowMapShader = GLProgramCreate(ShadowMapVS, ShadowMapFS);
+
 		glGenTextures(1, &OpenGL.NullTexture);
+		OpenGLAllocateQuad2d(&OpenGL.Quad2dVA, &OpenGL.Quad2dVB, OpenGL.ScreenShader);
 
 		OpenGL.TextureWidth = 256;
 		OpenGL.TextureHeight = 256;
@@ -184,6 +187,13 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 							  &OpenGL.TextureHandle,
 							  &OpenGL.RBO,
 							  OpenGL.TextureWidth, OpenGL.TextureHeight);
+
+		OpenGL.ShadowMapWidth = 1024;
+		OpenGL.ShadowMapHeight = 1024;
+		OpenGLFrameBufferInit(&OpenGL.ShadowMapFBO,
+							  &OpenGL.ShadowMapHandle,
+							  &OpenGL.ShadowMapRBO,
+							  OpenGL.ShadowMapWidth, OpenGL.ShadowMapHeight);
 
 		game_memory GameMemory = {};
 		GameMemory.IsInitialized = false;

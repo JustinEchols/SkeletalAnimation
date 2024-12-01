@@ -284,6 +284,13 @@ S32FromASCII(u8 *S)
 }
 
 inline u32
+U32FromASCII(char *S)
+{
+	u32 Result = (u32)atoi(S);
+	return(Result);
+}
+
+inline u32
 U32FromASCII(u8 *S)
 {
 	u32 Result = (u32)atoi((char *)S);

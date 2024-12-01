@@ -1,4 +1,203 @@
-;
+internal model
+ObjLoad(memory_arena *Arena, char *FileName)
+{
+	model Result = {};
+
+	debug_file File = Platform.DebugFileReadEntire(FileName);
+	if(File.Size != 0)
+	{
+		u8 *Content = (u8 *)File.Content;
+
+		u8 Buffer_[4096];
+		u8 *Buffer = &Buffer_[0];
+		MemoryZero(Buffer, sizeof(Buffer));
+		u32 At = 0;
+
+		u32 PositionCount = 0;
+		u32 NormalCount = 0;
+		u32 UVCount = 0;
+		u32 FaceRows = 0;
+		u32 FaceCount = 0;
+		while(*Content)
+		{
+			BufferLine(&Content, Buffer);
+			AdvanceLine(&Content);
+			switch(Buffer[0])
+			{
+				case 'v':
+				{
+					if(Buffer[1] == ' ')
+					{
+						PositionCount++;
+					}
+
+					if(Buffer[1] == 'n')
+					{
+						NormalCount++;
+					}
+
+					if(Buffer[1] == 't')
+					{
+						UVCount++;
+					}
+
+				} break;
+				case 'f':
+				{
+					char *Tok = strtok((char *)Buffer, " ");
+					Tok = strtok(0, " ");
+
+					while(Tok)
+					{
+						FaceCount++;
+						Tok = strtok(0, " ");
+					}
+					FaceRows++;
+				} break;
+			}
+		}
+
+		// TODO(Justin): Use temporary memory as buffer for vertex data 
+		//temporary_memory VertexMemory = TemporaryMemoryBegin(Arena);
+
+		v3 *Positions	= PushArray(Arena, PositionCount, v3);
+		v3 *Normals		= PushArray(Arena, NormalCount, v3);
+		v2 *UVs			= PushArray(Arena, UVCount, v2);
+		u32 *IndicesP = PushArray(Arena, FaceCount, u32);
+		u32 *IndicesN = PushArray(Arena, FaceCount, u32);
+
+		u32 PositionIndex = 0;
+		u32 NormalIndex = 0;
+		u32 UVIndex = 0;
+		u32 IndexP = 0;
+		u32 IndexN = 0;
+		Content = (u8 *)File.Content;
+		while(*Content)
+		{
+			BufferLine(&Content, Buffer);
+			AdvanceLine(&Content);
+			switch(Buffer[0])
+			{
+				case 'v':
+				{
+					if(Buffer[1] == ' ')
+					{
+						v3 *P = Positions + PositionIndex;
+
+						char *Word = strtok((char *)Buffer, " ");
+						Word = strtok(0, " ");
+						P->x = F32FromASCII(Word);
+						Word = strtok(0, " ");
+						P->y = F32FromASCII(Word);
+						Word = strtok(0, " ");
+						P->z = F32FromASCII(Word);
+
+						PositionIndex++;
+					}
+
+					if(Buffer[1] == 'n')
+					{
+						v3 *N = Normals + NormalIndex;
+
+						char *Word = strtok((char *)Buffer, " ");
+						Word = strtok(0, " ");
+						N->x = F32FromASCII(Word);
+						Word = strtok(0, " ");
+						N->y = F32FromASCII(Word);
+						Word = strtok(0, " ");
+						N->z = F32FromASCII(Word);
+
+						NormalIndex++;
+					}
+
+					if(Buffer[1] == 't')
+					{
+						v2 *UV = UVs + UVCount;
+
+						char *Word = strtok((char *)Buffer, " ");
+						Word = strtok(0, " ");
+						UV->x = F32FromASCII(Word);
+						Word = strtok(0, " ");
+						UV->y = F32FromASCII(Word);
+
+						UVIndex++;
+					}
+				} break;
+				case 'f':
+				{
+					At = 0;
+					char IndexBuffer[64];
+
+					char *Word = strtok((char *)Buffer, " ");
+					while(Word)
+					{
+						Word = strtok(0, " ");
+						if(Word)
+						{
+							char *P = Word;
+							At = 0;
+							while(*P)
+							{
+								IndexBuffer[At++] = *P++;
+							}
+
+							IndexBuffer[At] = '\0';
+							IndicesP[IndexP++] = U32FromASCII(IndexBuffer) - 1;
+
+							At = 0;
+							while(IndexBuffer[At] != '/')
+							{
+								At++;
+							}
+							while(IndexBuffer[At] == '/')
+							{
+								At++;
+							}
+
+							IndicesN[IndexN++] = U32FromASCII((IndexBuffer + At)) - 1;
+						}
+					}
+				} break;
+			}
+		}
+
+		Assert(PositionCount == PositionIndex);
+		Assert(NormalCount == NormalIndex);
+		Assert(UVCount == UVIndex);
+
+		u32 MeshVertexCount = FaceCount;
+
+		Result.MeshCount = 1;
+		Result.Meshes = PushArray(Arena, Result.MeshCount, mesh);
+		mesh *Mesh = Result.Meshes;
+		Mesh->VertexCount = MeshVertexCount;
+		Mesh->IndicesCount = MeshVertexCount;
+		Mesh->Vertices = PushArray(Arena, Mesh->VertexCount, vertex);
+		Mesh->Indices = PushArray(Arena, Mesh->VertexCount, u32);
+
+		for(u32 Index = 0; Index < Mesh->VertexCount; ++Index)
+		{
+			u32 IP = IndicesP[Index];
+			u32 IN = IndicesN[Index];
+
+			v3 P = Positions[IP];
+			v3 N = Normals[IN];
+
+			vertex *V = Mesh->Vertices + Index;
+
+			V->P = P;
+			V->N = N;
+
+			Mesh->Indices[Index] = Index;
+
+		}
+
+		//TemporaryMemoryEnd(VertexMemory);
+	}
+
+	return(Result);
+}
+
 internal model 
 ModelLoad(memory_arena *Arena, char *FileName)
 {
@@ -63,6 +262,7 @@ ModelLoad(memory_arena *Arena, char *FileName)
 	{
 	}
 
+#if 0
 	f32 MaxHeight = 0.0f;
 	for(u32 MeshIndex = 0; MeshIndex < Model.MeshCount; ++MeshIndex)
 	{
@@ -76,8 +276,10 @@ ModelLoad(memory_arena *Arena, char *FileName)
 			}
 		}
 	}
-
 	Model.Height = MaxHeight;
+#endif
+
+
 
 	return(Model);
 }
@@ -135,7 +337,7 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 	return(Info);
 }
 
-char *LowerJointMasks[] =
+char *LowerJointTags[] =
 {
 	"Hips",
 	"Leg",
@@ -321,6 +523,22 @@ AssetManagerInit(asset_manager *Manager)
 			{
 				Model->Meshes[0].Texture = Texture;
 			}
+		}
+	}
+
+	{
+		char *FullPath = "../data/models/Capsule.obj";
+		FileNameFromFullPath(FullPath, Buffer);
+		StringHashAdd(&Manager->ModelNames, Buffer, ArrayCount(ModelFiles) + 1);
+		s32 Index = StringHashLookup(&Manager->ModelNames, Buffer);
+		Assert(Index != -1);
+		model *Model = Manager->Models + Index;
+		*Model = ObjLoad(&Manager->Arena, FullPath);
+
+		texture *Texture = LookupTexture(Manager, "orange_texture_02");
+		if(Texture)
+		{
+			Model->Meshes[0].Texture = Texture;
 		}
 	}
 

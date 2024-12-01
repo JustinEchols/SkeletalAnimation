@@ -16,5 +16,22 @@ JointIndexGet(string *JointNames, u32 JointCount, string JointName)
 	return(Result);
 }
 
+internal f32
+ModelHeight(model *Model)
+{
+	f32 MaxHeight = 0.0f;
+	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+	{
+		mesh *Mesh = Model->Meshes + MeshIndex;
+		for(u32 VertexIndex = 0; VertexIndex < Mesh->VertexCount; ++VertexIndex)
+		{
+			vertex *Vertex = Mesh->Vertices + VertexIndex;
+			if(Vertex->P.y > MaxHeight)
+			{
+				MaxHeight = Vertex->P.y;
+			}
+		}
+	}
 
-
+	return(MaxHeight);
+}

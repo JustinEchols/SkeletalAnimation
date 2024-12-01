@@ -31,9 +31,11 @@ enum render_buffer_entry_type
 	RenderBuffer_render_entry_clear,
 	RenderBuffer_render_entry_texture,
 	RenderBuffer_render_entry_quad_3d,
+	RenderBuffer_render_entry_quad_2d,
 	RenderBuffer_render_entry_model,
 	RenderBuffer_render_entry_text,
 	RenderBuffer_render_entry_aabb,
+	RenderBuffer_render_entry_render_to_texture,
 };
 
 struct render_buffer_entry_header
@@ -55,6 +57,13 @@ struct render_entry_quad_3d
 {
 	quad *Quad;
 	mat4 Transform;
+	u32 TextureIndex;
+};
+
+// TODO(justin): What else should be in here?
+struct render_entry_quad_2d
+{
+	f32 Vertices[6][4];
 	u32 TextureIndex;
 };
 
@@ -81,11 +90,18 @@ struct render_entry_aabb
 	v3 Color;
 };
 
+struct render_entry_render_to_texture
+{
+	f32 Vertices[6][4];
+};
+
+
 struct render_buffer
 {
 	u8 *Base;
 	u32 Size;
 	u32 MaxSize;
+	u32 OutputTargetIndex;
 
 	mat4 View;
 	mat4 Perspective;

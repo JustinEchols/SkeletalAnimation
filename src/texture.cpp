@@ -12,8 +12,6 @@ TextureLoad(char *FileName)
 	{
 		//Result.StoredFormat = GL_RGBA8;
 		//Result.SrcFormat = GL_RGBA;
-		Result.GPUFormat = TextureGPUFormat_RGBA8;
-		Result.SrcFormat = TextureSrcFormat_RGBA;
 	}
 	else
 	{

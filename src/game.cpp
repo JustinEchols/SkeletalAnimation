@@ -26,10 +26,12 @@ PlayerAdd(game_state *GameState)
 	Entity->P = V3(0.0f, 0.0f, -10.0f);
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
-	Entity->Theta = DirectionToEuler(V3(0.0f, 0.0f, -1.0f)).yaw;
-	//Entity->Theta = 0.0f;//DirectionToEuler(V3(0.0f, 0.0f, -1.0f)).yaw;
+
+	f32 Radians = DirectionToEuler(V3(0.0f, 0.0f, -1.0f)).yaw;
+	Entity->Theta = RadToDegrees(Radians);
+	//Entity->Theta = 0.0f;
 	Entity->dTheta = 0.0f;
-	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Entity->Theta);
+	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Radians);
 	Entity->MovementState = MovementState_Idle;
 	Entity->Scale = 0.025f;
 
@@ -93,14 +95,15 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 	f32 OldTheta = Entity->Theta;
 	quaternion Orientation = Entity->Orientation;
 	v3 FacingDirection = Entity->dP;
-	f32 Len = Length(FacingDirection);
-	if(Len != 0.0f)
+	f32 LengthSquared = Dot(FacingDirection, FacingDirection);
+	if(LengthSquared != 0.0f)
 	{
-		FacingDirection.z *= -1.0f;
-		f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
-		Entity->dTheta = Yaw - OldTheta;
-		Entity->Theta = Yaw;
+		f32 Yaw = DirectionToEuler(FacingDirection).yaw;
+		Entity->dTheta = RadToDegrees(Yaw) - OldTheta;
+		Entity->Theta = RadToDegrees(Yaw);
+
 		quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
+		Target = Conjugate(Target);
 		Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
 	}
 }
@@ -169,6 +172,12 @@ PerspectiveTransformUpdate(game_state *GameState, f32 WindowWidth, f32 WindowHei
 	GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 }
 
+internal void
+CollisionGroupAdd(memory_arena *Arena, entity *Entity, model *Model)
+{
+
+}
+
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
 	Assert(sizeof(game_state) <= GameMemory->PermanentStorageSize);
@@ -195,6 +204,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		GameState->Quad = QuadDefault();
 		GameState->Quad.Texture = LookupTexture(Assets, "left_arrow")->Handle;
+		GameState->Texture.Width = 256;
+		GameState->Texture.Height = 256;
 
 		PlayerAdd(GameState);
 		entity *Player			= GameState->Entities + GameState->PlayerEntityIndex;
@@ -301,24 +312,40 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			case EntityType_Player:
 			{
-				v3 OldPlayerddP = Entity->ddP;
-				Entity->ddP = ddP;
-
 				f32 a = 100.0f;
-				if(Sprinting)
-				{
-					a *= 1.5f;
-				}
-
 				f32 PlayerDrag = -10.0f;
 				f32 AngularSpeed = 10.0f;
-				f32 Speed = Length(Entity->dP);
-				ddP = a * ddP;
-				ddP += PlayerDrag * Entity->dP;
+				v3 OldPlayerddP = Entity->ddP;
+				if(!Entity->AnimationGraph->CurrentNode.ControlsPosition)
+				{
+					Entity->ddP = ddP;
 
-				v3 OldP = Entity->P;
-				v3 dP = Entity->dP + dt * ddP;
+					if(Sprinting)
+					{
+						a *= 1.5f;
+					}
 
+					if(Jumping)
+					{
+						a *= 2.0f;
+					}
+
+
+					f32 Speed = Length(Entity->dP);
+					ddP = a * ddP;
+					ddP += PlayerDrag * Entity->dP;
+
+
+					v3 DeltaP = 0.5f * dt * dt * ddP + dt * Entity->dP;
+					Entity->dP = dt * ddP + Entity->dP;
+					v3 OldP = Entity->P;
+					v3 dP = Entity->dP + dt * ddP;
+					Entity->P += DeltaP;
+
+					EntityOrientationUpdate(Entity, dt, AngularSpeed);
+				}
+
+#if 0
 				v3 P = OldP;
 				if(Entity->MovementState != MovementState_Idle &&
 				   Entity->MovementState != MovementState_Crouch)
@@ -328,8 +355,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				Entity->P = P;
 				Entity->dP = dP;
+#endif
 
-				EntityOrientationUpdate(Entity, dt, AngularSpeed);
 				switch(Entity->MovementState)
 				{
 					case MovementState_Idle:
@@ -428,15 +455,36 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	//
 
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
-	Animate(Player->AnimationGraph, Assets, Player->AnimationPlayer, Player->MovementState, Player->dTheta);
+	//Animate(Player->AnimationGraph, Assets, Player->AnimationPlayer, Player->MovementState, Player->dTheta);
+	Animate(Player, Assets);
 
-	v3 OldP = Player->AnimationPlayer->FinalPose->Positions[0];
+	v3 OldP			= Player->AnimationPlayer->FinalPose->Positions[0];
+	quaternion OldQ = Player->AnimationPlayer->FinalPose->Orientations[0];
 	AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
 	if(Player->AnimationGraph->CurrentNode.ControlsPosition)
 	{
-		v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
+		v3 NewP			= Player->AnimationPlayer->FinalPose->Positions[0];
+		quaternion NewQ = Player->AnimationPlayer->FinalPose->Orientations[0];
+
+#if 0
+		// NOTE(Justin): If the orientation of the model in game is 180* rotated from model/animation space
+		// then the correct rotation to map the rotation into game play space is the inverse rotation.
+
 		v3 Delta = NewP - OldP;
-		Player->P += Player->Scale*Delta;
+		Delta = Player->Scale * Delta;
+		Delta = Conjugate(Player->Orientation)*Delta;
+
+		Player->P += Delta;
+		if(Player->P.y <= 0.0f)
+		{
+			Player->P.y = 0.0f;
+		}
+#else
+		//f32 Angle = AngleBetween(Conjugate(NewQ), Conjugate(OldQ));
+		//f32 Angle = AngleBetween(NewQ, OldQ);
+		//Player->Orientation = RotateTowards(Player->Orientation, Quaternion(V3(0.0f, 1.0f, 0.0f), Angle), dt, 1.0f);
+#endif
+
 	};
 
 	ModelJointsUpdate(Player->AnimationPlayer);
@@ -511,11 +559,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				//
 
 				T = Mat4Translate(Entity->P + V3(0.0f, (Model->Height * Entity->Scale), 0.0f));
-				S = Mat4Scale(0.1f);
-
-				model *Sphere = LookupModel(Assets, "Sphere");
-				//PushModel(RenderBuffer, Sphere, T * S);
-				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f), V3(1.0f));
+				S = Mat4Scale(1.0f);
+				//PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f), V3(1.0f));
+				//PushAABB(RenderBuffer, LookupModel(Assets, "Capsule"), T*S, V3(1.0f), V3(1.0f));
 
 				v3 P = Entity->P;
 				P.y += 0.25f;
@@ -619,8 +665,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
 
-		f32 Yaw = DirectionToEuler(Entity->dP).yaw;
-		sprintf(Buff, "yaw: %.2f", Yaw);
+		//f32 Yaw = DirectionToEuler(Entity->dP).yaw;
+
+		sprintf(Buff, "Theta: %.2f", Entity->Theta);
 		Text = StringCopy(&TempState->Arena, Buff);
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
@@ -630,8 +677,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
 
-		b32 TurningRight = (Entity->dTheta > 0.0f);
-		b32 TurningLeft = (Entity->dTheta < 0.0f);
+		// This is opposite mathematical conventions.
+		// dTheta > 0 -> CCW turning left
+		// dTheta < 0 -> CW turning right 
+		b32 TurningRight = (Entity->dTheta < 0.0f);
+		b32 TurningLeft = (Entity->dTheta > 0.0f);
 		if(TurningRight)
 		{
 			sprintf(Buff, "turning: Right");
@@ -648,6 +698,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		Text = StringCopy(&TempState->Arena, Buff);
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
+
+		sprintf(Buff, "orientation: Axis(%.1f, %.1f, %.1f), Angle: %.1f", Player->Orientation.x, Player->Orientation.y, Player->Orientation.z, Player->Orientation.w);
+		Text = StringCopy(&TempState->Arena, Buff);
+		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
+		P.y -= (Gap + dY);
+
 
 		P.x -= 20.0f;
 	}
@@ -743,7 +799,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		P.y -= (Gap + dY);
 	}
 
-	sprintf(Buff, "%s", "+Animation");
+	sprintf(Buff, "%s", "+Texture");
 	Text = StringCopy(&TempState->Arena, Buff);
 	Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 
@@ -769,79 +825,62 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		}
 	}
 
-	if(UI->ActiveID == AnimationButton.ID)
-	{
-		Text.Data[0] = '-';
-		PushText(RenderBuffer, Text, FontInfo, AnimationButton.P, Scale, HoverColor);
-		P.y -= (Gap + dY);
-	}
-	else
+	if(UI->ActiveID != AnimationButton.ID)
 	{
 		PushText(RenderBuffer, Text, FontInfo, AnimationButton.P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
 	}
-
-#if 0
-	//
-	// NOTE(Justin): Render to texture
-	//
-
-	glViewport(0, 0, GameState->TextureWidth, GameState->TextureHeight);
-	glBindFramebuffer(GL_FRAMEBUFFER, GameState->FBO);
-	glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-	glEnable(GL_DEPTH_TEST);
-
-	mat4 Transform = EntityTransform(Entity, 0.025f);
-	model *Model = LookupModel(Assets, "XBot");
-	glUseProgram(MainShader);
-	UniformMatrixSet(MainShader, "View", GameState->CameraTransform);
-
-	mat4 Persp = Mat4Perspective(GameState->FOV, ((f32)GameState->TextureWidth / (f32)GameState->TextureHeight), GameState->ZNear, GameState->ZFar);
-	UniformMatrixSet(MainShader, "Projection", Persp);
-	UniformV3Set(MainShader, "CameraP", Camera->P);
-	UniformV3Set(MainShader, "Ambient", V3(0.1f));
-	UniformV3Set(MainShader, "CameraP", Camera->P);
-	UniformV3Set(MainShader, "LightDir", LightDir);
-	OpenGLDrawAnimatedModel(Model, MainShader, Transform);
-
-	//
-	// NOTE(Justin): Display texture in default framebuffer
-	//
-
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-	u32 ScreenShader = GameState->Shaders[3];
-	quad_2d *Quad2d = &GameState->Quad2d; 
-
-	P = V2(0.0f);
-	f32 Width = (f32)GameState->TextureWidth;
-	f32 Height = (f32)GameState->TextureHeight;
-	Rect = RectMinDim(P, V2(Width, Height));
-	f32 Vertices[6][4] =
+	else
 	{
-		{Rect.Min.x, Rect.Min.y, 0.0f, 0.0f},
-		{Rect.Max.x, Rect.Min.y, 1.0f, 0.0f},
-		{Rect.Max.x, Rect.Max.y, 1.0f, 1.0f},
+		Text.Data[0] = '-';
+		PushText(RenderBuffer, Text, FontInfo, AnimationButton.P, Scale, HoverColor);
+		P.y -= (Gap + dY);
 
-		{Rect.Max.x, Rect.Max.y, 1.0f, 1.0f},
-		{Rect.Min.x, Rect.Max.y, 0.0f, 1.0f},
-		{Rect.Min.x, Rect.Min.y, 0.0f, 0.0f},
-	};
+		//
+		// NOTE(Justin): Render to texture
+		//
 
-	glUseProgram(ScreenShader);
-	glActiveTexture(GL_TEXTURE0);
-	UniformBoolSet(ScreenShader, "Texture", 0);
-	UniformF32Set(ScreenShader, "WindowWidth", (f32)WindowWidth);
-	UniformF32Set(ScreenShader, "WindowHeight", (f32)WindowHeight);
-	glBindTexture(GL_TEXTURE_2D, GameState->Texture);
-	glBindVertexArray(Quad2d->VA);
-	glBindBuffer(GL_ARRAY_BUFFER, Quad2d->VB);
-	glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Vertices), Vertices);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-#else
-#endif
+		// TODO(justin); Cleanup
+		mat4 Persp = Mat4Perspective(GameState->FOV, 256.0f/256.0f, GameState->ZNear, GameState->ZFar);
+		render_buffer *RenderToTextureBuffer = RenderBufferAllocate(&TempState->Arena, Megabyte(64),
+				GameState->CameraTransform,
+				Persp,
+				Assets,
+				Camera->P,
+				2);
+
+		PushClear(RenderToTextureBuffer, V4(1.0f));
+		mat4 Transform = EntityTransform(Entity, 0.025f);
+		model *Model = LookupModel(Assets, "XBot");
+		PushModel(RenderToTextureBuffer, Model, Transform);
+
+		Platform.RenderToOpenGL(RenderToTextureBuffer, GameState->Texture.Width, GameState->Texture.Height);
+
+		//
+		// NOTE(Justin): Render to default frame buffer
+		//
+
+		f32 Width = 256.0f;
+		f32 Height = 256.0f;
+		P = V2(0.0f, P.y - Height);
+
+		Rect = RectMinDim(P, V2(Width, Height));
+		f32 Vertices[6][4] =
+		{
+			{Rect.Min.x, Rect.Min.y, 0.0f, 0.0f},
+			{Rect.Max.x, Rect.Min.y, 1.0f, 0.0f},
+			{Rect.Max.x, Rect.Max.y, 1.0f, 1.0f},
+
+			{Rect.Max.x, Rect.Max.y, 1.0f, 1.0f},
+			{Rect.Min.x, Rect.Max.y, 0.0f, 1.0f},
+			{Rect.Min.x, Rect.Min.y, 0.0f, 0.0f},
+		};
+
+		PushRenderToTexture(RenderBuffer, (f32 *)Vertices);
+	}
+
 	Platform.RenderToOpenGL(RenderBuffer, (u32)WindowWidth, (u32)WindowHeight);
+
 
 	ArenaClear(&TempState->Arena);
 }

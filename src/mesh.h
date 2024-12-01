@@ -50,8 +50,6 @@ struct mesh
 	mat4 *JointTransforms;
 	mat4 *ModelSpaceTransforms;
 
-
-
 	material_spec MaterialSpec;
 
 	// Data modified by renderer.

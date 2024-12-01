@@ -57,6 +57,18 @@ PushQuad3D(render_buffer *RenderBuffer, quad *Quad, mat4 Transform, u32 TextureI
 }
 
 inline void
+PushQuad2D(render_buffer *RenderBuffer, f32 *Vertices, u32 TextureIndex)
+{
+	render_entry_quad_2d *Entry = PushRenderElement(RenderBuffer, render_entry_quad_2d);
+	if(Entry)
+	{
+		// TODO(justin): Should we use a pointer instead of f32 A[6][4]?
+		MemoryCopy(sizeof(Entry->Vertices), Vertices, Entry->Vertices);
+		Entry->TextureIndex = TextureIndex;
+	}
+}
+
+inline void
 PushModel(render_buffer *RenderBuffer, model *Model, mat4 Transform)
 {
 	render_entry_model *Entry = PushRenderElement(RenderBuffer, render_entry_model);
@@ -94,17 +106,30 @@ PushAABB(render_buffer *RenderBuffer, model *Model, mat4 Transform, v3 Dim, v3 C
 	}
 }
 
+inline void
+PushRenderToTexture(render_buffer *RenderBuffer, f32 *Vertices)
+{
+	render_entry_render_to_texture *Entry = PushRenderElement(RenderBuffer, render_entry_render_to_texture);
+	if(Entry)
+	{
+		// TODO(justin): Should we use a pointer instead of f32 A[6][4]?
+		MemoryCopy(sizeof(Entry->Vertices), Vertices, Entry->Vertices);
+	}
+}
+
 internal render_buffer * 
 RenderBufferAllocate(memory_arena *Arena, u32 MaxSize,
 		mat4 View, mat4 Perspective,
 		asset_manager *Assets,
-		v3 CameraP)
+		v3 CameraP,
+		u32 OutputTargetIndex = 0)
 {
 	render_buffer *Result = (render_buffer *)PushStruct(Arena, render_buffer);
 
 	Result->Base = (u8 *)PushSize_(Arena, MaxSize);
 	Result->Size = 0;
 	Result->MaxSize = MaxSize;
+	Result->OutputTargetIndex = OutputTargetIndex;
 	Result->View = View;
 	Result->Perspective = Perspective;
 	Result->Assets = Assets;

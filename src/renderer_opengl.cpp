@@ -148,19 +148,22 @@ OpenGLAllocateAnimatedMesh(mesh *Mesh, u32 ShaderProgram)
 	OpenGL.glBindBuffer(GL_ARRAY_BUFFER, Mesh->VB);
 	OpenGL.glBufferData(GL_ARRAY_BUFFER, Mesh->VertexCount * sizeof(vertex), Mesh->Vertices, GL_STATIC_DRAW);
 
-	OpenGL.glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
-	OpenGL.glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(3 * sizeof(f32)));
-	OpenGL.glVertexAttribIPointer(2, 1, GL_UNSIGNED_INT, sizeof(vertex), (void *)(8 * sizeof(f32)));
-	OpenGL.glVertexAttribIPointer(3, 3, GL_UNSIGNED_INT, sizeof(vertex), (void *)(9 * sizeof(u32)));
-	OpenGL.glVertexAttribPointer(4, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(12 * sizeof(u32)));
+	OpenGL.glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE,	sizeof(vertex), 0);
+	OpenGL.glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,	sizeof(vertex), (void *)OffsetOf(vertex, N));
+	OpenGL.glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE,	sizeof(vertex), (void *)OffsetOf(vertex, UV));
+	OpenGL.glVertexAttribIPointer(3, 1,GL_UNSIGNED_INT,		sizeof(vertex), (void *)OffsetOf(vertex, JointInfo));
+	OpenGL.glVertexAttribIPointer(4, 3,GL_UNSIGNED_INT,		sizeof(vertex), (void *)(OffsetOf(vertex, JointInfo) + OffsetOf(joint_info, JointIndex)));
+	OpenGL.glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE,	sizeof(vertex), (void *)(OffsetOf(vertex, JointInfo) + OffsetOf(joint_info, Weights)));
 
 	OpenGL.glEnableVertexAttribArray(0);
 	OpenGL.glEnableVertexAttribArray(1);
 	OpenGL.glEnableVertexAttribArray(2);
 	OpenGL.glEnableVertexAttribArray(3);
 	OpenGL.glEnableVertexAttribArray(4);
+	OpenGL.glEnableVertexAttribArray(5);
 
-	ExpectedAttributeCount = 5;
+	// TODO(Justin): Remove hardcoded value
+	ExpectedAttributeCount = 6;
 
 	GLIBOInit(&Mesh->IBO, Mesh->Indices, Mesh->IndicesCount);
 	OpenGL.glBindVertexArray(0);
@@ -191,8 +194,8 @@ OpenGLAllocateMesh(mesh *Mesh, u32 ShaderProgram)
 	OpenGL.glBufferData(GL_ARRAY_BUFFER, Mesh->VertexCount * sizeof(vertex), Mesh->Vertices, GL_STATIC_DRAW);
 
 	OpenGL.glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
-	OpenGL.glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(3 * sizeof(f32)));
-	OpenGL.glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)(6 * sizeof(f32)));
+	OpenGL.glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)OffsetOf(vertex, N));
+	OpenGL.glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)OffsetOf(vertex, UV));
 
 	OpenGL.glEnableVertexAttribArray(0);
 	OpenGL.glEnableVertexAttribArray(1);
@@ -330,10 +333,10 @@ UniformMatrixSet(u32 ShaderProgram, char *UniformName, mat4 M)
 }
 
 internal void
-OpenGLDrawAnimatedMesh(mesh *Mesh, u32 ShaderProgram, mat4 Transform)
+OpenGLDrawAnimatedMesh(mesh *Mesh, u32 ShaderProgram)
 {
 	OpenGL.glUseProgram(ShaderProgram);
-	UniformMatrixSet(ShaderProgram, "Model", Transform);
+	//UniformMatrixSet(ShaderProgram, "Model", Transform);
 	OpenGL.glBindVertexArray(Mesh->VA);
 	UniformMatrixArraySet(ShaderProgram, "Transforms", Mesh->ModelSpaceTransforms, Mesh->JointCount);
 	UniformV4Set(ShaderProgram, "Diffuse", Mesh->MaterialSpec.Diffuse);
@@ -344,20 +347,19 @@ OpenGLDrawAnimatedMesh(mesh *Mesh, u32 ShaderProgram, mat4 Transform)
 }
 
 internal void
-OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram, mat4 Transform)
+OpenGLDrawAnimatedModel(model *Model, u32 ShaderProgram)
 {
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 	{
 		mesh *Mesh = Model->Meshes + MeshIndex;
-		OpenGLDrawAnimatedMesh(Mesh, ShaderProgram, Transform);
+		OpenGLDrawAnimatedMesh(Mesh, ShaderProgram);
 	}
 }
 
 internal void
-OpenGLDrawMesh(mesh *Mesh, u32 ShaderProgram, mat4 Transform)
+OpenGLDrawMesh(mesh *Mesh, u32 ShaderProgram)
 {
 	OpenGL.glUseProgram(ShaderProgram);
-	UniformMatrixSet(ShaderProgram, "Model", Transform);
 	OpenGL.glActiveTexture(GL_TEXTURE0);
 	UniformBoolSet(ShaderProgram, "Texture", 0);
 	glBindTexture(GL_TEXTURE_2D, Mesh->Texture->Handle);
@@ -368,12 +370,12 @@ OpenGLDrawMesh(mesh *Mesh, u32 ShaderProgram, mat4 Transform)
 }
 
 internal void
-OpenGLDrawModel(model *Model, u32 ShaderProgram, mat4 Transform)
+OpenGLDrawModel(model *Model, u32 ShaderProgram)
 {
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 	{
 		mesh *Mesh = Model->Meshes + MeshIndex;
-		OpenGLDrawMesh(Mesh, ShaderProgram, Transform);
+		OpenGLDrawMesh(Mesh, ShaderProgram);
 	}
 }
 
@@ -457,7 +459,6 @@ OpenGLDrawText(char *Text, u32 Shader, font *Font, v2 P, f32 Scale, v3 Color,
 		}
 
 		P.x += (Glyph.Advance >> 6) * Scale;
-
 	}
 
 	OpenGL.glBindVertexArray(0);
@@ -467,6 +468,19 @@ OpenGLDrawText(char *Text, u32 Shader, font *Font, v2 P, f32 Scale, v3 Color,
 internal void
 RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight)
 {
+	if(RenderBuffer->OutputTargetIndex == 0)
+	{
+		OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	}
+	else if(RenderBuffer->OutputTargetIndex == 1)
+	{
+		OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, OpenGL.ShadowMapFBO);
+	}
+	else
+	{
+		OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, OpenGL.FBO);
+	}
+
 	glViewport(0, 0, WindowWidth, WindowHeight);
 	glEnable(GL_DEPTH_TEST);
 	glDepthFunc(GL_LESS);
@@ -482,10 +496,11 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 	u32 BasicShader = OpenGL.BasicShader;
 	u32 FontShader	= OpenGL.FontShader;
 	u32 ScreenShader = OpenGL.ScreenShader;
+
 	mat4 View = RenderBuffer->View;
 	mat4 Perspective = RenderBuffer->Perspective;
+	v3 CameraP	= RenderBuffer->CameraP;
 	v3 LightDir = V3(1.0f, -1.0f, -0.5f);
-	v3 CameraP = RenderBuffer->CameraP;
 
 	for(u32 BaseOffset = 0; BaseOffset < RenderBuffer->Size; )
 	{
@@ -535,6 +550,25 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				OpenGLDrawQuad(Quad->VA, BasicShader, Entry->Transform, Texture->Handle);
 				BaseOffset += sizeof(*Entry);
 			} break;
+			case RenderBuffer_render_entry_quad_2d:
+			{
+				render_entry_quad_2d *Entry = (render_entry_quad_2d *)Data;
+				texture *Texture = RenderBuffer->Textures[Entry->TextureIndex];
+				Assert(Texture->Handle);
+
+				OpenGL.glUseProgram(ScreenShader);
+				OpenGL.glActiveTexture(GL_TEXTURE0);
+				UniformBoolSet(ScreenShader, "Texture", 0);
+				UniformF32Set(ScreenShader, "WindowWidth", (f32)WindowWidth);
+				UniformF32Set(ScreenShader, "WindowHeight", (f32)WindowHeight);
+				glBindTexture(GL_TEXTURE_2D, Texture->Handle);
+				OpenGL.glBindVertexArray(OpenGL.Quad2dVA);
+				OpenGL.glBindBuffer(GL_ARRAY_BUFFER, OpenGL.Quad2dVB);
+				OpenGL.glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Entry->Vertices), Entry->Vertices);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				
+				BaseOffset += sizeof(*Entry);
+			} break;
 			case RenderBuffer_render_entry_model:
 			{
 				render_entry_model *Entry = (render_entry_model *)Data;
@@ -547,14 +581,20 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 						Model->UploadedToGPU = true;
 					}
 
+					// VS
 					OpenGL.glUseProgram(MainShader);
+					UniformMatrixSet(MainShader, "Model", Entry->Transform);
 					UniformMatrixSet(MainShader, "View", View);
 					UniformMatrixSet(MainShader, "Projection", Perspective);
-					UniformV3Set(MainShader, "CameraP", CameraP);
+					UniformBoolSet(MainShader, "UsingRig", true);
+
+					// FS 
+					UniformBoolSet(MainShader, "OverRideTexture", true);
 					UniformV3Set(MainShader, "Ambient", V3(0.1f));
 					UniformV3Set(MainShader, "CameraP", CameraP);
 					UniformV3Set(MainShader, "LightDir", LightDir);
-					OpenGLDrawAnimatedModel(Model, MainShader, Entry->Transform);
+
+					OpenGLDrawAnimatedModel(Model, MainShader);
 				}
 				else
 				{
@@ -564,14 +604,18 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 						Model->UploadedToGPU = true;
 					}
 
+					// VS
 					OpenGL.glUseProgram(BasicShader);
+					UniformMatrixSet(BasicShader, "Model", Entry->Transform);
 					UniformMatrixSet(BasicShader, "View", View);
 					UniformMatrixSet(BasicShader, "Projection", Perspective);
+
+					// FS
 					UniformBoolSet(BasicShader, "OverRideTexture", false);
 					UniformV3Set(BasicShader, "Ambient", V3(0.1f));
 					UniformV3Set(BasicShader, "LightDir", LightDir);
 					UniformV4Set(BasicShader, "Color", V4(1.0f));
-					OpenGLDrawModel(Model, BasicShader, Entry->Transform);
+					OpenGLDrawModel(Model, BasicShader);
 				}
 
 				BaseOffset += sizeof(*Entry);
@@ -607,15 +651,33 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				OpenGL.glUseProgram(BasicShader);
+				UniformMatrixSet(BasicShader, "Model", Entry->Transform);
 				UniformMatrixSet(BasicShader, "View", View);
 				UniformMatrixSet(BasicShader, "Projection", Perspective);
 				UniformBoolSet(BasicShader, "OverRideTexture", true);
 				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
 				UniformV3Set(BasicShader, "LightDir", LightDir);
 				UniformV4Set(BasicShader, "Color", V4(Entry->Color, 1.0f));
-				OpenGLDrawModel(Model, BasicShader, Entry->Transform);
+				OpenGLDrawModel(Model, BasicShader);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
+				BaseOffset += sizeof(*Entry);
+			} break;
+			case RenderBuffer_render_entry_render_to_texture:
+			{
+				render_entry_render_to_texture *Entry = (render_entry_render_to_texture *)Data;
+
+				OpenGL.glUseProgram(ScreenShader);
+				OpenGL.glActiveTexture(GL_TEXTURE0);
+				UniformBoolSet(ScreenShader, "Texture", 0);
+				UniformF32Set(ScreenShader, "WindowWidth", (f32)WindowWidth);
+				UniformF32Set(ScreenShader, "WindowHeight", (f32)WindowHeight);
+				glBindTexture(GL_TEXTURE_2D, OpenGL.TextureHandle);
+				OpenGL.glBindVertexArray(OpenGL.Quad2dVA);
+				OpenGL.glBindBuffer(GL_ARRAY_BUFFER, OpenGL.Quad2dVB);
+				OpenGL.glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Entry->Vertices), Entry->Vertices);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+				
 				BaseOffset += sizeof(*Entry);
 			} break;
 		}

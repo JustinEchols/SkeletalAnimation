@@ -334,6 +334,13 @@ Clamp(u32 Min, u32 X, u32 Max)
 	return(Result);
 }
 
+inline b32
+Equal(f32 A, f32 B, f32 Tolerance = SmallNumber)
+{
+	b32 Result = ((AbsVal(A - B) <= Tolerance));
+	return(Result);
+}
+
 //
 // NOTE(Justin): v2 operations
 //
@@ -1250,8 +1257,8 @@ DirectionToEuler(v3 V)
 {
 	v3 Result;
 
-    Result.pitch = ATan2(V.yaw, Sqrt(V.roll*V.roll + V.pitch*V.pitch));
-    Result.yaw   = ATan2(V.pitch, V.roll);
+    Result.pitch = ATan2(V.y, Sqrt(V.z*V.z+ V.x*V.x));
+    Result.yaw   = ATan2(V.x, V.z);
     Result.roll  = 0.0f;
 
 	return(Result);
