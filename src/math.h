@@ -37,6 +37,11 @@ union v3
 	{
 		f32 pitch, yaw, roll;
 	};
+	struct
+	{
+		v2 xy;
+		f32 z;
+	};
 	f32 E[3];
 };
 
@@ -122,6 +127,19 @@ union rect
 		v2 Max;
 	};
 	f32 E[4];
+};
+
+struct aabb
+{
+	v3 Min;
+	v3 Max;
+};
+
+struct capsule
+{
+	v3 Min;
+	v3 Max;
+	f32 Radius;
 };
 
 inline v2
@@ -1022,6 +1040,8 @@ operator+(quaternion Q1, quaternion Q2)
 	return(Result);
 }
 
+
+
 inline v3
 operator*(quaternion Q, v3 V)
 {
@@ -1359,6 +1379,113 @@ InRect(rect R, v2 P)
 				 (P.y <= R.Max.y));
 	return(Result);
 }
+
+//
+// NOTE(Justin): AABB
+//
+
+// TODO(Justin): Take care of sign, sigh.... :(
+
+inline aabb
+AABBMinMax(v3 Min, v3 Max)
+{
+	aabb Result;
+	Result.Min = Min;
+	Result.Max = Max;
+
+	return(Result);
+}
+
+inline aabb
+AABBMinDim(v3 Min, v3 Dim)
+{
+	aabb Result;
+
+	Result.Min = Min;
+	Result.Max.xy = Min.xy + Dim.xy;
+	Result.Max.z = Min.z - Dim.z;
+
+	return(Result);
+}
+
+inline aabb
+AABBCenterHalfDim(v3 Center, v3 HalfDim)
+{
+	aabb Result;
+
+	Result.Min.xy = Center.xy - HalfDim.xy;
+	Result.Min.z = Center.z + HalfDim.z;
+
+	Result.Max.xy = Center.xy + HalfDim.xy;
+	Result.Max.z = Center.z - HalfDim.z;
+
+	return(Result);
+}
+
+inline aabb
+AABBCenterDim(v3 Center, v3 Dim)
+{
+	aabb Result = AABBCenterHalfDim(Center, 0.5f * Dim);
+
+	return(Result);
+}
+
+#if 0
+inline aabb
+AABBCenterDim(v3 Center, v3 Dim)
+{
+	aabb Result;
+	Result.Min = Center - 0.5f*Dim;
+	Result.Max = Center + 0.5f *Dim;
+
+	return(Result);
+}
+
+inline aabb
+AABBMinDim(v3 Min, v3 Dim)
+{
+	aabb Result;
+	Result.Min = Min;
+	Result.Max = Min + Dim;
+
+	return(Result);
+}
+#endif
+
+inline v3 
+AABBCenter(aabb AABB)
+{
+	v3 Result = 0.5f*(AABB.Min + AABB.Max);
+	return(Result);
+}
+
+inline v3
+AABBDim(aabb AABB)
+{
+	v3 Result;
+	Result.x = AABB.Max.x - AABB.Min.x;
+	Result.y = AABB.Max.y - AABB.Min.y;
+	Result.z = AABB.Max.z - AABB.Min.z;
+	
+	return(Result);
+}
+
+inline b32
+InAABB(aabb AABB, v3 Test)
+{
+	AABB.Min.z *= -1;
+	AABB.Max.z *= -1;
+
+	b32 Result = ((AABB.Min.x <= Test.x) &&
+				  (AABB.Min.y <= Test.y) &&
+				  (AABB.Min.z <= Test.z) &&
+				  (AABB.Max.x >= Test.x) &&
+				  (AABB.Max.y >= Test.y) &&
+				  (AABB.Max.z >= Test.z));
+
+	return(Result);
+}
+
 
 #define MATH_H
 #endif

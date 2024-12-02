@@ -11,11 +11,6 @@ struct quad_vertex
 // TODO(Justin): quad_3d?
 struct quad
 {
-	b32 UploadedToGPU;
-	u32 VA;
-	u32 VB;
-	u32 Texture;
-
 	quad_vertex Vertices[6];
 };
 
@@ -55,7 +50,8 @@ struct render_entry_texture
 
 struct render_entry_quad_3d
 {
-	quad *Quad;
+	//quad *Quad;
+	quad_vertex Vertices[6];
 	mat4 Transform;
 	u32 TextureIndex;
 };

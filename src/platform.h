@@ -52,6 +52,10 @@ typedef uintptr_t	umm;
 #define KindaSmallNumber		(1.e-4f)
 #define OffsetOf(type, Member) (umm)&(((type *)0)->Member)
 
+#define FILE_AND_LINE__(A, B) A "|" #B
+#define FILE_AND_LINE_(A, B) FILE_AND_LINE__(A, B)
+#define FILE_AND_LINE FILE_AND_LINE_(__FILE__, __LINE__)
+
 //////////////////////////////////////////
 // NOTE(Justin): Linked List Macros
 

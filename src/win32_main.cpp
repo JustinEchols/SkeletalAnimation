@@ -180,6 +180,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		glGenTextures(1, &OpenGL.NullTexture);
 		OpenGLAllocateQuad2d(&OpenGL.Quad2dVA, &OpenGL.Quad2dVB, OpenGL.ScreenShader);
+		OpenGLAllocateQuad3d(&OpenGL.Quad3dVA, &OpenGL.Quad3dVB, OpenGL.BasicShader);
 
 		OpenGL.TextureWidth = 256;
 		OpenGL.TextureHeight = 256;

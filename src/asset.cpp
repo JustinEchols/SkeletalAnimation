@@ -262,6 +262,7 @@ ModelLoad(memory_arena *Arena, char *FileName)
 	{
 	}
 
+
 #if 0
 	f32 MaxHeight = 0.0f;
 	for(u32 MeshIndex = 0; MeshIndex < Model.MeshCount; ++MeshIndex)
@@ -277,6 +278,8 @@ ModelLoad(memory_arena *Arena, char *FileName)
 		}
 	}
 	Model.Height = MaxHeight;
+#else
+	Model.Height = ModelHeight(&Model);
 #endif
 
 
@@ -570,6 +573,8 @@ AssetManagerInit(asset_manager *Manager)
 			key_frame *BlendedPose = Animation->BlendedPose;
 			AllocateJointXforms(&Manager->Arena, BlendedPose, Info->JointCount);
 
+
+
 			// TODO(Justin): Load this from a file.
 			switch(NameIndex)
 			{
@@ -644,7 +649,18 @@ AssetManagerInit(asset_manager *Manager)
 				case Animation_JumpForward:
 				{
 					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
+#if 0
+					f32 Scale = 0.025f;
+					for(u32 KeyFrameIndex = 0; KeyFrameIndex < Info->KeyFrameCount; ++KeyFrameIndex)
+					{
+						key_frame *KeyFrame = Info->KeyFrames + KeyFrameIndex;
+						for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
+						{
+							KeyFrame->Scales[JointIndex] *= Scale;
+						}
+					}
+#endif
+
 				} break;
 				case Animation_Running180:
 				{

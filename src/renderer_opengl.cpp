@@ -220,13 +220,13 @@ OpenGLAllocateModel(model *Model, u32 ShaderProgram)
 }
 
 internal void
-OpenGLAllocateQuad(quad *Quad, u32 ShaderProgram)
+OpenGLAllocateQuad3d(u32 *VA, u32 *VB, u32 ShaderProgram)
 {
-	OpenGL.glGenVertexArrays(1, &Quad->VA);
-	OpenGL.glBindVertexArray(Quad->VA);
-	OpenGL.glGenBuffers(1, &Quad->VB);
-	OpenGL.glBindBuffer(GL_ARRAY_BUFFER, Quad->VB);
-	OpenGL.glBufferData(GL_ARRAY_BUFFER, ArrayCount(Quad->Vertices) * sizeof(quad_vertex), Quad->Vertices, GL_STATIC_DRAW);
+	OpenGL.glGenVertexArrays(1, VA);
+	OpenGL.glBindVertexArray(*VA);
+	OpenGL.glGenBuffers(1, VB);
+	OpenGL.glBindBuffer(GL_ARRAY_BUFFER, *VB);
+	OpenGL.glBufferData(GL_ARRAY_BUFFER, 6 * sizeof(quad_vertex), 0, GL_DYNAMIC_DRAW);
 	OpenGL.glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(quad_vertex), 0);
 	OpenGL.glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(quad_vertex), (void *)(3 * sizeof(f32)));
 	OpenGL.glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(quad_vertex), (void *)(6 * sizeof(f32)));
@@ -336,7 +336,6 @@ internal void
 OpenGLDrawAnimatedMesh(mesh *Mesh, u32 ShaderProgram)
 {
 	OpenGL.glUseProgram(ShaderProgram);
-	//UniformMatrixSet(ShaderProgram, "Model", Transform);
 	OpenGL.glBindVertexArray(Mesh->VA);
 	UniformMatrixArraySet(ShaderProgram, "Transforms", Mesh->ModelSpaceTransforms, Mesh->JointCount);
 	UniformV4Set(ShaderProgram, "Diffuse", Mesh->MaterialSpec.Diffuse);
@@ -377,20 +376,6 @@ OpenGLDrawModel(model *Model, u32 ShaderProgram)
 		mesh *Mesh = Model->Meshes + MeshIndex;
 		OpenGLDrawMesh(Mesh, ShaderProgram);
 	}
-}
-
-internal void
-OpenGLDrawQuad(u32 VA, u32 ShaderProgram, mat4 Transform, u32 TextureHandle)
-{
-	OpenGL.glUseProgram(ShaderProgram);
-	UniformMatrixSet(ShaderProgram, "Model", Transform);
-	OpenGL.glActiveTexture(GL_TEXTURE0);
-	UniformBoolSet(ShaderProgram, "Texture", 0);
-	glBindTexture(GL_TEXTURE_2D, TextureHandle);
-	OpenGL.glBindVertexArray(VA);
-	glDrawArrays(GL_TRIANGLES, 0, 6);
-	OpenGL.glBindVertexArray(0);
-	glBindTexture(GL_TEXTURE_2D, 0);
 }
 
 internal void
@@ -527,27 +512,30 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				}
 				BaseOffset += sizeof(*Entry);
 			} break;
+			// TODO(Justin): May not want to always be using a texture. Need to differentiate 
+			// between those cases. Use an index that is invalid?
 			case RenderBuffer_render_entry_quad_3d:
 			{
 				render_entry_quad_3d *Entry = (render_entry_quad_3d *)Data;
-				quad *Quad = Entry->Quad;
-				if(!Quad->UploadedToGPU)
-				{
-					OpenGLAllocateQuad(Quad, BasicShader);
-				}
-
-				// TODO(Justin): May not want to always be using a texture. Need to differentiate 
-				// between those cases. Use an index that is invalid?
 				texture *Texture = RenderBuffer->Textures[Entry->TextureIndex];
 				Assert(Texture->Handle);
 				
 				OpenGL.glUseProgram(BasicShader);
+				UniformMatrixSet(BasicShader, "Model", Entry->Transform);
 				UniformMatrixSet(BasicShader, "View", View);
 				UniformMatrixSet(BasicShader, "Projection", Perspective);
 				UniformBoolSet(BasicShader, "OverRideTexture", false);
 				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
 				UniformV3Set(BasicShader, "LightDir", LightDir);
-				OpenGLDrawQuad(Quad->VA, BasicShader, Entry->Transform, Texture->Handle);
+
+				OpenGL.glActiveTexture(GL_TEXTURE0);
+				UniformBoolSet(BasicShader, "Texture", 0);
+				glBindTexture(GL_TEXTURE_2D, Texture->Handle);
+				OpenGL.glBindVertexArray(OpenGL.Quad3dVA);
+				OpenGL.glBindBuffer(GL_ARRAY_BUFFER, OpenGL.Quad3dVB);
+				OpenGL.glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Entry->Vertices), Entry->Vertices);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
+
 				BaseOffset += sizeof(*Entry);
 			} break;
 			case RenderBuffer_render_entry_quad_2d:

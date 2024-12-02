@@ -44,6 +44,7 @@ PushTexture(render_buffer *RenderBuffer, texture *Texture, s32 Index)
 	}
 }
 
+#if 0
 inline void
 PushQuad3D(render_buffer *RenderBuffer, quad *Quad, mat4 Transform, u32 TextureIndex)
 {
@@ -55,6 +56,19 @@ PushQuad3D(render_buffer *RenderBuffer, quad *Quad, mat4 Transform, u32 TextureI
 		Entry->TextureIndex = TextureIndex;
 	}
 }
+#else
+inline void
+PushQuad3D(render_buffer *RenderBuffer, quad_vertex *Vertices, mat4 Transform, u32 TextureIndex)
+{
+	render_entry_quad_3d *Entry = PushRenderElement(RenderBuffer, render_entry_quad_3d);
+	if(Entry)
+	{
+		MemoryCopy(sizeof(Entry->Vertices), Vertices, Entry->Vertices);
+		Entry->Transform = Transform;
+		Entry->TextureIndex = TextureIndex;
+	}
+}
+#endif
 
 inline void
 PushQuad2D(render_buffer *RenderBuffer, f32 *Vertices, u32 TextureIndex)

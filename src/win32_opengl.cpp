@@ -250,6 +250,9 @@ struct open_gl
 	u32 Quad2dVA;
 	u32 Quad2dVB;
 
+	u32 Quad3dVA;
+	u32 Quad3dVB;
+
 	OpenGLFunctionDeclare(glGenBuffers, GLGENBUFFERS);
 	OpenGLFunctionDeclare(glBindBuffer, GLBINDBUFFER);
 	OpenGLFunctionDeclare(glGenVertexArrays, GLGENVERTEXARRAYS);

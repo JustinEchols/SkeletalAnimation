@@ -29,12 +29,13 @@ PlayerAdd(game_state *GameState)
 
 	f32 Radians = DirectionToEuler(V3(0.0f, 0.0f, -1.0f)).yaw;
 	Entity->Theta = RadToDegrees(Radians);
-	//Entity->Theta = 0.0f;
 	Entity->dTheta = 0.0f;
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Radians);
 	Entity->MovementState = MovementState_Idle;
-	Entity->Scale = 0.025f;
 
+	Entity->Height = 2.0f;
+	Entity->AABBDim = V3(1.0f, Entity->Height, 1.0f);
+	Entity->VisualScale = 0.025f;
 }
 
 internal void
@@ -45,6 +46,10 @@ CubeAdd(game_state *GameState, v3 P)
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
+
+	Entity->Height = 1.0f;
+	Entity->AABBDim = V3(1.0f);
+	Entity->VisualScale = 1.0f;
 }
 
 inline mat4
@@ -98,11 +103,16 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 	f32 LengthSquared = Dot(FacingDirection, FacingDirection);
 	if(LengthSquared != 0.0f)
 	{
-		f32 Yaw = DirectionToEuler(FacingDirection).yaw;
-		Entity->dTheta = RadToDegrees(Yaw) - OldTheta;
-		Entity->Theta = RadToDegrees(Yaw);
+		// This angle is the angle we would rotate from the starting orientation (0 degress) to 
+		// end up at the current orientation. IT IS NOT THE ANGLE WE ROTATE BY. E.g. if the player starts out
+		// facing towards the camera with 0 degress of rotation and the player goes left. The final orientation is
+		// This is confusing.. Need to think about why this works..
 
-		quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
+		f32 TargetAngleInRad = DirectionToEuler(FacingDirection).yaw;
+		Entity->dTheta = RadToDegrees(TargetAngleInRad) - OldTheta;
+		Entity->Theta = RadToDegrees(TargetAngleInRad);
+
+		quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), TargetAngleInRad);
 		Target = Conjugate(Target);
 		Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
 	}
@@ -172,10 +182,107 @@ PerspectiveTransformUpdate(game_state *GameState, f32 WindowWidth, f32 WindowHei
 	GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 }
 
-internal void
-CollisionGroupAdd(memory_arena *Arena, entity *Entity, model *Model)
+internal b32
+PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PointOnPlane, v3 PlaneNormal, aabb MKSumAABB, f32 *tMin)
 {
+	b32 Collided = false;
 
+	f32 tEpsilon = 0.001f;
+	f32 D = Dot(PlaneNormal, PointOnPlane);
+	if(!Equal(DeltaP, V3(0.0f)))
+	{
+		f32 tResult = (D - Dot(PlaneNormal, RelP)) / Dot(PlaneNormal, DeltaP);
+		if((tResult >= 0.0f) && tResult < *tMin)
+		{
+			v3 PointOfIntersection = RelP + tResult * DeltaP;
+			if(InAABB(MKSumAABB, PointOfIntersection))
+			{
+				*tMin = Max(0.0f, tResult - tEpsilon);
+				Collided = true;
+			}
+		}
+	}
+
+	return(Collided);
+}
+
+internal void
+EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
+{
+	v3 DeltaP = 0.5f * dt * dt * ddP + dt * Entity->dP;
+	Entity->dP = dt * ddP + Entity->dP;
+
+	v3 OldP = Entity->P;
+
+	f32 tMin = 1.0f;
+	f32 DeltaLength = Length(DeltaP);
+	v3 Normal = V3(0.0f);
+
+	b32 Collided = false;
+	v3 DesiredP = OldP + DeltaP;
+	for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
+	{
+		entity *TestEntity = GameState->Entities + TestEntityIndex;
+		if(Entity != TestEntity)
+		{
+			v3 TestP = TestEntity->P;
+			v3 CurrentP = Entity->P; 
+			v3 RelP = CurrentP - TestP;
+
+			v3 AABBDim = Entity->AABBDim + TestEntity->AABBDim;
+			aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
+#if 0
+			v3 PlaneNormal = {-1.0f, 0.0f, 0.0f};
+			v3 PointOnPlane = MKSumAABB.Min;
+			if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+			{
+				Normal = PlaneNormal;
+				Collided = true;
+			}
+
+			// NOTE(Jusitn): Right face
+			PlaneNormal = {1.0f, 0.0f, 0.0f};
+			PointOnPlane = MKSumAABB.Max;
+			if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+			{
+				Normal = PlaneNormal;
+				Collided = true;
+			}
+
+			// NOTE(Jusitn): Back face
+			PlaneNormal = {0.0f, 0.0f, -1.0f};
+			PointOnPlane = MKSumAABB.Max;
+			if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+			{
+				Normal = PlaneNormal;
+				Collided = true;
+			}
+
+			// NOTE(Jusitn): Front face
+			PlaneNormal = {0.0f, 0.0f, 1.0f};
+			PointOnPlane = MKSumAABB.Min;
+			if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+			{
+				Normal = PlaneNormal;
+				Collided = true;
+			}
+#else
+			if(InAABB(MKSumAABB, RelP))
+			{
+				Collided = true;
+			}
+#endif
+		}
+	}
+
+	Entity->P += tMin * DeltaP; 
+	if(Collided)
+	{
+		int breakhere = 0;
+	}
+	else
+	{
+	}
 }
 
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
@@ -203,7 +310,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		asset_manager *Assets = &GameState->AssetManager;
 
 		GameState->Quad = QuadDefault();
-		GameState->Quad.Texture = LookupTexture(Assets, "left_arrow")->Handle;
 		GameState->Texture.Width = 256;
 		GameState->Texture.Height = 256;
 
@@ -238,6 +344,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameMemory->IsInitialized = true;
 	}
 
+	Assert(sizeof(temp_state) <= GameMemory->TemporaryStorageSize);
 	temp_state *TempState = (temp_state *)GameMemory->TemporaryStorage;
 	if(!TempState->IsInitialized)
 	{
@@ -313,8 +420,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			case EntityType_Player:
 			{
 				f32 a = 100.0f;
-				f32 PlayerDrag = -10.0f;
-				f32 AngularSpeed = 10.0f;
+
 				v3 OldPlayerddP = Entity->ddP;
 				if(!Entity->AnimationGraph->CurrentNode.ControlsPosition)
 				{
@@ -325,22 +431,20 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 						a *= 1.5f;
 					}
 
-					if(Jumping)
-					{
-						a *= 2.0f;
-					}
-
-
+					f32 PlayerDrag = -10.0f;
+					f32 AngularSpeed = 10.0f;
 					f32 Speed = Length(Entity->dP);
 					ddP = a * ddP;
 					ddP += PlayerDrag * Entity->dP;
+					EntityMove(GameState, Entity, ddP, dt);
 
-
+#if 0
 					v3 DeltaP = 0.5f * dt * dt * ddP + dt * Entity->dP;
 					Entity->dP = dt * ddP + Entity->dP;
 					v3 OldP = Entity->P;
 					v3 dP = Entity->dP + dt * ddP;
 					Entity->P += DeltaP;
+#endif
 
 					EntityOrientationUpdate(Entity, dt, AngularSpeed);
 				}
@@ -451,41 +555,36 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	asset_manager *Assets = &GameState->AssetManager;
 
 	//
-	// NOTE(Justin): Animation update
+	// NOTE(Justin): Animation update, will have to be rolled into physics work per entity....
 	//
 
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
-	//Animate(Player->AnimationGraph, Assets, Player->AnimationPlayer, Player->MovementState, Player->dTheta);
 	Animate(Player, Assets);
 
-	v3 OldP			= Player->AnimationPlayer->FinalPose->Positions[0];
-	quaternion OldQ = Player->AnimationPlayer->FinalPose->Orientations[0];
-	AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
+	temporary_memory AnimationMemory = TemporaryMemoryBegin(&TempState->Arena);
+
 	if(Player->AnimationGraph->CurrentNode.ControlsPosition)
 	{
+		v3 OldP			= Player->AnimationPlayer->FinalPose->Positions[0];
+		quaternion OldQ = Player->AnimationPlayer->FinalPose->Orientations[0];
+
+		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
 		v3 NewP			= Player->AnimationPlayer->FinalPose->Positions[0];
 		quaternion NewQ = Player->AnimationPlayer->FinalPose->Orientations[0];
 
-#if 0
-		// NOTE(Justin): If the orientation of the model in game is 180* rotated from model/animation space
-		// then the correct rotation to map the rotation into game play space is the inverse rotation.
-
 		v3 Delta = NewP - OldP;
-		Delta = Player->Scale * Delta;
+		Delta = Player->VisualScale * Delta;
 		Delta = Conjugate(Player->Orientation)*Delta;
-
 		Player->P += Delta;
 		if(Player->P.y <= 0.0f)
 		{
 			Player->P.y = 0.0f;
 		}
-#else
-		//f32 Angle = AngleBetween(Conjugate(NewQ), Conjugate(OldQ));
-		//f32 Angle = AngleBetween(NewQ, OldQ);
-		//Player->Orientation = RotateTowards(Player->Orientation, Quaternion(V3(0.0f, 1.0f, 0.0f), Angle), dt, 1.0f);
-#endif
-
-	};
+	}
+	else
+	{
+		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
+	}
 
 	ModelJointsUpdate(Player->AnimationPlayer);
 	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);
@@ -509,6 +608,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	PerspectiveTransformUpdate(GameState, (f32)GameInput->BackBufferWidth, (f32)GameInput->BackBufferHeight);
 	CameraTransformUpdate(GameState);
+	temporary_memory RenderMemory = TemporaryMemoryBegin(&TempState->Arena);
 	render_buffer *RenderBuffer = RenderBufferAllocate(&TempState->Arena, Megabyte(512),
 														GameState->CameraTransform,
 														GameState->Perspective,
@@ -530,14 +630,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GroundQuad.Vertices[Index].UV *= 50.0f;
 	}
 
-#if 0
-	s32 TextureIndex = StringHashLookup(&Assets->TextureNames, "tile_gray");
-	PushTexture(RenderBuffer, LookupTexture(Assets, "tile_gray"), TextureIndex);
-#else
 	s32 TextureIndex = StringHashLookup(&Assets->TextureNames, "texture_01");
 	PushTexture(RenderBuffer, LookupTexture(Assets, "texture_01"), TextureIndex);
-#endif
-	PushQuad3D(RenderBuffer, &GroundQuad, T*R*S, TextureIndex);
+	PushQuad3D(RenderBuffer, GroundQuad.Vertices, T*R*S, TextureIndex);
 
 	//
 	// NOTE(Justin): Entities.
@@ -550,7 +645,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			case EntityType_Player:
 			{
-				mat4 Transform = EntityTransform(Entity, Entity->Scale);
+				mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
 				model *Model = LookupModel(Assets, "XBot");
 				PushModel(RenderBuffer, Model, Transform);
 
@@ -558,10 +653,15 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				// NOTE(Justin): Debug  
 				//
 
-				T = Mat4Translate(Entity->P + V3(0.0f, (Model->Height * Entity->Scale), 0.0f));
-				S = Mat4Scale(1.0f);
-				//PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f), V3(1.0f));
-				//PushAABB(RenderBuffer, LookupModel(Assets, "Capsule"), T*S, V3(1.0f), V3(1.0f));
+				aabb AABB = AABBMinDim(Entity->P, Entity->AABBDim);
+				v3 Center = AABBCenter(AABB);
+
+				T = Mat4Translate(AABB.Min + V3(0.0f, 1.1f*Entity->AABBDim.y, 0.0f));
+				//T = Mat4Translate(AABB.Min);
+				//T = Mat4Translate(Center + AABB.Min);
+				R = QuaternionToMat4(Entity->Orientation);
+				S = Mat4Scale(Entity->AABBDim);
+				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*R*S, V3(1.0f), V3(1.0f));
 
 				v3 P = Entity->P;
 				P.y += 0.25f;
@@ -571,14 +671,18 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				TextureIndex = StringHashLookup(&Assets->TextureNames, "left_arrow");
 				PushTexture(RenderBuffer, LookupTexture(Assets, "left_arrow"), TextureIndex);
-				PushQuad3D(RenderBuffer, &GameState->Quad, T*R*S, TextureIndex);
+				PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, TextureIndex);
 			} break;
 			case EntityType_Cube:
 			{
 				model *Cube = LookupModel(Assets, "Cube");
-				mat4 Transform = EntityTransform(Entity, 1.0f);
+				mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
 				PushModel(RenderBuffer, Cube, Transform);
+
+				//
+				// NOTE(Justin): Debug  
+				//
 			} break;
 		};
 	}
@@ -665,8 +769,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
 
-		//f32 Yaw = DirectionToEuler(Entity->dP).yaw;
-
 		sprintf(Buff, "Theta: %.2f", Entity->Theta);
 		Text = StringCopy(&TempState->Arena, Buff);
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
@@ -677,7 +779,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
 
-		// This is opposite mathematical conventions.
+		// NOTE(Justin): 
 		// dTheta > 0 -> CCW turning left
 		// dTheta < 0 -> CW turning right 
 		b32 TurningRight = (Entity->dTheta < 0.0f);
@@ -879,8 +981,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		PushRenderToTexture(RenderBuffer, (f32 *)Vertices);
 	}
 
-	Platform.RenderToOpenGL(RenderBuffer, (u32)WindowWidth, (u32)WindowHeight);
+	Platform.RenderToOpenGL(RenderBuffer, (u32)GameInput->BackBufferWidth, (u32)GameInput->BackBufferHeight);
 
-
-	ArenaClear(&TempState->Arena);
+	// NOTE(Justin): Need to begin/end in correct order OW assert will fire. Is this desired?
+	TemporaryMemoryEnd(RenderMemory);
+	TemporaryMemoryEnd(AnimationMemory);
 }

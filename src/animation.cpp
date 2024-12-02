@@ -487,12 +487,12 @@ Animate(entity *Entity, asset_manager *AssetManager)//animation_graph *Graph, as
 		} break;
 		case MovementState_Sprint:
 		{
-#if 0
-			if(Entity->dTheta > 0.0f)
+#if 1
+			if(Entity->dTheta > 90.0f)
 			{
 				MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint_to_180");
 			}
-			else if(Entity->dTheta < 0.0f)
+			else if(Entity->dTheta < -90.0f)
 			{
 				MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint_to_180");
 			}
@@ -546,7 +546,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	//
 
 	model *Model = AnimationPlayer->Model;
-	TemporaryMemoryBegin(TempArena);
+	//TemporaryMemoryBegin(TempArena);
 	key_frame *TempPose = PushArray(TempArena, Model->MeshCount, key_frame);
 
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
@@ -971,3 +971,4 @@ AnimationGraphSave(animation_graph *Graph, char *FileName)
 
 	Platform.DebugFileWriteEntire(FileName, Buff, (u32)String(Buff).Size);
 }
+

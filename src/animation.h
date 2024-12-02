@@ -78,14 +78,13 @@ struct animation_graph_arc
 	f32 t0, t1;
 	b32 BlendDurationSet;
 	f32 BlendDuration;
-
 };
 
 // TODO(Justin): Node type? Additive, nblend, composite...
 struct animation_graph_node
 {
 	string Name;
-	string Tag;
+	string Tag; // TODO(Justin): Right now this is the actual name of the animation...
 	u32 Index;
 	u32 ArcCount;
 	b32 ControlsPosition;

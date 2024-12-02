@@ -5,7 +5,6 @@ struct memory_arena
 	u8 *Base;
 	memory_index Size;
 	memory_index Used;
-
 	s32 TempCount;
 };
 

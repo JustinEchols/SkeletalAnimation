@@ -41,13 +41,6 @@ enum entity_type
 #include "asset.h"
 #include "render.h"
 
-struct capsule_collider
-{
-	v3 Min;
-	v3 Max;
-	f32 Radius;
-};
-
 #if 0
 struct collision_volume_group
 {
@@ -71,16 +64,20 @@ struct entity
 	f32 dTheta;
 	quaternion Orientation;
 	movement_state MovementState;
-	//collision_volume_group *CollisionVolumes;
-	capsule_collider CapsuleCollider;
 
+	// Collision
+	f32 Height;
+	v3 AABBDim;
+	//collision_volume_group *CollisionVolumes;
+	//capsule CapsuleCollider;
 
 	// Animation
 	animation_player *AnimationPlayer;
 	animation_graph *AnimationGraph;
 
+	// Rendering
 	// Should this be part of the game asset?
-	f32 Scale;
+	f32 VisualScale;
 };
 
 struct camera
