@@ -41,16 +41,6 @@ enum entity_type
 #include "asset.h"
 #include "render.h"
 
-#if 0
-struct collision_volume_group
-{
-	v3 P;
-	orientation Orientation;
-	u32 Count;
-	capsule_collider *Capsules;
-};
-#endif
-
 struct entity
 {
 	entity_type Type;
@@ -68,8 +58,6 @@ struct entity
 	// Collision
 	f32 Height;
 	v3 AABBDim;
-	//collision_volume_group *CollisionVolumes;
-	//capsule CapsuleCollider;
 
 	// Animation
 	animation_player *AnimationPlayer;

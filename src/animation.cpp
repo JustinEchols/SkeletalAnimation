@@ -449,13 +449,12 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 }
 
 internal void
-Animate(entity *Entity, asset_manager *AssetManager)//animation_graph *Graph, asset_manager *AssetManager, animation_player *AnimationPlayer, movement_state State, f32 dTheta)
+Animate(entity *Entity, asset_manager *AssetManager)
 {
 	animation_graph *Graph = Entity->AnimationGraph;
 	animation_player *AnimationPlayer = Entity->AnimationPlayer;
 	Assert(Graph);
 	Assert(AnimationPlayer);
-
 
 	if(AnimationPlayer->PlayingCount == 0)
 	{
@@ -468,7 +467,6 @@ Animate(entity *Entity, asset_manager *AssetManager)//animation_graph *Graph, as
 	{
 		return;
 	}
-
 
 	AnimationPlayer->NewState = State;
 	switch(State)
@@ -546,7 +544,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	//
 
 	model *Model = AnimationPlayer->Model;
-	//TemporaryMemoryBegin(TempArena);
 	key_frame *TempPose = PushArray(TempArena, Model->MeshCount, key_frame);
 
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)

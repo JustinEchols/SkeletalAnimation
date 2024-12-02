@@ -118,15 +118,6 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 	}
 }
 
-inline void
-OrientationUpdate(quaternion *Orientation, v3 FacingDirection, f32 dt, f32 AngularSpeed)
-{
-	FacingDirection.z *= -1.0f;
-	f32 Yaw = DirectionToEuler(-1.0f * FacingDirection).yaw;
-	quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), Yaw);
-	*Orientation = RotateTowards(*Orientation, Target, dt, AngularSpeed);
-}
-
 internal quad
 QuadDefault(void)
 {
@@ -436,31 +427,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					f32 Speed = Length(Entity->dP);
 					ddP = a * ddP;
 					ddP += PlayerDrag * Entity->dP;
+
 					EntityMove(GameState, Entity, ddP, dt);
-
-#if 0
-					v3 DeltaP = 0.5f * dt * dt * ddP + dt * Entity->dP;
-					Entity->dP = dt * ddP + Entity->dP;
-					v3 OldP = Entity->P;
-					v3 dP = Entity->dP + dt * ddP;
-					Entity->P += DeltaP;
-#endif
-
 					EntityOrientationUpdate(Entity, dt, AngularSpeed);
 				}
-
-#if 0
-				v3 P = OldP;
-				if(Entity->MovementState != MovementState_Idle &&
-				   Entity->MovementState != MovementState_Crouch)
-				{
-					P =  Entity->P + 0.5f * dt * dt * ddP + dt * Entity->dP;
-				}
-
-				Entity->P = P;
-				Entity->dP = dP;
-#endif
-
 				switch(Entity->MovementState)
 				{
 					case MovementState_Idle:
@@ -621,15 +591,15 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	// NOTE(Justin): Ground quad.
 	//
 
-	mat4 T = Mat4Translate(V3(0.0f, 0.0f, -250.0f));
-	mat4 R = Mat4Identity();
-	mat4 S = Mat4Scale(500.0f);
 	quad GroundQuad = GameState->Quad;
 	for(u32 Index = 0; Index < ArrayCount(GroundQuad.Vertices); ++Index)
 	{
 		GroundQuad.Vertices[Index].UV *= 50.0f;
 	}
 
+	mat4 T = Mat4Translate(V3(0.0f, 0.0f, -250.0f));
+	mat4 R = Mat4Identity();
+	mat4 S = Mat4Scale(500.0f);
 	s32 TextureIndex = StringHashLookup(&Assets->TextureNames, "texture_01");
 	PushTexture(RenderBuffer, LookupTexture(Assets, "texture_01"), TextureIndex);
 	PushQuad3D(RenderBuffer, GroundQuad.Vertices, T*R*S, TextureIndex);
@@ -657,8 +627,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				v3 Center = AABBCenter(AABB);
 
 				T = Mat4Translate(AABB.Min + V3(0.0f, 1.1f*Entity->AABBDim.y, 0.0f));
-				//T = Mat4Translate(AABB.Min);
-				//T = Mat4Translate(Center + AABB.Min);
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(Entity->AABBDim);
 				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*R*S, V3(1.0f), V3(1.0f));
@@ -679,10 +647,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
 				PushModel(RenderBuffer, Cube, Transform);
-
-				//
-				// NOTE(Justin): Debug  
-				//
 			} break;
 		};
 	}
@@ -800,12 +764,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		Text = StringCopy(&TempState->Arena, Buff);
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
-
-		sprintf(Buff, "orientation: Axis(%.1f, %.1f, %.1f), Angle: %.1f", Player->Orientation.x, Player->Orientation.y, Player->Orientation.z, Player->Orientation.w);
-		Text = StringCopy(&TempState->Arena, Buff);
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-
 
 		P.x -= 20.0f;
 	}
