@@ -622,7 +622,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 
 // TODO(Justin): Fold this into AnimationPlayerUpdate?
 internal void
-ModelJointsUpdate(animation_player *AnimationPlayer)
+ModelJointsUpdate(animation_player *AnimationPlayer, v3 Offset = V3(0.0f))
 {
 	model *Model = AnimationPlayer->Model;
 	if(Model)
@@ -640,6 +640,7 @@ ModelJointsUpdate(animation_player *AnimationPlayer)
 			Xform.Position		= FinalPose->Positions[0];
 			Xform.Orientation	= FinalPose->Orientations[0];
 			Xform.Scale			= FinalPose->Scales[0];
+			Xform.Position		+= Offset;
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
 			   !Equal(Xform.Scale, V3(0.0f)))

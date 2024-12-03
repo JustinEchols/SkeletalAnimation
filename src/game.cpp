@@ -431,6 +431,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					EntityMove(GameState, Entity, ddP, dt);
 					EntityOrientationUpdate(Entity, dt, AngularSpeed);
 				}
+
 				switch(Entity->MovementState)
 				{
 					case MovementState_Idle:
@@ -535,6 +536,21 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	if(Player->AnimationGraph->CurrentNode.ControlsPosition)
 	{
+		// How this hackiness works. The player's position accumulated a delta vector
+		// for each frame that the animation is playing. The delta vector is the root position
+		// before and after the animation player updates. We then move the player by this delta amount.
+		// Now the rig itself will also be updating each frame the animation is playing. So we need to offset
+		// the rigs position by a delta vector too. Otherwise the gameplay position and visual position both 
+		// accumulate a delta for each frame. The offset needed is going to be the total delta from the start
+		// of the animation to the current time because the player position has already accumulated it. This vecotr
+		// is the rigs tpose root position minus the current position in the animation.
+
+		// This method has a problem. We are still playing the animation. So when we go to blend it with another
+		// animation, the visual position has been updated the entire time. So when we start blending in another animation
+		// the player teleports to the blended position.
+
+		// We can accumulate this amount this amount and subtract the 
+
 		v3 OldP			= Player->AnimationPlayer->FinalPose->Positions[0];
 		quaternion OldQ = Player->AnimationPlayer->FinalPose->Orientations[0];
 
@@ -542,21 +558,34 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		v3 NewP			= Player->AnimationPlayer->FinalPose->Positions[0];
 		quaternion NewQ = Player->AnimationPlayer->FinalPose->Orientations[0];
 
-		v3 Delta = NewP - OldP;
-		Delta = Player->VisualScale * Delta;
-		Delta = Conjugate(Player->Orientation)*Delta;
-		Player->P += Delta;
+		v3 AnimationDelta = NewP - OldP;
+
+		v3 GameDelta = Player->VisualScale * AnimationDelta;
+		GameDelta = Conjugate(Player->Orientation)*GameDelta;
+		Player->P += GameDelta;
 		if(Player->P.y <= 0.0f)
 		{
 			Player->P.y = 0.0f;
 		}
+
+		v3 RootP = Mat4ColumnGet(Player->AnimationPlayer->Model->Meshes[0].Joints[0].Transform, 3);
+		v3 Offset = RootP -1.0f*OldP;
+		ModelJointsUpdate(Player->AnimationPlayer, Offset);
+
+		Player->AnimationPlayer->AnimationDelta += Offset;
 	}
 	else
 	{
+		if(!Equal(Player->AnimationPlayer->AnimationDelta, V3(0.0f)))
+		{
+			Player->AnimationPlayer->FinalPose->Positions[0] -= Player->AnimationPlayer->AnimationDelta;
+			Player->AnimationPlayer->AnimationDelta = {};
+		}
+
 		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
+		ModelJointsUpdate(Player->AnimationPlayer);
 	}
 
-	ModelJointsUpdate(Player->AnimationPlayer);
 	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);
 
 	camera *Camera = &GameState->Camera;
@@ -629,7 +658,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(AABB.Min + V3(0.0f, 1.1f*Entity->AABBDim.y, 0.0f));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(Entity->AABBDim);
-				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*R*S, V3(1.0f), V3(1.0f));
+				//PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*R*S, V3(1.0f), V3(1.0f));
 
 				v3 P = Entity->P;
 				P.y += 0.25f;

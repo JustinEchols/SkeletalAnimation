@@ -452,6 +452,13 @@ operator -(v3 A, v3 B)
 	return(Result);
 }
 
+inline v3 &
+operator-=(v3 &A, v3 B)
+{
+	A = A - B;
+	return(B);
+}
+
 inline v3
 operator *(f32 C, v3 V)
 {

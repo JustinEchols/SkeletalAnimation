@@ -61,6 +61,8 @@ struct animation
 	animation *Next;
 
 	key_frame *BlendedPose;
+
+	//NOTE(Justin): New 
 };
 
 enum arc_type 
@@ -118,8 +120,7 @@ struct animation_player
 	f32 CurrentTime;
 	f32 dt;
 
-	v3 DeltaP;
-	quaternion DeltaOrientation;
+	v3 AnimationDelta;
 
 	key_frame *FinalPose;
 	model *Model; 
