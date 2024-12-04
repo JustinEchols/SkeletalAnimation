@@ -35,3 +35,12 @@ ModelHeight(model *Model)
 
 	return(MaxHeight);
 }
+
+internal v3
+JointPositionGet(model *Model, u32 JointIndex)
+{
+	mesh *Mesh = Model->Meshes;
+	Assert(JointIndex >= 0 && JointIndex < Mesh->JointCount);
+	v3 Result = Mat4ColumnGet(Mesh->Joints[JointIndex].Transform, 3);
+	return(Result);
+}

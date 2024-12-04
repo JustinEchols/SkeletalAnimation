@@ -529,11 +529,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	// NOTE(Justin): Animation update, will have to be rolled into physics work per entity....
 	//
 
-	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
-	Animate(Player, Assets);
-
 	temporary_memory AnimationMemory = TemporaryMemoryBegin(&TempState->Arena);
 
+	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
+	Animate(Player, Assets);
 	if(Player->AnimationGraph->CurrentNode.ControlsPosition)
 	{
 		// How this hackiness works. The player's position accumulated a delta vector
@@ -549,41 +548,37 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		// animation, the visual position has been updated the entire time. So when we start blending in another animation
 		// the player teleports to the blended position.
 
-		// We can accumulate this amount this amount and subtract the 
-
-		v3 OldP			= Player->AnimationPlayer->FinalPose->Positions[0];
-		quaternion OldQ = Player->AnimationPlayer->FinalPose->Orientations[0];
-
+		v3 OldP = Player->AnimationPlayer->FinalPose->Positions[0];
 		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
-		v3 NewP			= Player->AnimationPlayer->FinalPose->Positions[0];
-		quaternion NewQ = Player->AnimationPlayer->FinalPose->Orientations[0];
+		v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
 
 		v3 AnimationDelta = NewP - OldP;
-
 		v3 GameDelta = Player->VisualScale * AnimationDelta;
 		GameDelta = Conjugate(Player->Orientation)*GameDelta;
+
 		Player->P += GameDelta;
 		if(Player->P.y <= 0.0f)
 		{
 			Player->P.y = 0.0f;
 		}
 
-		v3 RootP = Mat4ColumnGet(Player->AnimationPlayer->Model->Meshes[0].Joints[0].Transform, 3);
-		v3 Offset = RootP -1.0f*OldP;
-		ModelJointsUpdate(Player->AnimationPlayer, Offset);
-
-		Player->AnimationPlayer->AnimationDelta += Offset;
+		v3 RootP = JointPositionGet(Player->AnimationPlayer->Model, 0);
+		v3 OffsetToRoot = RootP - OldP;
+		ModelJointsUpdate(Player->AnimationPlayer, OffsetToRoot);
 	}
 	else
 	{
+		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
 		if(!Equal(Player->AnimationPlayer->AnimationDelta, V3(0.0f)))
 		{
-			Player->AnimationPlayer->FinalPose->Positions[0] -= Player->AnimationPlayer->AnimationDelta;
-			Player->AnimationPlayer->AnimationDelta = {};
+			v3 AnimationDelta = Player->AnimationPlayer->AnimationDelta;
+			Player->AnimationPlayer->AnimationDelta = V3(0.0f);
+			ModelJointsUpdate(Player->AnimationPlayer, -1.0f*AnimationDelta);
 		}
-
-		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
-		ModelJointsUpdate(Player->AnimationPlayer);
+		else
+		{
+			ModelJointsUpdate(Player->AnimationPlayer);
+		}
 	}
 
 	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);

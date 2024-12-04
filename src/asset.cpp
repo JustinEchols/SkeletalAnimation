@@ -649,6 +649,7 @@ AssetManagerInit(asset_manager *Manager)
 				case Animation_JumpForward:
 				{
 					Animation->TimeScale = 1.0f;
+					Animation->DefaultFlags = AnimationFlags_ControlsPosition;
 #if 0
 					f32 Scale = 0.025f;
 					for(u32 KeyFrameIndex = 0; KeyFrameIndex < Info->KeyFrameCount; ++KeyFrameIndex)

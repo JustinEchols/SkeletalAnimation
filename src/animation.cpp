@@ -77,6 +77,13 @@ MaskingJoints(animation *Animation)
 	return(Result);
 }
 
+inline b32
+ControlsPosition(animation *Animation)
+{
+	b32 Result = FlagIsSet(Animation, AnimationFlags_ControlsPosition);
+	return(Result);
+}
+
 inline mat4
 JointTransformFromSQT(sqt SQT)
 {
@@ -524,7 +531,20 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	for(animation **AnimationPtr = &AnimationPlayer->Channels; *AnimationPtr;)
 	{
 		animation *Animation = *AnimationPtr;
-		AnimationUpdate(Animation, AnimationPlayer->dt);
+
+		if(ControlsPosition(Animation))
+		{
+			v3 OldP = Animation->BlendedPose->Positions[0];
+			AnimationUpdate(Animation, AnimationPlayer->dt);
+			v3 NewP = Animation->BlendedPose->Positions[0];
+			AnimationPlayer->AnimationDelta = OldP;
+		}
+		else
+		{
+			AnimationUpdate(Animation, AnimationPlayer->dt);
+		}
+
+
 		if(Finished(Animation))
 		{
 			*AnimationPtr = Animation->Next;

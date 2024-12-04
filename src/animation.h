@@ -32,6 +32,7 @@ enum animation_flags
 	AnimationFlags_Looping = (1 << 3),
 	AnimationFlags_RemoveLocomotion = (1 << 4),
 	AnimationFlags_JointMask = (1 << 5),
+	AnimationFlags_ControlsPosition = (1 << 6),
 };
 
 struct animation
@@ -62,8 +63,8 @@ struct animation
 
 	key_frame *BlendedPose;
 
-	//NOTE(Justin): New 
 };
+
 
 enum arc_type 
 {
