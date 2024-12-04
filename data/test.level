@@ -1,0 +1,33 @@
+entity
+type player
+0.0 0.0 -10.0
+entity
+type cube
+-85.1 1.1 -28.3
+entity
+type cube
+80.9 1.4 -46.6
+entity
+type cube
+-60.0 1.2 -55.3
+entity
+type cube
+15.6 1.0 -26.5
+entity
+type cube
+-23.4 1.0 -55.0
+entity
+type cube
+76.7 1.8 -47.6
+entity
+type cube
+49.7 1.5 -25.3
+entity
+type cube
+-86.9 1.1 -27.4
+entity
+type cube
+-88.2 1.1 -59.8
+entity
+type cube
+-75.8 1.5 -75.8
