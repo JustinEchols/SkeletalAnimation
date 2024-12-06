@@ -537,7 +537,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			v3 OldP = Animation->BlendedPose->Positions[0];
 			AnimationUpdate(Animation, AnimationPlayer->dt);
 			v3 NewP = Animation->BlendedPose->Positions[0];
-			AnimationPlayer->AnimationDelta = OldP;
+			AnimationPlayer->AnimationDelta += NewP - OldP;
 		}
 		else
 		{
@@ -763,6 +763,8 @@ AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *Anim
 	// whild the current node is blending in. So any work that is done is invalid.
 	//Find the channel playing the currently active animation.
 	//animation *Oldest = AnimationOldestGet(AnimationPlayer);
+
+	// Should this just be the current node?
 	animation *Oldest = AnimationPlayer->Channels;
 	if(!Oldest)
 	{

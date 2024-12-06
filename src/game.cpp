@@ -553,7 +553,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
 
 		v3 AnimationDelta = NewP - OldP;
-		v3 GameDelta = Player->VisualScale * AnimationDelta;
+		v3 GameDelta = 2.0f*Player->VisualScale * AnimationDelta;
 		GameDelta = Conjugate(Player->Orientation)*GameDelta;
 
 		Player->P += GameDelta;
@@ -571,9 +571,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
 		if(!Equal(Player->AnimationPlayer->AnimationDelta, V3(0.0f)))
 		{
-			v3 AnimationDelta = Player->AnimationPlayer->AnimationDelta;
+			v3 RootP = JointPositionGet(Player->AnimationPlayer->Model, 0);
+			//v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
+			//v3 AnimationDelta = Player->AnimationPlayer->AnimationDelta;
 			Player->AnimationPlayer->AnimationDelta = V3(0.0f);
-			ModelJointsUpdate(Player->AnimationPlayer, -1.0f*AnimationDelta);
+
+			Player->AnimationPlayer->FinalPose[0].Positions[0] = RootP;
+			Player->AnimationPlayer->FinalPose[1].Positions[0] = RootP;
+			ModelJointsUpdate(Player->AnimationPlayer);
 		}
 		else
 		{
@@ -653,7 +658,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(AABB.Min + V3(0.0f, 1.1f*Entity->AABBDim.y, 0.0f));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(Entity->AABBDim);
-				//PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*R*S, V3(1.0f), V3(1.0f));
+				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*R*S, V3(1.0f), V3(1.0f));
 
 				v3 P = Entity->P;
 				P.y += 0.25f;

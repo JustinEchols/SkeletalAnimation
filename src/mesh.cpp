@@ -44,3 +44,11 @@ JointPositionGet(model *Model, u32 JointIndex)
 	v3 Result = Mat4ColumnGet(Mesh->Joints[JointIndex].Transform, 3);
 	return(Result);
 }
+
+internal v3
+JointPositionGet(mesh *Mesh, u32 JointIndex)
+{
+	Assert(JointIndex >= 0 && JointIndex < Mesh->JointCount);
+	v3 Result = Mat4ColumnGet(Mesh->Joints[JointIndex].Transform, 3);
+	return(Result);
+}
