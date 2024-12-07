@@ -82,7 +82,7 @@ struct render_entry_aabb
 {
 	mat4 Transform;
 	model *Model;
-	v3 Dim;
+	//v3 Dim;
 	v3 Color;
 };
 

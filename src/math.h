@@ -1437,28 +1437,6 @@ AABBCenterDim(v3 Center, v3 Dim)
 	return(Result);
 }
 
-#if 0
-inline aabb
-AABBCenterDim(v3 Center, v3 Dim)
-{
-	aabb Result;
-	Result.Min = Center - 0.5f*Dim;
-	Result.Max = Center + 0.5f *Dim;
-
-	return(Result);
-}
-
-inline aabb
-AABBMinDim(v3 Min, v3 Dim)
-{
-	aabb Result;
-	Result.Min = Min;
-	Result.Max = Min + Dim;
-
-	return(Result);
-}
-#endif
-
 inline v3 
 AABBCenter(aabb AABB)
 {
@@ -1492,7 +1470,6 @@ InAABB(aabb AABB, v3 Test)
 
 	return(Result);
 }
-
 
 #define MATH_H
 #endif

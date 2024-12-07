@@ -108,14 +108,14 @@ PushText(render_buffer *RenderBuffer, string Text, font *Font, v2 P, f32 Scale, 
 }
 
 inline void
-PushAABB(render_buffer *RenderBuffer, model *Model, mat4 Transform, v3 Dim, v3 Color)
+PushAABB(render_buffer *RenderBuffer, model *Model, mat4 Transform, v3 Color)
 {
 	render_entry_aabb *Entry = (render_entry_aabb *)PushRenderElement(RenderBuffer, render_entry_aabb);
 	if(Entry)
 	{
 		Entry->Model = Model;
 		Entry->Transform = Transform;
-		Entry->Dim = Dim;
+		//Entry->Dim = Dim;
 		Entry->Color = Color;
 	}
 }
