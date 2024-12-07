@@ -58,6 +58,7 @@ struct entity
 	// Collision
 	f32 Height;
 	v3 AABBDim;
+	v3 VolumeOffset;
 
 	// Animation
 	animation_player *AnimationPlayer;

@@ -404,6 +404,7 @@ char *TextureFiles[] =
 	"../data/textures/tile_gray.bmp",
 	"../data/textures/left_arrow.png",
 	"../data/textures/texture_01.png",
+	"../data/textures/texture_13.png",
 	"../data/textures/orange_texture_02.png",
 };
 

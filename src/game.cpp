@@ -23,8 +23,7 @@ PlayerAdd(game_state *GameState)
 {
 	entity *Entity = EntityAdd(GameState, EntityType_Player);
 	GameState->PlayerEntityIndex = GameState->EntityCount - 1;
-	//Entity->P = V3(0.0f, 0.0f, -10.0f);
-	Entity->P = V3(0.0f, 1.0f, -10.0f);
+	Entity->P = V3(0.0f, 0.0f, -10.0f);
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
 
@@ -34,12 +33,13 @@ PlayerAdd(game_state *GameState)
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Radians);
 	Entity->MovementState = MovementState_Idle;
 
-	Entity->Height = 2.0f;
-	//Entity->AABBDim = V3(1.0f, Entity->Height, 1.0f);
-	//Entity->VisualScale = 0.025f;
-	
-	Entity->AABBDim = V3(1.0f);
-	Entity->VisualScale = 0.5f;
+	// NOTE(Justin): The AABBDim is used for collision detection AND for AABB rendering. The visual
+	// scale is used to scale the player model. Therefore the visual scale and the AABBDim are unrelated
+
+	Entity->Height = 1.8f;
+	Entity->AABBDim = V3(0.7f, Entity->Height, 0.7f);
+	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	Entity->VisualScale = 0.01f;
 }
 
 internal void
@@ -54,7 +54,8 @@ CubeAdd(game_state *GameState, v3 P)
 	Entity->Height = 1.0f;
 
 	// NOTE(Justin): The cube mesh has dimensions 2x2x2. If we want the gameplay dimensions of
-	// the cube to be 1x1x1, then the visual scale of the cube is 0.5.
+	// the cube to be 1x1x1, then the visual scale of the cube is 0.5. The AABBDim is used for collision
+	// detection and the visual scale is used for rendering
 
 	Entity->AABBDim = V3(1.0f);
 	Entity->VisualScale = 0.5f;
@@ -208,14 +209,13 @@ PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PointOnPlane, v3 PlaneNormal, aabb
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 {
-	//ddP = {1.0f, 0.0f, 0.0f};
 	v3 DeltaP = 0.5f * dt * dt * ddP + dt * Entity->dP;
 	Entity->dP = dt * ddP + Entity->dP;
 
 	v3 OldP = Entity->P;
 	f32 DeltaLength = Length(DeltaP);
-	v3 DesiredP = OldP + DeltaP;
 
+	v3 DesiredP = OldP + DeltaP;
 	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
 	{
 		f32 tMin = 1.0f;
@@ -228,7 +228,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			{
 				v3 TestP = TestEntity->P;
 				v3 CurrentP = Entity->P; 
-				v3 RelP = CurrentP - TestP;
+				v3 RelP = (CurrentP + Entity->VolumeOffset) - (TestP + Entity->VolumeOffset);
 
 				v3 AABBDim = Entity->AABBDim + TestEntity->AABBDim;
 				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
@@ -263,6 +263,15 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 				// NOTE(Jusitn): Front face
 				PlaneNormal = {0.0f, 0.0f, 1.0f};
 				PointOnPlane = MKSumAABB.Min;
+				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+				{
+					Normal = PlaneNormal;
+					Collided = true;
+				}
+
+				// NOTE(Jusitn): Top face
+				PlaneNormal = {0.0f, 1.0f, 0.0f};
+				PointOnPlane = MKSumAABB.Max;
 				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
 				{
 					Normal = PlaneNormal;
@@ -321,20 +330,21 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		AnimationPlayerInitialize(Player->AnimationPlayer, XBot, Arena);
 		Player->AnimationGraph	= LookupGraph(Assets, "XBot_AnimationGraph");
 
-		CubeAdd(GameState, V3(4.0f, 0.0f, -10.0f));
-
 		RandInit(2024);
+		v3 StartP = V3(-2.5f, 0.0f, -10.5f);
+		v3 Delta = V3(0.0f, 0.0f, -1.0f);
 		for(u32 Index = 0; Index < 10; ++Index)
 		{
-			v3 P = V3(RandBetween(-100.0f, 100.0f), 0.0f, RandBetween(-10.0f, -100.0f));
+			v3 P = StartP + (f32)Index*Delta;
 			CubeAdd(GameState, P);
 		}
+		CubeAdd(GameState, V3(0.5f, 0.0f, -0.5f));
 
 		//LevelSave((entity *)GameState->Entities, GameState->EntityCount);
 
 		CameraSet(&GameState->Camera, V3(0.0f, 15.0f, 20.0f), -90.0f, -10.0f);
 		CameraTransformUpdate(GameState);
-		GameState->CameraOffsetFromPlayer = V3(0.0f, 5.0f, 10.0f);
+		GameState->CameraOffsetFromPlayer = V3(0.0f, 2.0f, 5.0f);
 
 		GameState->TimeScale = 1.0f;
 		GameState->FOV = DegreeToRad(45.0f);
@@ -421,7 +431,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			case EntityType_Player:
 			{
-				f32 a = 100.0f;
+				f32 a = 50.0f;
 
 				v3 OldPlayerddP = Entity->ddP;
 				if(!Entity->AnimationGraph->CurrentNode.ControlsPosition)
@@ -559,6 +569,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		// animation, the visual position has been updated the entire time. So when we start blending in another animation
 		// the player teleports to the blended position.
 
+		// TODO(Justin): Robustness
+		// TODO(Justin): Update velocity..
+		
 		v3 OldP = Player->AnimationPlayer->FinalPose->Positions[0];
 		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
 		v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
@@ -582,9 +595,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
 		if(!Equal(Player->AnimationPlayer->AnimationDelta, V3(0.0f)))
 		{
+			// TODO(Justin): Robustness
 			v3 RootP = JointPositionGet(Player->AnimationPlayer->Model, 0);
-			//v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
-			//v3 AnimationDelta = Player->AnimationPlayer->AnimationDelta;
 			Player->AnimationPlayer->AnimationDelta = V3(0.0f);
 
 			Player->AnimationPlayer->FinalPose[0].Positions[0] = RootP;
@@ -634,7 +646,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	quad GroundQuad = GameState->Quad;
 	for(u32 Index = 0; Index < ArrayCount(GroundQuad.Vertices); ++Index)
 	{
-		GroundQuad.Vertices[Index].UV *= 50.0f;
+		GroundQuad.Vertices[Index].UV *= 250.0f;
 	}
 
 	mat4 T = Mat4Translate(V3(0.0f, 0.0f, -250.0f));
@@ -648,6 +660,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	// NOTE(Justin): Entities.
 	//
 
+	// NOTE(Justin): Convention is that the ground position is y=0. So, to render correctly we need a visual
+	// offset.
+
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
 		entity *Entity = GameState->Entities + EntityIndex;
@@ -657,24 +672,28 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			{
 				mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
 				model *Model = LookupModel(Assets, "XBot");
-				//PushModel(RenderBuffer, Model, Transform);
+				PushModel(RenderBuffer, Model, Transform);
 
 				//
-				// NOTE(Justin): Debug  
+				// NOTE(Justin): Debug
 				//
 
-
-				T = Mat4Translate(Entity->P);
+				// AABB
+				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
 				R = QuaternionToMat4(Entity->Orientation);
-				S = Mat4Scale(Entity->VisualScale);
+
+				// The visual scale of the player and the AABBDim are unrelated to we have to scale the dim
+				// by 0.5.
+
+				S = Mat4Scale(0.5f*Entity->AABBDim);
 				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*R*S, V3(1.0f));
 
+				// Ground arrow 
 				v3 P = Entity->P;
-				//P.y += 0.25f;
-				P.y += 0.5f;
+				P.y += 0.1f;
 				T = Mat4Translate(P);
 				R = QuaternionToMat4(Entity->Orientation);
-				S = Mat4Scale(V3(1.0f));
+				S = Mat4Scale(V3(0.5f));
 
 				TextureIndex = StringHashLookup(&Assets->TextureNames, "left_arrow");
 				PushTexture(RenderBuffer, LookupTexture(Assets, "left_arrow"), TextureIndex);
@@ -689,12 +708,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(EntityP);
 				S = Mat4Scale(Entity->VisualScale);
 
-				//mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
-
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
 				PushModel(RenderBuffer, Cube, T*S);
 				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f));
-
 			} break;
 		};
 	}
@@ -958,7 +974,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				2);
 
 		PushClear(RenderToTextureBuffer, V4(1.0f));
-		mat4 Transform = EntityTransform(Entity, 0.025f);
+		mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
 		model *Model = LookupModel(Assets, "XBot");
 		PushModel(RenderToTextureBuffer, Model, Transform);
 
