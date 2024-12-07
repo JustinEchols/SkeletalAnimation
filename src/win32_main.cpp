@@ -14,18 +14,16 @@
 #include "win32_file_io.cpp"
 #include "win32_opengl.cpp"
 
+////////////////////////
 // NOTE(Justin): Globals
-
-
-global_varible b32 Win32GlobalRunning;
-global_varible s64 Win32GlobalTicksPerSecond;
-global_varible s32 Win32GlobalWindowWidth;
-global_varible s32 Win32GlobalWindowHeight;
-global_varible f32 Win32GlobalMouseX;
-global_varible f32 Win32GlobalMouseY;
-
-static WINDOWPLACEMENT Win32GlobalWindowPos = {sizeof(Win32GlobalWindowPos)};
-static open_gl OpenGL;
+global_variable b32 Win32GlobalRunning;
+global_variable s64 Win32GlobalTicksPerSecond;
+global_variable s32 Win32GlobalWindowWidth;
+global_variable s32 Win32GlobalWindowHeight;
+global_variable f32 Win32GlobalMouseX;
+global_variable f32 Win32GlobalMouseY;
+global_variable open_gl OpenGL;
+global_variable WINDOWPLACEMENT Win32GlobalWindowPos = {sizeof(Win32GlobalWindowPos)};
 
 #include "renderer_opengl.h"
 #include "renderer_opengl.cpp"
@@ -209,7 +207,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		HGLRC OpenGLRC		= Win32OpenGLInit(GetDC(Window), &OpenGL);
 		OpenGL.MainShader	= GLProgramCreate(MainVS, MainFS);
-		OpenGL.BasicShader	= GLProgramCreate(BasicVS, BasicFS);
 		OpenGL.FontShader	= GLProgramCreate(FontVS, FontFS);
 		OpenGL.ScreenShader = GLProgramCreate(ScreenVS, ScreenFS);
 		OpenGL.ShadowMapShader = GLProgramCreate(ShadowMapVS, ShadowMapFS);
@@ -227,9 +224,8 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		OpenGL.ShadowMapWidth = 1024;
 		OpenGL.ShadowMapHeight = 1024;
-		OpenGLFrameBufferInit(&OpenGL.ShadowMapFBO,
+		OpenGLShadowMapInitialize(&OpenGL.ShadowMapFBO,
 							  &OpenGL.ShadowMapHandle,
-							  &OpenGL.ShadowMapRBO,
 							  OpenGL.ShadowMapWidth, OpenGL.ShadowMapHeight);
 
 		game_memory GameMemory = {};
@@ -240,6 +236,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		GameMemory.TemporaryStorage		= VirtualAlloc(0, GameMemory.TemporaryStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
 		GameMemory.PlatformAPI.RenderToOpenGL		= RenderBufferToOutput;
+		GameMemory.PlatformAPI.RenderToShadowMap	= RenderBufferToShadowMap;
 		GameMemory.PlatformAPI.DebugFileReadEntire	= DebugPlatformFileReadEntire;
 		GameMemory.PlatformAPI.DebugFileWriteEntire = DebugPlatformFileWriteEntire;
 		GameMemory.PlatformAPI.DebugFileFree		= DebugPlatformFileFree;
@@ -335,11 +332,18 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 						if(IsDown)
 						{
 							b32 AltKeyWasDown = (Message.lParam & (1 << 29));
-							if((KeyCode == VK_RETURN) && AltKeyWasDown)
+							if(AltKeyWasDown)
 							{
-								if(Message.hwnd)
+								if(KeyCode == VK_RETURN)
 								{
-									Win32FullScreen(Message.hwnd);
+									if(Message.hwnd)
+									{
+										Win32FullScreen(Message.hwnd);
+									}
+								}
+								else if(KeyCode == VK_F4)
+								{
+									Win32GlobalRunning = false;
 								}
 							}
 						}

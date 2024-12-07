@@ -39,11 +39,11 @@ PlayerAdd(game_state *GameState)
 	Entity->Height = 1.8f;
 	Entity->AABBDim = V3(0.7f, Entity->Height, 0.7f);
 	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
-	Entity->VisualScale = 0.01f;
+	Entity->VisualScale = V3(0.01f);
 }
 
 internal void
-CubeAdd(game_state *GameState, v3 P)
+CubeAdd(game_state *GameState, v3 P, v3 Dim)
 {
 	entity *Entity = EntityAdd(GameState, EntityType_Cube);
 	Entity->P = P;
@@ -57,9 +57,8 @@ CubeAdd(game_state *GameState, v3 P)
 	// the cube to be 1x1x1, then the visual scale of the cube is 0.5. The AABBDim is used for collision
 	// detection and the visual scale is used for rendering
 
-	Entity->AABBDim = V3(1.0f);
-	//Entity->AABBDim = V3(0.95f);
-	Entity->VisualScale = 0.5f;
+	Entity->AABBDim = Dim;
+	Entity->VisualScale = 0.5f*Entity->AABBDim;
 }
 
 inline mat4
@@ -71,6 +70,20 @@ EntityTransform(entity *Entity, f32 Scale = 1.0f)
 	Result = Mat4(Scale * Mat4ColumnGet(R, 0),
 				  Scale * Mat4ColumnGet(R, 1),
 				  Scale * Mat4ColumnGet(R, 2),
+				  Entity->P);
+
+	return(Result);
+}
+
+inline mat4
+EntityTransform(entity *Entity, v3 Scale = V3(1.0f))
+{
+	mat4 Result = Mat4Identity();
+
+	mat4 R = QuaternionToMat4(Entity->Orientation);
+	Result = Mat4(Scale.x * Mat4ColumnGet(R, 0),
+				  Scale.y * Mat4ColumnGet(R, 1),
+				  Scale.z * Mat4ColumnGet(R, 2),
 				  Entity->P);
 
 	return(Result);
@@ -126,6 +139,17 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 		Target = Conjugate(Target);
 		Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
 	}
+}
+
+inline quaternion 
+OrientationUpdate(quaternion Orientation, f32 TargetAngleInDegrees, f32 dt, f32 AngularSpeed)
+{
+	quaternion Result = Orientation;
+	quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), DegreeToRad(TargetAngleInDegrees));
+	Target = Conjugate(Target);
+	Result = RotateTowards(Orientation, Target, dt, AngularSpeed);
+
+	return(Result);
 }
 
 internal quad
@@ -406,6 +430,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Texture.Width = 256;
 		GameState->Texture.Height = 256;
 
+		// Player
 		PlayerAdd(GameState);
 		entity *Player			= GameState->Entities + GameState->PlayerEntityIndex;
 		Player->AnimationPlayer = PushStruct(Arena, animation_player);
@@ -414,21 +439,25 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		AnimationPlayerInitialize(Player->AnimationPlayer, XBot, Arena);
 		Player->AnimationGraph	= LookupGraph(Assets, "XBot_AnimationGraph");
 
-		RandInit(2024);
+		// Cubes 
 		v3 StartP = V3(-2.5f, 0.0f, -10.5f);
-		v3 Delta = V3(0.0f, 0.0f, -1.0f);
-		for(u32 Index = 0; Index < 10; ++Index)
-		{
-			v3 P = StartP + (f32)Index*Delta;
-			CubeAdd(GameState, P);
-		}
-		CubeAdd(GameState, V3(0.5f, 0.0f, -0.5f));
+		v3 Dim = V3(2.0f, 1.0f, 10.0f);
+		CubeAdd(GameState, StartP, Dim);
+
+		Dim = V3(2.0f, 10.0f, 2.0f);
+		StartP += V3(4.5f, 0.0f, 0.0f);
+		CubeAdd(GameState, StartP, Dim);
+
+		Dim = V3(1.f, 1.0f, 2.0f);
+		StartP += V3(4.5f, 0.0f, 0.0f);
+		CubeAdd(GameState, StartP, Dim);
 
 		//LevelSave((entity *)GameState->Entities, GameState->EntityCount);
 
-		CameraSet(&GameState->Camera, V3(0.0f, 15.0f, 20.0f), -90.0f, -10.0f);
-		CameraTransformUpdate(GameState);
 		GameState->CameraOffsetFromPlayer = V3(0.0f, 2.0f, 5.0f);
+		CameraSet(&GameState->Camera, Player->P + GameState->CameraOffsetFromPlayer, -90.0f, -10.0f);
+		GameState->Camera.RotationAboutY = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
+		CameraTransformUpdate(GameState);
 
 		GameState->TimeScale = 1.0f;
 		GameState->FOV = DegreeToRad(45.0f);
@@ -628,6 +657,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				};
 			} break;
+			case EntityType_Cube:
+			{
+			} break;
 		}
 	}
 
@@ -664,7 +696,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
 
 		v3 AnimationDelta = NewP - OldP;
-		v3 GameDelta = 2.0f*Player->VisualScale * AnimationDelta;
+		v3 GameDelta = 2.0f*V3(Player->VisualScale.x * AnimationDelta.x,
+							   Player->VisualScale.y * AnimationDelta.y,
+							   Player->VisualScale.z * AnimationDelta.z);
+
 		GameDelta = Conjugate(Player->Orientation)*GameDelta;
 
 		EntityMoveByAnimation(GameState, Player, GameDelta, dt);
@@ -699,28 +734,38 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);
 
 	camera *Camera = &GameState->Camera;
+#if 0
+	Camera->RotationAboutY = OrientationUpdate(Camera->RotationAboutY, 180.0f - Player->Theta, dt, 10.0f);
+	Camera->P = Player->P + Camera->RotationAboutY*GameState->CameraOffsetFromPlayer;
+
+	v3 NewDirection = Camera->RotationAboutY * Camera->Direction;
+	f32 D = Dot(NewDirection, Camera->Direction);
+	if(D < 0.99f)
+	{
+		Camera->Direction = Normalize(Player->P - Camera->P + Camera->Direction);
+	}
+#else
 	Camera->P = Player->P + GameState->CameraOffsetFromPlayer;
+#endif
 
 	//
 	// NOTE(Justin): Render.
 	//
 
-	//
-	// TODO(Justin): Shadow Pass.
-	//
+
 
 	v3 LightDir = V3(1.0f, -1.0f, -0.5f);
-
-	//
-	// NOTE(Justin): Final pass.
-	//
-
+	mat4 LightOrtho = Mat4OrthographicProjection(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
+	mat4 LightView = Mat4Camera(V3(-2.0f, 4.0f, -1.0f), LightDir);
+	mat4 LightTransform = LightOrtho * LightView;
 	PerspectiveTransformUpdate(GameState, (f32)GameInput->BackBufferWidth, (f32)GameInput->BackBufferHeight);
 	CameraTransformUpdate(GameState);
+
 	temporary_memory RenderMemory = TemporaryMemoryBegin(&TempState->Arena);
 	render_buffer *RenderBuffer = RenderBufferAllocate(&TempState->Arena, Megabyte(512),
 														GameState->CameraTransform,
 														GameState->Perspective,
+														LightTransform,
 														Assets,
 														Camera->P);
 
@@ -789,21 +834,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			case EntityType_Cube:
 			{
 				model *Cube = LookupModel(Assets, "Cube");
-
 				v3 EntityP = Entity->P;
-				EntityP.y += 0.5f;
+				EntityP.y += Entity->VisualScale.y;
 				T = Mat4Translate(EntityP);
 				S = Mat4Scale(Entity->VisualScale);
 
-#if 1
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
 				PushModel(RenderBuffer, Cube, T*S);
 				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f));
-#else
-
-				S = Mat4Scale(1.0f);
-				PushAABB(RenderBuffer, &GameState->Cylinder, T*S, V3(1.0f));
-#endif
 			} break;
 		};
 	}
@@ -1062,6 +1100,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		render_buffer *RenderToTextureBuffer = RenderBufferAllocate(&TempState->Arena, Megabyte(64),
 				GameState->CameraTransform,
 				Persp,
+				Mat4Identity(),
 				Assets,
 				Camera->P,
 				2);

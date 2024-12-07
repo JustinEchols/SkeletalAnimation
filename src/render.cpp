@@ -115,7 +115,6 @@ PushAABB(render_buffer *RenderBuffer, model *Model, mat4 Transform, v3 Color)
 	{
 		Entry->Model = Model;
 		Entry->Transform = Transform;
-		//Entry->Dim = Dim;
 		Entry->Color = Color;
 	}
 }
@@ -133,7 +132,7 @@ PushRenderToTexture(render_buffer *RenderBuffer, f32 *Vertices)
 
 internal render_buffer * 
 RenderBufferAllocate(memory_arena *Arena, u32 MaxSize,
-		mat4 View, mat4 Perspective,
+		mat4 View, mat4 Perspective, mat4 LightTransform,
 		asset_manager *Assets,
 		v3 CameraP,
 		u32 OutputTargetIndex = 0)
@@ -146,6 +145,7 @@ RenderBufferAllocate(memory_arena *Arena, u32 MaxSize,
 	Result->OutputTargetIndex = OutputTargetIndex;
 	Result->View = View;
 	Result->Perspective = Perspective;
+	Result->LightTransform = LightTransform;
 	Result->Assets = Assets;
 	Result->CameraP = CameraP;
 

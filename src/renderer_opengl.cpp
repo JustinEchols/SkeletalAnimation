@@ -206,7 +206,9 @@ OpenGLAllocateMesh(mesh *Mesh, u32 ShaderProgram)
 	GLIBOInit(&Mesh->IBO, Mesh->Indices, Mesh->IndicesCount);
 	OpenGL.glBindVertexArray(0);
 
-	AttributesCheck(ShaderProgram, ExpectedAttributeCount);
+	// TODO(Justin): Figure out a way to check attributes when only a subset of them are used for a specific
+	// mesh.
+	// AttributesCheck(ShaderProgram, ExpectedAttributeCount);
 }
 
 internal void
@@ -274,6 +276,34 @@ OpenGLFrameBufferInit(u32 *FBO, u32 *Texture, u32 *RBO, u32 Width, u32 Height)
 	OpenGL.glBindRenderbuffer(GL_RENDERBUFFER, *RBO); 
 	OpenGL.glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, Width, Height);  
 	OpenGL.glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, *RBO);
+	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+	if(OpenGL.glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
+	{
+		Result = false;
+	}
+
+	return(Result);
+}
+
+internal b32 
+OpenGLShadowMapInitialize(u32 *FBO, u32 *Texture, u32 Width, u32 Height)
+{
+	b32 Result = true;
+
+	OpenGL.glGenFramebuffers(1, FBO);
+	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, *FBO);
+
+	glGenTextures(1, Texture);
+	glBindTexture(GL_TEXTURE_2D, *Texture);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
+	OpenGL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *Texture, 0);
+	glDrawBuffer(GL_NONE);
+	glReadBuffer(GL_NONE);
 	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	if(OpenGL.glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
@@ -453,13 +483,37 @@ OpenGLDrawText(char *Text, u32 Shader, font *Font, v2 P, f32 Scale, v3 Color,
 internal void
 RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight)
 {
+	glViewport(0, 0, OpenGL.ShadowMapWidth, OpenGL.ShadowMapHeight);
+	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, OpenGL.ShadowMapFBO);
+	glClear(GL_DEPTH_BUFFER_BIT);
+
+	u32 ShadowMapShader = OpenGL.ShadowMapShader;
+	mat4 LightTransform = RenderBuffer->LightTransform;
+	for(u32 BaseOffset = 0; BaseOffset < RenderBuffer->Size; )
+	{
+		render_buffer_entry_header *Header = (render_buffer_entry_header *)(RenderBuffer->Base + BaseOffset);
+		BaseOffset += sizeof(*Header);
+		void *Data = (u8 *)Header + sizeof(*Header);
+		switch(Header->Type)
+		{
+			case RenderBuffer_render_entry_quad_3d:
+			{
+				render_entry_quad_3d *Entry = (render_entry_quad_3d *)Data;
+				BaseOffset += sizeof(*Entry);
+			} break;
+			case RenderBuffer_render_entry_model:
+			{
+				render_entry_model *Entry = (render_entry_model *)Data;
+				model *Model = Entry->Model;
+				BaseOffset += sizeof(*Entry);
+			} break;
+		}
+	}
+
+	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 	if(RenderBuffer->OutputTargetIndex == 0)
 	{
 		OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
-	}
-	else if(RenderBuffer->OutputTargetIndex == 1)
-	{
-		OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, OpenGL.ShadowMapFBO);
 	}
 	else
 	{
@@ -485,7 +539,7 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 	mat4 View = RenderBuffer->View;
 	mat4 Perspective = RenderBuffer->Perspective;
 	v3 CameraP	= RenderBuffer->CameraP;
-	v3 LightDir = V3(1.0f, -1.0f, -0.5f);
+	v3 LightDir = Normalize(V3(1.0f, -1.0f, -0.5f));
 
 	for(u32 BaseOffset = 0; BaseOffset < RenderBuffer->Size; )
 	{
@@ -520,16 +574,21 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				texture *Texture = RenderBuffer->Textures[Entry->TextureIndex];
 				Assert(Texture->Handle);
 				
-				OpenGL.glUseProgram(BasicShader);
-				UniformMatrixSet(BasicShader, "Model", Entry->Transform);
-				UniformMatrixSet(BasicShader, "View", View);
-				UniformMatrixSet(BasicShader, "Projection", Perspective);
-				UniformBoolSet(BasicShader, "OverRideTexture", false);
-				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
-				UniformV3Set(BasicShader, "LightDir", LightDir);
+				// VS
+				OpenGL.glUseProgram(MainShader);
+				UniformMatrixSet(MainShader, "Model", Entry->Transform);
+				UniformMatrixSet(MainShader, "View", View);
+				UniformMatrixSet(MainShader, "Projection", Perspective);
+				UniformBoolSet(MainShader, "UsingRig", false);
+
+				// FS 
+				UniformBoolSet(MainShader, "OverRideTexture", false);
+				UniformV3Set(MainShader, "Ambient", V3(0.1f));
+				UniformV3Set(MainShader, "LightDir", LightDir);
+				UniformV3Set(MainShader, "CameraP", CameraP);
 
 				OpenGL.glActiveTexture(GL_TEXTURE0);
-				UniformBoolSet(BasicShader, "Texture", 0);
+				UniformBoolSet(MainShader, "Texture", 0);
 				glBindTexture(GL_TEXTURE_2D, Texture->Handle);
 				OpenGL.glBindVertexArray(OpenGL.Quad3dVA);
 				OpenGL.glBindBuffer(GL_ARRAY_BUFFER, OpenGL.Quad3dVB);
@@ -579,31 +638,32 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 					// FS 
 					UniformBoolSet(MainShader, "OverRideTexture", true);
 					UniformV3Set(MainShader, "Ambient", V3(0.1f));
-					UniformV3Set(MainShader, "CameraP", CameraP);
 					UniformV3Set(MainShader, "LightDir", LightDir);
-
+					UniformV3Set(MainShader, "CameraP", CameraP);
 					OpenGLDrawAnimatedModel(Model, MainShader);
 				}
 				else
 				{
 					if(!Model->UploadedToGPU)
 					{
-						OpenGLAllocateModel(Entry->Model, BasicShader);
+						OpenGLAllocateModel(Entry->Model, MainShader);
 						Model->UploadedToGPU = true;
 					}
 
 					// VS
-					OpenGL.glUseProgram(BasicShader);
-					UniformMatrixSet(BasicShader, "Model", Entry->Transform);
-					UniformMatrixSet(BasicShader, "View", View);
-					UniformMatrixSet(BasicShader, "Projection", Perspective);
+					OpenGL.glUseProgram(MainShader);
+					UniformMatrixSet(MainShader, "Model", Entry->Transform);
+					UniformMatrixSet(MainShader, "View", View);
+					UniformMatrixSet(MainShader, "Projection", Perspective);
+					UniformBoolSet(MainShader, "UsingRig", false);
 
 					// FS
-					UniformBoolSet(BasicShader, "OverRideTexture", false);
-					UniformV3Set(BasicShader, "Ambient", V3(0.1f));
-					UniformV3Set(BasicShader, "LightDir", LightDir);
-					UniformV4Set(BasicShader, "Color", V4(1.0f));
-					OpenGLDrawModel(Model, BasicShader);
+					UniformBoolSet(MainShader, "OverRideTexture", false);
+					UniformV3Set(MainShader, "Ambient", V3(0.1f));
+					UniformV3Set(MainShader, "LightDir", LightDir);
+					UniformV3Set(MainShader, "CameraP", CameraP);
+					UniformV4Set(MainShader, "Color", V4(1.0f));
+					OpenGLDrawModel(Model, MainShader);
 				}
 
 				BaseOffset += sizeof(*Entry);
@@ -670,4 +730,10 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 			} break;
 		}
 	}
+}
+
+internal void
+RenderBufferToShadowMap(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight)
+{
+
 }

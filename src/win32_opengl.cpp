@@ -96,58 +96,6 @@ void main()
 	Result = vec4(Ambient + Diff + Spec, 1.0);
 })";
 
-char *BasicVS = R"(
-#version 430 core
-layout (location = 0) in vec3 P;
-layout (location = 1) in vec3 Normal;
-layout (location = 2) in vec2 Tex;
-
-uniform mat4 Model;
-uniform mat4 View;
-uniform mat4 Projection;
-
-out vec3 SurfaceN;
-out vec2 UV;
-
-void main()
-{
-	gl_Position = Projection * View * Model * vec4(P, 1.0);
-	SurfaceN = transpose(inverse(mat3(Model))) * Normal;
-	UV = Tex;
-})";
-
-char *BasicFS = R"(
-#version 430 core
-
-in vec3 SurfaceN;
-in vec2 UV;
-
-uniform bool OverRideTexture;
-uniform sampler2D Texture;
-uniform vec3 Ambient;
-uniform vec3 LightDir;
-uniform vec4 Color;
-
-out vec4 Result;
-void main()
-{
-	vec3 N = normalize(SurfaceN);
-	float D = max(dot(-LightDir, N), 0.0);
-
-	float A = texture(Texture, UV).a;
-	vec3 Diffuse = vec3(0.0);
-	if(OverRideTexture)
-	{
-		Diffuse = D * Color.xyz;
-	}
-	else
-	{
-		Diffuse = D *  texture(Texture, UV).rgb;
-	}
-
-	Result = vec4(Ambient + Diffuse, A);
-})";
-
 char *FontVS = R"(
 #version 430 core
 layout (location = 0) in vec4 VertexXYUV;

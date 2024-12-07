@@ -66,13 +66,14 @@ struct entity
 
 	// Rendering
 	// Should this be part of the game asset?
-	f32 VisualScale;
+	v3 VisualScale;
 };
 
 struct camera
 {
 	v3 P;
 	v3 Direction;
+	quaternion RotationAboutY;
 };
 
 struct game_state
@@ -113,7 +114,7 @@ struct temp_state
 	memory_arena Arena;
 };
 
-global_varible platform_api Platform;
+global_variable platform_api Platform;
 
 #define GAME_H
 #endif

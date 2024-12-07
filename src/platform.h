@@ -39,7 +39,7 @@ typedef uintptr_t	umm;
 
 #define internal				static
 #define local_persist			static
-#define global_varible			static
+#define global_variable			static
 #define Assert(Expression)		if(!(Expression)) {*(int *)0 = 0;}
 #define ArrayCount(A)			(sizeof(A) / sizeof((A)[0]))
 #define Kilobyte(Count)			(1024 * Count)
@@ -85,11 +85,14 @@ typedef DEBUG_PLATFORM_FILE_FREE(debug_platform_file_free);
 typedef DEBUG_PLATFORM_FILE_HAS_UPDATED(debug_platform_file_has_updated);
 #endif
 
+// TODO(Justin): Consolidate these calls
 typedef void platform_render_to_opengl(struct render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight);
+typedef void platform_render_to_shadow_map(struct render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight);
 
 typedef struct 
 {
 	platform_render_to_opengl *RenderToOpenGL;
+	platform_render_to_shadow_map *RenderToShadowMap;
 #if DEVELOPER
 	debug_platform_file_read_entire		*DebugFileReadEntire;
 	debug_platform_file_write_entire	*DebugFileWriteEntire;

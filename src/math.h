@@ -112,6 +112,17 @@ struct sqt
 	v3 Scale;
 };
 
+struct affine_decomposition
+{
+	v3 P;
+
+	f32 Cx;
+	f32 Cy;
+	f32 Cz;
+
+	mat4 R;
+};
+
 union rect
 {
 	struct
@@ -364,7 +375,7 @@ Equal(f32 A, f32 B, f32 Tolerance = SmallNumber)
 //
 
 inline v2
-operator +(v2 A, v2 B)
+operator+(v2 A, v2 B)
 {
 	v2 Result;
 
@@ -375,14 +386,14 @@ operator +(v2 A, v2 B)
 }
 
 inline v2 &
-operator +=(v2 &A, v2 B)
+operator+=(v2 &A, v2 B)
 {
 	A = A + B;
 	return(A);
 }
 
 inline v2
-operator -(v2 A, v2 B)
+operator-(v2 A, v2 B)
 {
 	v2 Result;
 
@@ -393,7 +404,7 @@ operator -(v2 A, v2 B)
 }
 
 inline v2
-operator *(f32 C, v2 V)
+operator*(f32 C, v2 V)
 {
 	v2 Result = {};
 
@@ -404,14 +415,14 @@ operator *(f32 C, v2 V)
 }
 
 inline v2
-operator *(v2 V, f32 C)
+operator*(v2 V, f32 C)
 {
 	v2 Result = C * V;
 	return(Result);
 }
 
 inline v2 &
-operator *=(v2 &V, f32 C)
+operator*=(v2 &V, f32 C)
 {
 	V = C * V;
 	return(V);
@@ -422,7 +433,7 @@ operator *=(v2 &V, f32 C)
 //
 
 inline v3
-operator +(v3 A, v3 B)
+operator+(v3 A, v3 B)
 {
 	v3 Result;
 
@@ -434,14 +445,14 @@ operator +(v3 A, v3 B)
 }
 
 inline v3 &
-operator +=(v3 &A, v3 B)
+operator+=(v3 &A, v3 B)
 {
 	A = A + B;
 	return(A);
 }
 
 inline v3
-operator -(v3 A, v3 B)
+operator-(v3 A, v3 B)
 {
 	v3 Result;
 
@@ -460,7 +471,7 @@ operator-=(v3 &A, v3 B)
 }
 
 inline v3
-operator *(f32 C, v3 V)
+operator*(f32 C, v3 V)
 {
 	v3 Result = {};
 
@@ -472,14 +483,14 @@ operator *(f32 C, v3 V)
 }
 
 inline v3
-operator *(v3 V, f32 C)
+operator*(v3 V, f32 C)
 {
 	v3 Result = C * V;
 	return(Result);
 }
 
 inline v3 &
-operator *=(v3 &V, f32 C)
+operator*=(v3 &V, f32 C)
 {
 	V = C * V;
 	return(V);
@@ -954,16 +965,7 @@ Mat4OrthographicProjection(f32 Left, f32 Right, f32 Bottom, f32 Top, f32 Near, f
 }
 
 
-struct affine_decomposition
-{
-	v3 P;
 
-	f32 Cx;
-	f32 Cy;
-	f32 Cz;
-
-	mat4 R;
-};
 
 inline affine_decomposition
 Mat4AffineDecomposition(mat4 M)
@@ -1046,8 +1048,6 @@ operator+(quaternion Q1, quaternion Q2)
 
 	return(Result);
 }
-
-
 
 inline v3
 operator*(quaternion Q, v3 V)
