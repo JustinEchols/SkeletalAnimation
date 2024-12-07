@@ -52,3 +52,55 @@ JointPositionGet(mesh *Mesh, u32 JointIndex)
 	v3 Result = Mat4ColumnGet(Mesh->Joints[JointIndex].Transform, 3);
 	return(Result);
 }
+
+internal model
+ModelCylinderInititalize(memory_arena *Arena)
+{
+	model Model = {};
+	Model.Meshes = PushArray(Arena, 1, mesh);
+	mesh *Mesh = Model.Meshes;
+	Mesh->Name = StringCopy(Arena, "Cylinder");
+
+	u32 SectorCount = 16;
+	f32 SectorAngleSize = 2.0f * Pi32 / (f32)SectorCount;
+	u32 CrossSectionCount = 2;
+	f32 Height = 1.0f;
+	f32 Radius = 1.0f;
+
+	Mesh->IndicesCount = CrossSectionCount * SectorCount;
+	Mesh->VertexCount = Mesh->IndicesCount;
+	Mesh->Indices = PushArray(Arena, Mesh->IndicesCount, u32);
+	Mesh->Vertices = PushArray(Arena, Mesh->VertexCount, vertex);
+
+	f32 Y = -Height/2.0f;
+	u32 CrossSectionIndex = 0;
+	for(u32 SectorIndex = 0; SectorIndex < SectorCount; ++ SectorIndex)
+	{
+		f32 Theta = SectorIndex * SectorAngleSize;
+		f32 X = Radius * Cos(Theta); 
+		f32 Z = Radius * -1.0f*Sin(Theta);
+
+		vertex *V = Mesh->Vertices + (CrossSectionIndex * SectorCount) + SectorIndex;
+		V->P = V3(X, Y, Z);
+		V->N = V3(X, 0.0f, Z);
+
+		Mesh->Indices[CrossSectionIndex * SectorCount + SectorIndex] = CrossSectionIndex * SectorCount + SectorIndex;
+	}
+
+	Y = Height/2.0f;
+	CrossSectionIndex = 1;
+	for(u32 SectorIndex = 0; SectorIndex < SectorCount; ++ SectorIndex)
+	{
+		f32 Theta = SectorIndex * SectorAngleSize;
+		f32 X = Radius * Cos(Theta); 
+		f32 Z = Radius * -1.0f*Sin(Theta);
+
+		vertex *V = Mesh->Vertices + (CrossSectionIndex * SectorCount) + SectorIndex;
+		V->P = V3(X, Y, Z);
+		V->N = V3(X, 0.0f, Z);
+
+		Mesh->Indices[CrossSectionIndex * SectorCount + SectorIndex] = CrossSectionIndex * SectorCount + SectorIndex;
+	}
+
+	return(Model);
+}

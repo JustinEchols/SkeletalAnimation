@@ -1,5 +1,10 @@
 @echo off
 
+REM
+REM NOTE(Justin): Remove comment to enable developer CMD env during build.
+REM If already enabled, keep it commented out.
+REM
+
 REM setlocal enabledelayedexpansion
 REM where /Q cl.exe || (
 REM   set __VSCMD_ARG_NO_LOGO=1

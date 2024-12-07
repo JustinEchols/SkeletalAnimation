@@ -15,6 +15,8 @@
 #include "win32_opengl.cpp"
 
 // NOTE(Justin): Globals
+
+
 global_varible b32 Win32GlobalRunning;
 global_varible s64 Win32GlobalTicksPerSecond;
 global_varible s32 Win32GlobalWindowWidth;
@@ -22,7 +24,9 @@ global_varible s32 Win32GlobalWindowHeight;
 global_varible f32 Win32GlobalMouseX;
 global_varible f32 Win32GlobalMouseY;
 
+static WINDOWPLACEMENT Win32GlobalWindowPos = {sizeof(Win32GlobalWindowPos)};
 static open_gl OpenGL;
+
 #include "renderer_opengl.h"
 #include "renderer_opengl.cpp"
 
@@ -90,6 +94,38 @@ Win32ClientRectGet(HWND Window)
 	Win32GlobalWindowWidth = ClientR.right - ClientR.left;
 	Win32GlobalWindowHeight = ClientR.bottom - ClientR.top;
 }
+
+internal void
+Win32FullScreen(HWND Window)
+{
+	// NOTE(Justin): This follows Raymond Chen's solution, for fullscreen toggling. See:
+	// http://blogs.msdn.com/b/oldnewthing/archive/2010/04/12/9994016.aspx
+    
+    DWORD Style = GetWindowLong(Window, GWL_STYLE);
+    if(Style & WS_OVERLAPPEDWINDOW)
+    {
+        MONITORINFO MonitorInfo = {sizeof(MonitorInfo)};
+        if(GetWindowPlacement(Window, &Win32GlobalWindowPos) &&
+           GetMonitorInfo(MonitorFromWindow(Window, MONITOR_DEFAULTTOPRIMARY), &MonitorInfo))
+        {
+            SetWindowLong(Window, GWL_STYLE, Style & ~WS_OVERLAPPEDWINDOW);
+            SetWindowPos(Window, HWND_TOP,
+                         MonitorInfo.rcMonitor.left, MonitorInfo.rcMonitor.top,
+                         MonitorInfo.rcMonitor.right - MonitorInfo.rcMonitor.left,
+                         MonitorInfo.rcMonitor.bottom - MonitorInfo.rcMonitor.top,
+                         SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+        }
+    }
+    else
+    {
+        SetWindowLong(Window, GWL_STYLE, Style | WS_OVERLAPPEDWINDOW);
+        SetWindowPlacement(Window, &Win32GlobalWindowPos);
+        SetWindowPos(Window, 0, 0, 0, 0, 0,
+                     SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER |
+                     SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
+    }
+}
+
 
 LRESULT CALLBACK
 Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
@@ -293,6 +329,18 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 							else if(KeyCode == VK_CONTROL)
 							{
 								Win32KeyStateUpdate(&NewKeyboard->Ctrl, IsDown);
+							}
+						}
+
+						if(IsDown)
+						{
+							b32 AltKeyWasDown = (Message.lParam & (1 << 29));
+							if((KeyCode == VK_RETURN) && AltKeyWasDown)
+							{
+								if(Message.hwnd)
+								{
+									Win32FullScreen(Message.hwnd);
+								}
 							}
 						}
 					} break;

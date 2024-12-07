@@ -97,12 +97,14 @@ struct game_state
 	f32 Aspect;
 	f32 ZNear;
 	f32 ZFar;
+	f32 Gravity;
 
 	asset_manager AssetManager;
 
 	ui UI;
 
 	texture Texture;
+	model Cylinder;
 };
 
 struct temp_state

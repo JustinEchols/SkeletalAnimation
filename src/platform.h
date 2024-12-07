@@ -37,11 +37,11 @@ typedef uintptr_t	umm;
 //////////////////////////////////////////
 // NOTE(Justin): Helper Macros 
 
-#define global_varible			static
 #define internal				static
 #define local_persist			static
+#define global_varible			static
 #define Assert(Expression)		if(!(Expression)) {*(int *)0 = 0;}
-#define ArrayCount(A)			sizeof(A) / sizeof((A)[0])
+#define ArrayCount(A)			(sizeof(A) / sizeof((A)[0]))
 #define Kilobyte(Count)			(1024 * Count)
 #define Megabyte(Count)			(1024 * Kilobyte(Count))
 #define Gigabyte(Count)			(1024 * Megabyte(Count))

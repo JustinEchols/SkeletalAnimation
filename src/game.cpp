@@ -58,6 +58,7 @@ CubeAdd(game_state *GameState, v3 P)
 	// detection and the visual scale is used for rendering
 
 	Entity->AABBDim = V3(1.0f);
+	//Entity->AABBDim = V3(0.95f);
 	Entity->VisualScale = 0.5f;
 }
 
@@ -294,6 +295,89 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	}
 }
 
+internal void
+EntityMoveByAnimation(game_state *GameState, entity *Entity, v3 DeltaP, f32 dt)
+{
+	v3 OldP = Entity->P;
+	v3 DesiredP = OldP + DeltaP;
+	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
+	{
+		f32 tMin = 1.0f;
+		b32 Collided = false;
+		v3 Normal = V3(0.0f);
+		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
+		{
+			entity *TestEntity = GameState->Entities + TestEntityIndex;
+			if(Entity != TestEntity)
+			{
+				v3 TestP = TestEntity->P;
+				v3 CurrentP = Entity->P; 
+				v3 RelP = (CurrentP + Entity->VolumeOffset) - (TestP + Entity->VolumeOffset);
+
+				v3 AABBDim = Entity->AABBDim + TestEntity->AABBDim;
+				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
+
+				// NOTE(Jusitn): Left face
+				v3 PlaneNormal = {-1.0f, 0.0f, 0.0f};
+				v3 PointOnPlane = MKSumAABB.Min;
+				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+				{
+					Normal = PlaneNormal;
+					Collided = true;
+				}
+
+				// NOTE(Jusitn): Right face
+				PlaneNormal = {1.0f, 0.0f, 0.0f};
+				PointOnPlane = MKSumAABB.Max;
+				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+				{
+					Normal = PlaneNormal;
+					Collided = true;
+				}
+
+				// NOTE(Jusitn): Back face
+				PlaneNormal = {0.0f, 0.0f, -1.0f};
+				PointOnPlane = MKSumAABB.Max;
+				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+				{
+					Normal = PlaneNormal;
+					Collided = true;
+				}
+
+				// NOTE(Jusitn): Front face
+				PlaneNormal = {0.0f, 0.0f, 1.0f};
+				PointOnPlane = MKSumAABB.Min;
+				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+				{
+					Normal = PlaneNormal;
+					Collided = true;
+				}
+
+				// NOTE(Jusitn): Top face
+				PlaneNormal = {0.0f, 1.0f, 0.0f};
+				PointOnPlane = MKSumAABB.Max;
+				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+				{
+					Normal = PlaneNormal;
+					Collided = true;
+				}
+			}
+		}
+
+		Entity->P += tMin * DeltaP; 
+		if(Collided)
+		{
+			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
+			DeltaP = DesiredP - Entity->P;
+			DeltaP = DeltaP - Dot(Normal, DeltaP) * Normal;
+		}
+		else
+		{
+			break;
+		}
+	}
+}
+
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
 	Assert(sizeof(game_state) <= GameMemory->PermanentStorageSize);
@@ -352,6 +436,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->ZNear = 0.2f;
 		GameState->ZFar = 200.0f;
 		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
+		GameState->Gravity = 9.8f;
+
+		GameState->Cylinder = ModelCylinderInititalize(Arena);
 
 		GameMemory->IsInitialized = true;
 	}
@@ -431,7 +518,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			case EntityType_Player:
 			{
-				f32 a = 50.0f;
+				f32 a = 40.0f;
 
 				v3 OldPlayerddP = Entity->ddP;
 				if(!Entity->AnimationGraph->CurrentNode.ControlsPosition)
@@ -580,7 +667,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		v3 GameDelta = 2.0f*Player->VisualScale * AnimationDelta;
 		GameDelta = Conjugate(Player->Orientation)*GameDelta;
 
-		Player->P += GameDelta;
+		EntityMoveByAnimation(GameState, Player, GameDelta, dt);
 		if(Player->P.y <= 0.0f)
 		{
 			Player->P.y = 0.0f;
@@ -708,9 +795,15 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(EntityP);
 				S = Mat4Scale(Entity->VisualScale);
 
+#if 1
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
 				PushModel(RenderBuffer, Cube, T*S);
 				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f));
+#else
+
+				S = Mat4Scale(1.0f);
+				PushAABB(RenderBuffer, &GameState->Cylinder, T*S, V3(1.0f));
+#endif
 			} break;
 		};
 	}
