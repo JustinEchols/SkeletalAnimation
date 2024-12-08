@@ -154,7 +154,6 @@ void main()
 	vec3 LightProjectedP = SurfaceLightP.xyz / SurfaceLightP.w;
 	LightProjectedP = 0.5 * LightProjectedP + 0.5;
 
-	//float ShadowValue = SimplePCFShadowMapValue(SurfaceLightP);
 	float ShadowValue = SimpleShadowMapValue(SurfaceLightP);
 	Result = vec4(Amb + ShadowValue*(Diff + Spec), 1.0);
 })";

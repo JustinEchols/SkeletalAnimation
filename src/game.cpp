@@ -326,7 +326,7 @@ EntityMoveByAnimation(game_state *GameState, entity *Entity, v3 DeltaP, f32 dt)
 	v3 DesiredP = OldP + DeltaP;
 	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
 	{
-		f32 tMin = 1.0f;
+	f32 tMin = 1.0f;
 		b32 Collided = false;
 		v3 Normal = V3(0.0f);
 		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
@@ -440,16 +440,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		Player->AnimationGraph	= LookupGraph(Assets, "XBot_AnimationGraph");
 
 		// Cubes 
-		v3 StartP = V3(-3.0f, 0.0f, -10.5f);
+		v3 StartP = V3(-3.0f, 0.0f, -10.0f);
 		v3 Dim = V3(2.0f, 1.0f, 10.0f);
 		CubeAdd(GameState, StartP, Dim);
 
 		Dim = V3(2.0f, 10.0f, 2.0f);
-		StartP += V3(6.0f, 0.0f, 0.0f);
+		StartP += V3(6.0f, 0.0f, -0.0f);
 		CubeAdd(GameState, StartP, Dim);
 
 		Dim = V3(1.f, 1.0f, 2.0f);
-		StartP += V3(6.0f, 0.0f, 0.0f);
+		StartP += V3(6.5f, 0.0f, 0.0f);
 		CubeAdd(GameState, StartP, Dim);
 
 		//LevelSave((entity *)GameState->Entities, GameState->EntityCount);
@@ -703,6 +703,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameDelta = Conjugate(Player->Orientation)*GameDelta;
 
 		EntityMoveByAnimation(GameState, Player, GameDelta, dt);
+
 		if(Player->P.y <= 0.0f)
 		{
 			Player->P.y = 0.0f;
