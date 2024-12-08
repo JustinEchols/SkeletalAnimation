@@ -440,16 +440,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		Player->AnimationGraph	= LookupGraph(Assets, "XBot_AnimationGraph");
 
 		// Cubes 
-		v3 StartP = V3(-2.5f, 0.0f, -10.5f);
+		v3 StartP = V3(-3.0f, 0.0f, -10.5f);
 		v3 Dim = V3(2.0f, 1.0f, 10.0f);
 		CubeAdd(GameState, StartP, Dim);
 
 		Dim = V3(2.0f, 10.0f, 2.0f);
-		StartP += V3(4.5f, 0.0f, 0.0f);
+		StartP += V3(6.0f, 0.0f, 0.0f);
 		CubeAdd(GameState, StartP, Dim);
 
 		Dim = V3(1.f, 1.0f, 2.0f);
-		StartP += V3(4.5f, 0.0f, 0.0f);
+		StartP += V3(6.0f, 0.0f, 0.0f);
 		CubeAdd(GameState, StartP, Dim);
 
 		//LevelSave((entity *)GameState->Entities, GameState->EntityCount);
@@ -752,15 +752,26 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	// NOTE(Justin): Render.
 	//
 
-	v3 LightDir = V3(1.0f, -1.0f, 0.0f);
-	v3 LightP = V3(-30.0f, 12.5f, -12.5f);
-	f32 Left = -25.0f;
-	f32 Right = 25.0f;
-	f32 Bottom = -25.0f;
-	f32 Top = 25.0f;
+	// NOTE(Justin): The viewing volume and transformations of the light are orientated with respect to 
+	// the light's viewing transformation. E.g. This directionatl light is to the right,down, and forward. We
+	// place the light up, to the left, and at the front of the scene. The orthographic clip volume is
+	// orientated the same was as the light. Meaning the left face of the volume is am xy plane in world space
+	// that is further in the -Z DIRECTION. The right face is also an xy plane in world space
+	// that is closer in the +Z DIRECTOIN. Changing the left and right values of the volume will
+	// change what objects cast shadows based on their Z POSITION. If a z coordinate of an object
+	// is more negative than the left face the object WILL NOT CAST A SHADOW. If the light source is
+	// directional, then this is a visual artifact since the object SHOULD cast a shadow because the light
+	// source is directional.
+	// 
+
+	v3 LightDir = V3(1.0f, -1.0f, -1.0f);
+	v3 LightP = V3(-10.0f, 10.0f, 0.0f);
+	f32 Left = -20.0f;
+	f32 Right = 20.0f;
+	f32 Bottom = -10.0f;
+	f32 Top = 10.0f;
 	f32 Near = GameState->ZNear;
 	f32 Far = GameState->ZFar;
-
 
 	mat4 LightOrtho = Mat4OrthographicProjection(Left, Right, Bottom, Top, Near, Far);
 	mat4 LightView = Mat4Camera(LightP, LightDir);
@@ -774,7 +785,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 														GameState->Perspective,
 														LightTransform,
 														Assets,
-														Camera->P);
+														Camera->P,
+														LightDir);
 
 	PushClear(RenderBuffer, V4(0.3f, 0.4f, 0.4f, 1.0f));
 
@@ -824,6 +836,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				// The visual scale of the player and the AABBDim are unrelated to we have to scale the dim
 				// by 0.5.
 
+				// TODO(Justin): Debug this.
 				S = Mat4Scale(0.5f*Entity->AABBDim);
 				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*R*S, V3(1.0f));
 
@@ -836,7 +849,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				TextureIndex = StringHashLookup(&Assets->TextureNames, "left_arrow");
 				PushTexture(RenderBuffer, LookupTexture(Assets, "left_arrow"), TextureIndex);
-				PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, TextureIndex);
+				//PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, TextureIndex);
 			} break;
 			case EntityType_Cube:
 			{
@@ -848,7 +861,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
 				PushModel(RenderBuffer, Cube, T*S);
-				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f));
+				//PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f));
 			} break;
 		};
 	}
@@ -1110,6 +1123,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				Mat4Identity(),
 				Assets,
 				Camera->P,
+				V3(0.0f),
 				2);
 
 		PushClear(RenderToTextureBuffer, V4(1.0f));

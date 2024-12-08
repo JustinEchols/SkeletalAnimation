@@ -134,7 +134,7 @@ internal render_buffer *
 RenderBufferAllocate(memory_arena *Arena, u32 MaxSize,
 		mat4 View, mat4 Perspective, mat4 LightTransform,
 		asset_manager *Assets,
-		v3 CameraP,
+		v3 CameraP, v3 LightDir,
 		u32 OutputTargetIndex = 0)
 {
 	render_buffer *Result = (render_buffer *)PushStruct(Arena, render_buffer);
@@ -148,6 +148,7 @@ RenderBufferAllocate(memory_arena *Arena, u32 MaxSize,
 	Result->LightTransform = LightTransform;
 	Result->Assets = Assets;
 	Result->CameraP = CameraP;
+	Result->LightDir = LightDir;
 
 	Result->TextureCount = 0;
 	Result->MaxTextureCount = 32;

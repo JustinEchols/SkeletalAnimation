@@ -73,17 +73,66 @@ uniform vec4 Specular;
 
 uniform float Shininess;
 
+float
+SimplePCFShadowMapValue(vec4 SurfaceLightP)
+{
+	float Result = 0.0;
+
+	vec3 LightProjectedP = SurfaceLightP.xyz / SurfaceLightP.w;
+	LightProjectedP = 0.5 * LightProjectedP + 0.5;
+
+	float ShadowMapDepth = 0.0;
+	vec2 TexelSize = 1.0f / textureSize(ShadowMapTexture, 0);
+	vec2 TexelUV = LightProjectedP.xy;
+	for(int V = -1; V <= 1; ++V)
+	{
+		for(int U = -1; U <= 1; ++U)
+		{
+			vec2 SampleUV = TexelUV + vec2(U, V) * TexelSize;
+			ShadowMapDepth += texture(ShadowMapTexture, SampleUV).r;
+		}
+	}
+
+	ShadowMapDepth /= 9.0f;
+	float CurrentDepth = LightProjectedP.z;
+	float ShadowBias = 0.0001;
+	Result = (CurrentDepth - ShadowBias) > ShadowMapDepth ? 0.0 : 1.0;
+
+	return(Result);
+}
+
+float
+SimpleShadowMapValue(vec4 SurfaceLightP)
+{
+	float Result = 0.0;
+
+	vec3 LightProjectedP = SurfaceLightP.xyz / SurfaceLightP.w;
+	LightProjectedP = 0.5 * LightProjectedP + 0.5;
+
+	float ShadowMapDepth = texture(ShadowMapTexture, LightProjectedP.xy).r;
+	float CurrentDepth = LightProjectedP.z;
+	float ShadowBias = 0.0001;
+
+	Result = (CurrentDepth - ShadowBias) > ShadowMapDepth ? 0.0 : 1.0;
+
+	return(Result);
+}
+
 out vec4 Result;
 void main()
 {
 	vec3 LightColor = vec3(1.0);
 	vec3 SurfaceToCamera = CameraP - SurfaceP;
 
+	// Directional
+	vec3 SurfaceToLight = -LightDir;
+
 	vec3 Normal = normalize(SurfaceN);
 	vec3 SurfaceToCameraNormalized = normalize(SurfaceToCamera);
+	vec3 SurfaceToLightNormalized = normalize(SurfaceToLight);
 	vec3 ReflectedDirection = reflect(Normal, SurfaceToCameraNormalized);
 
-	float D = max(dot(-LightDir, Normal), 0.0);
+	float D = max(dot(SurfaceToLightNormalized, Normal), 0.0);
 	float S = pow(max(dot(ReflectedDirection, Normal), 0.0), Shininess);
 
 	vec3 Diff = vec3(0.0);
@@ -104,12 +153,10 @@ void main()
 
 	vec3 LightProjectedP = SurfaceLightP.xyz / SurfaceLightP.w;
 	LightProjectedP = 0.5 * LightProjectedP + 0.5;
-	float ClosestDepth = texture(ShadowMapTexture, LightProjectedP.xy).r;
-	float CurrentDepth = LightProjectedP.z;
-	float ShadowBias = 0.0025;
-	float ShadowValue = (CurrentDepth - ShadowBias) > ClosestDepth ? 1.0 : 0.5;
 
-	Result = vec4(Amb + (1.0 - ShadowValue)*(Diff + Spec), 1.0);
+	//float ShadowValue = SimplePCFShadowMapValue(SurfaceLightP);
+	float ShadowValue = SimpleShadowMapValue(SurfaceLightP);
+	Result = vec4(Amb + ShadowValue*(Diff + Spec), 1.0);
 })";
 
 char *FontVS = R"(
@@ -213,6 +260,19 @@ char *ShadowMapFS = R"(
 
 void main()
 {
+})";
+
+// NOTE(Justin): Use the Quad2dVS
+char *DebugShadowMapFS = R"(
+#version 430 core
+in vec2 UV;
+
+uniform sampler2D Texture;
+
+out vec4 Result;
+void main()
+{
+	Result = vec4(vec3(texture(Texture, UV).r), 1.0);
 })";
 
 #define OpenGLFunctionDeclare(Name, Type) PFN##Type##PROC Name

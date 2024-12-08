@@ -103,6 +103,7 @@ struct render_buffer
 	mat4 Perspective;
 	mat4 LightTransform;
 	v3 CameraP;
+	v3 LightDir;
 
 	u32 TextureCount;
 	u32 MaxTextureCount;
