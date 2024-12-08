@@ -11,6 +11,7 @@ layout (location = 5) in vec3 Weights;
 uniform mat4 Model;
 uniform mat4 View;
 uniform mat4 Projection;
+uniform mat4 LightTransform;
 uniform bool UsingRig;
 
 #define MAX_JOINT_COUNT 70
@@ -18,6 +19,7 @@ uniform mat4 Transforms[MAX_JOINT_COUNT];
 
 out vec3 SurfaceP;
 out vec3 SurfaceN;
+out vec4 SurfaceLightP;
 out vec2 UV;
 
 void main()
@@ -47,6 +49,7 @@ void main()
 	gl_Position = Projection * View * Model * Pos;
 	SurfaceP = vec3(Model * Pos);
 	SurfaceN = vec3(transpose(inverse(Model)) * Norm);
+	SurfaceLightP = LightTransform * vec4(SurfaceP, 1.0);
 	UV = Tex;
 })";
 
@@ -55,10 +58,12 @@ char *MainFS= R"(
 
 in vec3 SurfaceP;
 in vec3 SurfaceN;
+in vec4 SurfaceLightP;
 in vec2 UV;
 
 uniform bool OverRideTexture;
 uniform sampler2D Texture;
+uniform sampler2D ShadowMapTexture;
 
 uniform vec3 Ambient;
 uniform vec3 LightDir;
@@ -82,18 +87,29 @@ void main()
 	float S = pow(max(dot(ReflectedDirection, Normal), 0.0), Shininess);
 
 	vec3 Diff = vec3(0.0);
+	vec3 Amb = vec3(0.0);
 	if(OverRideTexture)
 	{
+		Amb = Ambient * Diffuse.xyz;
 		Diff = D * LightColor * Diffuse.xyz;
 	}
 	else
 	{
-		Diff = D * LightColor * texture(Texture, UV).rgb;
+		vec3 Texel = texture(Texture, UV).rgb;
+		Amb = Ambient * Texel;
+		Diff = D * LightColor * Texel;
 	}
 
 	vec3 Spec = S * LightColor * Specular.xyz;
 
-	Result = vec4(Ambient + Diff + Spec, 1.0);
+	vec3 LightProjectedP = SurfaceLightP.xyz / SurfaceLightP.w;
+	LightProjectedP = 0.5 * LightProjectedP + 0.5;
+	float ClosestDepth = texture(ShadowMapTexture, LightProjectedP.xy).r;
+	float CurrentDepth = LightProjectedP.z;
+	float ShadowBias = 0.0025;
+	float ShadowValue = (CurrentDepth - ShadowBias) > ClosestDepth ? 1.0 : 0.5;
+
+	Result = vec4(Amb + (1.0 - ShadowValue)*(Diff + Spec), 1.0);
 })";
 
 char *FontVS = R"(
@@ -125,7 +141,7 @@ void main()
 	Result = vec4(Color, A);
 })";
 
-char *ScreenVS = R"(
+char *Quad2dVS = R"(
 #version 430 core
 layout (location = 0) in vec4 VertexXYUV;
 
@@ -140,7 +156,7 @@ void main()
 	UV = VertexXYUV.zw;
 })";
 
-char *ScreenFS= R"(
+char *Quad2dFS = R"(
 #version 430 core
 in vec2 UV;
 
@@ -155,14 +171,41 @@ void main()
 char *ShadowMapVS = R"(
 #version 430 core
 layout (location = 0) in vec3 P;
+layout (location = 1) in vec3 Normal;
+layout (location = 2) in vec2 Tex;
+layout (location = 3) in uint JointCount;
+layout (location = 4) in uvec3 JointTransformIndices;
+layout (location = 5) in vec3 Weights;
 
 uniform mat4 Model;
-uniform mat4 View;
-uniform mat4 Projection;
+uniform mat4 LightTransform;
+uniform bool UsingRig;
+
+#define MAX_JOINT_COUNT 70
+uniform mat4 Transforms[MAX_JOINT_COUNT];
 
 void main()
 {
-	gl_Position = Projection * View * Model * vec4(P, 1.0);
+	vec4 Pos = vec4(0.0);
+	if(UsingRig)
+	{
+		for(uint i = 0; i < 3; ++i)
+		{
+			if(i < JointCount)
+			{
+				uint JointIndex = JointTransformIndices[i];
+				float Weight = Weights[i];
+				mat4 Xform = Transforms[JointIndex];
+				Pos += Weight * Xform * vec4(P, 1.0);
+			}
+		}
+	}
+	else
+	{
+		Pos = vec4(P, 1.0f);
+	}
+
+	gl_Position = LightTransform * Model * Pos;
 })";
 
 char *ShadowMapFS = R"(
@@ -172,15 +215,14 @@ void main()
 {
 })";
 
-
 #define OpenGLFunctionDeclare(Name, Type) PFN##Type##PROC Name
 struct open_gl
 {
 	u32 MainShader;
-	u32 BasicShader;
 	u32 FontShader;
-	u32 ScreenShader;
+	u32 Quad2dShader;
 	u32 ShadowMapShader;
+
 	u32 NullTexture;
 
 	u32 FBO;
@@ -190,10 +232,10 @@ struct open_gl
 	u32 TextureHeight;
 
 	u32 ShadowMapFBO;
-	u32 ShadowMapRBO;
 	u32 ShadowMapHandle;
 	u32 ShadowMapWidth;
 	u32 ShadowMapHeight;
+
 
 	u32 Quad2dVA;
 	u32 Quad2dVB;

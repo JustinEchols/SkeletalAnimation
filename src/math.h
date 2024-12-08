@@ -955,10 +955,10 @@ Mat4OrthographicProjection(f32 Left, f32 Right, f32 Bottom, f32 Top, f32 Near, f
 
     Result.E[0][0] = 2.0f / (Right - Left);
     Result.E[1][1] = 2.0f / (Top - Bottom);
-    Result.E[2][2] = 2.0f / (Far - Near);
-    Result.E[3][0] = (Left + Right) / (Left - Right);
-    Result.E[3][1] = (Bottom + Top) / (Bottom - Top);
-    Result.E[3][2] = (Far + Near) / (Near - Far);
+    Result.E[2][2] = -2.0f / (Far - Near);
+    Result.E[0][3] = -1.0f * (Right + Left) / (Right - Left);
+    Result.E[1][3] = -1.0f * (Top + Bottom) / (Top - Bottom);
+    Result.E[2][3] = -1.0f * (Far + Near) / (Far - Near);
     Result.E[3][3] = 1.0f;
 
 	return(Result);

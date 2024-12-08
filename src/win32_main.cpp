@@ -208,12 +208,12 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		HGLRC OpenGLRC		= Win32OpenGLInit(GetDC(Window), &OpenGL);
 		OpenGL.MainShader	= GLProgramCreate(MainVS, MainFS);
 		OpenGL.FontShader	= GLProgramCreate(FontVS, FontFS);
-		OpenGL.ScreenShader = GLProgramCreate(ScreenVS, ScreenFS);
+		OpenGL.Quad2dShader = GLProgramCreate(Quad2dVS, Quad2dFS);
 		OpenGL.ShadowMapShader = GLProgramCreate(ShadowMapVS, ShadowMapFS);
 
 		glGenTextures(1, &OpenGL.NullTexture);
-		OpenGLAllocateQuad2d(&OpenGL.Quad2dVA, &OpenGL.Quad2dVB, OpenGL.ScreenShader);
-		OpenGLAllocateQuad3d(&OpenGL.Quad3dVA, &OpenGL.Quad3dVB, OpenGL.BasicShader);
+		OpenGLAllocateQuad2d(&OpenGL.Quad2dVA, &OpenGL.Quad2dVB, OpenGL.Quad2dShader);
+		OpenGLAllocateQuad3d(&OpenGL.Quad3dVA, &OpenGL.Quad3dVB, OpenGL.MainShader);
 
 		OpenGL.TextureWidth = 256;
 		OpenGL.TextureHeight = 256;
@@ -222,8 +222,13 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 							  &OpenGL.RBO,
 							  OpenGL.TextureWidth, OpenGL.TextureHeight);
 
-		OpenGL.ShadowMapWidth = 1024;
-		OpenGL.ShadowMapHeight = 1024;
+#if 0
+		OpenGL.ShadowMapWidth = 1920;
+		OpenGL.ShadowMapHeight = 1080;
+#else
+		OpenGL.ShadowMapWidth = 2048;
+		OpenGL.ShadowMapHeight = 2048;
+#endif
 		OpenGLShadowMapInitialize(&OpenGL.ShadowMapFBO,
 							  &OpenGL.ShadowMapHandle,
 							  OpenGL.ShadowMapWidth, OpenGL.ShadowMapHeight);

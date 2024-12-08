@@ -43,7 +43,7 @@ GLCompilerShader(GLenum ShaderType, char *Source)
 		};
 
 		OutputDebugStringA(Buffer);
-
+		Assert(0);
 	}
 
 	return(Shader);
@@ -292,24 +292,26 @@ OpenGLShadowMapInitialize(u32 *FBO, u32 *Texture, u32 Width, u32 Height)
 	b32 Result = true;
 
 	OpenGL.glGenFramebuffers(1, FBO);
-	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, *FBO);
 
 	glGenTextures(1, Texture);
 	glBindTexture(GL_TEXTURE_2D, *Texture);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, Width, Height, 0, GL_RGBA, GL_UNSIGNED_BYTE, 0);
-	OpenGL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, *Texture, 0);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT, Width, Height, 0, GL_DEPTH_COMPONENT, GL_FLOAT, 0);
+
+	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, *FBO);
+	OpenGL.glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, *Texture, 0);
 	glDrawBuffer(GL_NONE);
 	glReadBuffer(GL_NONE);
-	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	if(OpenGL.glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE)
 	{
 		Result = false;
 	}
+
+	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 	return(Result);
 }
@@ -389,8 +391,11 @@ internal void
 OpenGLDrawMesh(mesh *Mesh, u32 ShaderProgram)
 {
 	OpenGL.glUseProgram(ShaderProgram);
-	OpenGL.glActiveTexture(GL_TEXTURE0);
-	UniformBoolSet(ShaderProgram, "Texture", 0);
+	//OpenGL.glActiveTexture(GL_TEXTURE0);
+	//UniformBoolSet(ShaderProgram, "Texture", 0);
+
+	OpenGL.glActiveTexture(GL_TEXTURE1);
+	UniformBoolSet(ShaderProgram, "Texture", 1);
 	glBindTexture(GL_TEXTURE_2D, Mesh->Texture->Handle);
 	OpenGL.glBindVertexArray(Mesh->VA);
 	glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
@@ -483,12 +488,18 @@ OpenGLDrawText(char *Text, u32 Shader, font *Font, v2 P, f32 Scale, v3 Color,
 internal void
 RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight)
 {
+	//
+	// NOTE(Justin): Shadow pass.
+	//
+
 	glViewport(0, 0, OpenGL.ShadowMapWidth, OpenGL.ShadowMapHeight);
 	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, OpenGL.ShadowMapFBO);
 	glClear(GL_DEPTH_BUFFER_BIT);
 
 	u32 ShadowMapShader = OpenGL.ShadowMapShader;
 	mat4 LightTransform = RenderBuffer->LightTransform;
+	OpenGL.glUseProgram(ShadowMapShader);
+	UniformMatrixSet(ShadowMapShader, "LightTransform", LightTransform);
 	for(u32 BaseOffset = 0; BaseOffset < RenderBuffer->Size; )
 	{
 		render_buffer_entry_header *Header = (render_buffer_entry_header *)(RenderBuffer->Base + BaseOffset);
@@ -499,18 +510,91 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 			case RenderBuffer_render_entry_quad_3d:
 			{
 				render_entry_quad_3d *Entry = (render_entry_quad_3d *)Data;
+				UniformMatrixSet(ShadowMapShader, "Model", Entry->Transform);
+				UniformBoolSet(ShadowMapShader, "UsingRig", false);
+				OpenGL.glBindVertexArray(OpenGL.Quad3dVA);
+				OpenGL.glBindBuffer(GL_ARRAY_BUFFER, OpenGL.Quad3dVB);
+				OpenGL.glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Entry->Vertices), Entry->Vertices);
+				glDrawArrays(GL_TRIANGLES, 0, 6);
 				BaseOffset += sizeof(*Entry);
 			} break;
 			case RenderBuffer_render_entry_model:
 			{
 				render_entry_model *Entry = (render_entry_model *)Data;
 				model *Model = Entry->Model;
+				if(Model)
+				{
+					if(Model->UploadedToGPU)
+					{
+						UniformMatrixSet(ShadowMapShader, "Model", Entry->Transform);
+						if(!Model->HasSkeleton)
+						{
+							UniformBoolSet(ShadowMapShader, "UsingRig", false);
+							for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+							{
+								mesh *Mesh = Model->Meshes + MeshIndex;
+								OpenGL.glBindVertexArray(Mesh->VA);
+								glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
+								OpenGL.glBindVertexArray(0);
+							}
+						}
+						else
+						{
+							UniformBoolSet(ShadowMapShader, "UsingRig", true);
+							for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+							{
+								mesh *Mesh = Model->Meshes + MeshIndex;
+								UniformMatrixArraySet(ShadowMapShader, "Transforms", Mesh->ModelSpaceTransforms, Mesh->JointCount);
+								OpenGL.glBindVertexArray(Mesh->VA);
+								glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
+								OpenGL.glBindVertexArray(0);
+							}
+						}
+					}
+				}
+				BaseOffset += sizeof(*Entry);
+			} break;
+
+			case RenderBuffer_render_entry_clear:
+			{
+				render_entry_clear *Entry = (render_entry_clear *)Data;
+				BaseOffset += sizeof(*Entry);
+			} break;
+			case RenderBuffer_render_entry_texture:
+			{
+				render_entry_texture *Entry = (render_entry_texture *)Data;
+				BaseOffset += sizeof(*Entry);
+			} break;
+			case RenderBuffer_render_entry_quad_2d:
+			{
+				render_entry_quad_2d *Entry = (render_entry_quad_2d *)Data;
+				BaseOffset += sizeof(*Entry);
+			} break;
+			case RenderBuffer_render_entry_text:
+			{
+				render_entry_text *Entry = (render_entry_text *)Data;
+				BaseOffset += sizeof(*Entry);
+			} break;
+			case RenderBuffer_render_entry_aabb:
+			{
+				render_entry_aabb *Entry = (render_entry_aabb *)Data;
+				BaseOffset += sizeof(*Entry);
+			} break;
+			case RenderBuffer_render_entry_render_to_texture:
+			{
+				render_entry_render_to_texture *Entry = (render_entry_render_to_texture *)Data;
 				BaseOffset += sizeof(*Entry);
 			} break;
 		}
 	}
 
 	OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+
+	//
+	// NOTE(Justin): Lighting pass.
+	//
+
 	if(RenderBuffer->OutputTargetIndex == 0)
 	{
 		OpenGL.glBindFramebuffer(GL_FRAMEBUFFER, 0);
@@ -532,14 +616,23 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 	glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
 	u32 MainShader	= OpenGL.MainShader;
-	u32 BasicShader = OpenGL.BasicShader;
 	u32 FontShader	= OpenGL.FontShader;
-	u32 ScreenShader = OpenGL.ScreenShader;
+	u32 ScreenShader = OpenGL.Quad2dShader;
 
 	mat4 View = RenderBuffer->View;
 	mat4 Perspective = RenderBuffer->Perspective;
 	v3 CameraP	= RenderBuffer->CameraP;
-	v3 LightDir = Normalize(V3(1.0f, -1.0f, -0.5f));
+	v3 LightDir = Normalize(V3(1.0f, -1.0f, 0.0f));
+
+	OpenGL.glUseProgram(MainShader);
+	UniformMatrixSet(MainShader, "View", View);
+	UniformMatrixSet(MainShader, "Projection", Perspective);
+	UniformMatrixSet(MainShader, "LightTransform", LightTransform);
+	UniformV3Set(MainShader, "Ambient", V3(0.1f));
+	UniformV3Set(MainShader, "LightDir", LightDir);
+	UniformV3Set(MainShader, "CameraP", CameraP);
+
+	UniformBoolSet(ScreenShader, "ShadowPass", false);
 
 	for(u32 BaseOffset = 0; BaseOffset < RenderBuffer->Size; )
 	{
@@ -566,30 +659,28 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				}
 				BaseOffset += sizeof(*Entry);
 			} break;
-			// TODO(Justin): May not want to always be using a texture. Need to differentiate 
-			// between those cases. Use an index that is invalid?
 			case RenderBuffer_render_entry_quad_3d:
 			{
+
+				// TODO(Justin): May not want to always be using a texture. Need to differentiate 
+				// between those cases. Use an index that is invalid?
+
 				render_entry_quad_3d *Entry = (render_entry_quad_3d *)Data;
 				texture *Texture = RenderBuffer->Textures[Entry->TextureIndex];
 				Assert(Texture->Handle);
 				
-				// VS
-				OpenGL.glUseProgram(MainShader);
 				UniformMatrixSet(MainShader, "Model", Entry->Transform);
-				UniformMatrixSet(MainShader, "View", View);
-				UniformMatrixSet(MainShader, "Projection", Perspective);
 				UniformBoolSet(MainShader, "UsingRig", false);
-
-				// FS 
 				UniformBoolSet(MainShader, "OverRideTexture", false);
-				UniformV3Set(MainShader, "Ambient", V3(0.1f));
-				UniformV3Set(MainShader, "LightDir", LightDir);
-				UniformV3Set(MainShader, "CameraP", CameraP);
 
 				OpenGL.glActiveTexture(GL_TEXTURE0);
 				UniformBoolSet(MainShader, "Texture", 0);
 				glBindTexture(GL_TEXTURE_2D, Texture->Handle);
+
+				OpenGL.glActiveTexture(GL_TEXTURE1);
+				UniformBoolSet(MainShader, "ShadowMapTexture", 1);
+				glBindTexture(GL_TEXTURE_2D, OpenGL.ShadowMapHandle);
+
 				OpenGL.glBindVertexArray(OpenGL.Quad3dVA);
 				OpenGL.glBindBuffer(GL_ARRAY_BUFFER, OpenGL.Quad3dVB);
 				OpenGL.glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Entry->Vertices), Entry->Vertices);
@@ -603,7 +694,6 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				texture *Texture = RenderBuffer->Textures[Entry->TextureIndex];
 				Assert(Texture->Handle);
 
-				OpenGL.glUseProgram(ScreenShader);
 				OpenGL.glActiveTexture(GL_TEXTURE0);
 				UniformBoolSet(ScreenShader, "Texture", 0);
 				UniformF32Set(ScreenShader, "WindowWidth", (f32)WindowWidth);
@@ -628,18 +718,13 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 						Model->UploadedToGPU = true;
 					}
 
-					// VS
-					OpenGL.glUseProgram(MainShader);
-					UniformMatrixSet(MainShader, "Model", Entry->Transform);
-					UniformMatrixSet(MainShader, "View", View);
-					UniformMatrixSet(MainShader, "Projection", Perspective);
-					UniformBoolSet(MainShader, "UsingRig", true);
+					OpenGL.glActiveTexture(GL_TEXTURE0);
+					UniformBoolSet(MainShader, "ShadowMapTexture", 0);
+					glBindTexture(GL_TEXTURE_2D, OpenGL.ShadowMapHandle);
 
-					// FS 
+					UniformMatrixSet(MainShader, "Model", Entry->Transform);
+					UniformBoolSet(MainShader, "UsingRig", true);
 					UniformBoolSet(MainShader, "OverRideTexture", true);
-					UniformV3Set(MainShader, "Ambient", V3(0.1f));
-					UniformV3Set(MainShader, "LightDir", LightDir);
-					UniformV3Set(MainShader, "CameraP", CameraP);
 					OpenGLDrawAnimatedModel(Model, MainShader);
 				}
 				else
@@ -650,18 +735,13 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 						Model->UploadedToGPU = true;
 					}
 
-					// VS
-					OpenGL.glUseProgram(MainShader);
-					UniformMatrixSet(MainShader, "Model", Entry->Transform);
-					UniformMatrixSet(MainShader, "View", View);
-					UniformMatrixSet(MainShader, "Projection", Perspective);
-					UniformBoolSet(MainShader, "UsingRig", false);
+					OpenGL.glActiveTexture(GL_TEXTURE0);
+					UniformBoolSet(MainShader, "ShadowMapTexture", 0);
+					glBindTexture(GL_TEXTURE_2D, OpenGL.ShadowMapHandle);
 
-					// FS
+					UniformMatrixSet(MainShader, "Model", Entry->Transform);
+					UniformBoolSet(MainShader, "UsingRig", false);
 					UniformBoolSet(MainShader, "OverRideTexture", false);
-					UniformV3Set(MainShader, "Ambient", V3(0.1f));
-					UniformV3Set(MainShader, "LightDir", LightDir);
-					UniformV3Set(MainShader, "CameraP", CameraP);
 					UniformV4Set(MainShader, "Color", V4(1.0f));
 					OpenGLDrawModel(Model, MainShader);
 				}
@@ -693,20 +773,15 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				model *Model = Entry->Model;
 				if(!Model->UploadedToGPU)
 				{
-					OpenGLAllocateModel(Entry->Model, BasicShader);
+					OpenGLAllocateModel(Entry->Model, MainShader);
 					Model->UploadedToGPU = true;
 				}
 
 				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
-				OpenGL.glUseProgram(BasicShader);
-				UniformMatrixSet(BasicShader, "Model", Entry->Transform);
-				UniformMatrixSet(BasicShader, "View", View);
-				UniformMatrixSet(BasicShader, "Projection", Perspective);
-				UniformBoolSet(BasicShader, "OverRideTexture", true);
-				UniformV3Set(BasicShader, "Ambient", V3(0.1f));
-				UniformV3Set(BasicShader, "LightDir", LightDir);
-				UniformV4Set(BasicShader, "Color", V4(Entry->Color, 1.0f));
-				OpenGLDrawModel(Model, BasicShader);
+				UniformMatrixSet(MainShader, "Model", Entry->Transform);
+				UniformBoolSet(MainShader, "OverRideTexture", true);
+				UniformV4Set(MainShader, "Color", V4(Entry->Color, 1.0f));
+				OpenGLDrawModel(Model, MainShader);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
 				BaseOffset += sizeof(*Entry);

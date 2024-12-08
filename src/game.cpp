@@ -752,11 +752,18 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	// NOTE(Justin): Render.
 	//
 
+	v3 LightDir = V3(1.0f, -1.0f, 0.0f);
+	v3 LightP = V3(-30.0f, 12.5f, -12.5f);
+	f32 Left = -25.0f;
+	f32 Right = 25.0f;
+	f32 Bottom = -25.0f;
+	f32 Top = 25.0f;
+	f32 Near = GameState->ZNear;
+	f32 Far = GameState->ZFar;
 
 
-	v3 LightDir = V3(1.0f, -1.0f, -0.5f);
-	mat4 LightOrtho = Mat4OrthographicProjection(-10.0f, 10.0f, -10.0f, 10.0f, 1.0f, 7.5f);
-	mat4 LightView = Mat4Camera(V3(-2.0f, 4.0f, -1.0f), LightDir);
+	mat4 LightOrtho = Mat4OrthographicProjection(Left, Right, Bottom, Top, Near, Far);
+	mat4 LightView = Mat4Camera(LightP, LightDir);
 	mat4 LightTransform = LightOrtho * LightView;
 	PerspectiveTransformUpdate(GameState, (f32)GameInput->BackBufferWidth, (f32)GameInput->BackBufferHeight);
 	CameraTransformUpdate(GameState);
