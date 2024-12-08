@@ -236,7 +236,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		GameMemory.TemporaryStorage		= VirtualAlloc(0, GameMemory.TemporaryStorageSize, MEM_RESERVE | MEM_COMMIT, PAGE_READWRITE);
 
 		GameMemory.PlatformAPI.RenderToOpenGL		= RenderBufferToOutput;
-		GameMemory.PlatformAPI.RenderToShadowMap	= RenderBufferToShadowMap;
 		GameMemory.PlatformAPI.DebugFileReadEntire	= DebugPlatformFileReadEntire;
 		GameMemory.PlatformAPI.DebugFileWriteEntire = DebugPlatformFileWriteEntire;
 		GameMemory.PlatformAPI.DebugFileFree		= DebugPlatformFileFree;

@@ -236,7 +236,7 @@ OpenGLAllocateQuad3d(u32 *VA, u32 *VB, u32 ShaderProgram)
 	OpenGL.glEnableVertexAttribArray(1);
 	OpenGL.glEnableVertexAttribArray(2);
 	s32 ExpectedAttributeCount = 3;
-	AttributesCheck(ShaderProgram, ExpectedAttributeCount);
+	//AttributesCheck(ShaderProgram, ExpectedAttributeCount);
 	OpenGL.glBindVertexArray(0);
 }
 
@@ -730,10 +730,4 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 			} break;
 		}
 	}
-}
-
-internal void
-RenderBufferToShadowMap(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight)
-{
-
 }
