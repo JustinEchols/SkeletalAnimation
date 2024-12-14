@@ -482,8 +482,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 		GameState->Gravity = 9.8f;
 
-		GameState->Cylinder = ModelCylinderInititalize(Arena);
-
 		GameState->Circle = PushArray(Arena, 1, model);
 		model *Circle = GameState->Circle;
 		*Circle	= ModelCircleInitialize(Arena, 0.5f, 32, 0.0f);
