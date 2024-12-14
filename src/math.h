@@ -284,7 +284,7 @@ XAxis()
 }
 
 inline v3
-YAxis()
+YAxis(void)
 {
 	v3 Result = V3(0.0f, 1.0f, 0.0f);
 	return(Result);
@@ -1467,6 +1467,18 @@ InAABB(aabb AABB, v3 Test)
 				  (AABB.Max.x >= Test.x) &&
 				  (AABB.Max.y >= Test.y) &&
 				  (AABB.Max.z >= Test.z));
+
+	return(Result);
+}
+
+inline capsule
+CapsuleMinMaxRadius(v3 Min, v3 Max, f32 Radius)
+{
+	capsule Result;
+
+	Result.Min = Min;
+	Result.Max = Max;
+	Result.Radius = Radius;
 
 	return(Result);
 }

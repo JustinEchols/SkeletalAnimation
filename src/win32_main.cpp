@@ -210,6 +210,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		OpenGL.FontShader	= GLProgramCreate(FontVS, FontFS);
 		OpenGL.Quad2dShader = GLProgramCreate(Quad2dVS, Quad2dFS);
 		OpenGL.ShadowMapShader = GLProgramCreate(ShadowMapVS, ShadowMapFS);
+		OpenGL.DebugBBoxShader = GLProgramCreate(DebugBBoxVS, DebugBBoxFS);
 
 		glGenTextures(1, &OpenGL.NullTexture);
 		OpenGLAllocateQuad2d(&OpenGL.Quad2dVA, &OpenGL.Quad2dVB, OpenGL.Quad2dShader);

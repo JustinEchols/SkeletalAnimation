@@ -137,6 +137,7 @@ void main()
 
 	vec3 Diff = vec3(0.0);
 	vec3 Amb = vec3(0.0);
+	float A = 1.0f;
 	if(OverRideTexture)
 	{
 		Amb = Ambient * Diffuse.xyz;
@@ -144,9 +145,10 @@ void main()
 	}
 	else
 	{
-		vec3 Texel = texture(Texture, UV).rgb;
-		Amb = Ambient * Texel;
-		Diff = D * LightColor * Texel;
+		vec4 Texel = texture(Texture, UV);
+		Amb = Ambient * Texel.xyz;
+		Diff = D * LightColor * Texel.xyz;
+		A = Texel.a;
 	}
 
 	vec3 Spec = S * LightColor * Specular.xyz;
@@ -155,7 +157,8 @@ void main()
 	LightProjectedP = 0.5 * LightProjectedP + 0.5;
 
 	float ShadowValue = SimpleShadowMapValue(SurfaceLightP);
-	Result = vec4(Amb + ShadowValue*(Diff + Spec), 1.0);
+	//float ShadowValue = SimplePCFShadowMapValue(SurfaceLightP);
+	Result = vec4(Amb + ShadowValue*(Diff + Spec), A);
 })";
 
 char *FontVS = R"(
@@ -261,7 +264,7 @@ void main()
 {
 })";
 
-// NOTE(Justin): Use the Quad2dVS
+// NOTE(Justin): Uses the Quad2dVS
 char *DebugShadowMapFS = R"(
 #version 430 core
 in vec2 UV;
@@ -274,6 +277,33 @@ void main()
 	Result = vec4(vec3(texture(Texture, UV).r), 1.0);
 })";
 
+char *DebugBBoxVS = R"(
+#version 430 core
+layout (location = 0) in vec3 P;
+layout (location = 1) in vec3 Normal;
+layout (location = 2) in vec2 Tex;
+
+uniform mat4 Model;
+uniform mat4 View;
+uniform mat4 Projection;
+
+void main()
+{
+	gl_Position = Projection * View * Model * vec4(P, 1.0);
+})";
+
+char *DebugBBoxFS = R"(
+#version 430 core
+
+uniform vec3 Ambient;
+uniform vec4 Diffuse;
+
+out vec4 Result;
+void main()
+{
+	Result = vec4(Ambient + Diffuse.xyz, 1.0);
+})";
+
 #define OpenGLFunctionDeclare(Name, Type) PFN##Type##PROC Name
 struct open_gl
 {
@@ -281,8 +311,15 @@ struct open_gl
 	u32 FontShader;
 	u32 Quad2dShader;
 	u32 ShadowMapShader;
+	u32 DebugBBoxShader;
 
 	u32 NullTexture;
+
+	u32 Quad2dVA;
+	u32 Quad2dVB;
+
+	u32 Quad3dVA;
+	u32 Quad3dVB;
 
 	u32 FBO;
 	u32 RBO;
@@ -294,13 +331,6 @@ struct open_gl
 	u32 ShadowMapHandle;
 	u32 ShadowMapWidth;
 	u32 ShadowMapHeight;
-
-
-	u32 Quad2dVA;
-	u32 Quad2dVB;
-
-	u32 Quad3dVA;
-	u32 Quad3dVB;
 
 	OpenGLFunctionDeclare(glGenBuffers, GLGENBUFFERS);
 	OpenGLFunctionDeclare(glBindBuffer, GLBINDBUFFER);

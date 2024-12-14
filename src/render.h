@@ -29,7 +29,7 @@ enum render_buffer_entry_type
 	RenderBuffer_render_entry_quad_2d,
 	RenderBuffer_render_entry_model,
 	RenderBuffer_render_entry_text,
-	RenderBuffer_render_entry_aabb,
+	RenderBuffer_render_entry_debug_volume,
 	RenderBuffer_render_entry_render_to_texture,
 };
 
@@ -50,7 +50,6 @@ struct render_entry_texture
 
 struct render_entry_quad_3d
 {
-	//quad *Quad;
 	quad_vertex Vertices[6];
 	mat4 Transform;
 	u32 TextureIndex;
@@ -78,11 +77,18 @@ struct render_entry_text
 	v3 Color;
 };
 
-struct render_entry_aabb
+enum render_entry_debug_volume_type
 {
+	DebugVolumeType_AABB,
+	DebugVolumeType_Circle,
+	DebugVolumeType_Capsule,
+};
+
+struct render_entry_debug_volume
+{
+	render_entry_debug_volume_type VolumeType;
 	mat4 Transform;
 	model *Model;
-	//v3 Dim;
 	v3 Color;
 };
 

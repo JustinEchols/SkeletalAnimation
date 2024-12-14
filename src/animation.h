@@ -115,6 +115,7 @@ struct animation_player
 	animation *Channels;
 	animation *FreeChannels;
 
+	b32 ControlsPosition;
 	u32 PlayingCount;
 	u32 RetiredCount;
 

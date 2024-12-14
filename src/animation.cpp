@@ -528,21 +528,31 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	// NOTE(Justin): Update each channel.
 	//
 
+	AnimationPlayer->ControlsPosition = false;
 	for(animation **AnimationPtr = &AnimationPlayer->Channels; *AnimationPtr;)
 	{
 		animation *Animation = *AnimationPtr;
 
+#if 0
 		if(ControlsPosition(Animation))
 		{
-			v3 OldP = Animation->BlendedPose->Positions[0];
+			//v3 OldP = Animation->BlendedPose->Positions[0];
 			AnimationUpdate(Animation, AnimationPlayer->dt);
-			v3 NewP = Animation->BlendedPose->Positions[0];
-			AnimationPlayer->AnimationDelta += NewP - OldP;
+			//v3 NewP = Animation->BlendedPose->Positions[0];
+			//AnimationPlayer->AnimationDelta += NewP - OldP;
 		}
 		else
 		{
 			AnimationUpdate(Animation, AnimationPlayer->dt);
 		}
+#else
+		if(ControlsPosition(Animation))
+		{
+			AnimationPlayer->ControlsPosition = true;
+		}
+		AnimationUpdate(Animation, AnimationPlayer->dt);
+#endif
+
 
 
 		if(Finished(Animation))

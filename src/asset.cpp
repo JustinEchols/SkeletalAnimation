@@ -16,7 +16,6 @@ ObjLoad(memory_arena *Arena, char *FileName)
 		u32 PositionCount = 0;
 		u32 NormalCount = 0;
 		u32 UVCount = 0;
-		u32 FaceRows = 0;
 		u32 FaceCount = 0;
 		while(*Content)
 		{
@@ -52,7 +51,6 @@ ObjLoad(memory_arena *Arena, char *FileName)
 						FaceCount++;
 						Tok = strtok(0, " ");
 					}
-					FaceRows++;
 				} break;
 			}
 		}
@@ -65,11 +63,13 @@ ObjLoad(memory_arena *Arena, char *FileName)
 		v2 *UVs			= PushArray(Arena, UVCount, v2);
 		u32 *IndicesP = PushArray(Arena, FaceCount, u32);
 		u32 *IndicesN = PushArray(Arena, FaceCount, u32);
+		u32 *IndicesUV = PushArray(Arena, FaceCount, u32);
 
 		u32 PositionIndex = 0;
 		u32 NormalIndex = 0;
 		u32 UVIndex = 0;
 		u32 IndexP = 0;
+		u32 IndexUV = 0;
 		u32 IndexN = 0;
 		Content = (u8 *)File.Content;
 		while(*Content)
@@ -112,7 +112,7 @@ ObjLoad(memory_arena *Arena, char *FileName)
 
 					if(Buffer[1] == 't')
 					{
-						v2 *UV = UVs + UVCount;
+						v2 *UV = UVs + UVIndex;
 
 						char *Word = strtok((char *)Buffer, " ");
 						Word = strtok(0, " ");
@@ -154,7 +154,23 @@ ObjLoad(memory_arena *Arena, char *FileName)
 								At++;
 							}
 
-							IndicesN[IndexN++] = U32FromASCII((IndexBuffer + At)) - 1;
+							if(UVCount != 0)
+							{
+								IndicesUV[IndexUV++] = U32FromASCII((IndexBuffer + At)) - 1;
+								while(IndexBuffer[At] != '/')
+								{
+									At++;
+								}
+								while(IndexBuffer[At] == '/')
+								{
+									At++;
+								}
+								IndicesN[IndexN++] = U32FromASCII((IndexBuffer + At)) - 1;
+							}
+							else
+							{
+								IndicesN[IndexN++] = U32FromASCII((IndexBuffer + At)) - 1;
+							}
 						}
 					}
 				} break;
@@ -179,14 +195,17 @@ ObjLoad(memory_arena *Arena, char *FileName)
 		{
 			u32 IP = IndicesP[Index];
 			u32 IN = IndicesN[Index];
+			u32 IUV = IndicesUV[Index];
 
 			v3 P = Positions[IP];
 			v3 N = Normals[IN];
+			v2 UV = UVs[IUV];
 
 			vertex *V = Mesh->Vertices + Index;
 
 			V->P = P;
 			V->N = N;
+			V->UV = UV;
 
 			Mesh->Indices[Index] = Index;
 
@@ -281,8 +300,6 @@ ModelLoad(memory_arena *Arena, char *FileName)
 #else
 	Model.Height = ModelHeight(&Model);
 #endif
-
-
 
 	return(Model);
 }
@@ -531,6 +548,9 @@ AssetManagerInit(asset_manager *Manager)
 	}
 
 	{
+		texture *Texture = LookupTexture(Manager, "orange_texture_02");
+		Assert(Texture);
+
 		char *FullPath = "../data/models/Capsule.obj";
 		FileNameFromFullPath(FullPath, Buffer);
 		StringHashAdd(&Manager->ModelNames, Buffer, ArrayCount(ModelFiles) + 1);
@@ -538,12 +558,26 @@ AssetManagerInit(asset_manager *Manager)
 		Assert(Index != -1);
 		model *Model = Manager->Models + Index;
 		*Model = ObjLoad(&Manager->Arena, FullPath);
+		Model->Meshes[0].Texture = Texture;
 
-		texture *Texture = LookupTexture(Manager, "orange_texture_02");
-		if(Texture)
-		{
-			Model->Meshes[0].Texture = Texture;
-		}
+		FullPath = "../data/models/Cylinder.obj";
+		FileNameFromFullPath(FullPath, Buffer);
+		StringHashAdd(&Manager->ModelNames, Buffer, ArrayCount(ModelFiles) + 1);
+		Index = StringHashLookup(&Manager->ModelNames, Buffer);
+		Assert(Index != -1);
+		model *Cylinder = Manager->Models + Index;
+		*Cylinder = ObjLoad(&Manager->Arena, FullPath);
+		Cylinder->Meshes[0].Texture = Texture;
+
+		FullPath = "../data/models/Cone.obj";
+		FileNameFromFullPath(FullPath, Buffer);
+		StringHashAdd(&Manager->ModelNames, Buffer, ArrayCount(ModelFiles) + 1);
+		Index = StringHashLookup(&Manager->ModelNames, Buffer);
+		Assert(Index != -1);
+		model *Cone = Manager->Models + Index;
+		*Cone = ObjLoad(&Manager->Arena, FullPath);
+		Cone ->Meshes[0].Texture = Texture;
+
 	}
 
 	//

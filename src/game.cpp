@@ -35,6 +35,10 @@ PlayerAdd(game_state *GameState)
 
 	// NOTE(Justin): The AABBDim is used for collision detection AND for AABB rendering. The visual
 	// scale is used to scale the player model. Therefore the visual scale and the AABBDim are unrelated
+	//
+	// The volume offset depends on what convention is used as far as the entity's position. The convention
+	// used is that the position is where on the ground the entity is located. So we offset the volume in the
+	// +y direction.
 
 	Entity->Height = 1.8f;
 	Entity->AABBDim = V3(0.7f, Entity->Height, 0.7f);
@@ -56,8 +60,13 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim)
 	// NOTE(Justin): The cube mesh has dimensions 2x2x2. If we want the gameplay dimensions of
 	// the cube to be 1x1x1, then the visual scale of the cube is 0.5. The AABBDim is used for collision
 	// detection and the visual scale is used for rendering
+	//
+	// The volume offset depends on what convention is used as far as the entity's position. The convention
+	// used is that the position is where on the ground the entity is located. So we offset the volume in the
+	// +y direction.
 
 	Entity->AABBDim = Dim;
+	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
 	Entity->VisualScale = 0.5f*Entity->AABBDim;
 }
 
@@ -207,6 +216,8 @@ PerspectiveTransformUpdate(game_state *GameState, f32 WindowWidth, f32 WindowHei
 	GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 }
 
+// NOTE(Justin): This is not just a point and plane intersection test. It is really and AABB test...
+// MovingAABBHitStaticAABB
 internal b32
 PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PointOnPlane, v3 PlaneNormal, aabb MKSumAABB, f32 *tMin)
 {
@@ -253,7 +264,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			{
 				v3 TestP = TestEntity->P;
 				v3 CurrentP = Entity->P; 
-				v3 RelP = (CurrentP + Entity->VolumeOffset) - (TestP + Entity->VolumeOffset);
+				v3 RelP = (CurrentP + Entity->VolumeOffset) - (TestP + TestEntity->VolumeOffset);
 
 				v3 AABBDim = Entity->AABBDim + TestEntity->AABBDim;
 				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
@@ -336,7 +347,7 @@ EntityMoveByAnimation(game_state *GameState, entity *Entity, v3 DeltaP, f32 dt)
 			{
 				v3 TestP = TestEntity->P;
 				v3 CurrentP = Entity->P; 
-				v3 RelP = (CurrentP + Entity->VolumeOffset) - (TestP + Entity->VolumeOffset);
+				v3 RelP = (CurrentP + Entity->VolumeOffset) - (TestP + TestEntity->VolumeOffset);
 
 				v3 AABBDim = Entity->AABBDim + TestEntity->AABBDim;
 				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
@@ -439,6 +450,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		AnimationPlayerInitialize(Player->AnimationPlayer, XBot, Arena);
 		Player->AnimationGraph	= LookupGraph(Assets, "XBot_AnimationGraph");
 
+		// TODO(Justin): The dimensions of a cube and its collision geometry should not necessarily
+		// be coupled together. It is common to decouple them together by either slightly increasing or
+		// decreasing the collision geometry from the actual visual mesh for collision purposes.
+		
 		// Cubes 
 		v3 StartP = V3(-3.0f, 0.0f, -10.0f);
 		v3 Dim = V3(2.0f, 1.0f, 10.0f);
@@ -468,6 +483,16 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Gravity = 9.8f;
 
 		GameState->Cylinder = ModelCylinderInititalize(Arena);
+
+		GameState->Circle = PushArray(Arena, 1, model);
+		model *Circle = GameState->Circle;
+		*Circle	= ModelCircleInitialize(Arena, 0.5f, 32, 0.0f);
+
+		capsule Cap = CapsuleMinMaxRadius(V3(0.0f, 0.5f, 0.0f), V3(0.0f, 1.8f - 0.5f, 0.0f), 0.5f);
+
+		GameState->Capsule = PushArray(Arena, 1, model);
+		model *Capsule = GameState->Capsule;
+		*Capsule	= ModelCapsuleInitialize(Arena, Cap.Min, Cap.Max, Cap.Radius);
 
 		GameMemory->IsInitialized = true;
 	}
@@ -547,7 +572,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			case EntityType_Player:
 			{
-				f32 a = 40.0f;
+				f32 a = 50.0f;
 
 				v3 OldPlayerddP = Entity->ddP;
 				if(!Entity->AnimationGraph->CurrentNode.ControlsPosition)
@@ -675,18 +700,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	Animate(Player, Assets);
 	if(Player->AnimationGraph->CurrentNode.ControlsPosition)
 	{
-		// How this hackiness works. The player's position accumulated a delta vector
-		// for each frame that the animation is playing. The delta vector is the root position
-		// before and after the animation player updates. We then move the player by this delta amount.
-		// Now the rig itself will also be updating each frame the animation is playing. So we need to offset
-		// the rigs position by a delta vector too. Otherwise the gameplay position and visual position both 
-		// accumulate a delta for each frame. The offset needed is going to be the total delta from the start
-		// of the animation to the current time because the player position has already accumulated it. This vecotr
-		// is the rigs tpose root position minus the current position in the animation.
-
-		// This method has a problem. We are still playing the animation. So when we go to blend it with another
-		// animation, the visual position has been updated the entire time. So when we start blending in another animation
-		// the player teleports to the blended position.
+		if(!Player->AnimationPlayer->ControlsPosition)
+		{
+			// NOTE(Justin): Switched to a node that now controls the in game position of the player.
+			// The animation has not started playing yet. Reset the AnimationDelta as it could have
+			// accumulated previous movement from an earlier playback.
+			Player->AnimationPlayer->AnimationDelta = V3(0.0f);
+		}
 
 		// TODO(Justin): Robustness
 		// TODO(Justin): Update velocity..
@@ -696,38 +716,46 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
 
 		v3 AnimationDelta = NewP - OldP;
+		Player->AnimationPlayer->AnimationDelta += AnimationDelta;
 		v3 GameDelta = 2.0f*V3(Player->VisualScale.x * AnimationDelta.x,
 							   Player->VisualScale.y * AnimationDelta.y,
 							   Player->VisualScale.z * AnimationDelta.z);
 
 		GameDelta = Conjugate(Player->Orientation)*GameDelta;
 
-		EntityMoveByAnimation(GameState, Player, GameDelta, dt);
-
-		if(Player->P.y <= 0.0f)
+		// NOTE(Justin): Ground position hack.
+		v3 DesiredP = Player->P + GameDelta;
+		if(DesiredP.y < 0.0f)
 		{
-			Player->P.y = 0.0f;
+			v3 Y = YAxis();
+			GameDelta = GameDelta - Dot(GameDelta, -1.0f*Y)*(-1.0f*Y);
 		}
 
-		v3 RootP = JointPositionGet(Player->AnimationPlayer->Model, 0);
-		v3 OffsetToRoot = RootP - OldP;
-		ModelJointsUpdate(Player->AnimationPlayer, OffsetToRoot);
+		EntityMoveByAnimation(GameState, Player, GameDelta, dt);
+		ModelJointsUpdate(Player->AnimationPlayer, -1.0f*Player->AnimationPlayer->AnimationDelta);
 	}
 	else
 	{
-		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
-		if(!Equal(Player->AnimationPlayer->AnimationDelta, V3(0.0f)))
+		if(Player->AnimationPlayer->ControlsPosition)
 		{
-			// TODO(Justin): Robustness
-			v3 RootP = JointPositionGet(Player->AnimationPlayer->Model, 0);
-			Player->AnimationPlayer->AnimationDelta = V3(0.0f);
+			// NOTE(Justin): Switched to a node that does not control position but still blending out an animation 
+			// that previously controlled the player's position. We still need to offset the visual position
+			// of the player. This is not exactly correct because we are removing the movement from the animation
+			// that is currently blending in. This results in a discontinuity snap. How to recover/get the delta
+			// of the currently blending in animation?
 
-			Player->AnimationPlayer->FinalPose[0].Positions[0] = RootP;
-			Player->AnimationPlayer->FinalPose[1].Positions[0] = RootP;
-			ModelJointsUpdate(Player->AnimationPlayer);
+			v3 OldP = Player->AnimationPlayer->FinalPose->Positions[0];
+			AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
+			v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
+
+			v3 AnimationDelta = NewP - OldP;
+			Player->AnimationPlayer->AnimationDelta += AnimationDelta;
+
+			ModelJointsUpdate(Player->AnimationPlayer, -1.0f*Player->AnimationPlayer->AnimationDelta);
 		}
 		else
 		{
+			AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
 			ModelJointsUpdate(Player->AnimationPlayer);
 		}
 	}
@@ -827,21 +855,33 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				PushModel(RenderBuffer, Model, Transform);
 
 				//
-				// NOTE(Justin): Debug
+				// AABB 
 				//
 
-				// AABB
+				// The visual scale of the player and the visual scale of the AABBDim are unrelated so 
+				// we have to scale the dim by 0.5.
+
+
+
+#if 0
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
 				R = QuaternionToMat4(Entity->Orientation);
-
-				// The visual scale of the player and the AABBDim are unrelated to we have to scale the dim
-				// by 0.5.
-
-				// TODO(Justin): Debug this.
 				S = Mat4Scale(0.5f*Entity->AABBDim);
 				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*R*S, V3(1.0f));
+#else
+				T = Mat4Translate(Entity->P + V3(0.0f, 0.5f + 0.5f, 0.0f));
+				R = QuaternionToMat4(Entity->Orientation);
+				S = Mat4Scale(1.0f);
+				PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
 
+				//mat4 Rotate = Mat4YRotation(DegreeToRad(180.0f));
+				//PushCapsule(RenderBuffer, GameState->Capsule, T*Rotate*R*S, V3(1.0f));
+#endif
+
+				//
 				// Ground arrow 
+				//
+
 				v3 P = Entity->P;
 				P.y += 0.1f;
 				T = Mat4Translate(P);
@@ -850,7 +890,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				TextureIndex = StringHashLookup(&Assets->TextureNames, "left_arrow");
 				PushTexture(RenderBuffer, LookupTexture(Assets, "left_arrow"), TextureIndex);
-				//PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, TextureIndex);
+				PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, TextureIndex);
 			} break;
 			case EntityType_Cube:
 			{
@@ -859,10 +899,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				EntityP.y += Entity->VisualScale.y;
 				T = Mat4Translate(EntityP);
 				S = Mat4Scale(Entity->VisualScale);
-
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
 				PushModel(RenderBuffer, Cube, T*S);
-				//PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f));
+
+				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
+				S = Mat4Scale(Entity->VisualScale);
+				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f));
 			} break;
 		};
 	}
