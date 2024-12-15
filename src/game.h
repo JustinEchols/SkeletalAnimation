@@ -58,6 +58,7 @@ enum entity_type
 	EntityType_Invalid,
 	EntityType_Player,
 	EntityType_Cube,
+	EntityType_WalkableRegion,
 };
 
 #include "intrinsics.h"
@@ -85,10 +86,13 @@ struct entity
 	quaternion Orientation;
 	movement_state MovementState;
 
-	// Collision
+	// Collision0
 	f32 Height;
 	v3 AABBDim;
 	v3 VolumeOffset;
+
+	// Collision1
+	capsule Capsule;
 
 	// Animation
 	animation_player *AnimationPlayer;
@@ -138,6 +142,7 @@ struct game_state
 	model Cylinder;
 	model *Circle;
 	model *Capsule;
+	model *Cube;
 };
 
 struct temp_state

@@ -803,15 +803,7 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				switch(Entry->VolumeType)
 				{
 					case DebugVolumeType_AABB:
-					{
-						OpenGLDrawModel(Model, DebugBBoxShader);
-					} break;
 					case DebugVolumeType_Circle:
-					{
-						mesh *Mesh = Model->Meshes;
-						OpenGL.glBindVertexArray(Mesh->VA);
-						glDrawElements(GL_LINES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
-					} break;
 					case DebugVolumeType_Capsule:
 					{
 						for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)

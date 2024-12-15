@@ -186,3 +186,70 @@ ModelCapsuleInitialize(memory_arena *Arena, v3 Min, v3 Max, f32 Radius)
 
 	return(Model);
 }
+
+internal model
+ModelCubeInitialize(memory_arena *Arena)
+{
+	model Model = {};
+
+	Model.MeshCount = 1;
+	Model.Meshes = PushArray(Arena, Model.MeshCount, mesh);
+	mesh *Mesh = Model.Meshes;
+
+	Mesh->Name = StringCopy(Arena, "Cube");
+	Mesh->VertexCount	= 8;
+	Mesh->IndicesCount	= 24;
+	Mesh->Indices	= PushArray(Arena, Mesh->IndicesCount, u32);
+	Mesh->Vertices	= PushArray(Arena, Mesh->VertexCount, vertex);
+
+	aabb AABB = AABBCenterDim(V3(0.0f), V3(1.0f));
+
+	v3 P0 = V3(AABB.Max.x, AABB.Min.y, AABB.Min.z);
+	v3 P1 = V3(AABB.Max.x, AABB.Min.y, AABB.Max.z);
+	v3 P2 = V3(AABB.Min.x, AABB.Min.y, AABB.Max.z);
+	v3 P3 = V3(AABB.Min.x, AABB.Min.y, AABB.Min.z);
+
+	v3 P4 = V3(AABB.Max.x, AABB.Max.y, AABB.Min.z);
+	v3 P5 = V3(AABB.Max.x, AABB.Max.y, AABB.Max.z);
+	v3 P6 = V3(AABB.Min.x, AABB.Max.y, AABB.Max.z);
+	v3 P7 = V3(AABB.Min.x, AABB.Max.y, AABB.Min.z);
+
+	vertex *V = Mesh->Vertices;
+
+	V->P = P0;
+	V++;
+	V->P = P1;
+	V++;
+	V->P = P2;
+	V++;
+	V->P = P3;
+	V++;
+
+	V->P = P4;
+	V++;
+	V->P = P5;
+	V++;
+	V->P = P6;
+	V++;
+	V->P = P7;
+	V++;
+
+	u32 Indices[24] = 
+	{
+		0,1, 0,4,
+		1,2, 1,5,
+		2,3, 2,6,
+		3,0, 3,7,
+		4,5,
+		5,6,
+		6,7,
+		7,4
+	};
+
+	for(u32 Index = 0; Index < Mesh->IndicesCount; ++Index)
+	{
+		Mesh->Indices[Index] = Indices[Index];
+	}
+
+	return(Model);
+}

@@ -1483,5 +1483,15 @@ CapsuleMinMaxRadius(v3 Min, v3 Max, f32 Radius)
 	return(Result);
 }
 
+inline v3 
+CapsuleCenter(capsule Capsule)
+{
+	v3 Result;
+
+	Result = 0.5f*(Capsule.Min + Capsule.Max);
+
+	return(Result);
+}
+
 #define MATH_H
 #endif

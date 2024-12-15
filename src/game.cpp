@@ -19,11 +19,11 @@ EntityAdd(game_state *GameState, entity_type Type)
 }
 
 internal void
-PlayerAdd(game_state *GameState)
+PlayerAdd(game_state *GameState, v3 P)
 {
 	entity *Entity = EntityAdd(GameState, EntityType_Player);
 	GameState->PlayerEntityIndex = GameState->EntityCount - 1;
-	Entity->P = V3(0.0f, 0.0f, -10.0f);
+	Entity->P = P;
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
 
@@ -47,13 +47,13 @@ PlayerAdd(game_state *GameState)
 }
 
 internal void
-CubeAdd(game_state *GameState, v3 P, v3 Dim)
+CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 {
 	entity *Entity = EntityAdd(GameState, EntityType_Cube);
 	Entity->P = P;
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
-	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
+	Entity->Orientation = Orientation;
 
 	Entity->Height = 1.0f;
 
@@ -65,8 +65,31 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim)
 	// used is that the position is where on the ground the entity is located. So we offset the volume in the
 	// +y direction.
 
+#if 0
 	Entity->AABBDim = Dim;
 	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	Entity->VisualScale = 0.5f*Entity->AABBDim;
+#else
+	Entity->AABBDim = 0.98f*Dim;
+	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	Entity->VisualScale = 0.5f*Dim;
+#endif
+}
+
+internal void
+WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim)
+{
+	entity *Entity = EntityAdd(GameState, EntityType_WalkableRegion);
+	Entity->P = P;
+	Entity->dP = V3(0.0f);
+	Entity->ddP = V3(0.0f);
+	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
+
+	Entity->Height = 1.0f;
+
+	Entity->AABBDim = Dim;
+	//Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	Entity->VolumeOffset = V3(0.0f);
 	Entity->VisualScale = 0.5f*Entity->AABBDim;
 }
 
@@ -242,6 +265,49 @@ PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PointOnPlane, v3 PlaneNormal, aabb
 	return(Collided);
 }
 
+struct collision_info
+{
+	v3 PlaneNormal;
+	v3 PointOnPlane;
+};
+
+struct collision_result
+{
+	collision_info Info[6];
+};
+
+internal collision_result
+CollisionInfoDefault(aabb AABB)
+{
+	collision_result Result;
+
+	// NOTE(Jusitn): Left face
+	Result.Info[0].PlaneNormal = {-1.0f, 0.0f, 0.0f};
+	Result.Info[0].PointOnPlane = AABB.Min;
+
+	// NOTE(Jusitn): Right face
+	Result.Info[1].PlaneNormal = {1.0f, 0.0f, 0.0f};
+	Result.Info[1].PointOnPlane = AABB.Max;
+
+	// NOTE(Jusitn): Back face
+	Result.Info[2].PlaneNormal = {0.0f, 0.0f, -1.0f};
+	Result.Info[2].PointOnPlane = AABB.Max;
+
+	// NOTE(Jusitn): Front face
+	Result.Info[3].PlaneNormal = {0.0f, 0.0f, 1.0f};
+	Result.Info[3].PointOnPlane = AABB.Min;
+
+	// NOTE(Jusitn): Top face
+	Result.Info[4].PlaneNormal = {0.0f, 1.0f, 0.0f};
+	Result.Info[4].PointOnPlane = AABB.Max;
+
+	// NOTE(Jusitn): Bottom face
+	Result.Info[5].PlaneNormal = {0.0f, -1.0f, 0.0f};
+	Result.Info[5].PointOnPlane = AABB.Max;
+
+	return(Result);
+}
+
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 {
@@ -257,6 +323,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		f32 tMin = 1.0f;
 		b32 Collided = false;
 		v3 Normal = V3(0.0f);
+		entity *HitEntity = 0;
 		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
 		{
 			entity *TestEntity = GameState->Entities + TestEntityIndex;
@@ -268,50 +335,19 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 
 				v3 AABBDim = Entity->AABBDim + TestEntity->AABBDim;
 				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
+				collision_result CollisionResult = CollisionInfoDefault(MKSumAABB);
 
-				// NOTE(Jusitn): Left face
-				v3 PlaneNormal = {-1.0f, 0.0f, 0.0f};
-				v3 PointOnPlane = MKSumAABB.Min;
-				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
+				for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
 				{
-					Normal = PlaneNormal;
-					Collided = true;
-				}
-
-				// NOTE(Jusitn): Right face
-				PlaneNormal = {1.0f, 0.0f, 0.0f};
-				PointOnPlane = MKSumAABB.Max;
-				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
-				{
-					Normal = PlaneNormal;
-					Collided = true;
-				}
-
-				// NOTE(Jusitn): Back face
-				PlaneNormal = {0.0f, 0.0f, -1.0f};
-				PointOnPlane = MKSumAABB.Max;
-				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
-				{
-					Normal = PlaneNormal;
-					Collided = true;
-				}
-
-				// NOTE(Jusitn): Front face
-				PlaneNormal = {0.0f, 0.0f, 1.0f};
-				PointOnPlane = MKSumAABB.Min;
-				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
-				{
-					Normal = PlaneNormal;
-					Collided = true;
-				}
-
-				// NOTE(Jusitn): Top face
-				PlaneNormal = {0.0f, 1.0f, 0.0f};
-				PointOnPlane = MKSumAABB.Max;
-				if(PointAndPlaneIntersect(RelP, DeltaP, PointOnPlane, PlaneNormal, MKSumAABB, &tMin))
-				{
-					Normal = PlaneNormal;
-					Collided = true;
+					collision_info Info = CollisionResult.Info[InfoIndex];
+					if(PointAndPlaneIntersect(RelP, DeltaP, Info.PointOnPlane,
+															Info.PlaneNormal,
+															MKSumAABB, &tMin))
+					{
+						Normal = Info.PlaneNormal;
+						Collided = true;
+						HitEntity = TestEntity;
+					}
 				}
 			}
 		}
@@ -441,8 +477,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Texture.Width = 256;
 		GameState->Texture.Height = 256;
 
+		WalkableRegionAdd(GameState, V3(0.0f, 10.0f, -10.0f), V3(20.0f));
+
 		// Player
-		PlayerAdd(GameState);
+		PlayerAdd(GameState, V3(0.0f, 0.0f, -10.0f));
 		entity *Player			= GameState->Entities + GameState->PlayerEntityIndex;
 		Player->AnimationPlayer = PushStruct(Arena, animation_player);
 		Player->AnimationGraph	= PushStruct(Arena, animation_graph);
@@ -455,19 +493,24 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		// decreasing the collision geometry from the actual visual mesh for collision purposes.
 		
 		// Cubes 
+		quaternion CubeOrientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
+
 		v3 StartP = V3(-3.0f, 0.0f, -10.0f);
 		v3 Dim = V3(2.0f, 1.0f, 10.0f);
-		CubeAdd(GameState, StartP, Dim);
+		CubeAdd(GameState, StartP, Dim, CubeOrientation);
 
 		Dim = V3(2.0f, 10.0f, 2.0f);
 		StartP += V3(6.0f, 0.0f, -0.0f);
-		CubeAdd(GameState, StartP, Dim);
+		CubeAdd(GameState, StartP, Dim, CubeOrientation);
 
 		Dim = V3(1.f, 1.0f, 2.0f);
 		StartP += V3(6.5f, 0.0f, 0.0f);
-		CubeAdd(GameState, StartP, Dim);
+		CubeAdd(GameState, StartP, Dim, CubeOrientation);
 
-		//LevelSave((entity *)GameState->Entities, GameState->EntityCount);
+		StartP = V3(-7.0f, 0.0f, -10.0f);
+		Dim = V3(2.0f, 1.0f, 10.0f);
+		CubeOrientation = Quaternion(V3(1.0f, 0.0f, 0.0f), DegreeToRad(-30.0f));
+		CubeAdd(GameState, StartP, Dim, CubeOrientation);
 
 		GameState->CameraOffsetFromPlayer = V3(0.0f, 2.0f, 5.0f);
 		CameraSet(&GameState->Camera, Player->P + GameState->CameraOffsetFromPlayer, -90.0f, -10.0f);
@@ -486,11 +529,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		model *Circle = GameState->Circle;
 		*Circle	= ModelCircleInitialize(Arena, 0.5f, 32, 0.0f);
 
+		// NOTE(Justin): Initialize a default capsule st it can be used for any entity.
 		capsule Cap = CapsuleMinMaxRadius(V3(0.0f, 0.5f, 0.0f), V3(0.0f, 1.8f - 0.5f, 0.0f), 0.5f);
+		Player->Capsule = Cap;
 
 		GameState->Capsule = PushArray(Arena, 1, model);
 		model *Capsule = GameState->Capsule;
 		*Capsule	= ModelCapsuleInitialize(Arena, Cap.Min, Cap.Max, Cap.Radius);
+
+		GameState->Cube = PushArray(Arena, 1, model);
+		model *Cube = GameState->Cube;
+		*Cube = ModelCubeInitialize(Arena);//, Cap.Min, Cap.Max, Cap.Radius);
 
 		GameMemory->IsInitialized = true;
 	}
@@ -859,21 +908,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				// The visual scale of the player and the visual scale of the AABBDim are unrelated so 
 				// we have to scale the dim by 0.5.
 
-
-
-#if 0
+#if 1
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
 				R = QuaternionToMat4(Entity->Orientation);
-				S = Mat4Scale(0.5f*Entity->AABBDim);
-				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*R*S, V3(1.0f));
+				S = Mat4Scale(Entity->AABBDim);
+				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
 #else
-				T = Mat4Translate(Entity->P + V3(0.0f, 0.5f + 0.5f, 0.0f));
+				capsule Capsule = Player->Capsule;
+				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
 				PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
-
-				//mat4 Rotate = Mat4YRotation(DegreeToRad(180.0f));
-				//PushCapsule(RenderBuffer, GameState->Capsule, T*Rotate*R*S, V3(1.0f));
 #endif
 
 				//
@@ -896,13 +941,23 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				v3 EntityP = Entity->P;
 				EntityP.y += Entity->VisualScale.y;
 				T = Mat4Translate(EntityP);
+				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(Entity->VisualScale);
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
-				PushModel(RenderBuffer, Cube, T*S);
+				PushModel(RenderBuffer, Cube, T*R*S);
 
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
-				S = Mat4Scale(Entity->VisualScale);
-				PushAABB(RenderBuffer, LookupModel(Assets, "Cube"), T*S, V3(1.0f));
+				S = Mat4Scale(Entity->AABBDim);
+				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
+			} break;
+			case EntityType_WalkableRegion:
+			{
+				model *Cube = LookupModel(Assets, "Cube");
+				v3 EntityP = Entity->P;
+
+				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
+				S = Mat4Scale(Entity->AABBDim);
+				PushAABB(RenderBuffer, GameState->Cube, T*S, V3(1.0f));
 			} break;
 		};
 	}
