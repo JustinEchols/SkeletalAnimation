@@ -431,6 +431,9 @@ char *ModelFiles[] =
 	"../data/models/Cube.mesh",
 	"../data/models/Sphere.mesh",
 	"../data/models/Arrow.mesh",
+	"../data/models/Capsule.obj",
+	"../data/models/Cylinder.obj",
+	"../data/models/Cone.obj",
 };
 
 char *FontFiles[] =
@@ -494,6 +497,7 @@ internal void
 AssetManagerInit(asset_manager *Manager)
 {
 	char Buffer[256];
+	char ExtBuffer[256];
 
 	//
 	// Textures
@@ -523,30 +527,35 @@ AssetManagerInit(asset_manager *Manager)
 	{
 		char *FullPath = ModelFiles[NameIndex];
 		FileNameFromFullPath(FullPath, Buffer);
+		ExtFromFullPath(FullPath, ExtBuffer);
 		StringHashAdd(&Manager->ModelNames, Buffer, NameIndex);
 		s32 Index = StringHashLookup(&Manager->ModelNames, Buffer);
 		Assert(Index != -1);
 		model *Model = Manager->Models + Index;
-		*Model = ModelLoad(&Manager->Arena, FullPath);
+
+		texture *Texture = LookupTexture(Manager, "orange_texture_02");
+		Assert(Texture);
+		if(StringsAreSame(ExtBuffer, "mesh"))
+		{
+			*Model = ModelLoad(&Manager->Arena, FullPath);
+		}
+		else
+		{
+			*Model = ObjLoad(&Manager->Arena, FullPath);
+			Model->Meshes[0].Texture = Texture;
+		}
 
 		if(StringsAreSame(Buffer, "Cube"))
 		{
-			texture *Texture = LookupTexture(Manager, "orange_texture_02");
-			if(Texture)
-			{
-				Model->Meshes[0].Texture = Texture;
-			}
+			Model->Meshes[0].Texture = Texture;
 		}
 		else if(StringsAreSame(Buffer, "Sphere"))
 		{
-			texture *Texture = LookupTexture(Manager, "orange_texture_02");
-			if(Texture)
-			{
-				Model->Meshes[0].Texture = Texture;
-			}
+			Model->Meshes[0].Texture = Texture;
 		}
 	}
 
+#if 0
 	{
 		texture *Texture = LookupTexture(Manager, "orange_texture_02");
 		Assert(Texture);
@@ -579,6 +588,7 @@ AssetManagerInit(asset_manager *Manager)
 		Cone ->Meshes[0].Texture = Texture;
 
 	}
+#endif
 
 	//
 	// Animations

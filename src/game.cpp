@@ -897,7 +897,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				// The visual scale of the player and the visual scale of the AABBDim are unrelated so 
 				// we have to scale the dim by 0.5.
 
-#if 1
+#if 0
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(Entity->AABBDim);

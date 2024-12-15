@@ -567,7 +567,7 @@ StringHashLookup(string_hash *Hash, char *String)
 }
 
 internal void 
-FileNameFromFullPath(char *FullPath, char *Buff)
+FileNameFromFullPath(char *FullPath, char *Dest)
 {
 	u64 OPLSlash = 0;
 	for(char *C = FullPath; *C; ++C)
@@ -586,7 +586,27 @@ FileNameFromFullPath(char *FullPath, char *Buff)
 			break;
 		}
 
-		Buff[At++] = *C;
+		Dest[At++] = *C;
 	}
-	Buff[At] = '\0';
+	Dest[At] = '\0';
+}
+
+internal void 
+ExtFromFullPath(char *FullPath, char *Dest)
+{
+	u64 OPExt = 0;
+	for(char *C = FullPath; *C; ++C)
+	{
+		if(*C == '.')
+		{
+			OPExt = (C - FullPath) + 1;
+		}
+	}
+
+	u32 At = 0;
+	for(char *C = (FullPath + OPExt); *C; ++C)
+	{
+		Dest[At++] = *C;
+	}
+	Dest[At] = '\0';
 }
