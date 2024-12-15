@@ -57,23 +57,16 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 
 	Entity->Height = 1.0f;
 
-	// NOTE(Justin): The cube mesh has dimensions 2x2x2. If we want the gameplay dimensions of
-	// the cube to be 1x1x1, then the visual scale of the cube is 0.5. The AABBDim is used for collision
-	// detection and the visual scale is used for rendering
+	// NOTE(Justin): The cube mesh has dimensions 1x1x1. The AABBDim is used for collision
+	// detection and the visual scale used for rendering
 	//
 	// The volume offset depends on what convention is used as far as the entity's position. The convention
 	// used is that the position is where on the ground the entity is located. So we offset the volume in the
 	// +y direction.
 
-#if 0
-	Entity->AABBDim = Dim;
-	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
-	Entity->VisualScale = 0.5f*Entity->AABBDim;
-#else
 	Entity->AABBDim = 0.98f*Dim;
 	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
 	Entity->VisualScale = 0.5f*Dim;
-#endif
 }
 
 internal void
@@ -525,21 +518,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 		GameState->Gravity = 9.8f;
 
-		GameState->Circle = PushArray(Arena, 1, model);
-		model *Circle = GameState->Circle;
-		*Circle	= ModelCircleInitialize(Arena, 0.5f, 32, 0.0f);
-
 		// NOTE(Justin): Initialize a default capsule st it can be used for any entity.
 		capsule Cap = CapsuleMinMaxRadius(V3(0.0f, 0.5f, 0.0f), V3(0.0f, 1.8f - 0.5f, 0.0f), 0.5f);
 		Player->Capsule = Cap;
 
 		GameState->Capsule = PushArray(Arena, 1, model);
 		model *Capsule = GameState->Capsule;
-		*Capsule	= ModelCapsuleInitialize(Arena, Cap.Min, Cap.Max, Cap.Radius);
+		*Capsule	= DebugModelCapsuleInitialize(Arena, Cap.Min, Cap.Max, Cap.Radius);
 
 		GameState->Cube = PushArray(Arena, 1, model);
 		model *Cube = GameState->Cube;
-		*Cube = ModelCubeInitialize(Arena);//, Cap.Min, Cap.Max, Cap.Radius);
+		*Cube = DebugModelCubeInitialize(Arena);//, Cap.Min, Cap.Max, Cap.Radius);
 
 		GameMemory->IsInitialized = true;
 	}

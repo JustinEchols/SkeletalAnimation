@@ -140,7 +140,6 @@ struct game_state
 
 	texture Texture;
 	model Cylinder;
-	model *Circle;
 	model *Capsule;
 	model *Cube;
 };
