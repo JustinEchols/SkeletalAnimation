@@ -58,6 +58,7 @@ enum entity_type
 	EntityType_Invalid,
 	EntityType_Player,
 	EntityType_Cube,
+	EntityType_Sphere,
 	EntityType_WalkableRegion,
 };
 
@@ -93,6 +94,13 @@ struct entity
 
 	// Collision1
 	capsule Capsule;
+
+	// Collision2
+	obb OBB;
+
+	// Collision3
+	f32 Radius;
+
 
 	// Animation
 	animation_player *AnimationPlayer;
@@ -142,6 +150,7 @@ struct game_state
 	model Cylinder;
 	model *Capsule;
 	model *Cube;
+	model *Sphere;
 };
 
 struct temp_state

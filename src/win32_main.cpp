@@ -186,7 +186,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 								  "Skeletal Animation",
 								  WS_OVERLAPPEDWINDOW | WS_VISIBLE,
 								  //CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
-								  CW_USEDEFAULT, CW_USEDEFAULT, 960, 540,
+								  CW_USEDEFAULT, CW_USEDEFAULT, 1280, 720,
 								  0,
 								  0,
 								  Instance,

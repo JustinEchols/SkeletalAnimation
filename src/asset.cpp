@@ -553,6 +553,10 @@ AssetManagerInit(asset_manager *Manager)
 		{
 			Model->Meshes[0].Texture = Texture;
 		}
+		else if(StringsAreSame(Buffer, "Arrow"))
+		{
+			Model->Meshes[0].Texture = Texture;
+		}
 	}
 
 #if 0

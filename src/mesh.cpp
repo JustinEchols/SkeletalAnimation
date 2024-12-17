@@ -214,3 +214,36 @@ DebugModelCubeInitialize(memory_arena *Arena)
 
 	return(Model);
 }
+
+
+internal model 
+DebugModelSphereInitialize(memory_arena *Arena, f32 Radius)
+{
+	model Model = {};
+
+	Model.MeshCount = 2;
+	Model.Meshes = PushArray(Arena, Model.MeshCount, mesh);
+	mesh *Mesh = Model.Meshes;
+
+	u32 SectorCount = 64;
+	f32 SectorAngleSize = Pi32 / (f32)SectorCount;
+
+	*Mesh = DebugMeshCircleInitialize(Arena, Radius, SectorCount, 0.0f);
+	quaternion Q = Quaternion(V3(1.0f, 0.0f, 0.0f), DegreeToRad(-90.0f));
+	for(u32 VertexIndex = 0; VertexIndex < Mesh->VertexCount; ++VertexIndex)
+	{
+		vertex *V = Mesh->Vertices + VertexIndex;
+		V->P = Q*V->P;
+	}
+
+	Mesh++;
+	*Mesh = DebugMeshCircleInitialize(Arena, Radius, SectorCount, 0.0f);
+	Q = Quaternion(V3(0.0f, 0.0f, 1.0f), DegreeToRad(-90.0f));
+	for(u32 VertexIndex = 0; VertexIndex < Mesh->VertexCount; ++VertexIndex)
+	{
+		vertex *V = Mesh->Vertices + VertexIndex;
+		V->P = Q*V->P;
+	}
+
+	return(Model);
+}

@@ -26,7 +26,6 @@ union v2i
 	s32 E[2];
 };
 
-
 union v3
 {
 	struct
@@ -151,6 +150,34 @@ struct capsule
 	v3 Min;
 	v3 Max;
 	f32 Radius;
+};
+
+struct obb 
+{
+	v3 Center;
+	union
+	{
+		struct
+		{
+			v3 X;
+			v3 Y;
+			v3 Z;
+		};
+		v3 E[3];
+	};
+	v3 Dim;
+};
+
+struct sphere
+{
+	v3 Center;
+	f32 Radius;
+};
+
+struct plane
+{
+	v3 N;
+	f32 D;
 };
 
 inline v2
@@ -1489,6 +1516,31 @@ CapsuleCenter(capsule Capsule)
 	v3 Result;
 
 	Result = 0.5f*(Capsule.Min + Capsule.Max);
+
+	return(Result);
+}
+
+inline obb
+OBBCenterDimOrientation(v3 Center, v3 Dim, quaternion Q)
+{
+	obb Result;
+
+	Result.Center = Center;
+	Result.X = Q * XAxis();
+	Result.Y = Q * YAxis();
+	Result.Z = Q * (-1.0f*ZAxis());
+	Result.Dim = Dim;
+
+	return(Result);
+}
+
+inline sphere
+SphereCenterRadius(v3 Center, f32 Radius)
+{
+	sphere Result;
+
+	Result.Center = Center;
+	Result.Radius = Radius;
 
 	return(Result);
 }
