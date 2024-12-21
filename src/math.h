@@ -658,12 +658,54 @@ operator+=(v4 &A, v4 &B)
 inline mat3
 Mat3(v3 X, v3 Y, v3 Z)
 {
-	mat4 R =
+	mat3 R =
 	{
 		{{X.x, Y.x, Z.x},
 		{X.y, Y.y, Z.y},
 		{X.z, Y.z, Z.z}} 
 	};
+
+	return(R);
+}
+
+inline v3
+Mat3Transform(mat3 T, v3 V)
+{
+	v3 Result = {};
+
+	Result.x = T.E[0][0] * V.x + T.E[0][1] * V.y + T.E[0][2] * V.z;
+	Result.y = T.E[1][0] * V.x + T.E[1][1] * V.y + T.E[1][2] * V.z;
+	Result.z = T.E[2][0] * V.x + T.E[2][1] * V.y + T.E[2][2] * V.z;
+
+	return(Result);
+}
+
+inline v3
+operator*(mat3 T, v3 V)
+{
+	v3 Result = Mat3Transform(T, V);
+	return(Result);
+}
+
+inline mat3
+Transpose(mat3 T)
+{
+	mat3 R = T;
+
+	for(s32 i = 0; i < 3; ++i)
+	{
+		for(s32 j = 0; j < 3; ++j)
+		{
+			if((i != j) && (i < j))
+			{
+				f32 Temp =  R.E[j][i];
+				R.E[j][i] = R.E[i][j];
+				R.E[i][j] = Temp;
+			}
+		}
+	}
+
+	return(R);
 }
 
 inline f32
@@ -1483,17 +1525,14 @@ AABBDim(aabb AABB)
 }
 
 inline b32
-InAABB(aabb AABB, v3 Test)
+InAABB(aabb AABB, v3 P)
 {
-	AABB.Min.z *= -1;
-	AABB.Max.z *= -1;
-
-	b32 Result = ((AABB.Min.x <= Test.x) &&
-				  (AABB.Min.y <= Test.y) &&
-				  (AABB.Min.z <= Test.z) &&
-				  (AABB.Max.x >= Test.x) &&
-				  (AABB.Max.y >= Test.y) &&
-				  (AABB.Max.z >= Test.z));
+	b32 Result = ((AABB.Min.x <= P.x) &&
+				  (AABB.Min.y <= P.y) &&
+				  (AABB.Min.z >= P.z) &&
+				  (AABB.Max.x >= P.x) &&
+				  (AABB.Max.y >= P.y) &&
+				  (AABB.Max.z <= P.z));
 
 	return(Result);
 }
@@ -1532,6 +1571,28 @@ OBBCenterDimOrientation(v3 Center, v3 Dim, quaternion Q)
 	Result.Dim = Dim;
 
 	return(Result);
+}
+
+inline b32
+InOBB(obb OBB, v3 P)
+{
+	b32 Result = false;
+
+	v3 RelP = P - OBB.Center;
+
+	v3 TestP;
+	TestP.x = Dot(RelP, OBB.X);
+	TestP.y = Dot(RelP, OBB.Y);
+	TestP.z = Dot(RelP, OBB.Z);
+
+	aabb AABB = AABBCenterDim(V3(0.0f), OBB.Dim);
+	if(InAABB(AABB, TestP))
+	{
+		Result = true;
+	}
+
+	return(Result);
+
 }
 
 inline sphere

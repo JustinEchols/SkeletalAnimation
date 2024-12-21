@@ -33,6 +33,14 @@ PlayerAdd(game_state *GameState, v3 P)
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Radians);
 	Entity->MovementState = MovementState_Idle;
 
+	//
+	// AABB 
+	//
+
+	// The visual scale of the player and the visual scale of the AABBDim are unrelated so 
+	// we have to scale the dim by 0.5.
+
+
 	// NOTE(Justin): The AABBDim is used for collision detection AND for AABB rendering. The visual
 	// scale is used to scale the player model. Therefore the visual scale and the AABBDim are unrelated
 	//
@@ -45,6 +53,14 @@ PlayerAdd(game_state *GameState, v3 P)
 	// AABB
 	Entity->AABBDim = V3(0.7f, Entity->Height, 0.7f);
 	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+
+	// OBB
+	quaternion Q = Conjugate(Entity->Orientation);
+	Entity->OBB.Center = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	Entity->OBB.X = Q * XAxis();
+	Entity->OBB.Y = Q * YAxis();
+	Entity->OBB.Z = Q * (-1.0f*ZAxis());
+	Entity->OBB.Dim = Entity->AABBDim;
 
 	// TODO(Justin): Capsule
 
@@ -341,8 +357,50 @@ CollisionInfoDefault(aabb AABB)
 	return(Result);
 }
 
-#define PLAYER_COLLIDER_AABB 1
-#define PLAYER_COLLIDER_SPHERE 0
+internal v3
+ClosestPointOnOBB(obb OBB, v3 WorldPosition, v3 P)
+{
+	v3 ClosestPoint;
+
+	v3 Center = WorldPosition + OBB.Center;
+	v3 CenterToP = P - Center;
+
+	f32 X = Dot(CenterToP, OBB.X);
+	f32 Y = Dot(CenterToP, OBB.Y);
+	f32 Z = Dot(CenterToP, OBB.Z);
+
+	f32 HalfDimX = 0.5f*OBB.Dim.E[0];
+	f32 HalfDimY = 0.5f*OBB.Dim.E[1];
+	f32 HalfDimZ = 0.5f*OBB.Dim.E[2];
+
+	X = Clamp(-HalfDimX, X, HalfDimX);
+	Y = Clamp(-HalfDimY, Y, HalfDimY);
+	Z = Clamp(-HalfDimZ, Z, HalfDimZ);
+
+	ClosestPoint = Center + X*OBB.X + Y*OBB.Y + Z*OBB.Z;
+
+	return(ClosestPoint);
+}
+
+internal v3
+ClosestPointOnLineSegment(v3 A, v3 B, v3 P)
+{
+	v3 ClosestPoint;
+
+	v3 Delta = B - A;
+	f32 t = Dot(P - A, Delta) / Dot(Delta, Delta);
+	t = Clamp01(t);
+
+	ClosestPoint = A + t*Delta;
+
+	return(ClosestPoint);
+}
+
+
+#define PLAYER_COLLIDER_AABB 0
+#define PLAYER_COLLIDER_OBB 0
+#define PLAYER_COLLIDER_SPHERE 1
+#define PLAYER_COLLIDER_CAPSULE 0
 
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
@@ -370,7 +428,11 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 #if PLAYER_COLLIDER_AABB
 				v3 RelP		= (CurrentP + Entity->VolumeOffset) - (TestP + TestEntity->VolumeOffset);
 				v3 AABBDim	= Entity->AABBDim + TestEntity->AABBDim;
+#elif PLAYER_COLLIDER_OBB
+				v3 RelP		= (CurrentP + Entity->VolumeOffset) - (TestP + TestEntity->VolumeOffset);
+				v3 AABBDim	= Entity->AABBDim + TestEntity->AABBDim;
 #elif PLAYER_COLLIDER_SPHERE
+				// NOTE(Justin): This is a sphere vs plane test. NOT a sphere vs AABB test
 				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
 				v3 AABBDim	= V3(Entity->Radius) + TestEntity->AABBDim;
 #endif
@@ -526,7 +588,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		// Player
 		PlayerAdd(GameState, V3(0.0f, 0.0f, -10.0f));
-		//PlayerAdd(GameState, V3(1.0f, 0.0f, 0.0f));
 		entity *Player			= GameState->Entities + GameState->PlayerEntityIndex;
 		Player->AnimationPlayer = PushStruct(Arena, animation_player);
 		Player->AnimationGraph	= PushStruct(Arena, animation_graph);
@@ -559,12 +620,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		StartP += V3(6.5f, 0.0f, 0.0f);
 		CubeAdd(GameState, StartP, Dim, CubeOrientation);
 
-		StartP = V3(-7.0f, 0.0f, -10.0f);
+		StartP = V3(-7.0f, 1.0f, -10.0f);
 		Dim = V3(2.0f, 1.0f, 10.0f);
 		CubeOrientation = Quaternion(V3(1.0f, 0.0f, 0.0f), DegreeToRad(-30.0f));
 		CubeAdd(GameState, StartP, Dim, CubeOrientation);
-
-		SphereAdd(GameState, V3(1.0f, 1.0f, -15.0f), 0.5f);
 
 		GameState->CameraOffsetFromPlayer = V3(0.0f, 2.0f, 5.0f);
 		CameraSet(&GameState->Camera, Player->P + GameState->CameraOffsetFromPlayer, -90.0f, -10.0f);
@@ -691,13 +750,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					ddP = a * ddP;
 					ddP += PlayerDrag * Entity->dP;
 
-					//ddP = {-1.0f, 0.0f, 0.0f};
 					if(!Equal(ddP, V3(0.0f)))
 					{
 						EntityMove(GameState, Entity, ddP, dt);
 						EntityOrientationUpdate(Entity, dt, AngularSpeed);
 					}
-
 				}
 
 				switch(Entity->MovementState)
@@ -961,27 +1018,29 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				PushModel(RenderBuffer, Model, Transform);
 
 				//
-				// AABB 
+				// Debug volume
 				//
-
-				// The visual scale of the player and the visual scale of the AABBDim are unrelated so 
-				// we have to scale the dim by 0.5.
 
 #if PLAYER_COLLIDER_AABB
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(Entity->AABBDim);
 				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
+#elif PLAYER_COLLIDER_OBB
+				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
+				R = Mat4(Entity->OBB.X, Entity->OBB.Y, Entity->OBB.Z);
+				S = Mat4Scale(Entity->OBB.Dim);
+				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
+#elif PLAYER_COLLIDER_SPHERE
+				T = Mat4Translate(Entity->P + V3(0.0f, 0.5f, 0.0f));
+				S = Mat4Scale(1.0f);
+				PushAABB(RenderBuffer, GameState->Sphere, T*S, V3(1.0f));
 #elif PLAYER_COLLIDER_CAPSULE
 				capsule Capsule = Player->Capsule;
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
 				PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
-#elif PLAYER_COLLIDER_SPHERE
-				T = Mat4Translate(Entity->P + V3(0.0f, 0.5f, 0.0f));
-				S = Mat4Scale(1.0f);
-				PushAABB(RenderBuffer, GameState->Sphere, T*S, V3(1.0f));
 #endif
 
 				//
@@ -1008,7 +1067,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				model *Cube = LookupModel(Assets, "Cube");
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
-				PushModel(RenderBuffer, Cube, T*R*S);
+				//PushModel(RenderBuffer, Cube, T*R*S);
 #if 0
 				// ABB
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
