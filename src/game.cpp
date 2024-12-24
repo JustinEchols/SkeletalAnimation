@@ -95,7 +95,6 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 
 	// OBB
 	quaternion Q = Conjugate(Entity->Orientation);
-	//quaternion Q = Entity->Orientation;
 	Entity->OBB.Center = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
 	Entity->OBB.X = Q * XAxis();
 	Entity->OBB.Y = Q * YAxis();
@@ -298,7 +297,15 @@ PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB
 {
 	b32 Collided = false;
 
-	f32 tEpsilon = 0.001f;
+	// TODO(Justin): Figure out an approach to epsilons.
+	// NOTE(Justin): There might be an epsilon bug when epsilon = 0.001f when colliding with an OBB. 
+	// Some of the time the player will tunnel through the OBB. After chaning epsilon to 0.01f;
+	// the player does not tunnel as often. It is possible that the position the player was moved to
+	// using 0.001f for epsilon, ends up being behind the non-aligned plane of the OBB. If the player
+	// gets moved there then they tunnel through the OBB.
+
+	//f32 tEpsilon = 0.001f;
+	f32 tEpsilon = 0.01f;
 	if(!Equal(DeltaP, V3(0.0f)))
 	{
 		f32 tResult = (D - Dot(PlaneNormal, RelP)) / Dot(PlaneNormal, DeltaP);
@@ -435,6 +442,7 @@ ClosestPointOnLineSegment(v3 A, v3 B, v3 P)
 #define PLAYER_COLLIDER_OBB 0
 #define PLAYER_COLLIDER_SPHERE 1
 #define PLAYER_COLLIDER_CAPSULE 0
+#define PLAYER_COLLIDER_OFF 0
 
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
@@ -480,7 +488,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 				}
 #elif PLAYER_COLLIDER_SPHERE
 				// NOTE(Justin): This is a sphere vs plane test. NOT a sphere vs AABB test (for now..)
-
+				
 				// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
 				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
 
@@ -524,6 +532,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 						HitEntity = TestEntity;
 					}
 				}
+#elif PLAYER_COLLIDER_OFF
 #endif
 			}
 		}
@@ -531,24 +540,9 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		Entity->P += tMin * DeltaP; 
 		if(Collided)
 		{
-
-			if(Equal(Dot(Normal, Entity->dP),0.0f))
-			{
-				int breakere = 0;
-			}
-
-			if(Dot(Normal, Entity->dP) == 1.0f)
-			{
-				int breakere = 0;
-			}
-
-			// Collide and slide.
 			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
 			DeltaP = DesiredP - Entity->P;
 			DeltaP = DeltaP - Dot(Normal, DeltaP) * Normal;
-
-
-
 		}
 		else
 		{
@@ -1122,10 +1116,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
 #elif PLAYER_COLLIDER_SPHERE
 				T = Mat4Translate(Entity->P + V3(0.0f, Entity->Radius, 0.0f));
-				//T = Mat4Translate(Entity->P);// + V3(0.0f, Entity->Radius, 0.0f));
 				R = QuaternionToMat4(Entity->Orientation);
-				S = Mat4Scale(Entity->Radius);
+				S = Mat4Scale(1.0f);
 				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+
+				T = Mat4Translate(Entity->P + V3(0.0f, Entity->Radius, 0.0f));
+				S = Mat4Scale(0.05f);
+				model *Sphere = LookupModel(Assets, "Sphere");
+				PushModel(RenderBuffer, Sphere, T*S);
+
+				T = Mat4Translate(Entity->P);
+				PushModel(RenderBuffer, Sphere, T*S);
 #elif PLAYER_COLLIDER_CAPSULE
 				capsule Capsule = Player->Capsule;
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
@@ -1158,15 +1159,18 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				model *Cube = LookupModel(Assets, "Cube");
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
-				//PushModel(RenderBuffer, Cube, T*R*S);
+				PushModel(RenderBuffer, Cube, T*R*S);
 
-				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
+				//
+				// OBB
+				//
 
 				v3 X = Entity->OBB.X;
 				v3 Y = Entity->OBB.Y;
 				v3 Z = Entity->OBB.Z;
-				R = Mat4(X, Y, Z);
 
+				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
+				R = Mat4(X, Y, Z);
 				S = Mat4Scale(Entity->OBB.Dim);
 				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
 
@@ -1174,6 +1178,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				// Axes.
 				//
 
+#if 0
 				S = Mat4Scale(0.5f);
 				model *ZArrow = LookupModel(Assets, "Arrow");
 				model *XArrow = LookupModel(Assets, "XArrow");
@@ -1185,6 +1190,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				PushAABB(RenderBuffer, YArrow, T*R*S, V3(0.0f, 1.0f, 0.0f));
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset + 0.5f*Z);
 				PushAABB(RenderBuffer, ZArrow, T*R*S, V3(0.0f, 0.0f, 1.0f));
+#endif
+
+
 			} break;
 			case EntityType_WalkableRegion:
 			{
