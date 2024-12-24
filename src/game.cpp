@@ -91,7 +91,7 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 
 	// ABB
 	Entity->AABBDim = 0.99f*Dim;
-	//Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
 
 	// OBB
 	quaternion Q = Conjugate(Entity->Orientation);
@@ -101,7 +101,7 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->OBB.Z = Q * (-1.0f*ZAxis());
 	Entity->OBB.Dim = 0.99f*Dim;
 
-	Entity->VolumeOffset = 0.5f*Entity->AABBDim.y*Entity->OBB.Y;
+	//Entity->VolumeOffset = 0.5f*Entity->AABBDim.y*Entity->OBB.Y;
 
 	Entity->VisualScale = 0.5f*Dim;
 }
@@ -508,7 +508,10 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 				// It is constructed at 0 to facilitate the segment vs plane tests. Each face of the AABB
 				// is a plane and we can easily determine each normal and the signed distance D of the plane.
 
-				v3 AABBDim	= V3(Entity->Radius) + TestEntity->AABBDim;
+				// NOTE(Justin): The radius can be considered as the HALF DIM of the bounding box constructed from the
+				// sphere. So, the correct MK sum needs to use TWICE the radius.
+
+				v3 AABBDim	= 2.0f*V3(Entity->Radius) + TestEntity->AABBDim;
 				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
 				collision_result CollisionResult = CollisionInfoDefault(MKSumAABB);
 				for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
@@ -563,9 +566,10 @@ EntityMoveByAnimation(game_state *GameState, entity *Entity, v3 DeltaP, f32 dt)
 	v3 DesiredP = OldP + DeltaP;
 	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
 	{
-	f32 tMin = 1.0f;
+		f32 tMin = 1.0f;
 		b32 Collided = false;
 		v3 Normal = V3(0.0f);
+		entity *HitEntity = 0;
 		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
 		{
 			entity *TestEntity = GameState->Entities + TestEntityIndex;
@@ -573,60 +577,73 @@ EntityMoveByAnimation(game_state *GameState, entity *Entity, v3 DeltaP, f32 dt)
 			{
 				v3 TestP = TestEntity->P;
 				v3 CurrentP = Entity->P; 
-				v3 RelP = (CurrentP + Entity->VolumeOffset) - (TestP + TestEntity->VolumeOffset);
+#if PLAYER_COLLIDER_AABB
+				v3 RelP		= (CurrentP + Entity->VolumeOffset) - (TestP + TestEntity->VolumeOffset);
+				v3 AABBDim	= Entity->AABBDim + TestEntity->AABBDim;
 
-				v3 AABBDim = Entity->AABBDim + TestEntity->AABBDim;
 				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
-
-				// NOTE(Jusitn): Left face
-				v3 PlaneNormal = {-1.0f, 0.0f, 0.0f};
-				v3 PointOnPlane = MKSumAABB.Min;
-				f32 D = Dot(PlaneNormal, PointOnPlane);
-				if(PointAndPlaneIntersect(RelP, DeltaP, PlaneNormal, D, MKSumAABB, &tMin))
+				collision_result CollisionResult = CollisionInfoDefault(MKSumAABB);
+				for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
 				{
-					Normal = PlaneNormal;
-					Collided = true;
+					collision_info Info = CollisionResult.Info[InfoIndex];
+					v3 PlaneNormal = Info.PlaneNormal;
+					v3 PointOnPlane = Info.PointOnPlane;
+					f32 D = Dot(PlaneNormal, PointOnPlane);
+					if(PointAndPlaneIntersect(RelP, DeltaP, PlaneNormal, D, MKSumAABB, &tMin))
+					{
+						Normal = Info.PlaneNormal;
+						Collided = true;
+						HitEntity = TestEntity;
+					}
 				}
+#elif PLAYER_COLLIDER_SPHERE
+				// NOTE(Justin): This is a sphere vs plane test. NOT a sphere vs AABB test (for now..)
+				
+				// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
+				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
 
-				// NOTE(Jusitn): Right face
-				PlaneNormal = {1.0f, 0.0f, 0.0f};
-				PointOnPlane = MKSumAABB.Max;
-				D = Dot(PlaneNormal, PointOnPlane);
-				if(PointAndPlaneIntersect(RelP, DeltaP, PlaneNormal, D, MKSumAABB, &tMin))
-				{
-					Normal = PlaneNormal;
-					Collided = true;
-				}
+				// Write sphere center in OBB space. C = O + aX + bY + cZ. Note that the origin is 0.
+				v3 SphereCenter;
+				SphereCenter.x = Dot(RelP, TestEntity->OBB.X);
+				SphereCenter.y = Dot(RelP, TestEntity->OBB.Y);
+				SphereCenter.z = Dot(RelP, TestEntity->OBB.Z);
+				
+				// Write delta vector in OBB space. D = aX + bY + cZ
+				v3 Delta;
+				Delta.x = Dot(DeltaP, TestEntity->OBB.X);
+				Delta.y = Dot(DeltaP, TestEntity->OBB.Y);
+				Delta.z = Dot(DeltaP, TestEntity->OBB.Z);
 
-				// NOTE(Jusitn): Back face
-				PlaneNormal = {0.0f, 0.0f, -1.0f};
-				PointOnPlane = MKSumAABB.Max;
-				D = Dot(PlaneNormal, PointOnPlane);
-				if(PointAndPlaneIntersect(RelP, DeltaP, PlaneNormal, D, MKSumAABB, &tMin))
-				{
-					Normal = PlaneNormal;
-					Collided = true;
-				}
+				// Construct the MK sum. It is an AABB with center 0 that is expanded by the radius r.
+				// It is constructed at 0 to facilitate the segment vs plane tests. Each face of the AABB
+				// is a plane and we can easily determine each normal and the signed distance D of the plane.
 
-				// NOTE(Jusitn): Front face
-				PlaneNormal = {0.0f, 0.0f, 1.0f};
-				PointOnPlane = MKSumAABB.Min;
-				D = Dot(PlaneNormal, PointOnPlane);
-				if(PointAndPlaneIntersect(RelP, DeltaP, PlaneNormal, D, MKSumAABB, &tMin))
+				v3 AABBDim	= V3(Entity->Radius) + TestEntity->AABBDim;
+				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
+				collision_result CollisionResult = CollisionInfoDefault(MKSumAABB);
+				for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
 				{
-					Normal = PlaneNormal;
-					Collided = true;
-				}
+					collision_info Info = CollisionResult.Info[InfoIndex];
+					v3 PlaneNormal = Info.PlaneNormal;
+					v3 PointOnPlane = Info.PointOnPlane;
+					f32 D = Dot(PlaneNormal, PointOnPlane);
+					if(PointAndPlaneIntersect(SphereCenter, Delta, PlaneNormal, D, MKSumAABB, &tMin))
+					{
+						// TODO(Justin): Voronoi region check for full sphere vs AABB collision detection
 
-				// NOTE(Jusitn): Top face
-				PlaneNormal = {0.0f, 1.0f, 0.0f};
-				PointOnPlane = MKSumAABB.Max;
-				D = Dot(PlaneNormal, PointOnPlane);
-				if(PointAndPlaneIntersect(RelP, DeltaP, PlaneNormal, D, MKSumAABB, &tMin))
-				{
-					Normal = PlaneNormal;
-					Collided = true;
+						if(PlaneNormal.x == 1.0f)	Normal =	   TestEntity->OBB.X;
+						if(PlaneNormal.x == -1.0f)	Normal = -1.0f*TestEntity->OBB.X; 
+						if(PlaneNormal.y == 1.0f)	Normal =	   TestEntity->OBB.Y;
+						if(PlaneNormal.y == -1.0f)	Normal = -1.0f*TestEntity->OBB.Y;
+						if(PlaneNormal.z == 1.0f)	Normal =	   TestEntity->OBB.Z;
+						if(PlaneNormal.z == -1.0f)	Normal = -1.0f*TestEntity->OBB.Z;
+
+						Collided = true;
+						HitEntity = TestEntity;
+					}
 				}
+#elif PLAYER_COLLIDER_OFF
+#endif
 			}
 		}
 
@@ -709,6 +726,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		CubeOrientation = Quaternion(V3(1.0f, 0.0f, 0.0f), DegreeToRad(-30.0f));
 		CubeAdd(GameState, StartP, Dim, CubeOrientation);
 
+		SphereAdd(GameState, V3(0.5f, 0.0f, -15.5f), 0.5f);
+
 		GameState->CameraOffsetFromPlayer = V3(0.0f, 2.0f, 5.0f);
 		CameraSet(&GameState->Camera, Player->P + GameState->CameraOffsetFromPlayer, -90.0f, -10.0f);
 		GameState->Camera.RotationAboutY = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
@@ -737,7 +756,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Sphere = PushArray(Arena, 1, model);
 		model *Sphere = GameState->Sphere;
 		*Sphere = DebugModelSphereInitialize(Arena, 0.5f);
-												//
+
 		GameMemory->IsInitialized = true;
 	}
 
@@ -1119,14 +1138,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
 				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
-
-				T = Mat4Translate(Entity->P + V3(0.0f, Entity->Radius, 0.0f));
-				S = Mat4Scale(0.05f);
-				model *Sphere = LookupModel(Assets, "Sphere");
-				PushModel(RenderBuffer, Sphere, T*S);
-
-				T = Mat4Translate(Entity->P);
-				PushModel(RenderBuffer, Sphere, T*S);
 #elif PLAYER_COLLIDER_CAPSULE
 				capsule Capsule = Player->Capsule;
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
@@ -1134,7 +1145,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				S = Mat4Scale(1.0f);
 				PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
 #endif
-
 				//
 				// Ground arrow 
 				//
@@ -1159,7 +1169,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				model *Cube = LookupModel(Assets, "Cube");
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
-				PushModel(RenderBuffer, Cube, T*R*S);
+				//PushModel(RenderBuffer, Cube, T*R*S);
 
 				//
 				// OBB
