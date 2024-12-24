@@ -62,6 +62,11 @@ enum entity_type
 	EntityType_WalkableRegion,
 };
 
+enum entity_flag
+{
+	EntityFlag_YSupported = (1 << 2),
+};
+
 #include "intrinsics.h"
 #include "math.h"
 #include "strings.h"
@@ -76,6 +81,7 @@ enum entity_type
 struct entity
 {
 	entity_type Type;
+	u32 Flags;
 
 	// Gameplay
 	v3 P;

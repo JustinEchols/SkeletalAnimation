@@ -18,11 +18,33 @@ EntityAdd(game_state *GameState, entity_type Type)
 	return(Entity);
 }
 
+inline void
+FlagAdd(entity *Entity, u32 Flag)
+{
+	Entity->Flags |= Flag;
+}
+
+inline void
+FlagClear(entity *Entity, u32 Flag)
+{
+	Entity->Flags &= ~Flag;
+}
+
+inline b32 
+FlagIsSet(entity *Entity, u32 Flag)
+{
+	b32 Result = (Entity->Flags & Flag) != 0;
+	return(Result);
+}
+
 internal void
 PlayerAdd(game_state *GameState, v3 P)
 {
 	entity *Entity = EntityAdd(GameState, EntityType_Player);
 	GameState->PlayerEntityIndex = GameState->EntityCount - 1;
+
+	FlagAdd(Entity, EntityFlag_YSupported);
+
 	Entity->P = P;
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
@@ -75,12 +97,13 @@ internal void
 CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 {
 	entity *Entity = EntityAdd(GameState, EntityType_Cube);
+
+	FlagAdd(Entity, EntityFlag_YSupported);
+
 	Entity->P = P;
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
 	Entity->Orientation = Orientation;
-
-	Entity->Height = 1.0f;
 
 	// NOTE(Justin): The cube mesh has dimensions 1x1x1. The AABBDim is used for collision
 	// detection and the visual scale used for rendering
@@ -110,6 +133,9 @@ internal void
 SphereAdd(game_state *GameState, v3 Center, f32 Radius)
 {
 	entity *Entity = EntityAdd(GameState, EntityType_Sphere);
+
+	FlagAdd(Entity, EntityFlag_YSupported);
+
 	Entity->P = Center;
 	Entity->dP = V3(0.0f);
 	Entity->ddP = V3(0.0f);
@@ -129,6 +155,7 @@ SphereAdd(game_state *GameState, v3 Center, f32 Radius)
 	Entity->VisualScale = V3(1.0f);
 }
 
+#if 0
 internal void
 WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim)
 {
@@ -138,13 +165,48 @@ WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim)
 	Entity->ddP = V3(0.0f);
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
 
-	Entity->Height = 1.0f;
-
 	Entity->AABBDim = Dim;
 	//Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
 	Entity->VolumeOffset = V3(0.0f);
 	Entity->VisualScale = 0.5f*Entity->AABBDim;
 }
+#else
+internal void
+WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
+{
+	entity *Entity = EntityAdd(GameState, EntityType_WalkableRegion);
+
+	FlagAdd(Entity, EntityFlag_YSupported);
+
+	Entity->P = P;
+	Entity->dP = V3(0.0f);
+	Entity->ddP = V3(0.0f);
+	Entity->Orientation = Orientation;
+
+	// NOTE(Justin): The cube mesh has dimensions 1x1x1. The AABBDim is used for collision
+	// detection and the visual scale used for rendering
+	//
+	// The volume offset depends on what convention is used as far as the entity's position. The convention
+	// used is that the position is where on the ground the entity is located. So we offset the volume in the
+	// +y direction.
+
+	// ABB
+	Entity->AABBDim = 0.99f*Dim;
+	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+
+	// OBB
+	quaternion Q = Conjugate(Entity->Orientation);
+	Entity->OBB.Center = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	Entity->OBB.X = Q * XAxis();
+	Entity->OBB.Y = Q * YAxis();
+	Entity->OBB.Z = Q * (-1.0f*ZAxis());
+	Entity->OBB.Dim = 0.99f*Dim;
+
+	//Entity->VolumeOffset = 0.5f*Entity->AABBDim.y*Entity->OBB.Y;
+
+	Entity->VisualScale = 0.5f*Dim;
+}
+#endif
 
 inline mat4
 EntityTransform(entity *Entity, f32 Scale = 1.0f)
@@ -292,6 +354,45 @@ PerspectiveTransformUpdate(game_state *GameState, f32 WindowWidth, f32 WindowHei
 	GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 }
 
+internal v3
+ClosestPointOnOBB(obb OBB, v3 WorldPosition, v3 P)
+{
+	v3 ClosestPoint;
+
+	v3 Center = WorldPosition + OBB.Center;
+	v3 CenterToP = P - Center;
+
+	f32 X = Dot(CenterToP, OBB.X);
+	f32 Y = Dot(CenterToP, OBB.Y);
+	f32 Z = Dot(CenterToP, OBB.Z);
+
+	f32 HalfDimX = 0.5f*OBB.Dim.E[0];
+	f32 HalfDimY = 0.5f*OBB.Dim.E[1];
+	f32 HalfDimZ = 0.5f*OBB.Dim.E[2];
+
+	X = Clamp(-HalfDimX, X, HalfDimX);
+	Y = Clamp(-HalfDimY, Y, HalfDimY);
+	Z = Clamp(-HalfDimZ, Z, HalfDimZ);
+
+	ClosestPoint = Center + X*OBB.X + Y*OBB.Y + Z*OBB.Z;
+
+	return(ClosestPoint);
+}
+
+internal v3
+ClosestPointOnLineSegment(v3 A, v3 B, v3 P)
+{
+	v3 ClosestPoint;
+
+	v3 Delta = B - A;
+	f32 t = Dot(P - A, Delta) / Dot(Delta, Delta);
+	t = Clamp01(t);
+
+	ClosestPoint = A + t*Delta;
+
+	return(ClosestPoint);
+}
+
 internal b32
 PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin)
 {
@@ -338,6 +439,7 @@ PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, v3 *PointOfInt
 
 	return(Intersected);
 }
+
 
 struct collision_info
 {
@@ -398,46 +500,6 @@ CollisionInfoDefault(aabb AABB)
 	return(Result);
 }
 
-internal v3
-ClosestPointOnOBB(obb OBB, v3 WorldPosition, v3 P)
-{
-	v3 ClosestPoint;
-
-	v3 Center = WorldPosition + OBB.Center;
-	v3 CenterToP = P - Center;
-
-	f32 X = Dot(CenterToP, OBB.X);
-	f32 Y = Dot(CenterToP, OBB.Y);
-	f32 Z = Dot(CenterToP, OBB.Z);
-
-	f32 HalfDimX = 0.5f*OBB.Dim.E[0];
-	f32 HalfDimY = 0.5f*OBB.Dim.E[1];
-	f32 HalfDimZ = 0.5f*OBB.Dim.E[2];
-
-	X = Clamp(-HalfDimX, X, HalfDimX);
-	Y = Clamp(-HalfDimY, Y, HalfDimY);
-	Z = Clamp(-HalfDimZ, Z, HalfDimZ);
-
-	ClosestPoint = Center + X*OBB.X + Y*OBB.Y + Z*OBB.Z;
-
-	return(ClosestPoint);
-}
-
-internal v3
-ClosestPointOnLineSegment(v3 A, v3 B, v3 P)
-{
-	v3 ClosestPoint;
-
-	v3 Delta = B - A;
-	f32 t = Dot(P - A, Delta) / Dot(Delta, Delta);
-	t = Clamp01(t);
-
-	ClosestPoint = A + t*Delta;
-
-	return(ClosestPoint);
-}
-
-
 #define PLAYER_COLLIDER_AABB 0
 #define PLAYER_COLLIDER_OBB 0
 #define PLAYER_COLLIDER_SPHERE 1
@@ -447,6 +509,12 @@ ClosestPointOnLineSegment(v3 A, v3 B, v3 P)
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 {
+	if(!FlagIsSet(Entity, EntityFlag_YSupported))
+	{
+		//ddP += V3(0.0f, -9.8f, 0.0f);
+		ddP += V3(0.0f, -30.0f, 0.0f);
+	}
+
 	v3 DeltaP = 0.5f * dt * dt * ddP + dt * Entity->dP;
 	Entity->dP = dt * ddP + Entity->dP;
 
@@ -487,7 +555,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 					}
 				}
 #elif PLAYER_COLLIDER_SPHERE
-				// NOTE(Justin): This is a sphere vs plane test. NOT a sphere vs AABB test (for now..)
+				// NOTE(Justin): This is a sphere vs multiple plane tests. NOT a sphere swept vs AABB test (for now..)
 				
 				// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
 				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
@@ -509,7 +577,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 				// is a plane and we can easily determine each normal and the signed distance D of the plane.
 
 				// NOTE(Justin): The radius can be considered as the HALF DIM of the bounding box constructed from the
-				// sphere. So, the correct MK sum needs to use TWICE the radius.
+				// sphere. So, the correct MK sum needs to use TWICE the radius, per the implementation.
 
 				v3 AABBDim	= 2.0f*V3(Entity->Radius) + TestEntity->AABBDim;
 				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
@@ -546,6 +614,19 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
 			DeltaP = DesiredP - Entity->P;
 			DeltaP = DeltaP - Dot(Normal, DeltaP) * Normal;
+
+#if 0
+			v3 ClosestPoint = ClosestPointOnOBB(HitEntity->OBB, HitEntity->P, Entity->P);
+			f32 DeltaY = Entity->P.y - ClosestPoint.y;
+			if(DeltaY >= 0.0f)
+			{
+				FlagClear(Entity, EntityFlag_YSupported);
+			}
+			else
+			{
+				FlagAdd(Entity, EntityFlag_YSupported);
+			}
+#endif
 		}
 		else
 		{
@@ -689,7 +770,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Texture.Width = 256;
 		GameState->Texture.Height = 256;
 
-		WalkableRegionAdd(GameState, V3(0.0f, 10.0f, -10.0f), V3(20.0f));
+		quaternion CubeOrientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
+
+		// Region
+		WalkableRegionAdd(GameState, V3(0.0f, 0.0f, -10.0f), V3(20.0f), CubeOrientation);
 
 		// Player
 		PlayerAdd(GameState, V3(0.0f, 0.0f, -10.0f));
@@ -700,14 +784,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		AnimationPlayerInitialize(Player->AnimationPlayer, XBot, Arena);
 		Player->AnimationGraph	= LookupGraph(Assets, "XBot_AnimationGraph");
 
-		// TODO(Justin): The dimensions of a cube and its collision geometry should not necessarily
-		// be coupled together. It is common to decouple them together by either slightly increasing or
-		// decreasing the collision geometry from the actual visual mesh for collision purposes.
-		
 		// Cubes 
-		// TODO(Justin): Fix OBB axes initialization.
-		quaternion CubeOrientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
-
 		v3 StartP = V3(-3.0f, 0.0f, -10.0f);
 		v3 Dim = V3(2.0f, 1.0f, 10.0f);
 
@@ -1137,7 +1214,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + V3(0.0f, Entity->Radius, 0.0f));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
-				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+				//PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
 #elif PLAYER_COLLIDER_CAPSULE
 				capsule Capsule = Player->Capsule;
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
@@ -1169,7 +1246,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				model *Cube = LookupModel(Assets, "Cube");
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
-				//PushModel(RenderBuffer, Cube, T*R*S);
+				PushModel(RenderBuffer, Cube, T*R*S);
 
 				//
 				// OBB
