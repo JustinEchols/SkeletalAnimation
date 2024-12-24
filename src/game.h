@@ -130,6 +130,7 @@ struct game_state
 
 	camera Camera;
 	v3 CameraOffsetFromPlayer;
+	b32 CameraIsFree;
 
 	mat4 CameraTransform;
 	mat4 Perspective;

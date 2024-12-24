@@ -365,6 +365,23 @@ char *LowerJointTags[] =
 	"Toe"
 };
 
+internal void 
+LowerJointMasksInitialize(animation *Animation, animation_info *Info)
+{
+	for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
+	{
+		string JointName = Info->JointNames[JointIndex];
+		for(u32 StringIndex = 0; StringIndex < ArrayCount(LowerJointTags); ++StringIndex)
+		{
+			char *MaskTag = LowerJointTags[StringIndex];
+			if(SubStringExists(JointName, MaskTag))
+			{
+				Animation->JointMasks[JointIndex] = true;
+			}
+		}
+	}
+}
+
 enum animation_name
 {
 	Animation_IdleRight,
@@ -431,6 +448,8 @@ char *ModelFiles[] =
 	"../data/models/Cube.mesh",
 	"../data/models/Sphere.mesh",
 	"../data/models/Arrow.mesh",
+	"../data/models/XArrow.mesh",
+	"../data/models/YArrow.mesh",
 	"../data/models/Capsule.obj",
 	"../data/models/Cylinder.obj",
 	"../data/models/Cone.obj",
@@ -492,6 +511,8 @@ LookupGraph(asset_manager *AssetManager, char *AnimationGraphName)
 
 	return(Result);
 }
+
+
 
 internal void
 AssetManagerInit(asset_manager *Manager)
@@ -559,41 +580,6 @@ AssetManagerInit(asset_manager *Manager)
 		}
 	}
 
-#if 0
-	{
-		texture *Texture = LookupTexture(Manager, "orange_texture_02");
-		Assert(Texture);
-
-		char *FullPath = "../data/models/Capsule.obj";
-		FileNameFromFullPath(FullPath, Buffer);
-		StringHashAdd(&Manager->ModelNames, Buffer, ArrayCount(ModelFiles) + 1);
-		s32 Index = StringHashLookup(&Manager->ModelNames, Buffer);
-		Assert(Index != -1);
-		model *Model = Manager->Models + Index;
-		*Model = ObjLoad(&Manager->Arena, FullPath);
-		Model->Meshes[0].Texture = Texture;
-
-		FullPath = "../data/models/Cylinder.obj";
-		FileNameFromFullPath(FullPath, Buffer);
-		StringHashAdd(&Manager->ModelNames, Buffer, ArrayCount(ModelFiles) + 1);
-		Index = StringHashLookup(&Manager->ModelNames, Buffer);
-		Assert(Index != -1);
-		model *Cylinder = Manager->Models + Index;
-		*Cylinder = ObjLoad(&Manager->Arena, FullPath);
-		Cylinder->Meshes[0].Texture = Texture;
-
-		FullPath = "../data/models/Cone.obj";
-		FileNameFromFullPath(FullPath, Buffer);
-		StringHashAdd(&Manager->ModelNames, Buffer, ArrayCount(ModelFiles) + 1);
-		Index = StringHashLookup(&Manager->ModelNames, Buffer);
-		Assert(Index != -1);
-		model *Cone = Manager->Models + Index;
-		*Cone = ObjLoad(&Manager->Arena, FullPath);
-		Cone ->Meshes[0].Texture = Texture;
-
-	}
-#endif
-
 	//
 	// Animations
 	//
@@ -622,8 +608,6 @@ AssetManagerInit(asset_manager *Manager)
 			key_frame *BlendedPose = Animation->BlendedPose;
 			AllocateJointXforms(&Manager->Arena, BlendedPose, Info->JointCount);
 
-
-
 			// TODO(Justin): Load this from a file.
 			switch(NameIndex)
 			{
@@ -638,56 +622,39 @@ AssetManagerInit(asset_manager *Manager)
 				{
 					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion);
-#if 0
-					Animation->JointMasks = PushArray(&Manager->Arena, Info->JointCount, b32);
-					for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
-					{
-						string JointName = Info->JointNames[JointIndex];
-						for(u32 StringIndex = 0; StringIndex < ArrayCount(LowerJointMasks); ++StringIndex)
-						{
-							char *MaskTag = LowerJointMasks[StringIndex];
-							if(SubStringExists(JointName, MaskTag))
-							{
-								Animation->JointMasks[JointIndex] = true;
-							}
-						}
-					}
-#endif
-
 				} break;
 				case Animation_StandingToIdleRight:
 				case Animation_StandingToIdleLeft:
 				{
 					Animation->TimeScale = 1.0f;
-#if 0
-					//Animation->DefaultFlags = (AnimationFlags_JointMask | AnimationFlags_RemoveLocomotion);
-					Animation->DefaultFlags = AnimationFlags_JointMask;// | AnimationFlags_RemoveLocomotion);
-					Animation->JointMasks = PushArray(&Manager->Arena, Info->JointCount, b32);
-					for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
-					{
-						string JointName = Info->JointNames[JointIndex];
-						for(u32 StringIndex = 0; StringIndex < ArrayCount(LowerJointMasks); ++StringIndex)
-						{
-							char *MaskTag = LowerJointMasks[StringIndex];
-							if(SubStringExists(JointName, MaskTag))
-							{
-								Animation->JointMasks[JointIndex] = true;
-							}
-						}
-					}
-#endif
+					Animation->DefaultFlags = AnimationFlags_ControlsPosition;
 				} break;
 				case Animation_Run:
 				case Animation_RunMirror:
 				{
 					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = AnimationFlags_Looping;
+
 				} break;
 				case Animation_RunToStop:
 				{
 					Animation->TimeScale = 1.0f;
-					Animation->TimeOffset = 0.6f;
-					Animation->DefaultFlags = AnimationFlags_RemoveLocomotion;
+					Animation->DefaultFlags = (AnimationFlags_ControlsPosition|
+											   AnimationFlags_JointMask);
+
+					Animation->JointMasks = PushArray(&Manager->Arena, Info->JointCount, b32);
+					for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
+					{
+						string JointName = Info->JointNames[JointIndex];
+						for(u32 StringIndex = 0; StringIndex < ArrayCount(LowerJointTags); ++StringIndex)
+						{
+							char *MaskTag = LowerJointTags[StringIndex];
+							if(SubStringExists(JointName, MaskTag))
+							{
+								Animation->JointMasks[JointIndex] = true;
+							}
+						}
+					}
 				} break;
 				case Animation_Sprint:
 				case Animation_SprintMirror:
@@ -699,18 +666,6 @@ AssetManagerInit(asset_manager *Manager)
 				{
 					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = AnimationFlags_ControlsPosition;
-#if 0
-					f32 Scale = 0.025f;
-					for(u32 KeyFrameIndex = 0; KeyFrameIndex < Info->KeyFrameCount; ++KeyFrameIndex)
-					{
-						key_frame *KeyFrame = Info->KeyFrames + KeyFrameIndex;
-						for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
-						{
-							KeyFrame->Scales[JointIndex] *= Scale;
-						}
-					}
-#endif
-
 				} break;
 				case Animation_Running180:
 				{
@@ -734,7 +689,8 @@ AssetManagerInit(asset_manager *Manager)
 		}
 	}
 
-	// // Graphs
+	//
+	// Graphs
 	//
 
 	ArenaSubset(&Manager->Arena, &Manager->GraphNames.Arena, Kilobyte(4));

@@ -313,7 +313,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 
 		for(u32 JointIndex = 1; JointIndex < Info->JointCount; ++JointIndex)
 		{
-#if 1
+#if 0
 			b32 Mask = true;
 			if(Animation->JointMasks)
 			{
@@ -589,6 +589,12 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	f32 FactorSum = 0.0f;
 	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)
 	{
+		b32 Masking = false;
+		if(MaskingJoints(Animation))
+		{
+			Masking = true;
+		}
+
 		key_frame *BlendedPose = Animation->BlendedPose;
 		animation_info *Info = Animation->Info;
 		Assert(Info);
@@ -605,17 +611,25 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 				s32 JointIndex = JointIndexGet(Info->JointNames, Info->JointCount, Joint->Name);
 				if(JointIndex != -1)
 				{
-					FinalPose->Positions[Index]	+= Factor * BlendedPose->Positions[JointIndex];
-					FinalPose->Scales[Index]	+= Factor * BlendedPose->Scales[JointIndex];
-
-					// TODO(Justin): Pre-process the aniamtions so that the orientations are in the known correct neighborhood.
-					quaternion Scaled = Factor * BlendedPose->Orientations[JointIndex];
-					if(Dot(Scaled, FinalPose->Orientations[Index]) < 0.0f)
+					b32 ShouldMixJoint = Masking ? Animation->JointMasks[JointIndex] : 1;
+					if(ShouldMixJoint)
 					{
-						Scaled *= -1.0f;
-					}
+						FinalPose->Positions[Index]	+= Factor * BlendedPose->Positions[JointIndex];
+						FinalPose->Scales[Index]	+= Factor * BlendedPose->Scales[JointIndex];
 
-					FinalPose->Orientations[Index] += Scaled;
+						// TODO(Justin): Pre-process the aniamtions so that the orientations are in the known correct neighborhood.
+						quaternion Scaled = Factor * BlendedPose->Orientations[JointIndex];
+						if(Dot(Scaled, FinalPose->Orientations[Index]) < 0.0f)
+						{
+							Scaled *= -1.0f;
+						}
+
+						FinalPose->Orientations[Index] += Scaled;
+					}
+					else
+					{
+						int breakhere = 0;
+					}
 				}
 			}
 		}
@@ -650,7 +664,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	}
 }
 
-// TODO(Justin): Fold this into AnimationPlayerUpdate?
 internal void
 ModelJointsUpdate(animation_player *AnimationPlayer, v3 Offset = V3(0.0f))
 {

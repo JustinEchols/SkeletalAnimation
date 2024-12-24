@@ -65,7 +65,7 @@ PlayerAdd(game_state *GameState, v3 P)
 	// TODO(Justin): Capsule
 
 	// Sphere
-	Entity->Radius = 1.0f;
+	Entity->Radius = 0.5f;
 
 	// Visuals
 	Entity->VisualScale = V3(0.01f);
@@ -90,16 +90,19 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	// +y direction.
 
 	// ABB
-	Entity->AABBDim = 0.98f*Dim;
-	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	Entity->AABBDim = 0.99f*Dim;
+	//Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
 
 	// OBB
 	quaternion Q = Conjugate(Entity->Orientation);
+	//quaternion Q = Entity->Orientation;
 	Entity->OBB.Center = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
 	Entity->OBB.X = Q * XAxis();
 	Entity->OBB.Y = Q * YAxis();
 	Entity->OBB.Z = Q * (-1.0f*ZAxis());
-	Entity->OBB.Dim = 0.98f*Dim;
+	Entity->OBB.Dim = 0.99f*Dim;
+
+	Entity->VolumeOffset = 0.5f*Entity->AABBDim.y*Entity->OBB.Y;
 
 	Entity->VisualScale = 0.5f*Dim;
 }
@@ -291,7 +294,6 @@ PerspectiveTransformUpdate(game_state *GameState, f32 WindowWidth, f32 WindowHei
 }
 
 internal b32
-//PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PointOnPlane, v3 PlaneNormal, aabb MKSumAABB, f32 *tMin)
 PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin)
 {
 	b32 Collided = false;
@@ -314,10 +316,28 @@ PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB
 	return(Collided);
 }
 
+internal b32
+PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, v3 *PointOfIntersection, f32 *tResult)
+{
+	b32 Intersected = false;
+
+	f32 tEpsilon = 0.001f;
+	if(!Equal(DeltaP, V3(0.0f)))
+	{
+		*tResult = (D - Dot(PlaneNormal, RelP)) / Dot(PlaneNormal, DeltaP);
+		*PointOfIntersection = RelP + (*tResult) * DeltaP;
+		Intersected = true;
+	}
+
+	return(Intersected);
+}
+
 struct collision_info
 {
 	v3 PlaneNormal;
 	v3 PointOnPlane;
+	v3 PointOfIntersection;
+	f32 tResult;
 };
 
 struct collision_result
@@ -330,29 +350,43 @@ CollisionInfoDefault(aabb AABB)
 {
 	collision_result Result;
 
+	v3 ZeroVector = V3(0.0f);
+
 	// NOTE(Jusitn): Left face
 	Result.Info[0].PlaneNormal = {-1.0f, 0.0f, 0.0f};
 	Result.Info[0].PointOnPlane = AABB.Min;
+	Result.Info[0].PointOfIntersection = ZeroVector;
+	Result.Info[0].tResult = F32Max;
 
 	// NOTE(Jusitn): Right face
 	Result.Info[1].PlaneNormal = {1.0f, 0.0f, 0.0f};
 	Result.Info[1].PointOnPlane = AABB.Max;
+	Result.Info[1].PointOfIntersection = ZeroVector;
+	Result.Info[1].tResult = F32Max;
 
 	// NOTE(Jusitn): Back face
 	Result.Info[2].PlaneNormal = {0.0f, 0.0f, -1.0f};
 	Result.Info[2].PointOnPlane = AABB.Max;
+	Result.Info[2].PointOfIntersection = ZeroVector;
+	Result.Info[2].tResult = F32Max;
 
 	// NOTE(Jusitn): Front face
 	Result.Info[3].PlaneNormal = {0.0f, 0.0f, 1.0f};
 	Result.Info[3].PointOnPlane = AABB.Min;
+	Result.Info[3].PointOfIntersection = ZeroVector;
+	Result.Info[3].tResult = F32Max;
 
 	// NOTE(Jusitn): Top face
 	Result.Info[4].PlaneNormal = {0.0f, 1.0f, 0.0f};
 	Result.Info[4].PointOnPlane = AABB.Max;
+	Result.Info[4].PointOfIntersection = ZeroVector;
+	Result.Info[4].tResult = F32Max;
 
 	// NOTE(Jusitn): Bottom face
 	Result.Info[5].PlaneNormal = {0.0f, -1.0f, 0.0f};
-	Result.Info[5].PointOnPlane = AABB.Max;
+	Result.Info[5].PointOnPlane = AABB.Min;
+	Result.Info[5].PointOfIntersection = ZeroVector;
+	Result.Info[5].tResult = F32Max;
 
 	return(Result);
 }
@@ -428,14 +462,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 #if PLAYER_COLLIDER_AABB
 				v3 RelP		= (CurrentP + Entity->VolumeOffset) - (TestP + TestEntity->VolumeOffset);
 				v3 AABBDim	= Entity->AABBDim + TestEntity->AABBDim;
-#elif PLAYER_COLLIDER_OBB
-				v3 RelP		= (CurrentP + Entity->VolumeOffset) - (TestP + TestEntity->VolumeOffset);
-				v3 AABBDim	= Entity->AABBDim + TestEntity->AABBDim;
-#elif PLAYER_COLLIDER_SPHERE
-				// NOTE(Justin): This is a sphere vs plane test. NOT a sphere vs AABB test
-				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
-				v3 AABBDim	= V3(Entity->Radius) + TestEntity->AABBDim;
-#endif
+
 				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
 				collision_result CollisionResult = CollisionInfoDefault(MKSumAABB);
 				for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
@@ -451,21 +478,88 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 						HitEntity = TestEntity;
 					}
 				}
+#elif PLAYER_COLLIDER_SPHERE
+				// NOTE(Justin): This is a sphere vs plane test. NOT a sphere vs AABB test (for now..)
+
+				// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
+				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
+
+				// Write sphere center in OBB space. C = O + aX + bY + cZ. Note that the origin is 0.
+				v3 SphereCenter;
+				SphereCenter.x = Dot(RelP, TestEntity->OBB.X);
+				SphereCenter.y = Dot(RelP, TestEntity->OBB.Y);
+				SphereCenter.z = Dot(RelP, TestEntity->OBB.Z);
+				
+				// Write delta vector in OBB space. D = aX + bY + cZ
+				v3 Delta;
+				Delta.x = Dot(DeltaP, TestEntity->OBB.X);
+				Delta.y = Dot(DeltaP, TestEntity->OBB.Y);
+				Delta.z = Dot(DeltaP, TestEntity->OBB.Z);
+
+				// Construct the MK sum. It is an AABB with center 0 that is expanded by the radius r.
+				// It is constructed at 0 to facilitate the segment vs plane tests. Each face of the AABB
+				// is a plane and we can easily determine each normal and the signed distance D of the plane.
+
+				v3 AABBDim	= V3(Entity->Radius) + TestEntity->AABBDim;
+				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
+				collision_result CollisionResult = CollisionInfoDefault(MKSumAABB);
+				for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
+				{
+					collision_info Info = CollisionResult.Info[InfoIndex];
+					v3 PlaneNormal = Info.PlaneNormal;
+					v3 PointOnPlane = Info.PointOnPlane;
+					f32 D = Dot(PlaneNormal, PointOnPlane);
+					if(PointAndPlaneIntersect(SphereCenter, Delta, PlaneNormal, D, MKSumAABB, &tMin))
+					{
+						// TODO(Justin): Voronoi region check for full sphere vs AABB collision detection
+
+						if(PlaneNormal.x == 1.0f)	Normal =	   TestEntity->OBB.X;
+						if(PlaneNormal.x == -1.0f)	Normal = -1.0f*TestEntity->OBB.X; 
+						if(PlaneNormal.y == 1.0f)	Normal =	   TestEntity->OBB.Y;
+						if(PlaneNormal.y == -1.0f)	Normal = -1.0f*TestEntity->OBB.Y;
+						if(PlaneNormal.z == 1.0f)	Normal =	   TestEntity->OBB.Z;
+						if(PlaneNormal.z == -1.0f)	Normal = -1.0f*TestEntity->OBB.Z;
+
+						Collided = true;
+						HitEntity = TestEntity;
+					}
+				}
+#endif
 			}
 		}
 
 		Entity->P += tMin * DeltaP; 
 		if(Collided)
 		{
+
+			if(Equal(Dot(Normal, Entity->dP),0.0f))
+			{
+				int breakere = 0;
+			}
+
+			if(Dot(Normal, Entity->dP) == 1.0f)
+			{
+				int breakere = 0;
+			}
+
+			// Collide and slide.
 			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
 			DeltaP = DesiredP - Entity->P;
 			DeltaP = DeltaP - Dot(Normal, DeltaP) * Normal;
+
+
+
 		}
 		else
 		{
 			break;
 		}
 	}
+
+	// TODO(Justin): Ground check.
+	// TODO(Justin): Orienttion update. Whatever the y normal is of the thing the player is standing on should be the
+	// y direction of the player. For now at least..
+	// IK should handle part of this.
 }
 
 internal void
@@ -600,25 +694,21 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		// decreasing the collision geometry from the actual visual mesh for collision purposes.
 		
 		// Cubes 
+		// TODO(Justin): Fix OBB axes initialization.
 		quaternion CubeOrientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
 
-#if 1
 		v3 StartP = V3(-3.0f, 0.0f, -10.0f);
 		v3 Dim = V3(2.0f, 1.0f, 10.0f);
 
-#else
-		v3 StartP = V3(0.0f);
-		v3 Dim = V3(1.0f, 1.0f, 1.0f);
-#endif
 		CubeAdd(GameState, StartP, Dim, CubeOrientation);
 
 		Dim = V3(2.0f, 10.0f, 2.0f);
 		StartP += V3(6.0f, 0.0f, -0.0f);
 		CubeAdd(GameState, StartP, Dim, CubeOrientation);
 
-		Dim = V3(1.f, 1.0f, 2.0f);
-		StartP += V3(6.5f, 0.0f, 0.0f);
-		CubeAdd(GameState, StartP, Dim, CubeOrientation);
+		Dim = V3(1.f, 1.0f, 5.0f);
+		StartP += V3(3.0f, 0.0f, -5.0f);
+		CubeAdd(GameState, StartP, Dim, Quaternion(V3(0.0f, 1.0f, 0.0f), DegreeToRad(-30.0f)));
 
 		StartP = V3(-7.0f, 1.0f, -10.0f);
 		Dim = V3(2.0f, 1.0f, 10.0f);
@@ -670,6 +760,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	v3 ddP = {};
 	game_keyboard *Keyboard = &GameInput->Keyboard;
+	if(IsDown(Keyboard->Add))
+	{
+		GameState->TimeScale *= 1.1f;
+	}
+	if(IsDown(Keyboard->Subtract))
+	{
+		GameState->TimeScale *= 0.9f;
+	}
 	if(IsDown(Keyboard->W))
 	{
 		ddP += V3(0.0f, 0.0f, -1.0f);
@@ -705,15 +803,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		Crouching = true;
 	}
 
-	if(IsDown(Keyboard->Add))
-	{
-		GameState->TimeScale *= 1.1f;
-	}
-
-	if(IsDown(Keyboard->Subtract))
-	{
-		GameState->TimeScale *= 0.9f;
-	}
 
 	if(!Equal(ddP, V3(0.0f)))
 	{
@@ -1032,9 +1121,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				S = Mat4Scale(Entity->OBB.Dim);
 				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
 #elif PLAYER_COLLIDER_SPHERE
-				T = Mat4Translate(Entity->P + V3(0.0f, 0.5f, 0.0f));
-				S = Mat4Scale(1.0f);
-				PushAABB(RenderBuffer, GameState->Sphere, T*S, V3(1.0f));
+				T = Mat4Translate(Entity->P + V3(0.0f, Entity->Radius, 0.0f));
+				//T = Mat4Translate(Entity->P);// + V3(0.0f, Entity->Radius, 0.0f));
+				R = QuaternionToMat4(Entity->Orientation);
+				S = Mat4Scale(Entity->Radius);
+				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
 #elif PLAYER_COLLIDER_CAPSULE
 				capsule Capsule = Player->Capsule;
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
@@ -1068,19 +1159,32 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				model *Cube = LookupModel(Assets, "Cube");
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
 				//PushModel(RenderBuffer, Cube, T*R*S);
-#if 0
-				// ABB
+
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
-				S = Mat4Scale(Entity->AABBDim);
-				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
-#else
-				// OBB 
-				//T = Mat4Translate(Entity->P + Entity->OBB.Center);
-				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
-				R = Mat4(Entity->OBB.X, Entity->OBB.Y, Entity->OBB.Z);
+
+				v3 X = Entity->OBB.X;
+				v3 Y = Entity->OBB.Y;
+				v3 Z = Entity->OBB.Z;
+				R = Mat4(X, Y, Z);
+
 				S = Mat4Scale(Entity->OBB.Dim);
 				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
-#endif
+
+				//
+				// Axes.
+				//
+
+				S = Mat4Scale(0.5f);
+				model *ZArrow = LookupModel(Assets, "Arrow");
+				model *XArrow = LookupModel(Assets, "XArrow");
+				model *YArrow = LookupModel(Assets, "YArrow");
+
+				T = Mat4Translate(Entity->P + Entity->VolumeOffset + 0.5f*X);
+				PushAABB(RenderBuffer, XArrow, T*R*S, V3(1.0f, 0.0f, 0.0f));
+				T = Mat4Translate(Entity->P + Entity->VolumeOffset + 0.5f*Y);
+				PushAABB(RenderBuffer, YArrow, T*R*S, V3(0.0f, 1.0f, 0.0f));
+				T = Mat4Translate(Entity->P + Entity->VolumeOffset + 0.5f*Z);
+				PushAABB(RenderBuffer, ZArrow, T*R*S, V3(0.0f, 0.0f, 1.0f));
 			} break;
 			case EntityType_WalkableRegion:
 			{
@@ -1150,24 +1254,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	EntityButton.P = P;
 	EntityButton.Rect = Rect;
 
-	if(InRect(EntityButton.Rect, UI->MouseP))
-	{
-		UI->HotID = EntityButton.ID;
-		if(UI->ActiveID == 0 && UI->LeftClick)
-		{
-			UI->ActiveID = EntityButton.ID;
-		}
-		else if(UI->ActiveID == EntityButton.ID && UI->LeftClick)
-		{
-			UI->ActiveID = 0;
-		}
-		else if((UI->ActiveID != EntityButton.ID) && UI->LeftClick)
-		{
-			UI->ActiveID = EntityButton.ID;
-		}
-	}
-
-	if(UI->ActiveID == EntityButton.ID)
+	if(Button(UI, &EntityButton))
 	{
 		Text.Data[0] = '-';
 		PushText(RenderBuffer, Text, FontInfo, EntityButton.P, Scale, HoverColor);
@@ -1237,32 +1324,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	Text = StringCopy(&TempState->Arena, Buff);
 	Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 
-	ui_button Button;
-	Button.ID = 2;
-	Button.P = P;
-	Button.Rect = Rect;
-
-	if(InRect(Button.Rect, UI->MouseP))
-	{
-		UI->HotID = Button.ID;
-		if(UI->ActiveID == 0 && UI->LeftClick)
-		{
-			UI->ActiveID = Button.ID;
-		}
-		else if(UI->ActiveID == Button.ID && UI->LeftClick)
-		{
-			UI->ActiveID = 0;
-		}
-		else if((UI->ActiveID != Button.ID) && UI->LeftClick)
-		{
-			UI->ActiveID = Button.ID;
-		}
-	}
-
-	if(UI->ActiveID == Button.ID)
+	ui_button AnimationButton;
+	AnimationButton.ID = 2;
+	AnimationButton.P = P;
+	AnimationButton.Rect = Rect;
+	if(Button(UI, &AnimationButton))
 	{
 		Text.Data[0] = '-';
-		PushText(RenderBuffer, Text, FontInfo, Button.P, Scale, HoverColor);
+		PushText(RenderBuffer, Text, FontInfo, AnimationButton.P, Scale, HoverColor);
 		P.y -= (Gap + dY);
 
 		P.x += 20.0f;
@@ -1311,7 +1380,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	}
 	else
 	{
-		PushText(RenderBuffer, Text, FontInfo, Button.P, Scale, DefaultColor);
+		PushText(RenderBuffer, Text, FontInfo, AnimationButton.P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
 	}
 
@@ -1319,37 +1388,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	Text = StringCopy(&TempState->Arena, Buff);
 	Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 
-	ui_button AnimationButton;
-	AnimationButton.ID = 3;
-	AnimationButton.P = P;
-	AnimationButton.Rect = Rect;
-
-	if(InRect(AnimationButton.Rect, UI->MouseP))
+	ui_button TextureButton;
+	TextureButton.ID = 3;
+	TextureButton.P = P;
+	TextureButton.Rect = Rect;
+	if(!Button(UI, &TextureButton))
 	{
-		UI->HotID = AnimationButton.ID;
-		if(UI->ActiveID == 0 && UI->LeftClick)
-		{
-			UI->ActiveID = AnimationButton.ID;
-		}
-		else if(UI->ActiveID == AnimationButton.ID && UI->LeftClick)
-		{
-			UI->ActiveID = 0;
-		}
-		else if(UI->ActiveID != AnimationButton.ID && UI->LeftClick)
-		{
-			UI->ActiveID = AnimationButton.ID;
-		}
-	}
-
-	if(UI->ActiveID != AnimationButton.ID)
-	{
-		PushText(RenderBuffer, Text, FontInfo, AnimationButton.P, Scale, DefaultColor);
+		PushText(RenderBuffer, Text, FontInfo, TextureButton.P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
 	}
 	else
 	{
 		Text.Data[0] = '-';
-		PushText(RenderBuffer, Text, FontInfo, AnimationButton.P, Scale, HoverColor);
+		PushText(RenderBuffer, Text, FontInfo, TextureButton.P, Scale, HoverColor);
 		P.y -= (Gap + dY);
 
 		//

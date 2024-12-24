@@ -50,6 +50,7 @@ typedef uintptr_t	umm;
 #define RadToDegrees(Rad)		((Rad) * (180.0f / Pi32))
 #define SmallNumber				(1.e-8f)
 #define KindaSmallNumber		(1.e-4f)
+#define F32Max					3.40282e+38
 #define OffsetOf(type, Member) (umm)&(((type *)0)->Member)
 
 #define FILE_AND_LINE__(A, B) A "|" #B

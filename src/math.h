@@ -155,16 +155,9 @@ struct capsule
 struct obb 
 {
 	v3 Center;
-	union
-	{
-		struct
-		{
-			v3 X;
-			v3 Y;
-			v3 Z;
-		};
-		v3 E[3];
-	};
+	v3 X;
+	v3 Y;
+	v3 Z;
 	v3 Dim;
 };
 
@@ -946,28 +939,44 @@ Mat4YRotation(f32 Angle)
 {
 	mat4 R = 
 	{
-		{{-sinf(Angle), 0.0f, cosf(Angle), 0.0f},
+		{{cosf(Angle), 0.0f, -sinf(Angle), 0.0f},
 		 {0.0f, 1.0f, 0.0f, 0.0f},
-		 {cosf(Angle), 0.0f, sinf(Angle), 0.0f},
+		 {sinf(Angle), 0.0f, cosf(Angle), 0.0f},
 		 {0.0f, 0.0f, 0.0f, 1.0f}}
 	};
 
 	return(R);
 }
 
+#if 1
 inline mat4
 Mat4XRotation(f32 Angle)
 {
 	mat4 R = 
 	{
 		{{1.0f, 0.0f, 0.0f, 0.0f},
-		 {0.0f, cosf(Angle), -sinf(Angle), 0.0f},
-		 {0.0f, sinf(Angle), cosf(Angle), 0.0f},
+		 {0.0f, cosf(Angle), sinf(Angle), 0.0f},
+		 {0.0f, sinf(Angle), -cosf(Angle), 0.0f},
 		 {0.0f, 0.0f, 0.0f, 1.0f}}
 	};
 
 	return(R);
 }
+#else
+inline mat4
+Mat4XRotation(f32 Angle)
+{
+	mat4 R = 
+	{
+		{{1.0f, 0.0f, 0.0f, 0.0f},
+		 {0.0f, -sinf(Angle), cosf(Angle), 0.0f},
+		 {0.0f, cosf(Angle), sinf(Angle), 0.0f},
+		 {0.0f, 0.0f, 0.0f, 1.0f}}
+	};
+
+	return(R);
+}
+#endif
 
 inline mat4
 ModelTransformFromBasis(basis *B)

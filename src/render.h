@@ -82,6 +82,7 @@ enum render_entry_debug_volume_type
 	DebugVolumeType_AABB,
 	DebugVolumeType_Circle,
 	DebugVolumeType_Capsule,
+	DebugVolumeType_Line,
 };
 
 struct render_entry_debug_volume
@@ -96,7 +97,6 @@ struct render_entry_render_to_texture
 {
 	f32 Vertices[6][4];
 };
-
 
 struct render_buffer
 {
