@@ -281,26 +281,6 @@ ModelLoad(memory_arena *Arena, char *FileName)
 	{
 	}
 
-
-#if 0
-	f32 MaxHeight = 0.0f;
-	for(u32 MeshIndex = 0; MeshIndex < Model.MeshCount; ++MeshIndex)
-	{
-		mesh *Mesh = Model.Meshes + MeshIndex;
-		for(u32 VertexIndex = 0; VertexIndex < Mesh->VertexCount; ++VertexIndex)
-		{
-			vertex *Vertex = Mesh->Vertices + VertexIndex;
-			if(Vertex->P.y > MaxHeight)
-			{
-				MaxHeight = Vertex->P.y;
-			}
-		}
-	}
-	Model.Height = MaxHeight;
-#else
-	Model.Height = ModelHeight(&Model);
-#endif
-
 	return(Model);
 }
 
@@ -512,10 +492,8 @@ LookupGraph(asset_manager *AssetManager, char *AnimationGraphName)
 	return(Result);
 }
 
-
-
 internal void
-AssetManagerInit(asset_manager *Manager)
+AssetManagerInitialize(asset_manager *Manager)
 {
 	char Buffer[256];
 	char ExtBuffer[256];

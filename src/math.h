@@ -152,6 +152,7 @@ struct capsule
 	f32 Radius;
 };
 
+// NOTE(Justin): We may eventually want to loft the axes to an entity itself.
 struct obb 
 {
 	v3 Center;

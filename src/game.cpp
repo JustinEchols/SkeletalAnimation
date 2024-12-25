@@ -124,8 +124,6 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->OBB.Z = Q * (-1.0f*ZAxis());
 	Entity->OBB.Dim = 0.99f*Dim;
 
-	//Entity->VolumeOffset = 0.5f*Entity->AABBDim.y*Entity->OBB.Y;
-
 	Entity->VisualScale = 0.5f*Dim;
 }
 
@@ -155,22 +153,6 @@ SphereAdd(game_state *GameState, v3 Center, f32 Radius)
 	Entity->VisualScale = V3(1.0f);
 }
 
-#if 0
-internal void
-WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim)
-{
-	entity *Entity = EntityAdd(GameState, EntityType_WalkableRegion);
-	Entity->P = P;
-	Entity->dP = V3(0.0f);
-	Entity->ddP = V3(0.0f);
-	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
-
-	Entity->AABBDim = Dim;
-	//Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
-	Entity->VolumeOffset = V3(0.0f);
-	Entity->VisualScale = 0.5f*Entity->AABBDim;
-}
-#else
 internal void
 WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 {
@@ -202,11 +184,8 @@ WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->OBB.Z = Q * (-1.0f*ZAxis());
 	Entity->OBB.Dim = 0.99f*Dim;
 
-	//Entity->VolumeOffset = 0.5f*Entity->AABBDim.y*Entity->OBB.Y;
-
 	Entity->VisualScale = 0.5f*Dim;
 }
-#endif
 
 inline mat4
 EntityTransform(entity *Entity, f32 Scale = 1.0f)
@@ -393,6 +372,7 @@ ClosestPointOnLineSegment(v3 A, v3 B, v3 P)
 	return(ClosestPoint);
 }
 
+// NOTE(Justin): This is really PointIntersectsPlaneAndInABB.....
 internal b32
 PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin)
 {
@@ -401,7 +381,7 @@ PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB
 	// TODO(Justin): Figure out an approach to epsilons.
 	// NOTE(Justin): There might be an epsilon bug when epsilon = 0.001f when colliding with an OBB. 
 	// Some of the time the player will tunnel through the OBB. After chaning epsilon to 0.01f;
-	// the player does not tunnel as often. It is possible that the position the player was moved to
+	// the player does not tunnel. It is possible that the position the player is moved to when
 	// using 0.001f for epsilon, ends up being behind the non-aligned plane of the OBB. If the player
 	// gets moved there then they tunnel through the OBB.
 
@@ -455,7 +435,7 @@ struct collision_result
 };
 
 internal collision_result
-CollisionInfoDefault(aabb AABB)
+AABBCollisionInfo(aabb AABB)
 {
 	collision_result Result;
 
@@ -506,13 +486,76 @@ CollisionInfoDefault(aabb AABB)
 #define PLAYER_COLLIDER_CAPSULE 0
 #define PLAYER_COLLIDER_OFF 0
 
+
+// NOTE(Justin):
+// The vector from the center of the OBB to the center of the sphere, that is computed in world space,
+// is RelP and is the position vector of the center of the sphere in
+// relative space/OBB space/configuration space/minkowski space.
+//
+// We compute the coordinates of RelP and DeltaP in this space and are then able to do an AABB test with
+// the center of the AABB at the origin, 0. Then, each face of the AABB is a plane
+// and we can determine each normal and signed distance D of the plane. The normal is just pre-populated
+// data and the signed distance of the plane is computed by taking the dot product with the normal
+// and either the min or max of the AABB depending on which normal is currently being tested. The
+// reason why the dot product is done with the min or max is due to the fact that these are actual
+// points on the respective planes. I.e. D = n.X, where X is either AABB.Min or AABB.max.
+
+internal b32
+MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 *tMin)
+{
+	b32 Collided = false;
+
+	// Write sphere center in OBB space. C = O + aX + bY + cZ. Note that the origin is 0.
+	v3 SphereCenter;
+	SphereCenter.x = Dot(RelP, OBB.X);
+	SphereCenter.y = Dot(RelP, OBB.Y);
+	SphereCenter.z = Dot(RelP, OBB.Z);
+
+	// Write delta vector in OBB space. D = aX + bY + cZ
+	v3 Delta;
+	Delta.x = Dot(DeltaP, OBB.X);
+	Delta.y = Dot(DeltaP, OBB.Y);
+	Delta.z = Dot(DeltaP, OBB.Z);
+
+	// Construct the MK sum. It is an AABB with center 0 that is expanded by the radius r.
+
+	// NOTE(Justin): The radius is the HALF DIM of the bounding box constructed from the
+	// sphere. So, the correct MK sum needs to use TWICE the radius, per the implementation of
+	// AABBCenterDim(-).
+
+	v3 MKDim = 2.0f*V3(Radius) + OBB.Dim;
+	aabb MKSumAABB = AABBCenterDim(V3(0.0f), MKDim);
+	collision_result CollisionResult = AABBCollisionInfo(MKSumAABB);
+	for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
+	{
+		collision_info Info = CollisionResult.Info[InfoIndex];
+		v3 PlaneNormal = Info.PlaneNormal;
+		v3 PointOnPlane = Info.PointOnPlane;
+		f32 D = Dot(PlaneNormal, PointOnPlane);
+		if(PointAndPlaneIntersect(SphereCenter, Delta, PlaneNormal, D, MKSumAABB, tMin))
+		{
+			// TODO(Justin): Voronoi region check for full sphere swept vs OBB collision detection.
+
+			if(PlaneNormal.x == 1.0f)	*DestNormal =	    OBB.X;
+			if(PlaneNormal.x == -1.0f)	*DestNormal = -1.0f*OBB.X; 
+			if(PlaneNormal.y == 1.0f)	*DestNormal =	    OBB.Y;
+			if(PlaneNormal.y == -1.0f)	*DestNormal = -1.0f*OBB.Y;
+			if(PlaneNormal.z == 1.0f)	*DestNormal =	    OBB.Z;
+			if(PlaneNormal.z == -1.0f)	*DestNormal = -1.0f*OBB.Z;
+
+			Collided = true;
+		}
+	}
+
+	return(Collided);
+}
+
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 {
 	if(!FlagIsSet(Entity, EntityFlag_YSupported))
 	{
-		//ddP += V3(0.0f, -9.8f, 0.0f);
-		ddP += V3(0.0f, -30.0f, 0.0f);
+		ddP += V3(0.0f, -9.8f, 0.0f);
 	}
 
 	v3 DeltaP = 0.5f * dt * dt * ddP + dt * Entity->dP;
@@ -526,7 +569,8 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	{
 		f32 tMin = 1.0f;
 		b32 Collided = false;
-		v3 Normal = V3(0.0f);
+		v3 Normal = {};
+
 		entity *HitEntity = 0;
 		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
 		{
@@ -555,53 +599,12 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 					}
 				}
 #elif PLAYER_COLLIDER_SPHERE
-				// NOTE(Justin): This is a sphere vs multiple plane tests. NOT a sphere swept vs AABB test (for now..)
-				
 				// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
 				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
-
-				// Write sphere center in OBB space. C = O + aX + bY + cZ. Note that the origin is 0.
-				v3 SphereCenter;
-				SphereCenter.x = Dot(RelP, TestEntity->OBB.X);
-				SphereCenter.y = Dot(RelP, TestEntity->OBB.Y);
-				SphereCenter.z = Dot(RelP, TestEntity->OBB.Z);
-				
-				// Write delta vector in OBB space. D = aX + bY + cZ
-				v3 Delta;
-				Delta.x = Dot(DeltaP, TestEntity->OBB.X);
-				Delta.y = Dot(DeltaP, TestEntity->OBB.Y);
-				Delta.z = Dot(DeltaP, TestEntity->OBB.Z);
-
-				// Construct the MK sum. It is an AABB with center 0 that is expanded by the radius r.
-				// It is constructed at 0 to facilitate the segment vs plane tests. Each face of the AABB
-				// is a plane and we can easily determine each normal and the signed distance D of the plane.
-
-				// NOTE(Justin): The radius can be considered as the HALF DIM of the bounding box constructed from the
-				// sphere. So, the correct MK sum needs to use TWICE the radius, per the implementation.
-
-				v3 AABBDim	= 2.0f*V3(Entity->Radius) + TestEntity->AABBDim;
-				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
-				collision_result CollisionResult = CollisionInfoDefault(MKSumAABB);
-				for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
+				if(MovingSphereHitOBB(RelP, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
 				{
-					collision_info Info = CollisionResult.Info[InfoIndex];
-					v3 PlaneNormal = Info.PlaneNormal;
-					v3 PointOnPlane = Info.PointOnPlane;
-					f32 D = Dot(PlaneNormal, PointOnPlane);
-					if(PointAndPlaneIntersect(SphereCenter, Delta, PlaneNormal, D, MKSumAABB, &tMin))
-					{
-						// TODO(Justin): Voronoi region check for full sphere vs AABB collision detection
-
-						if(PlaneNormal.x == 1.0f)	Normal =	   TestEntity->OBB.X;
-						if(PlaneNormal.x == -1.0f)	Normal = -1.0f*TestEntity->OBB.X; 
-						if(PlaneNormal.y == 1.0f)	Normal =	   TestEntity->OBB.Y;
-						if(PlaneNormal.y == -1.0f)	Normal = -1.0f*TestEntity->OBB.Y;
-						if(PlaneNormal.z == 1.0f)	Normal =	   TestEntity->OBB.Z;
-						if(PlaneNormal.z == -1.0f)	Normal = -1.0f*TestEntity->OBB.Z;
-
-						Collided = true;
-						HitEntity = TestEntity;
-					}
+					Collided = true;
+					HitEntity = TestEntity;
 				}
 #elif PLAYER_COLLIDER_OFF
 #endif
@@ -614,19 +617,6 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
 			DeltaP = DesiredP - Entity->P;
 			DeltaP = DeltaP - Dot(Normal, DeltaP) * Normal;
-
-#if 0
-			v3 ClosestPoint = ClosestPointOnOBB(HitEntity->OBB, HitEntity->P, Entity->P);
-			f32 DeltaY = Entity->P.y - ClosestPoint.y;
-			if(DeltaY >= 0.0f)
-			{
-				FlagClear(Entity, EntityFlag_YSupported);
-			}
-			else
-			{
-				FlagAdd(Entity, EntityFlag_YSupported);
-			}
-#endif
 		}
 		else
 		{
@@ -678,50 +668,11 @@ EntityMoveByAnimation(game_state *GameState, entity *Entity, v3 DeltaP, f32 dt)
 					}
 				}
 #elif PLAYER_COLLIDER_SPHERE
-				// NOTE(Justin): This is a sphere vs plane test. NOT a sphere vs AABB test (for now..)
-				
-				// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
 				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
-
-				// Write sphere center in OBB space. C = O + aX + bY + cZ. Note that the origin is 0.
-				v3 SphereCenter;
-				SphereCenter.x = Dot(RelP, TestEntity->OBB.X);
-				SphereCenter.y = Dot(RelP, TestEntity->OBB.Y);
-				SphereCenter.z = Dot(RelP, TestEntity->OBB.Z);
-				
-				// Write delta vector in OBB space. D = aX + bY + cZ
-				v3 Delta;
-				Delta.x = Dot(DeltaP, TestEntity->OBB.X);
-				Delta.y = Dot(DeltaP, TestEntity->OBB.Y);
-				Delta.z = Dot(DeltaP, TestEntity->OBB.Z);
-
-				// Construct the MK sum. It is an AABB with center 0 that is expanded by the radius r.
-				// It is constructed at 0 to facilitate the segment vs plane tests. Each face of the AABB
-				// is a plane and we can easily determine each normal and the signed distance D of the plane.
-
-				v3 AABBDim	= V3(Entity->Radius) + TestEntity->AABBDim;
-				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
-				collision_result CollisionResult = CollisionInfoDefault(MKSumAABB);
-				for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
+				if(MovingSphereHitOBB(RelP, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
 				{
-					collision_info Info = CollisionResult.Info[InfoIndex];
-					v3 PlaneNormal = Info.PlaneNormal;
-					v3 PointOnPlane = Info.PointOnPlane;
-					f32 D = Dot(PlaneNormal, PointOnPlane);
-					if(PointAndPlaneIntersect(SphereCenter, Delta, PlaneNormal, D, MKSumAABB, &tMin))
-					{
-						// TODO(Justin): Voronoi region check for full sphere vs AABB collision detection
-
-						if(PlaneNormal.x == 1.0f)	Normal =	   TestEntity->OBB.X;
-						if(PlaneNormal.x == -1.0f)	Normal = -1.0f*TestEntity->OBB.X; 
-						if(PlaneNormal.y == 1.0f)	Normal =	   TestEntity->OBB.Y;
-						if(PlaneNormal.y == -1.0f)	Normal = -1.0f*TestEntity->OBB.Y;
-						if(PlaneNormal.z == 1.0f)	Normal =	   TestEntity->OBB.Z;
-						if(PlaneNormal.z == -1.0f)	Normal = -1.0f*TestEntity->OBB.Z;
-
-						Collided = true;
-						HitEntity = TestEntity;
-					}
+					Collided = true;
+					HitEntity = TestEntity;
 				}
 #elif PLAYER_COLLIDER_OFF
 #endif
@@ -763,7 +714,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		//
 
 		ArenaSubset(&GameState->Arena, &GameState->AssetManager.Arena, Kilobyte(512));
-		AssetManagerInit(&GameState->AssetManager);
+		AssetManagerInitialize(&GameState->AssetManager);
 		asset_manager *Assets = &GameState->AssetManager;
 
 		GameState->Quad = QuadDefault();
@@ -892,7 +843,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	{
 		Crouching = true;
 	}
-
 
 	if(!Equal(ddP, V3(0.0f)))
 	{
@@ -1397,6 +1347,20 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		else
 		{
 			sprintf(Buff, "turning: Still");
+		}
+
+		Text = StringCopy(&TempState->Arena, Buff);
+		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
+		P.y -= (Gap + dY);
+
+		
+		if(FlagIsSet(Player, EntityFlag_YSupported))
+		{
+			sprintf(Buff, "y supported: true");
+		}
+		else
+		{
+			sprintf(Buff, "y supported: false");
 		}
 
 		Text = StringCopy(&TempState->Arena, Buff);
