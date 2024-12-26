@@ -383,6 +383,8 @@ enum animation_name
 	Animation_IdleRightToCrouched,
 	Animation_CrouchingIdleLeft,
 	Animation_CrouchingIdleRight,
+	Animation_LeftTurn,
+	Animation_RightTurn,
 };
 
 char *AnimationFiles[] =
@@ -406,6 +408,8 @@ char *AnimationFiles[] =
 	"../data/animations/XBot_IdleRightToCrouched.animation",
 	"../data/animations/XBot_CrouchingIdleLeft.animation",
 	"../data/animations/XBot_CrouchingIdleRight.animation",
+	"../data/animations/XBot_LeftTurn.animation",
+	"../data/animations/XBot_RightTurn.animation",
 };
 
 char *GraphFiles[] =
@@ -663,6 +667,11 @@ AssetManagerInitialize(asset_manager *Manager)
 					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = AnimationFlags_Looping;
 				} break;
+				case Animation_LeftTurn:
+				case Animation_RightTurn:
+				{
+					Animation->TimeScale = 1.0f;
+				} break;
 			}
 		}
 	}
@@ -682,7 +691,7 @@ AssetManagerInitialize(asset_manager *Manager)
 		Assert(Index != -1);
 		animation_graph *G = Manager->Graphs + Index;
 		ArenaSubset(&Manager->Arena, &G->Arena, Kilobyte(4));
-		AnimationGraphInit(G, FullPath);
+		AnimationGraphInitialize(G, FullPath);
 	}
 
 	//

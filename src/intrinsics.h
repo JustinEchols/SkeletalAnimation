@@ -82,6 +82,22 @@ Max3(f32 X, f32 Y, f32 Z)
 	return(Result);
 }
 
+inline f32
+Min(f32 X, f32 Y)
+{
+	f32 Result = fminf(X, Y);
+	return(Result);
+}
+
+inline f32
+Min3(f32 X, f32 Y, f32 Z)
+{
+	f32 Min1 = Min(X, Y);
+	f32 Min2 = Min(Y, Z);
+	f32 Result = Min(Min1, Min2);
+	return(Result);
+}
+
 inline void
 RandInit(u32 Seed)
 {

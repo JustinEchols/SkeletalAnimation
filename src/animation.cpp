@@ -1,27 +1,4 @@
 
-// NOTE(Justin): Calling animation play everytime is what allows
-// the animation system to "work" currently. If we only allow an animation to play during a 
-// state change then if a sudden state change happens such as idle -> run -> idle
-// what ends up happening is that the idle and run animation do not complete the cross fade.
-// Since the cross fade is not complete both animations are still active. Since both are still active
-// the idle animation is active. if the idle animation is still active and we try and play another idle 
-// animation then it will return immedialtey. The result is that the original blend between idle and run
-// will complete the cross fade. When this happens the idle animation drops and we are left with a running animation
-// that keeps looping even though from the game perspective the player is not moving.
-//
-// Q: How do we fix this without having to call animation play everytime?
-// Or is calling animation play everytime an ok solution?
-//
-// Q: Do we force the blend to complete before moving to another animation?
-// If we play animation that is currently blending with another then we already force the blend to complete before
-// playing the animation 
-
-//
-// There seem to be a lot of problems in different places in the animation system that
-// arise from the case when two animations are blending and something else happens..
-// What is the best way to handle this?
-//
-
 inline void
 FlagAdd(animation *Animation, u32 Flag)
 {
@@ -313,29 +290,10 @@ AnimationUpdate(animation *Animation, f32 dt)
 
 		for(u32 JointIndex = 1; JointIndex < Info->JointCount; ++JointIndex)
 		{
-#if 0
-			b32 Mask = true;
-			if(Animation->JointMasks)
-			{
-				Mask = Animation->JointMasks[JointIndex];
-			}
-
-			if(Mask)
-			{
-				sqt Transform = JointTransformInterpolatedSQT(KeyFrame, t, NextKeyFrame, JointIndex);
-				BlendedPose->Positions[JointIndex]	  = Transform.Position;
-				BlendedPose->Orientations[JointIndex] = Transform.Orientation;
-				BlendedPose->Scales[JointIndex]		  = Transform.Scale;
-			}
-			else
-			{
-			}
-#else
 			sqt Transform = JointTransformInterpolatedSQT(KeyFrame, t, NextKeyFrame, JointIndex);
 			BlendedPose->Positions[JointIndex]	  = Transform.Position;
 			BlendedPose->Orientations[JointIndex] = Transform.Orientation;
 			BlendedPose->Scales[JointIndex]		  = Transform.Scale;
-#endif
 		}
 	}
 
@@ -495,10 +453,12 @@ Animate(entity *Entity, asset_manager *AssetManager)
 #if 1
 			if(Entity->dTheta > 90.0f)
 			{
+				// Turning left
 				MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint_to_180");
 			}
 			else if(Entity->dTheta < -90.0f)
 			{
+				// Turning right
 				MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint_to_180");
 			}
 			else
@@ -844,7 +804,7 @@ AdvanceLine(u8 **Content)
 }
 
 internal void 
-AnimationGraphInit(animation_graph *G, char *FileName)
+AnimationGraphInitialize(animation_graph *G, char *FileName)
 {
 	debug_file File = Platform.DebugFileReadEntire(FileName);
 	if(File.Size != 0)

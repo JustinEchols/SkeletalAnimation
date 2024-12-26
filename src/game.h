@@ -1,6 +1,29 @@
 #if !defined(GAME_H)
 
-// TODO(Justin): Finish updating this comment.
+// NOTE(Justin): ANIMATION. Calling animation play everytime is what allows
+// the animation system to "work" currently. If we only allow an animation to play during a 
+// state change then if a sudden state change happens such as idle -> run -> idle
+// what ends up happening is that the idle and run animation do not complete the cross fade.
+// Since the cross fade is not complete both animations are still active. Since both are still active
+// the idle animation is active. if the idle animation is still active and we try and play another idle 
+// animation then it will return immedialtey. The result is that the original blend between idle and run
+// will complete the cross fade. When this happens the idle animation drops and we are left with a running animation
+// that keeps looping even though from the game perspective the player is not moving.
+//
+// Q: How do we fix this without having to call animation play everytime?
+// Or is calling animation play everytime an ok solution?
+//
+// Q: Do we force the blend to complete before moving to another animation?
+// If we play animation that is currently blending with another then we already force the blend to complete before
+// playing the animation 
+
+//
+// There seem to be a lot of problems in different places in the animation system that
+// arise from the case when two animations are blending and something else happens..
+// What is the best way to handle this?
+//
+
+// TODO(Justin): ANIMTATION - Finish updating this comment.
 // 12.10.2024 7:06 PM - Animation Driven Movement
 // Added a bool that tells whether or not the animation player is driving the in game position.
 // So a node has a controls position flag and the animation player has a controls position flag.
@@ -28,12 +51,13 @@
 // animation, the visual position has been updated the entire time. So when we start blending in another animation
 // the player teleports to the blended position.
 
-
 // 11.24.2024 12:42 PM - Animation Player
 // Animation player does not change states until switch to node is called.
 // This allows to not switch nodes until certain conditions are true. For example, transitioning between
 // running and sprinting states needs to happen at the proper times and until the animation time is within
 // a valid interval the state remains the same.
+
+//////////////////////////////////////////
 
 #include <ft2build.h>
 #include FT_FREETYPE_H
@@ -51,6 +75,7 @@ enum movement_state
 	MovementState_TurningRight,
 	MovementState_TurningLeft,
 	MovementState_Crouch,
+	MovementState_Falling,
 };
 
 enum entity_type
@@ -99,14 +124,13 @@ struct entity
 	v3 VolumeOffset;
 
 	// Collision1
-	capsule Capsule;
-
-	// Collision2
 	obb OBB;
 
-	// Collision3
+	// Collision2
 	f32 Radius;
 
+	// Collision3
+	capsule Capsule;
 
 	// Animation
 	animation_player *AnimationPlayer;

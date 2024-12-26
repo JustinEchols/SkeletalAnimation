@@ -240,26 +240,33 @@ EntityMovementState(char *Buffer, entity *Entity)
 		{
 			sprintf(Buffer, "%s", "MovementState: Crouch");
 		} break;
+		case MovementState_Falling:
+		{
+			sprintf(Buffer, "%s", "MovementState: Falling");
+		} break;
 	}
 }
 
 inline void
 EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 {
-	f32 OldTheta = Entity->Theta;
-	quaternion Orientation = Entity->Orientation;
 	v3 FacingDirection = Entity->dP;
 	f32 LengthSquared = Dot(FacingDirection, FacingDirection);
 	if(LengthSquared != 0.0f)
 	{
+		f32 OldTheta = Entity->ThetaTarget;
+		quaternion Orientation = Entity->Orientation;
+
 		// This angle is the angle we would rotate from the starting orientation (0 degress) to 
 		// end up at the current orientation. IT IS NOT THE ANGLE WE ROTATE BY. E.g. if the player starts out
 		// facing towards the camera with 0 degress of rotation and the player goes left. The final orientation is
 		// This is confusing.. Need to think about why this works..
 
 		f32 TargetAngleInRad = DirectionToEuler(FacingDirection).yaw;
-		Entity->dTheta = RadToDegrees(TargetAngleInRad) - OldTheta;
-		Entity->Theta = RadToDegrees(TargetAngleInRad);
+
+		Entity->Theta = OldTheta;
+		Entity->ThetaTarget = RadToDegrees(TargetAngleInRad);
+		Entity->dTheta = Entity->ThetaTarget - Entity->Theta;
 
 		quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), TargetAngleInRad);
 		Target = Conjugate(Target);
@@ -352,6 +359,32 @@ ClosestPointOnOBB(obb OBB, v3 WorldPosition, v3 P)
 	X = Clamp(-HalfDimX, X, HalfDimX);
 	Y = Clamp(-HalfDimY, Y, HalfDimY);
 	Z = Clamp(-HalfDimZ, Z, HalfDimZ);
+
+	// NOTE(Justin): If P is already inside the OBB,
+	// then we have to adjust either X, Y, or Z. Otherwise
+	// the closest point returned will be the original point
+	// itself.
+
+	if(InAABB(AABBCenterDim(Center, OBB.Dim), P))
+	{
+		f32 DistanceX = HalfDimX - AbsVal(X);
+		f32 DistanceY = HalfDimY - AbsVal(Y);
+		f32 DistanceZ = HalfDimZ - AbsVal(Z);
+
+		f32 Min = Min3(DistanceX, DistanceY, DistanceZ);
+		if(Min == DistanceX)
+		{
+			X = (X >= 0.0f) ? HalfDimX : -HalfDimX;
+		}
+		else if(Min == DistanceY)
+		{
+			Y = (Y >= 0.0f) ? HalfDimY : -HalfDimY;
+		}
+		else
+		{
+			Z = (Z >= 0.0f) ? HalfDimZ : -HalfDimZ;
+		}
+	}
 
 	ClosestPoint = Center + X*OBB.X + Y*OBB.Y + Z*OBB.Z;
 
@@ -500,6 +533,10 @@ AABBCollisionInfo(aabb AABB)
 // reason why the dot product is done with the min or max is due to the fact that these are actual
 // points on the respective planes. I.e. D = n.X, where X is either AABB.Min or AABB.max.
 
+// The radius is the HALF DIM of the bounding box constructed from the
+// sphere. So, the correct MK sum needs to use TWICE the radius, per the implementation of
+// AABBCenterDim(-).
+
 internal b32
 MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 *tMin)
 {
@@ -517,13 +554,26 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 	Delta.y = Dot(DeltaP, OBB.Y);
 	Delta.z = Dot(DeltaP, OBB.Z);
 
+
+	b32 StartedInside = false;
+#if 0
+	b32 StartedInside = false;
+	v3 MKDim;
+	if(InAABB(AABBCenterDim(V3(0.0f), OBB.Dim), SphereCenter))
+	{
+		StartedInside = true;
+		MKDim = -2.0f*V3(Radius) + OBB.Dim;
+	}
+	else
+	{
+		MKDim = 2.0f*V3(Radius) + OBB.Dim;
+	}
+#else
+	v3 MKDim = 2.0f*V3(Radius) + OBB.Dim;
+#endif
+
 	// Construct the MK sum. It is an AABB with center 0 that is expanded by the radius r.
 
-	// NOTE(Justin): The radius is the HALF DIM of the bounding box constructed from the
-	// sphere. So, the correct MK sum needs to use TWICE the radius, per the implementation of
-	// AABBCenterDim(-).
-
-	v3 MKDim = 2.0f*V3(Radius) + OBB.Dim;
 	aabb MKSumAABB = AABBCenterDim(V3(0.0f), MKDim);
 	collision_result CollisionResult = AABBCollisionInfo(MKSumAABB);
 	for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
@@ -547,6 +597,11 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 		}
 	}
 
+	if(StartedInside && Collided)
+	{
+		*DestNormal *= -1.0f;
+	}
+
 	return(Collided);
 }
 
@@ -555,7 +610,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 {
 	if(!FlagIsSet(Entity, EntityFlag_YSupported))
 	{
-		ddP += V3(0.0f, -9.8f, 0.0f);
+		ddP += V3(0.0f, -80.0f, 0.0f);
 	}
 
 	v3 DeltaP = 0.5f * dt * dt * ddP + dt * Entity->dP;
@@ -565,6 +620,12 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	f32 DeltaLength = Length(DeltaP);
 
 	v3 DesiredP = OldP + DeltaP;
+
+	f32 tGround = 1.0f;
+	v3 GroundNormal = {};
+	v3 GroundDelta = V3(0.0f, -100.0f,0.0f);
+	entity *EntityBelow = 0;
+
 	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
 	{
 		f32 tMin = 1.0f;
@@ -606,6 +667,12 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 					Collided = true;
 					HitEntity = TestEntity;
 				}
+
+				// GroundCheck
+				if(MovingSphereHitOBB(RelP, Entity->Radius, GroundDelta, TestEntity->OBB, &GroundNormal, &tGround))
+				{
+					EntityBelow = TestEntity;
+				}
 #elif PLAYER_COLLIDER_OFF
 #endif
 			}
@@ -625,6 +692,25 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	}
 
 	// TODO(Justin): Ground check.
+	// TODO(Justin): Fix this hack. The ground check is not registering the walkable region. Most likely 
+	// due to the fact that the player is already inside the OBB, so the test fails.
+	Assert(EntityBelow);
+	if(EntityBelow)
+	{
+		// Need closest point on bottom face..
+		v3 ClosestPoint = ClosestPointOnOBB(EntityBelow->OBB, EntityBelow->P, Entity->P);
+		f32 YThreshold = Entity->P.y - ClosestPoint.y;
+		b32 ClosestIsAbove = ((Dot(Entity->P - ClosestPoint, EntityBelow->OBB.Y) > 0.0f) && (YThreshold > 0.1f));
+		if(ClosestIsAbove && (Entity->P.y > 0.0f))
+		{
+			FlagClear(Entity, EntityFlag_YSupported);
+		}
+		else
+		{
+			FlagAdd(Entity, EntityFlag_YSupported);
+		}
+	}
+
 	// TODO(Justin): Orienttion update. Whatever the y normal is of the thing the player is standing on should be the
 	// y direction of the player. For now at least..
 	// IK should handle part of this.
@@ -1146,6 +1232,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				model *Model = LookupModel(Assets, "XBot");
 				PushModel(RenderBuffer, Model, Transform);
 
+
+
 				//
 				// Debug volume
 				//
@@ -1164,7 +1252,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + V3(0.0f, Entity->Radius, 0.0f));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
-				//PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
 #elif PLAYER_COLLIDER_CAPSULE
 				capsule Capsule = Player->Capsule;
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
@@ -1228,8 +1316,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset + 0.5f*Z);
 				PushAABB(RenderBuffer, ZArrow, T*R*S, V3(0.0f, 0.0f, 1.0f));
 #endif
-
-
 			} break;
 			case EntityType_WalkableRegion:
 			{
@@ -1334,8 +1420,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		// NOTE(Justin): 
 		// dTheta > 0 -> CCW turning left
 		// dTheta < 0 -> CW turning right 
-		b32 TurningRight = (Entity->dTheta < 0.0f);
+
 		b32 TurningLeft = (Entity->dTheta > 0.0f);
+		b32 TurningRight = (Entity->dTheta < 0.0f);
 		if(TurningRight)
 		{
 			sprintf(Buff, "turning: Right");
