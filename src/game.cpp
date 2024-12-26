@@ -87,7 +87,7 @@ PlayerAdd(game_state *GameState, v3 P)
 	// TODO(Justin): Capsule
 
 	// Sphere
-	Entity->Radius = 0.5f;
+	Entity->Radius = 0.4f;
 
 	// Visuals
 	Entity->VisualScale = V3(0.01f);
@@ -565,9 +565,8 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 	Delta.y = Dot(DeltaP, OBB.Y);
 	Delta.z = Dot(DeltaP, OBB.Z);
 
-
-#if 1
 	b32 StartedInside = false;
+
 	v3 MKDim;
 	if(InAABB(AABBCenterDim(V3(0.0f), OBB.Dim), SphereCenter))
 	{
@@ -578,12 +577,8 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 	{
 		MKDim = 2.0f*V3(Radius) + OBB.Dim;
 	}
-#else
-	v3 MKDim = 2.0f*V3(Radius) + OBB.Dim;
-#endif
 
 	// Construct the MK sum. It is an AABB with center 0 that is expanded by the radius r.
-
 	aabb MKSumAABB = AABBCenterDim(V3(0.0f), MKDim);
 	collision_result CollisionResult = AABBCollisionInfo(MKSumAABB);
 	for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
@@ -607,12 +602,10 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 		}
 	}
 
-#if 1
 	if(StartedInside && Collided)
 	{
 		*DestNormal *= -1.0f;
 	}
-#endif
 
 	return(Collided);
 }
@@ -634,9 +627,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	v3 DesiredP = OldP + DeltaP;
 	v3 GroundP = DesiredP;
 
-	// NOTE(Justin): If the ground normal is way to big compared to the rest of the units
-	// in the game then the tGround value will be 0 a majority of the time. Which
-	// is a bug. 
+	// TODO(Justin): Figure out the "correct" length here.
 	v3 GroundDelta = V3(0.0f, -10.0f,0.0f);
 	entity *EntityBelow = 0;
 
@@ -678,6 +669,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 					}
 				}
 #elif PLAYER_COLLIDER_SPHERE
+
 				// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
 				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
 				if(MovingSphereHitOBB(RelP, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
@@ -696,14 +688,10 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			}
 		}
 
-		if(tGround != 0.0f)
-		{
-			int breakhere = 0;
-		}
-
 		Entity->P += tMin * DeltaP; 
 		GroundP = Entity->P;
 		GroundP += tGround * GroundDelta;
+
 		if(Collided)
 		{
 			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
@@ -716,26 +704,9 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		}
 	}
 
-	// TODO(Justin): Ground check.
-	// TODO(Justin): Fix this hack. The ground check is not registering the walkable region. Most likely 
-	// due to the fact that the player is already inside the OBB, so the test fails.
 	Assert(EntityBelow);
 	if(EntityBelow)
 	{
-#if 0
-		// Need closest point on bottom face..
-		v3 ClosestPoint = ClosestPointOnOBB(EntityBelow->OBB, EntityBelow->P, Entity->P);
-		f32 YThreshold = Entity->P.y - ClosestPoint.y;
-		b32 ClosestIsAbove = ((Dot(Entity->P - ClosestPoint, EntityBelow->OBB.Y) > 0.0f) && (YThreshold > 0.1f));
-		if(ClosestIsAbove && (Entity->P.y > 0.0f))
-		{
-			FlagClear(Entity, EntityFlag_YSupported);
-		}
-		else
-		{
-			FlagAdd(Entity, EntityFlag_YSupported);
-		}
-#else
 		f32 YThreshold = 0.001f;
 		if((Entity->P.y - GroundP.y) > YThreshold)
 		{
@@ -745,7 +716,6 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		{
 			FlagAdd(Entity, EntityFlag_YSupported);
 		}
-#endif
 	}
 
 	// TODO(Justin): Orienttion update. Whatever the y normal is of the thing the player is standing on should be the

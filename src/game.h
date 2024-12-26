@@ -1,5 +1,10 @@
 #if !defined(GAME_H)
 
+// NOTE(Justin): COLLISION. 
+// NOTE(Justin): If the ground normal is way to big compared to the rest of the units
+// in the game then the tGround value will be 0 a majority of the time. Which
+// is a bug. 
+
 // NOTE(Justin): ANIMATION. Calling animation play everytime is what allows
 // the animation system to "work" currently. If we only allow an animation to play during a 
 // state change then if a sudden state change happens such as idle -> run -> idle
