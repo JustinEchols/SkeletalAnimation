@@ -405,6 +405,17 @@ ClosestPointOnLineSegment(v3 A, v3 B, v3 P)
 	return(ClosestPoint);
 }
 
+internal v3
+ClosestPointOnPlane(v3 PlaneNormal, v3 PointOnPlane, v3 P)
+{
+	v3 ClosestPoint;
+
+	ClosestPoint = P - Dot(PlaneNormal, P - PointOnPlane) * PlaneNormal;
+
+	return(ClosestPoint);
+
+}
+
 // NOTE(Justin): This is really PointIntersectsPlaneAndInABB.....
 internal b32
 PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin)
@@ -555,8 +566,7 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 	Delta.z = Dot(DeltaP, OBB.Z);
 
 
-	b32 StartedInside = false;
-#if 0
+#if 1
 	b32 StartedInside = false;
 	v3 MKDim;
 	if(InAABB(AABBCenterDim(V3(0.0f), OBB.Dim), SphereCenter))
@@ -597,10 +607,12 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 		}
 	}
 
+#if 1
 	if(StartedInside && Collided)
 	{
 		*DestNormal *= -1.0f;
 	}
+#endif
 
 	return(Collided);
 }
@@ -620,17 +632,23 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	f32 DeltaLength = Length(DeltaP);
 
 	v3 DesiredP = OldP + DeltaP;
+	v3 GroundP = DesiredP;
 
-	f32 tGround = 1.0f;
-	v3 GroundNormal = {};
-	v3 GroundDelta = V3(0.0f, -100.0f,0.0f);
+	// NOTE(Justin): If the ground normal is way to big compared to the rest of the units
+	// in the game then the tGround value will be 0 a majority of the time. Which
+	// is a bug. 
+	v3 GroundDelta = V3(0.0f, -10.0f,0.0f);
 	entity *EntityBelow = 0;
 
 	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
 	{
-		f32 tMin = 1.0f;
 		b32 Collided = false;
+
+		f32 tMin = 1.0f;
+		f32 tGround = 1.0f;
+
 		v3 Normal = {};
+		v3 GroundNormal = {};
 
 		entity *HitEntity = 0;
 		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
@@ -678,7 +696,14 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			}
 		}
 
+		if(tGround != 0.0f)
+		{
+			int breakhere = 0;
+		}
+
 		Entity->P += tMin * DeltaP; 
+		GroundP = Entity->P;
+		GroundP += tGround * GroundDelta;
 		if(Collided)
 		{
 			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
@@ -697,6 +722,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	Assert(EntityBelow);
 	if(EntityBelow)
 	{
+#if 0
 		// Need closest point on bottom face..
 		v3 ClosestPoint = ClosestPointOnOBB(EntityBelow->OBB, EntityBelow->P, Entity->P);
 		f32 YThreshold = Entity->P.y - ClosestPoint.y;
@@ -709,6 +735,17 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		{
 			FlagAdd(Entity, EntityFlag_YSupported);
 		}
+#else
+		f32 YThreshold = 0.001f;
+		if((Entity->P.y - GroundP.y) > YThreshold)
+		{
+			FlagClear(Entity, EntityFlag_YSupported);
+		}
+		else
+		{
+			FlagAdd(Entity, EntityFlag_YSupported);
+		}
+#endif
 	}
 
 	// TODO(Justin): Orienttion update. Whatever the y normal is of the thing the player is standing on should be the
@@ -813,7 +850,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		WalkableRegionAdd(GameState, V3(0.0f, 0.0f, -10.0f), V3(20.0f), CubeOrientation);
 
 		// Player
-		PlayerAdd(GameState, V3(0.0f, 0.0f, -10.0f));
+		PlayerAdd(GameState, V3(0.0f, 0.01f, -10.0f));
 		entity *Player			= GameState->Entities + GameState->PlayerEntityIndex;
 		Player->AnimationPlayer = PushStruct(Arena, animation_player);
 		Player->AnimationGraph	= PushStruct(Arena, animation_graph);
@@ -839,8 +876,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		Dim = V3(2.0f, 1.0f, 10.0f);
 		CubeOrientation = Quaternion(V3(1.0f, 0.0f, 0.0f), DegreeToRad(-30.0f));
 		CubeAdd(GameState, StartP, Dim, CubeOrientation);
-
-		SphereAdd(GameState, V3(0.5f, 0.0f, -15.5f), 0.5f);
 
 		GameState->CameraOffsetFromPlayer = V3(0.0f, 2.0f, 5.0f);
 		CameraSet(&GameState->Camera, Player->P + GameState->CameraOffsetFromPlayer, -90.0f, -10.0f);
@@ -950,7 +985,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				f32 a = 50.0f;
 
 				v3 OldPlayerddP = Entity->ddP;
-				if(!Entity->AnimationGraph->CurrentNode.ControlsPosition)
+				if(!Entity->AnimationGraph->CurrentNode.ControlsPosition &&
+				   !Entity->AnimationGraph->CurrentNode.ControlsTurning)
 				{
 					Entity->ddP = ddP;
 
@@ -1076,7 +1112,58 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	Animate(Player, Assets);
+#if 0
+	animation_graph *Graph = Player->AnimationGraph;
+	animation_player *AnimationPlayer = Player->AnimationPlayer;
+	if(Graph && AnimationPlayer)
+	{
+		animation_graph_node CurrentNode = Graph->CurrentNode;
+
+		v3 OldP					  = AnimationPlayer->FinalPose->Positions[0];
+		quaternion OldOrientation = AnimationPlayer->FinalPose->Orientations[0];
+		AnimationPlayerUpdate(AnimationPlayer, &TempState->Arena, dt);
+
+		if(CurrentNode.ControlsPosition)
+		{
+			if(!AnimationPlayer->ControlsPosition)
+			{
+				// NOTE(Justin): Switched to a node that now controls the in game position of the player.
+				// The animation has not started playing yet. Reset the AnimationDelta as it could have
+				// accumulated previous movement from an earlier playback.
+				Player->AnimationPlayer->AnimationDelta = V3(0.0f);
+			}
+
+			v3 NewP = AnimationPlayer->FinalPose->Positions[0];
+			v3 AnimationDelta = NewP - OldP;
+			AnimationPlayer->AnimationDelta += AnimationDelta;
+			v3 GameDelta = 2.0f*V3(Player->VisualScale.x * AnimationDelta.x,
+					Player->VisualScale.y * AnimationDelta.y,
+					Player->VisualScale.z * AnimationDelta.z);
+
+			GameDelta = Conjugate(Player->Orientation)*GameDelta;
+
+			// NOTE(Justin): Ground position hack.
+			v3 DesiredP = Player->P + GameDelta;
+			if(DesiredP.y < 0.0f)
+			{
+				v3 Y = YAxis();
+				GameDelta = GameDelta - Dot(GameDelta, -1.0f*Y)*(-1.0f*Y);
+			}
+
+			EntityMoveByAnimation(GameState, Player, GameDelta, dt);
+		}
+
+		if(CurrentNode.ControlsTurning)
+		{
+			quaternion NewOrientation = AnimationPlayer->FinalPose->Orientations[0];
+			Player->Orientation = RotateTowards(OldOrientation, Conjugate(NewOrientation), dt, 10.0f);
+		}
+
+		ModelJointsUpdate(Player->AnimationPlayer, -1.0f*Player->AnimationPlayer->AnimationDelta);
+	}
+#else
 	if(Player->AnimationGraph->CurrentNode.ControlsPosition)
+
 	{
 		if(!Player->AnimationPlayer->ControlsPosition)
 		{
@@ -1137,6 +1224,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			ModelJointsUpdate(Player->AnimationPlayer);
 		}
 	}
+#endif
 
 	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);
 
@@ -1252,7 +1340,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + V3(0.0f, Entity->Radius, 0.0f));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
-				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+				//PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
 #elif PLAYER_COLLIDER_CAPSULE
 				capsule Capsule = Player->Capsule;
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
@@ -1316,6 +1404,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset + 0.5f*Z);
 				PushAABB(RenderBuffer, ZArrow, T*R*S, V3(0.0f, 0.0f, 1.0f));
 #endif
+
 			} break;
 			case EntityType_WalkableRegion:
 			{

@@ -385,6 +385,7 @@ enum animation_name
 	Animation_CrouchingIdleRight,
 	Animation_LeftTurn,
 	Animation_RightTurn,
+	Animation_Turn90RightToRun,
 };
 
 char *AnimationFiles[] =
@@ -410,6 +411,7 @@ char *AnimationFiles[] =
 	"../data/animations/XBot_CrouchingIdleRight.animation",
 	"../data/animations/XBot_LeftTurn.animation",
 	"../data/animations/XBot_RightTurn.animation",
+	"../data/animations/XBot_IdleTurn90RightToRun.animation",
 };
 
 char *GraphFiles[] =
@@ -602,6 +604,7 @@ AssetManagerInitialize(asset_manager *Manager)
 				case Animation_IdleToSprint:
 				case Animation_IdleToSprintMirror:
 				{
+					//Animation->TimeScale = 1.5f;
 					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion);
 				} break;
@@ -621,8 +624,10 @@ AssetManagerInitialize(asset_manager *Manager)
 				case Animation_RunToStop:
 				{
 					Animation->TimeScale = 1.0f;
+#if 0
 					Animation->DefaultFlags = (AnimationFlags_ControlsPosition|
 											   AnimationFlags_JointMask);
+
 
 					Animation->JointMasks = PushArray(&Manager->Arena, Info->JointCount, b32);
 					for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
@@ -637,6 +642,9 @@ AssetManagerInitialize(asset_manager *Manager)
 							}
 						}
 					}
+#else
+					Animation->DefaultFlags = (AnimationFlags_ControlsPosition);
+#endif
 				} break;
 				case Animation_Sprint:
 				case Animation_SprintMirror:
@@ -672,6 +680,11 @@ AssetManagerInitialize(asset_manager *Manager)
 				{
 					Animation->TimeScale = 1.0f;
 				} break;
+				case Animation_Turn90RightToRun:
+				{
+					Animation->TimeScale = 1.0f;
+				} break;
+
 			}
 		}
 	}

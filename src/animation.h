@@ -70,6 +70,7 @@ enum arc_type
 {
 	ArcType_None,
 	ArcType_TimeInterval,
+	ArcType_WhenDone,
 };
 
 struct animation_graph_arc

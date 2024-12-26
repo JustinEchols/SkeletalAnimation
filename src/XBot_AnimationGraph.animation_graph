@@ -29,13 +29,13 @@ message go_state_crouch StateCrouchingIdleLeft
 animation XBot_IdleToSprint
 message go_state_idle StateIdleLeft 0.0 0.4
 message go_state_idle StateIdleRight 0.4 0.8
-when_done go_state_sprint StateSprint 0.6
+when_done go_state_sprint StateSprint t_remaining 0.6
 
 : StateIdleToSprintMirror
 animation XBot_IdleToSprintMirror
 message go_state_idle StateIdleRight 0.0 0.4
 message go_state_idle StateIdleLeft 0.4 0.8
-when_done go_state_sprint StateSprintMirror 0.6
+when_done go_state_sprint StateSprintMirror t_remaining 0.6
 
 #
 # Running 
@@ -81,7 +81,7 @@ message go_state_run StateRunningMirror 0.4 0.5
 : StateSprintTo180FromLeftToRight
 animation XBot_Running180
 controls_position
-when_done go_state_sprint StateSprintMirror 0.3
+when_done go_state_sprint StateSprintMirror t_remaining 0.3
 
 #
 # Jumping
@@ -90,16 +90,7 @@ when_done go_state_sprint StateSprintMirror 0.3
 : StateJumpForward
 animation XBot_JumpForward
 controls_position
-when_done go_state_run StateRunningMirror 0.1
-
-: StateStandingToIdleLeft
-animation XBot_StandingToIdleLeft
-#controls_position
-when_done go_state_idle StateIdleLeft 0.1
-
-: StateStandingToIdleRight
-animation XBot_StandingToIdleRight
-when_done go_state_idle StateIdleRight 0.9
+when_done go_state_run StateRunningMirror t_remaining 0.1
 
 # 
 # Crouching

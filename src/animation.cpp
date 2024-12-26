@@ -329,18 +329,15 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
 		}
 	}
 
-	// TODO(Justin): Asset manager and create a table lookup. Use the animation state name as a tag.
-	// Right now the tag is the actual name of the animation...
-
-
+	// TODO(Justin): Use the animation state name as a tag. Right now the tag is the actual name of the animation...
 	animation_graph_node *Node = &Graph->CurrentNode;
 	animation *Animation = LookupAnimation(AssetManager, (char *)Node->Tag.Data);
 	if(Animation)
 	{
 		AnimationPlay(AnimationPlayer, Animation, BlendDuration);
+		AnimationPlayer->MovementState = AnimationPlayer->NewState;
 	}
-
-	AnimationPlayer->MovementState = AnimationPlayer->NewState;
+	//AnimationPlayer->MovementState = AnimationPlayer->NewState;
 }
 
 internal animation *
@@ -450,24 +447,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		} break;
 		case MovementState_Sprint:
 		{
-#if 1
-			if(Entity->dTheta > 90.0f)
-			{
-				// Turning left
-				MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint_to_180");
-			}
-			else if(Entity->dTheta < -90.0f)
-			{
-				// Turning right
-				MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint_to_180");
-			}
-			else
-			{
-				MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint");
-			}
-#else
 			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint");
-#endif
 		} break;
 		case MovementState_Jump:
 		{
@@ -493,27 +473,12 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	{
 		animation *Animation = *AnimationPtr;
 
-#if 0
-		if(ControlsPosition(Animation))
-		{
-			//v3 OldP = Animation->BlendedPose->Positions[0];
-			AnimationUpdate(Animation, AnimationPlayer->dt);
-			//v3 NewP = Animation->BlendedPose->Positions[0];
-			//AnimationPlayer->AnimationDelta += NewP - OldP;
-		}
-		else
-		{
-			AnimationUpdate(Animation, AnimationPlayer->dt);
-		}
-#else
 		if(ControlsPosition(Animation))
 		{
 			AnimationPlayer->ControlsPosition = true;
 		}
+
 		AnimationUpdate(Animation, AnimationPlayer->dt);
-#endif
-
-
 
 		if(Finished(Animation))
 		{
@@ -739,7 +704,7 @@ AnimationGraphNodeAddWhenDoneArc(memory_arena *Arena, animation_graph_node *Node
 
 internal void
 AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *AnimationPlayer,
-													animation_graph *Graph)
+														  animation_graph *Graph)
 {
 	// NOTE(Justin): This does not work 100% in the current system. The oldest is not necessarily the same
 	// as the current node. The oldest may be another animation that is currently being blended out
@@ -756,6 +721,8 @@ AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *Anim
 
 	f32 RemainingTime = Oldest->Info->Duration - Oldest->CurrentTime;
 	animation_graph_node *Node = &Graph->CurrentNode;
+
+
 	animation_graph_arc Arc = Node->WhenDone;
 	if((Arc.Destination.Size != 0) && (RemainingTime <= Arc.RemainingTimeBeforeCrossFade))
 	{
@@ -878,12 +845,23 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 				{
 					char *InBoundMessage = strtok(0, " ");
 					char *DestNodeName = strtok(0, " ");
-					char *Param = strtok(0, " ");
+
 					arc_type Type = ArcType_None;
 					f32 RemainingTimeBeforeCrossFade = 0.0f;
-					if(Param)
+
+					char *Param = strtok(0, " ");
+					while(Param)
 					{
-						RemainingTimeBeforeCrossFade = F32FromASCII(Param);
+						if(StringsAreSame("t_remaining", Param))
+						{
+							Param = strtok(0, " ");
+							RemainingTimeBeforeCrossFade = F32FromASCII(Param);
+						}
+						else if(StringsAreSame("t_blend", Param))
+						{
+						}
+
+						Param = strtok(0, " ");
 					}
 
 					AnimationGraphNodeAddWhenDoneArc(&G->Arena, &G->Nodes[G->Index], InBoundMessage, DestNodeName, RemainingTimeBeforeCrossFade);
@@ -891,6 +869,10 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 				else if(StringsAreSame(Word, "controls_position"))
 				{
 					G->Nodes[G->Index].ControlsPosition = true;
+				}
+				else if(StringsAreSame(Word, "controls_turning"))
+				{
+					G->Nodes[G->Index].ControlsTurning = true;
 				}
 				else if(*Word == '#')
 				{
