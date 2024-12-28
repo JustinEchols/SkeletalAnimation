@@ -386,6 +386,7 @@ enum animation_name
 	Animation_LeftTurn,
 	Animation_RightTurn,
 	Animation_Turn90RightToRun,
+	Animation_JumpForwardMirror,
 };
 
 char *AnimationFiles[] =
@@ -412,6 +413,7 @@ char *AnimationFiles[] =
 	"../data/animations/XBot_LeftTurn.animation",
 	"../data/animations/XBot_RightTurn.animation",
 	"../data/animations/XBot_IdleTurn90RightToRun.animation",
+	"../data/animations/XBot_JumpForwardMirror.animation",
 };
 
 char *GraphFiles[] =
@@ -604,7 +606,6 @@ AssetManagerInitialize(asset_manager *Manager)
 				case Animation_IdleToSprint:
 				case Animation_IdleToSprintMirror:
 				{
-					//Animation->TimeScale = 1.5f;
 					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion);
 				} break;
@@ -624,27 +625,7 @@ AssetManagerInitialize(asset_manager *Manager)
 				case Animation_RunToStop:
 				{
 					Animation->TimeScale = 1.0f;
-#if 0
-					Animation->DefaultFlags = (AnimationFlags_ControlsPosition|
-											   AnimationFlags_JointMask);
-
-
-					Animation->JointMasks = PushArray(&Manager->Arena, Info->JointCount, b32);
-					for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
-					{
-						string JointName = Info->JointNames[JointIndex];
-						for(u32 StringIndex = 0; StringIndex < ArrayCount(LowerJointTags); ++StringIndex)
-						{
-							char *MaskTag = LowerJointTags[StringIndex];
-							if(SubStringExists(JointName, MaskTag))
-							{
-								Animation->JointMasks[JointIndex] = true;
-							}
-						}
-					}
-#else
 					Animation->DefaultFlags = (AnimationFlags_ControlsPosition);
-#endif
 				} break;
 				case Animation_Sprint:
 				case Animation_SprintMirror:
@@ -656,6 +637,7 @@ AssetManagerInitialize(asset_manager *Manager)
 				{
 					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = AnimationFlags_ControlsPosition;
+					//Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion | AnimationFlags_ControlsPosition);
 				} break;
 				case Animation_Running180:
 				{
@@ -679,10 +661,17 @@ AssetManagerInitialize(asset_manager *Manager)
 				case Animation_RightTurn:
 				{
 					Animation->TimeScale = 1.0f;
+					Animation->DefaultFlags = AnimationFlags_ControlsTurning;
 				} break;
 				case Animation_Turn90RightToRun:
 				{
 					Animation->TimeScale = 1.0f;
+					Animation->DefaultFlags = AnimationFlags_ControlsTurning;
+				} break;
+				case Animation_JumpForwardMirror:
+				{
+					Animation->TimeScale = 1.0f;
+					Animation->DefaultFlags = AnimationFlags_ControlsPosition;
 				} break;
 
 			}
@@ -711,5 +700,5 @@ AssetManagerInitialize(asset_manager *Manager)
 	// Font
 	//
 
-	FontInit(&Manager->Arena, &Manager->Font, FontFiles[0]);
+	FontInitialize(&Manager->Arena, &Manager->Font, FontFiles[0]);
 }

@@ -20,7 +20,6 @@ IsNewLine(u8 *S)
 	return(Result);
 }
 
-
 inline b32 
 IsSpace(char C)
 {

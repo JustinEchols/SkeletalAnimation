@@ -18,12 +18,14 @@ animation XBot_IdleRight
 message go_state_run StateRunning
 message go_state_sprint StateIdleToSprintMirror
 message go_state_crouch StateCrouchingIdleRight
+#message go_state_turn_90_right_to_run StateTurn90RightToRun
 
 : StateIdleLeft
 animation XBot_IdleLeft
 message go_state_run StateRunningMirror
 message go_state_sprint StateIdleToSprint
 message go_state_crouch StateCrouchingIdleLeft
+#message go_state_turn_90_right_to_run StateTurn90RightToRun
 
 : StateIdleToSprint
 animation XBot_IdleToSprint
@@ -37,6 +39,12 @@ message go_state_idle StateIdleRight 0.0 0.4
 message go_state_idle StateIdleLeft 0.4 0.8
 when_done go_state_sprint StateSprintMirror t_remaining 0.6
 
+: StateTurn90RightToRun
+#animation XBot_IdleTurn90RightToRun
+animation XBot_RightTurn
+controls_turning
+when_done go_state_run StateRunning t_remaining 0.1
+
 #
 # Running 
 #
@@ -49,6 +57,8 @@ message go_state_sprint StateSprint 0.0 0.1
 message go_state_sprint StateSprint 0.65 0.7
 message go_state_sprint StateSprintMirror 0.3 0.4
 message go_state_jump StateJumpForward 0.3 0.4
+message go_state_jump StateJumpForwardMirror 0.65 0.7
+message go_state_jump StateJumpForwardMirror 0.0 0.05
 
 : StateRunningMirror
 animation XBot_RunningMirror
@@ -57,8 +67,10 @@ message go_state_idle StateIdleLeft 0.4 0.7
 message go_state_sprint StateSprintMirror 0.0 0.1
 message go_state_sprint StateSprintMirror 0.65 0.7
 message go_state_sprint StateSprint 0.3 0.4
+message go_state_jump StateJumpForwardMirror 0.3 0.4
 message go_state_jump StateJumpForward 0.65 0.7
 message go_state_jump StateJumpForward 0.0 0.05
+
 
 #
 # Sprinting 
@@ -91,6 +103,11 @@ when_done go_state_sprint StateSprintMirror t_remaining 0.3
 animation XBot_JumpForward
 controls_position
 when_done go_state_run StateRunningMirror t_remaining 0.1
+
+: StateJumpForwardMirror
+animation XBot_JumpForwardMirror
+controls_position
+when_done go_state_run StateRunning t_remaining 0.1
 
 # 
 # Crouching

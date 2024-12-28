@@ -1,4 +1,3 @@
-
 #include "game.h"
 #include "strings.cpp"
 #include "texture.cpp"
@@ -51,6 +50,7 @@ PlayerAdd(game_state *GameState, v3 P)
 
 	f32 Radians = DirectionToEuler(V3(0.0f, 0.0f, -1.0f)).yaw;
 	Entity->Theta = RadToDegrees(Radians);
+	Entity->ThetaTarget = Entity->Theta; 
 	Entity->dTheta = 0.0f;
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), Radians);
 	Entity->MovementState = MovementState_Idle;
@@ -216,9 +216,9 @@ EntityTransform(entity *Entity, v3 Scale = V3(1.0f))
 }
 
 inline void 
-EntityMovementState(char *Buffer, entity *Entity)
+MovementStateToString(char *Buffer, movement_state State)
 {
-	switch(Entity->MovementState)
+	switch(State)
 	{
 		case MovementState_Idle:
 		{
@@ -251,26 +251,30 @@ inline void
 EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 {
 	v3 FacingDirection = Entity->dP;
-	f32 LengthSquared = Dot(FacingDirection, FacingDirection);
-	if(LengthSquared != 0.0f)
+	f32 TargetAngleInRad = DirectionToEuler(FacingDirection).yaw;
+	Entity->ThetaTarget = RadToDegrees(TargetAngleInRad);
+	if(Entity->Theta != Entity->ThetaTarget)
 	{
-		f32 OldTheta = Entity->ThetaTarget;
-		quaternion Orientation = Entity->Orientation;
+		animation_player *AnimationPlayer = Entity->AnimationPlayer;
+		if(AnimationPlayer && AnimationPlayer->ControlsTurning)
+		{
+			// TODO(Justin): Animation driven turning
+		}
+		else
+		{
+			quaternion QCurrent = Entity->Orientation;
+			quaternion QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), TargetAngleInRad);
+			QTarget = Conjugate(QTarget);
+			Entity->Orientation = RotateTowards(QCurrent, QTarget, dt, AngularSpeed);
+		}
 
-		// This angle is the angle we would rotate from the starting orientation (0 degress) to 
-		// end up at the current orientation. IT IS NOT THE ANGLE WE ROTATE BY. E.g. if the player starts out
-		// facing towards the camera with 0 degress of rotation and the player goes left. The final orientation is
-		// This is confusing.. Need to think about why this works..
+		Entity->Theta = RadToDegrees(AngleBetween(Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f), Entity->Orientation));
+		if(Entity->ThetaTarget < 0.0f)
+		{
+			Entity->Theta *= -1.0f;
+		}
 
-		f32 TargetAngleInRad = DirectionToEuler(FacingDirection).yaw;
-
-		Entity->Theta = OldTheta;
-		Entity->ThetaTarget = RadToDegrees(TargetAngleInRad);
 		Entity->dTheta = Entity->ThetaTarget - Entity->Theta;
-
-		quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), TargetAngleInRad);
-		Target = Conjugate(Target);
-		Entity->Orientation = RotateTowards(Orientation, Target, dt, AngularSpeed);
 	}
 }
 
@@ -464,7 +468,6 @@ PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, v3 *PointOfInt
 	return(Intersected);
 }
 
-
 struct collision_info
 {
 	v3 PlaneNormal;
@@ -530,24 +533,6 @@ AABBCollisionInfo(aabb AABB)
 #define PLAYER_COLLIDER_CAPSULE 0
 #define PLAYER_COLLIDER_OFF 0
 
-
-// NOTE(Justin):
-// The vector from the center of the OBB to the center of the sphere, that is computed in world space,
-// is RelP and is the position vector of the center of the sphere in
-// relative space/OBB space/configuration space/minkowski space.
-//
-// We compute the coordinates of RelP and DeltaP in this space and are then able to do an AABB test with
-// the center of the AABB at the origin, 0. Then, each face of the AABB is a plane
-// and we can determine each normal and signed distance D of the plane. The normal is just pre-populated
-// data and the signed distance of the plane is computed by taking the dot product with the normal
-// and either the min or max of the AABB depending on which normal is currently being tested. The
-// reason why the dot product is done with the min or max is due to the fact that these are actual
-// points on the respective planes. I.e. D = n.X, where X is either AABB.Min or AABB.max.
-
-// The radius is the HALF DIM of the bounding box constructed from the
-// sphere. So, the correct MK sum needs to use TWICE the radius, per the implementation of
-// AABBCenterDim(-).
-
 internal b32
 MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 *tMin)
 {
@@ -567,6 +552,8 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 
 	b32 StartedInside = false;
 
+	// Check whether or not we started inside and adjust the MK dimensions. Also
+	// flip the plane normal whenever there is a collision (see below).
 	v3 MKDim;
 	if(InAABB(AABBCenterDim(V3(0.0f), OBB.Dim), SphereCenter))
 	{
@@ -613,6 +600,8 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 {
+	// TODO(Justin): Fold animation driven movement into this routine.
+
 	if(!FlagIsSet(Entity, EntityFlag_YSupported))
 	{
 		ddP += V3(0.0f, -80.0f, 0.0f);
@@ -622,12 +611,24 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	Entity->dP = dt * ddP + Entity->dP;
 
 	v3 OldP = Entity->P;
-	f32 DeltaLength = Length(DeltaP);
-
 	v3 DesiredP = OldP + DeltaP;
-	v3 GroundP = DesiredP;
+
+	animation_player *AnimationPlayer = Entity->AnimationPlayer;
+	if(AnimationPlayer && AnimationPlayer->ControlsPosition)
+	{
+		v3 AnimationDelta = AnimationPlayer->AnimationDelta;
+		v3 GameDelta = 3.0f*V3(Entity->VisualScale.x * AnimationDelta.x,
+							   Entity->VisualScale.y * AnimationDelta.y,
+							   Entity->VisualScale.z * AnimationDelta.z);
+
+		DeltaP = Conjugate(Entity->Orientation)*GameDelta;
+		DesiredP = OldP + DeltaP;
+
+		AnimationPlayer->AnimationDelta = {};
+	}
 
 	// TODO(Justin): Figure out the "correct" length here.
+	v3 GroundP = {};
 	v3 GroundDelta = V3(0.0f, -10.0f,0.0f);
 	entity *EntityBelow = 0;
 
@@ -715,73 +716,6 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		else
 		{
 			FlagAdd(Entity, EntityFlag_YSupported);
-		}
-	}
-
-	// TODO(Justin): Orienttion update. Whatever the y normal is of the thing the player is standing on should be the
-	// y direction of the player. For now at least..
-	// IK should handle part of this.
-}
-
-internal void
-EntityMoveByAnimation(game_state *GameState, entity *Entity, v3 DeltaP, f32 dt)
-{
-	v3 OldP = Entity->P;
-	v3 DesiredP = OldP + DeltaP;
-	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
-	{
-		f32 tMin = 1.0f;
-		b32 Collided = false;
-		v3 Normal = V3(0.0f);
-		entity *HitEntity = 0;
-		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
-		{
-			entity *TestEntity = GameState->Entities + TestEntityIndex;
-			if(Entity != TestEntity)
-			{
-				v3 TestP = TestEntity->P;
-				v3 CurrentP = Entity->P; 
-#if PLAYER_COLLIDER_AABB
-				v3 RelP		= (CurrentP + Entity->VolumeOffset) - (TestP + TestEntity->VolumeOffset);
-				v3 AABBDim	= Entity->AABBDim + TestEntity->AABBDim;
-
-				aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
-				collision_result CollisionResult = CollisionInfoDefault(MKSumAABB);
-				for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
-				{
-					collision_info Info = CollisionResult.Info[InfoIndex];
-					v3 PlaneNormal = Info.PlaneNormal;
-					v3 PointOnPlane = Info.PointOnPlane;
-					f32 D = Dot(PlaneNormal, PointOnPlane);
-					if(PointAndPlaneIntersect(RelP, DeltaP, PlaneNormal, D, MKSumAABB, &tMin))
-					{
-						Normal = Info.PlaneNormal;
-						Collided = true;
-						HitEntity = TestEntity;
-					}
-				}
-#elif PLAYER_COLLIDER_SPHERE
-				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
-				if(MovingSphereHitOBB(RelP, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
-				{
-					Collided = true;
-					HitEntity = TestEntity;
-				}
-#elif PLAYER_COLLIDER_OFF
-#endif
-			}
-		}
-
-		Entity->P += tMin * DeltaP; 
-		if(Collided)
-		{
-			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
-			DeltaP = DesiredP - Entity->P;
-			DeltaP = DeltaP - Dot(Normal, DeltaP) * Normal;
-		}
-		else
-		{
-			break;
 		}
 	}
 }
@@ -955,8 +889,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				f32 a = 50.0f;
 
 				v3 OldPlayerddP = Entity->ddP;
-				if(!Entity->AnimationGraph->CurrentNode.ControlsPosition &&
-				   !Entity->AnimationGraph->CurrentNode.ControlsTurning)
+#if 0
+				if(!Entity->AnimationGraph->CurrentNode.ControlsPosition)
 				{
 					Entity->ddP = ddP;
 
@@ -965,18 +899,32 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 						a *= 1.5f;
 					}
 
-					f32 PlayerDrag = -10.0f;
-					f32 AngularSpeed = 10.0f;
-					f32 Speed = Length(Entity->dP);
 					ddP = a * ddP;
-					ddP += PlayerDrag * Entity->dP;
+					ddP += -10.0f * Entity->dP;
 
 					if(!Equal(ddP, V3(0.0f)))
 					{
 						EntityMove(GameState, Entity, ddP, dt);
-						EntityOrientationUpdate(Entity, dt, AngularSpeed);
+						EntityOrientationUpdate(Entity, dt, 10.0f);
 					}
 				}
+#else
+				Entity->ddP = ddP;
+
+				if(Sprinting)
+				{
+					a *= 1.5f;
+				}
+
+				ddP = a * ddP;
+				ddP += -10.0f * Entity->dP;
+
+				if(!Equal(ddP, V3(0.0f)))
+				{
+					EntityMove(GameState, Entity, ddP, dt);
+					EntityOrientationUpdate(Entity, dt, 10.0f);
+				}
+#endif
 
 				switch(Entity->MovementState)
 				{
@@ -1082,136 +1030,47 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	Animate(Player, Assets);
-#if 0
-	animation_graph *Graph = Player->AnimationGraph;
-	animation_player *AnimationPlayer = Player->AnimationPlayer;
-	if(Graph && AnimationPlayer)
+
+
+
+	v3 OldP = Player->AnimationPlayer->FinalPose->Positions[0];
+	v3 NewP = OldP;
+
+	v3 AnimationDelta = {};
+	v3 Offset = {};
+
+	AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
+
+	if(Player->AnimationPlayer->ControlsPosition)
 	{
-		animation_graph_node CurrentNode = Graph->CurrentNode;
-
-		v3 OldP					  = AnimationPlayer->FinalPose->Positions[0];
-		quaternion OldOrientation = AnimationPlayer->FinalPose->Orientations[0];
-		AnimationPlayerUpdate(AnimationPlayer, &TempState->Arena, dt);
-
-		if(CurrentNode.ControlsPosition)
-		{
-			if(!AnimationPlayer->ControlsPosition)
-			{
-				// NOTE(Justin): Switched to a node that now controls the in game position of the player.
-				// The animation has not started playing yet. Reset the AnimationDelta as it could have
-				// accumulated previous movement from an earlier playback.
-				Player->AnimationPlayer->AnimationDelta = V3(0.0f);
-			}
-
-			v3 NewP = AnimationPlayer->FinalPose->Positions[0];
-			v3 AnimationDelta = NewP - OldP;
-			AnimationPlayer->AnimationDelta += AnimationDelta;
-			v3 GameDelta = 2.0f*V3(Player->VisualScale.x * AnimationDelta.x,
-					Player->VisualScale.y * AnimationDelta.y,
-					Player->VisualScale.z * AnimationDelta.z);
-
-			GameDelta = Conjugate(Player->Orientation)*GameDelta;
-
-			// NOTE(Justin): Ground position hack.
-			v3 DesiredP = Player->P + GameDelta;
-			if(DesiredP.y < 0.0f)
-			{
-				v3 Y = YAxis();
-				GameDelta = GameDelta - Dot(GameDelta, -1.0f*Y)*(-1.0f*Y);
-			}
-
-			EntityMoveByAnimation(GameState, Player, GameDelta, dt);
-		}
-
-		if(CurrentNode.ControlsTurning)
-		{
-			quaternion NewOrientation = AnimationPlayer->FinalPose->Orientations[0];
-			Player->Orientation = RotateTowards(OldOrientation, Conjugate(NewOrientation), dt, 10.0f);
-		}
-
-		ModelJointsUpdate(Player->AnimationPlayer, -1.0f*Player->AnimationPlayer->AnimationDelta);
-	}
-#else
-	if(Player->AnimationGraph->CurrentNode.ControlsPosition)
-
-	{
-		if(!Player->AnimationPlayer->ControlsPosition)
-		{
-			// NOTE(Justin): Switched to a node that now controls the in game position of the player.
-			// The animation has not started playing yet. Reset the AnimationDelta as it could have
-			// accumulated previous movement from an earlier playback.
-			Player->AnimationPlayer->AnimationDelta = V3(0.0f);
-		}
-
-		// TODO(Justin): Robustness
-		// TODO(Justin): Update velocity..
-		
-		v3 OldP = Player->AnimationPlayer->FinalPose->Positions[0];
-		AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
-		v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
-
-		v3 AnimationDelta = NewP - OldP;
+		NewP = Player->AnimationPlayer->FinalPose->Positions[0];
+		AnimationDelta = NewP - OldP;
 		Player->AnimationPlayer->AnimationDelta += AnimationDelta;
-		v3 GameDelta = 2.0f*V3(Player->VisualScale.x * AnimationDelta.x,
-							   Player->VisualScale.y * AnimationDelta.y,
-							   Player->VisualScale.z * AnimationDelta.z);
-
-		GameDelta = Conjugate(Player->Orientation)*GameDelta;
-
-		// NOTE(Justin): Ground position hack.
-		v3 DesiredP = Player->P + GameDelta;
-		if(DesiredP.y < 0.0f)
-		{
-			v3 Y = YAxis();
-			GameDelta = GameDelta - Dot(GameDelta, -1.0f*Y)*(-1.0f*Y);
-		}
-
-		EntityMoveByAnimation(GameState, Player, GameDelta, dt);
-		ModelJointsUpdate(Player->AnimationPlayer, -1.0f*Player->AnimationPlayer->AnimationDelta);
+		Player->AnimationPlayer->TotalDeltaAccumulated += NewP - OldP;
+		Offset = -1.0f*Player->AnimationPlayer->TotalDeltaAccumulated;
 	}
 	else
 	{
-		if(Player->AnimationPlayer->ControlsPosition)
+		if(!Equal(Player->AnimationPlayer->TotalDeltaAccumulated, V3(0.0f)))
 		{
-			// NOTE(Justin): Switched to a node that does not control position but still blending out an animation 
-			// that previously controlled the player's position. We still need to offset the visual position
-			// of the player. This is not exactly correct because we are removing the movement from the animation
-			// that is currently blending in. This results in a discontinuity snap. How to recover/get the delta
-			// of the currently blending in animation?
-
-			v3 OldP = Player->AnimationPlayer->FinalPose->Positions[0];
-			AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
-			v3 NewP = Player->AnimationPlayer->FinalPose->Positions[0];
-
-			v3 AnimationDelta = NewP - OldP;
-			Player->AnimationPlayer->AnimationDelta += AnimationDelta;
-
-			ModelJointsUpdate(Player->AnimationPlayer, -1.0f*Player->AnimationPlayer->AnimationDelta);
-		}
-		else
-		{
-			AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
-			ModelJointsUpdate(Player->AnimationPlayer);
+			animation *Current = Player->AnimationPlayer->Channels;
+			if(Current->BlendingIn)
+			{
+				Player->AnimationPlayer->FinalPose->Positions[0] = Current->BlendedPose->Positions[0];
+				Player->AnimationPlayer->FinalPose[1].Positions[0] = Current->BlendedPose->Positions[0];
+			}
+			else
+			{
+				Player->AnimationPlayer->TotalDeltaAccumulated = {};
+			}
 		}
 	}
-#endif
 
+	ModelJointsUpdate(Player, Offset);
 	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);
 
 	camera *Camera = &GameState->Camera;
-#if 0
-	Camera->RotationAboutY = OrientationUpdate(Camera->RotationAboutY, 180.0f - Player->Theta, dt, 10.0f);
-	Camera->P = Player->P + Camera->RotationAboutY*GameState->CameraOffsetFromPlayer;
-
-	v3 NewDirection = Camera->RotationAboutY * Camera->Direction;
-	f32 D = Dot(NewDirection, Camera->Direction);
-	if(D < 0.99f)
-	{
-		Camera->Direction = Normalize(Player->P - Camera->P + Camera->Direction);
-	}
-#else
 	Camera->P = Player->P + GameState->CameraOffsetFromPlayer;
-#endif
 
 	//
 	// NOTE(Justin): Render.
@@ -1471,6 +1330,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
 
+		sprintf(Buff, "ThetaTarget: %.2f", Entity->ThetaTarget);
+		Text = StringCopy(&TempState->Arena, Buff);
+		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
+		P.y -= (Gap + dY);
+
 		sprintf(Buff, "dTheta: %.2f", Entity->dTheta);
 		Text = StringCopy(&TempState->Arena, Buff);
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
@@ -1541,10 +1405,57 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		P.x += 20.0f;
 
-		EntityMovementState(Buff, Entity);
+		sprintf(Buff, "AnimationDelta: %.1f %.1f %.1f",	   Player->AnimationPlayer->AnimationDelta.x,
+														   Player->AnimationPlayer->AnimationDelta.y,
+														   Player->AnimationPlayer->AnimationDelta.z);
+		Text = StringCopy(&TempState->Arena, Buff);
+		if(Player->AnimationPlayer->ControlsPosition)
+		{
+			PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
+			P.y -= (Gap + dY);
+		}
+		else
+		{
+			PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
+			P.y -= (Gap + dY);
+		}
+
+		sprintf(Buff, "TotalAccumulatedDelta: %.1f %.1f %.1f", Player->AnimationPlayer->TotalDeltaAccumulated.x,
+														   Player->AnimationPlayer->TotalDeltaAccumulated.y,
+														   Player->AnimationPlayer->TotalDeltaAccumulated.z);
+		Text = StringCopy(&TempState->Arena, Buff);
+		if(Player->AnimationPlayer->ControlsPosition)
+		{
+			PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
+			P.y -= (Gap + dY);
+		}
+		else
+		{
+			PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
+			P.y -= (Gap + dY);
+		}
+
+
+		if(Player->AnimationPlayer->ControlsTurning)
+		{
+			sprintf(Buff, "Controls Turning: true");
+			Text = StringCopy(&TempState->Arena, Buff);
+			PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
+			P.y -= (Gap + dY);
+		}
+		else
+		{
+			sprintf(Buff, "Controls Turning: false");
+			Text = StringCopy(&TempState->Arena, Buff);
+			PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
+			P.y -= (Gap + dY);
+		}
+
+		MovementStateToString(Buff, Entity->AnimationPlayer->MovementState);
 		Text = StringCopy(&TempState->Arena, Buff);
 		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
+
 		for(animation *Animation = Player->AnimationPlayer->Channels; Animation; Animation = Animation->Next)
 		{
 			if(Animation)

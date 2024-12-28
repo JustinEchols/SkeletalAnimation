@@ -1,6 +1,6 @@
 
 internal s32 
-FontInit(memory_arena *Arena, font *Font, char *FileName)
+FontInitialize(memory_arena *Arena, font *Font, char *FileName)
 {
 	s32 Result = 1;
 

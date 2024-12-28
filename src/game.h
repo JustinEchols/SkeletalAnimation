@@ -1,5 +1,42 @@
 #if !defined(GAME_H)
 
+// NOTE(Justin): JUMP ANIMATION. 
+// The issue at hand is that when the jump is finished
+// two animations start bledning together. The jump animation
+// is near the end and the position is far away while the other animation
+// blending in is near the model space origin. The result is that
+// the position interpolates towards the model origin resulting in
+// the player sliding back world space during the blend.
+//
+// SOlUTION. If an animation controls the position of the player, it only
+// controls it while it is NOT BLENDING OUT. During playback the previous
+// updates are the same. However when the animation starts blending out
+// we keep checking to see if the current aniomation is blending in.
+// While the current animation is blending in we set the root position
+// of the FinalPose to be the root position of the currently blending
+// in animation. After the current it done blending in we set the 
+// total accumulated delta computed during the controls position animation
+// to 0. The next iteration we skip setting the root position and continue
+// BAU.
+
+// NOTE(Justin): COLLISION. 
+// The vector from the center of the OBB to the center of the sphere, that is computed in world space,
+// is RelP and is the position vector of the center of the sphere in
+// relative space/OBB space/configuration space/minkowski space.
+//
+// We compute the coordinates of RelP and DeltaP in this space and are then able to do an AABB test with
+// the center of the AABB at the origin, 0. Then, each face of the AABB is a plane
+// and we can determine each normal and signed distance D of the plane. The normal is just pre-populated
+// data and the signed distance of the plane is computed by taking the dot product with the normal
+// and either the min or max of the AABB depending on which normal is currently being tested. The
+// reason why the dot product is done with the min or max is due to the fact that these are actual
+// points on the respective planes. I.e. D = n.X, where X is either AABB.Min or AABB.max.
+
+// The radius is the HALF DIM of the bounding box constructed from the
+// sphere. So, the correct MK sum needs to use TWICE the radius, per the implementation of
+// AABBCenterDim(-).
+
+
 // NOTE(Justin): COLLISION. 
 // NOTE(Justin): If the ground normal is way to big compared to the rest of the units
 // in the game then the tGround value will be 0 a majority of the time. Which

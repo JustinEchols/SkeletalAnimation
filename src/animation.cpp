@@ -61,6 +61,13 @@ ControlsPosition(animation *Animation)
 	return(Result);
 }
 
+inline b32
+ControlsTurning(animation *Animation)
+{
+	b32 Result = FlagIsSet(Animation, AnimationFlags_ControlsTurning);
+	return(Result);
+}
+
 inline mat4
 JointTransformFromSQT(sqt SQT)
 {
@@ -314,6 +321,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 	Animation->BlendFactor = Clamp01(BlendFactor);
 }
 
+// NOTE(Justin): Right now the nodes of the graph represent the animation states
 internal void
 SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
 										  animation_graph *Graph, string Dest, f32 BlendDuration)
@@ -330,14 +338,16 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
 	}
 
 	// TODO(Justin): Use the animation state name as a tag. Right now the tag is the actual name of the animation...
+	// TODO(Justin): Decide when, where, and how the new state should be accepted. Since Animate() is the interface 
+	// between the game and animation system it should probably be done at that level instead of here where it is hidden...
+	// Moreoever there can be many animation states associated to one movement state??
+
 	animation_graph_node *Node = &Graph->CurrentNode;
 	animation *Animation = LookupAnimation(AssetManager, (char *)Node->Tag.Data);
 	if(Animation)
 	{
 		AnimationPlay(AnimationPlayer, Animation, BlendDuration);
-		AnimationPlayer->MovementState = AnimationPlayer->NewState;
 	}
-	//AnimationPlayer->MovementState = AnimationPlayer->NewState;
 }
 
 internal animation *
@@ -406,6 +416,7 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 
 	if(Dest.Size != 0)
 	{
+		AnimationPlayer->MovementState = AnimationPlayer->NewState;
 		SwitchToNode(AssetManager, AnimationPlayer, Graph, Dest, DefaultBlendDuration);
 	}
 }
@@ -420,16 +431,16 @@ Animate(entity *Entity, asset_manager *AssetManager)
 
 	if(AnimationPlayer->PlayingCount == 0)
 	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleRight"), 0.2f);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleLeft"), 0.2f);
 		return;
 	}
+
+	// Right now the animation player lags behind the gameplay state. Meaning if the gameplay
+	// state says sprint and the player was running. The animation state stays in running
+	// for some time until it can transition to the sprint state. Only when the animation
+	// state has switched do we acceps the new state. Not sure if this is a good idea or not.
 
 	movement_state State = Entity->MovementState;
-	if(AnimationPlayer->MovementState == State && Equal(Entity->dTheta, 0.0f))
-	{
-		return;
-	}
-
 	AnimationPlayer->NewState = State;
 	switch(State)
 	{
@@ -443,7 +454,14 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		} break;
 		case MovementState_Run:
 		{
-			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_run");
+			char *Message = "go_state_run";
+			if((AnimationPlayer->MovementState == State) && StringsAreSame(Message, "go_state_run")) 
+			{
+			}
+			else
+			{
+				MessageSend(AssetManager, AnimationPlayer, Graph, Message);
+			}
 		} break;
 		case MovementState_Sprint:
 		{
@@ -453,6 +471,10 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		{
 			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
 		} break;
+		case MovementState_Falling:
+		{
+			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_falling");
+		}
 	}
 }
 
@@ -469,16 +491,25 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	//
 
 	AnimationPlayer->ControlsPosition = false;
+	AnimationPlayer->ControlsTurning = false;
 	for(animation **AnimationPtr = &AnimationPlayer->Channels; *AnimationPtr;)
 	{
 		animation *Animation = *AnimationPtr;
 
+		AnimationUpdate(Animation, AnimationPlayer->dt);
+
 		if(ControlsPosition(Animation))
 		{
-			AnimationPlayer->ControlsPosition = true;
+			if(!Animation->BlendingOut)
+			{
+				AnimationPlayer->ControlsPosition = true;
+			}
 		}
 
-		AnimationUpdate(Animation, AnimationPlayer->dt);
+		if(ControlsTurning(Animation))
+		{
+			AnimationPlayer->ControlsTurning = true;
+		}
 
 		if(Finished(Animation))
 		{
@@ -514,6 +545,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	f32 FactorSum = 0.0f;
 	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)
 	{
+		Assert(!Finished(Animation));
 		b32 Masking = false;
 		if(MaskingJoints(Animation))
 		{
@@ -590,10 +622,11 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 }
 
 internal void
-ModelJointsUpdate(animation_player *AnimationPlayer, v3 Offset = V3(0.0f))
+ModelJointsUpdate(entity *Entity, v3 Offset = V3(0.0f))
 {
+	animation_player *AnimationPlayer = Entity->AnimationPlayer;
 	model *Model = AnimationPlayer->Model;
-	if(Model)
+	if(AnimationPlayer && Model)
 	{
 		for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 		{
@@ -644,6 +677,7 @@ ModelJointsUpdate(animation_player *AnimationPlayer, v3 Offset = V3(0.0f))
 		}
 	}
 }
+
 
 
 internal animation_graph_node * 

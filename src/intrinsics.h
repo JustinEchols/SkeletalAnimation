@@ -118,6 +118,19 @@ RandBetween(f32 A, f32 B)
 	return(Result);
 }
 
+inline f32
+SignOf(f32 X)
+{
+	f32 Result = 1.0f;
+
+	if(X < 0.0f)
+	{
+		Result *= -1.0f;
+	}
+
+	return(Result);
+}
+
 
 #define INTRINSICS_H
 #endif

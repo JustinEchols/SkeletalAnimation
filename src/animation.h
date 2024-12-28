@@ -33,6 +33,7 @@ enum animation_flags
 	AnimationFlags_RemoveLocomotion = (1 << 4),
 	AnimationFlags_JointMask = (1 << 5),
 	AnimationFlags_ControlsPosition = (1 << 6),
+	AnimationFlags_ControlsTurning = (1 << 7),
 };
 
 struct animation
@@ -117,13 +118,16 @@ struct animation_player
 	animation *FreeChannels;
 
 	b32 ControlsPosition;
+	b32 ControlsTurning;
 	u32 PlayingCount;
 	u32 RetiredCount;
 
 	f32 CurrentTime;
 	f32 dt;
 
+	f32 TurningAccumulator;
 	v3 AnimationDelta;
+	v3 TotalDeltaAccumulated;
 
 	key_frame *FinalPose;
 	model *Model; 

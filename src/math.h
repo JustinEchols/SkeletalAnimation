@@ -574,6 +574,23 @@ Equal(v3 A, v3 B, f32 Tolerance = SmallNumber)
 	return(Result);
 }
 
+inline f32
+AngleBetween(v3 A, v3 B)
+{
+	f32 Result;
+
+	Result = ACos(Dot(A, B) / (Length(A)*Length(B)));
+
+	return(Result);
+}
+
+inline b32
+IsZeroVector(v3 A)
+{
+	b32 Result = Equal(A, V3(0.0f));
+	return(Result);
+}
+
 //
 // NOTE(Justin): v4 operations
 //
@@ -1368,7 +1385,6 @@ DirectionToEuler(v3 V)
     Result.roll  = 0.0f;
 
 	return(Result);
-
 }
 
 // NOTE(Justin): Angular distance between two quaternions
