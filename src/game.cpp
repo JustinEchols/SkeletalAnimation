@@ -142,7 +142,7 @@ SphereAdd(game_state *GameState, v3 Center, f32 Radius)
 	// NOTE(Justin): The cube mesh has dimensions 1x1x1. The AABBDim is used for collision
 	// detection and the visual scale used for rendering
 	//
-	// The volume offset depends on what convention is used as far as the entity's position. The convention
+// The volume offset depends on what convention is used as far as the entity's position. The convention
 	// used is that the position is where on the ground the entity is located. So we offset the volume in the
 	// +y direction.
 
@@ -159,6 +159,40 @@ WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	entity *Entity = EntityAdd(GameState, EntityType_WalkableRegion);
 
 	FlagAdd(Entity, EntityFlag_YSupported);
+
+	Entity->P = P;
+	Entity->dP = V3(0.0f);
+	Entity->ddP = V3(0.0f);
+	Entity->Orientation = Orientation;
+
+	// NOTE(Justin): The cube mesh has dimensions 1x1x1. The AABBDim is used for collision
+	// detection and the visual scale used for rendering
+	//
+	// The volume offset depends on what convention is used as far as the entity's position. The convention
+	// used is that the position is where on the ground the entity is located. So we offset the volume in the
+	// +y direction.
+
+	// ABB
+	Entity->AABBDim = 0.99f*Dim;
+	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+
+	// OBB
+	quaternion Q = Conjugate(Entity->Orientation);
+	Entity->OBB.Center = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	Entity->OBB.X = Q * XAxis();
+	Entity->OBB.Y = Q * YAxis();
+	Entity->OBB.Z = Q * (-1.0f*ZAxis());
+	Entity->OBB.Dim = 0.99f*Dim;
+
+	Entity->VisualScale = 0.5f*Dim;
+}
+
+internal void
+ElevatorAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
+{
+	entity *Entity = EntityAdd(GameState, EntityType_Elevator);
+
+	FlagAdd(Entity, EntityFlag_Moveable);
 
 	Entity->P = P;
 	Entity->dP = V3(0.0f);
@@ -240,9 +274,9 @@ MovementStateToString(char *Buffer, movement_state State)
 		{
 			sprintf(Buffer, "%s", "MovementState: Crouch");
 		} break;
-		case MovementState_Falling:
+		case MovementState_Sliding:
 		{
-			sprintf(Buffer, "%s", "MovementState: Falling");
+			sprintf(Buffer, "%s", "MovementState: Sliding");
 		} break;
 	}
 }
@@ -600,8 +634,6 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 {
-	// TODO(Justin): Fold animation driven movement into this routine.
-
 	if(!FlagIsSet(Entity, EntityFlag_YSupported))
 	{
 		ddP += V3(0.0f, -80.0f, 0.0f);
@@ -613,11 +645,15 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	v3 OldP = Entity->P;
 	v3 DesiredP = OldP + DeltaP;
 
+	// NOTE(Justin): Check if animation is driving movement.
+
 	animation_player *AnimationPlayer = Entity->AnimationPlayer;
 	if(AnimationPlayer && AnimationPlayer->ControlsPosition)
 	{
+		// TODO(Justin): Robustness
+		// TODO(Justin): Update velocity 
 		v3 AnimationDelta = AnimationPlayer->AnimationDelta;
-		v3 GameDelta = 3.0f*V3(Entity->VisualScale.x * AnimationDelta.x,
+		v3 GameDelta = 2.0f*V3(Entity->VisualScale.x * AnimationDelta.x,
 							   Entity->VisualScale.y * AnimationDelta.y,
 							   Entity->VisualScale.z * AnimationDelta.z);
 
@@ -629,7 +665,8 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 
 	// TODO(Justin): Figure out the "correct" length here.
 	v3 GroundP = {};
-	v3 GroundDelta = V3(0.0f, -10.0f,0.0f);
+	//v3 GroundDelta = V3(0.0f, -10.0f,0.0f);
+	v3 GroundDelta = V3(0.0f, -20.0f,0.0f);
 	entity *EntityBelow = 0;
 
 	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
@@ -711,7 +748,10 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		f32 YThreshold = 0.001f;
 		if((Entity->P.y - GroundP.y) > YThreshold)
 		{
-			FlagClear(Entity, EntityFlag_YSupported);
+			if(Entity->Type != EntityType_Elevator)
+			{
+				FlagClear(Entity, EntityFlag_YSupported);
+			}
 		}
 		else
 		{
@@ -771,6 +811,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		Dim = V3(2.0f, 10.0f, 2.0f);
 		StartP += V3(6.0f, 0.0f, -0.0f);
 		CubeAdd(GameState, StartP, Dim, CubeOrientation);
+
+		Dim = V3(2.0f, 0.5f, 2.0f);
+		v3 ElevatorP = StartP + V3(0.0f, 0.01f, 2.0f);
+		ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
 
 		Dim = V3(1.f, 1.0f, 5.0f);
 		StartP += V3(3.0f, 0.0f, -5.0f);
@@ -889,26 +933,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				f32 a = 50.0f;
 
 				v3 OldPlayerddP = Entity->ddP;
-#if 0
-				if(!Entity->AnimationGraph->CurrentNode.ControlsPosition)
-				{
-					Entity->ddP = ddP;
-
-					if(Sprinting)
-					{
-						a *= 1.5f;
-					}
-
-					ddP = a * ddP;
-					ddP += -10.0f * Entity->dP;
-
-					if(!Equal(ddP, V3(0.0f)))
-					{
-						EntityMove(GameState, Entity, ddP, dt);
-						EntityOrientationUpdate(Entity, dt, 10.0f);
-					}
-				}
-#else
 				Entity->ddP = ddP;
 
 				if(Sprinting)
@@ -924,7 +948,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					EntityMove(GameState, Entity, ddP, dt);
 					EntityOrientationUpdate(Entity, dt, 10.0f);
 				}
-#endif
 
 				switch(Entity->MovementState)
 				{
@@ -972,6 +995,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 							{
 								Entity->MovementState = MovementState_Jump;
 							}
+
+							if(Crouching)
+							{
+								Entity->MovementState = MovementState_Sliding;
+							}
 						}
 
 					} break;
@@ -991,6 +1019,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					} break;
 					case MovementState_Jump:
 					{
+						FlagClear(Entity, EntityFlag_YSupported);
+
 						if(!Jumping)
 						{
 							if(Equal(Entity->ddP, V3(0.0f)))
@@ -1007,6 +1037,25 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 							}
 						}
 					} break;
+					case MovementState_Sliding:
+					{
+						if(Equal(Entity->ddP, V3(0.0f)))
+						{
+							Entity->MovementState = MovementState_Idle;
+						}
+						else
+						{
+							if(Sprinting)
+							{
+								Entity->MovementState = MovementState_Sprint;
+							}
+							else
+							{
+								Entity->MovementState = MovementState_Run;
+							}
+
+						}
+					} break;
 					case MovementState_Invalid:
 					{
 						Entity->MovementState = MovementState_Invalid;
@@ -1014,8 +1063,25 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				};
 			} break;
-			case EntityType_Cube:
+			case EntityType_Elevator:
 			{
+				f32 MaxY = 2.0f;
+				v3 ElevatorddP = {};
+
+				if(Entity->P.y >= 1.0f && Entity->P.y < MaxY)
+				{
+					ElevatorddP = {0.0f, 1.0f, 0.0f};
+				}
+				if(Entity->P.y > MaxY)
+				{
+					ElevatorddP = {0.0f, -1.0f, 0.0f};
+				}
+				if(Entity->P.y >= 0.0f && Entity->P.y < 1.0f)
+				{
+					ElevatorddP = {0.0f, 1.0f, 0.0f};
+				}
+
+				EntityMove(GameState, Entity, ElevatorddP, dt);
 			} break;
 		}
 	}
@@ -1031,8 +1097,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	Animate(Player, Assets);
 
-
-
 	v3 OldP = Player->AnimationPlayer->FinalPose->Positions[0];
 	v3 NewP = OldP;
 
@@ -1041,8 +1105,22 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
 
+	// TODO(Justin): How to handle back to back controls positions?
 	if(Player->AnimationPlayer->ControlsPosition)
 	{
+
+#if 0
+		animation *Current = Player->AnimationPlayer->Channels;
+
+		if(Current->Next && Current->Next->BlendingOut && ControlsPosition(Current->Next))
+		{
+			Player->AnimationPlayer->FinalPose->Positions[0]	= Current->BlendedPose->Positions[0];
+			Player->AnimationPlayer->FinalPose[1].Positions[0]	= Current->BlendedPose->Positions[0];
+			Player->AnimationPlayer->TotalDeltaAccumulated = {};
+			int breakhere = 0;
+		}
+#endif
+
 		NewP = Player->AnimationPlayer->FinalPose->Positions[0];
 		AnimationDelta = NewP - OldP;
 		Player->AnimationPlayer->AnimationDelta += AnimationDelta;
@@ -1056,8 +1134,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			animation *Current = Player->AnimationPlayer->Channels;
 			if(Current->BlendingIn)
 			{
-				Player->AnimationPlayer->FinalPose->Positions[0] = Current->BlendedPose->Positions[0];
-				Player->AnimationPlayer->FinalPose[1].Positions[0] = Current->BlendedPose->Positions[0];
+				Player->AnimationPlayer->FinalPose->Positions[0]	= Current->BlendedPose->Positions[0];
+				Player->AnimationPlayer->FinalPose[1].Positions[0]	= Current->BlendedPose->Positions[0];
 			}
 			else
 			{
@@ -1148,8 +1226,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
 				model *Model = LookupModel(Assets, "XBot");
 				PushModel(RenderBuffer, Model, Transform);
-
-
 
 				//
 				// Debug volume
@@ -1256,6 +1332,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(EntityP);
 				S = Mat4Scale(1.0f);
 				PushAABB(RenderBuffer, GameState->Sphere, T*S, V3(1.0f));
+			} break;
+			case EntityType_Elevator:
+			{
+				v3 EntityP = Entity->P;
+				EntityP.y += Entity->VisualScale.y;
+				T = Mat4Translate(EntityP);
+				R = QuaternionToMat4(Entity->Orientation);
+				S = Mat4Scale(Entity->VisualScale);
+
+				model *Cube = LookupModel(Assets, "Cube");
+				TextureIndex = StringHashLookup(&Assets->TextureNames, "red_texture_02");
+				PushTexture(RenderBuffer, LookupTexture(Assets, "red_texture_02"), TextureIndex);
+				PushMesh(RenderBuffer, &Cube->Meshes[0], T*R*S, TextureIndex);
 			} break;
 		};
 	}

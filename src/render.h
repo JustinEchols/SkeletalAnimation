@@ -28,6 +28,7 @@ enum render_buffer_entry_type
 	RenderBuffer_render_entry_quad_3d,
 	RenderBuffer_render_entry_quad_2d,
 	RenderBuffer_render_entry_model,
+	RenderBuffer_render_entry_mesh,
 	RenderBuffer_render_entry_text,
 	RenderBuffer_render_entry_debug_volume,
 	RenderBuffer_render_entry_render_to_texture,
@@ -66,6 +67,13 @@ struct render_entry_model
 {
 	mat4 Transform;
 	model *Model;
+};
+
+struct render_entry_mesh
+{
+	mat4 Transform;
+	mesh *Mesh;
+	u32 TextureIndex;
 };
 
 struct render_entry_text

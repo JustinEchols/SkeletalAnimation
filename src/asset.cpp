@@ -387,6 +387,8 @@ enum animation_name
 	Animation_RightTurn,
 	Animation_Turn90RightToRun,
 	Animation_JumpForwardMirror,
+	Animation_RunningSlide,
+	Animation_RunningSlideMirror,
 };
 
 char *AnimationFiles[] =
@@ -414,6 +416,8 @@ char *AnimationFiles[] =
 	"../data/animations/XBot_RightTurn.animation",
 	"../data/animations/XBot_IdleTurn90RightToRun.animation",
 	"../data/animations/XBot_JumpForwardMirror.animation",
+	"../data/animations/XBot_RunningSlide.animation",
+	"../data/animations/XBot_RunningSlideMirror.animation",
 };
 
 char *GraphFiles[] =
@@ -428,6 +432,7 @@ char *TextureFiles[] =
 	"../data/textures/texture_01.png",
 	"../data/textures/texture_13.png",
 	"../data/textures/orange_texture_02.png",
+	"../data/textures/red_texture_02.png",
 };
 
 char *ModelFiles[] =
@@ -669,6 +674,12 @@ AssetManagerInitialize(asset_manager *Manager)
 					Animation->DefaultFlags = AnimationFlags_ControlsTurning;
 				} break;
 				case Animation_JumpForwardMirror:
+				{
+					Animation->TimeScale = 1.0f;
+					Animation->DefaultFlags = AnimationFlags_ControlsPosition;
+				} break;
+				case Animation_RunningSlide:
+				case Animation_RunningSlideMirror:
 				{
 					Animation->TimeScale = 1.0f;
 					Animation->DefaultFlags = AnimationFlags_ControlsPosition;

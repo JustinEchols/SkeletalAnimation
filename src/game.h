@@ -117,7 +117,7 @@ enum movement_state
 	MovementState_TurningRight,
 	MovementState_TurningLeft,
 	MovementState_Crouch,
-	MovementState_Falling,
+	MovementState_Sliding,
 };
 
 enum entity_type
@@ -127,11 +127,14 @@ enum entity_type
 	EntityType_Cube,
 	EntityType_Sphere,
 	EntityType_WalkableRegion,
+	EntityType_Elevator,
 };
 
 enum entity_flag
 {
 	EntityFlag_YSupported = (1 << 2),
+	EntityFlag_Climable = (1 << 3),
+	EntityFlag_Moveable = (1 << 4),
 };
 
 #include "intrinsics.h"

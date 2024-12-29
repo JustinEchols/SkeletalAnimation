@@ -471,9 +471,9 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		{
 			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
 		} break;
-		case MovementState_Falling:
+		case MovementState_Sliding:
 		{
-			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_falling");
+			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_slide");
 		}
 	}
 }

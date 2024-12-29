@@ -548,6 +548,16 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				}
 				BaseOffset += sizeof(*Entry);
 			} break;
+			case RenderBuffer_render_entry_mesh:
+			{
+				render_entry_mesh *Entry = (render_entry_mesh *)Data;
+				UniformMatrixSet(ShadowMapShader, "Model", Entry->Transform);
+				mesh *Mesh = Entry->Mesh;
+				OpenGL.glBindVertexArray(Mesh->VA);
+				glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
+				OpenGL.glBindVertexArray(0);
+				BaseOffset += sizeof(*Entry);
+			} break;
 			case RenderBuffer_render_entry_quad_3d:
 			{
 				render_entry_quad_3d *Entry = (render_entry_quad_3d *)Data;
@@ -759,6 +769,32 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 
 				glBindTexture(GL_TEXTURE_2D, 0);
 				OpenGL.glBindVertexArray(0);
+
+				BaseOffset += sizeof(*Entry);
+			} break;
+			case RenderBuffer_render_entry_mesh:
+			{
+				render_entry_mesh *Entry = (render_entry_mesh *)Data;
+				mesh *Mesh = Entry->Mesh;
+				texture *Texture = RenderBuffer->Textures[Entry->TextureIndex];
+				Assert(Texture->Handle);
+
+				OpenGL.glUseProgram(MainShader);
+				OpenGL.glActiveTexture(GL_TEXTURE0);
+				UniformBoolSet(MainShader, "ShadowMapTexture", 0);
+				glBindTexture(GL_TEXTURE_2D, OpenGL.ShadowMapHandle);
+
+				UniformMatrixSet(MainShader, "Model", Entry->Transform);
+				UniformBoolSet(MainShader, "UsingRig", false);
+				UniformBoolSet(MainShader, "OverRideTexture", false);
+
+				OpenGL.glActiveTexture(GL_TEXTURE1);
+				UniformBoolSet(MainShader, "Texture", 1);
+				glBindTexture(GL_TEXTURE_2D, Texture->Handle);
+				OpenGL.glBindVertexArray(Mesh->VA);
+				glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
+				OpenGL.glBindVertexArray(0);
+				glBindTexture(GL_TEXTURE_2D, 0);
 
 				BaseOffset += sizeof(*Entry);
 			} break;

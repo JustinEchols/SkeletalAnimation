@@ -80,6 +80,21 @@ PushModel(render_buffer *RenderBuffer, model *Model, mat4 Transform)
 	}
 }
 
+
+
+// NOTE(Justin): Testing a different push buffer call
+inline void
+PushMesh(render_buffer *RenderBuffer, mesh *Mesh, mat4 Transform, u32 TextureIndex)
+{
+	render_entry_mesh *Entry = PushRenderElement(RenderBuffer, render_entry_mesh);
+	if(Entry)
+	{
+		Entry->Mesh = Mesh;
+		Entry->Transform = Transform;
+		Entry->TextureIndex = TextureIndex;
+	}
+}
+
 inline void
 PushText(render_buffer *RenderBuffer, string Text, font *Font, v2 P, f32 Scale, v3 Color)
 {
