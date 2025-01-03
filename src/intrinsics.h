@@ -125,7 +125,7 @@ SignOf(f32 X)
 
 	if(X < 0.0f)
 	{
-		Result *= -1.0f;
+		Result = -1.0f;
 	}
 
 	return(Result);

@@ -54,9 +54,6 @@ struct animation
 	f32 BlendCurrentTime;
 	b32 BlendingIn;
 	b32 BlendingOut;
-	b32 BlendingComposite;
-	b32 MaskingJoints;
-	b32 *JointMasks;
 
 	animation_id ID;
 	animation_info *Info;
@@ -64,6 +61,7 @@ struct animation
 
 	key_frame *BlendedPose;
 
+	v3 MotionDeltaPerFrame;
 };
 
 
@@ -125,9 +123,7 @@ struct animation_player
 	f32 CurrentTime;
 	f32 dt;
 
-	f32 TurningAccumulator;
-	v3 AnimationDelta;
-	v3 TotalDeltaAccumulated;
+	v3 RootMotionAccumulator;
 
 	key_frame *FinalPose;
 	model *Model; 

@@ -36,7 +36,6 @@
 // sphere. So, the correct MK sum needs to use TWICE the radius, per the implementation of
 // AABBCenterDim(-).
 
-
 // NOTE(Justin): COLLISION. 
 // NOTE(Justin): If the ground normal is way to big compared to the rest of the units
 // in the game then the tGround value will be 0 a majority of the time. Which
@@ -132,9 +131,10 @@ enum entity_type
 
 enum entity_flag
 {
+	EntityFlag_Collides = (1 << 1),
 	EntityFlag_YSupported = (1 << 2),
-	EntityFlag_Climable = (1 << 3),
-	EntityFlag_Moveable = (1 << 4),
+	EntityFlag_Moveable = (1 << 3),
+	EntityFlag_JumpDown = (1 << 4),
 };
 
 #include "intrinsics.h"
@@ -147,6 +147,20 @@ enum entity_flag
 #include "ui.h"
 #include "asset.h"
 #include "render.h"
+
+enum collision_volume_type
+{
+	CollisionVolume_AABB,
+	CollisionVolume_OBB,
+	CollisionVolume_Sphere,
+	CollisionVolume_Capsule,
+};
+
+struct collision_volume
+{
+	collision_volume_type Type;
+	v3 Offset;
+};
 
 struct entity
 {
@@ -190,6 +204,8 @@ struct camera
 {
 	v3 P;
 	v3 Direction;
+	f32 Yaw;
+	f32 Pitch;
 	quaternion RotationAboutY;
 };
 
@@ -203,9 +219,12 @@ struct game_state
 
 	quad Quad;
 
-	camera Camera;
-	v3 CameraOffsetFromPlayer;
 	b32 CameraIsFree;
+	f32 CameraSpeed;
+	f32 DefaultYaw;
+	f32 DefaultPitch;
+	v3 CameraOffsetFromPlayer;
+	camera Camera;
 
 	mat4 CameraTransform;
 	mat4 Perspective;

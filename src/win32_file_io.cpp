@@ -76,6 +76,23 @@ DEBUG_PLATFORM_FILE_WRITE_ENTIRE(DebugPlatformFileWriteEntire)
 	return(Result);
 }
 
+DEBUG_PLATFORM_FILE_GROUP_LOAD(DebugPlatformFileGroupLoad)
+{
+	file_group_info Result = {};
+	MemoryZero(Result.FileNames, sizeof(Result.FileNames));
+
+	WIN32_FIND_DATA Found;
+	HANDLE FileHandle = FindFirstFile(DirectoryNameAndWildCard, &Found);
+	while (FileHandle != INVALID_HANDLE_VALUE)
+	{
+		char *Src = Found.cFileName;
+		MemoryCopy(StringLen(Src), Src, Result.FileNames[Result.Count++]);
+		if(!FindNextFile(FileHandle, &Found)) break;
+	}
+
+	return(Result);
+}
+
 internal FILETIME 
 Win32FileLastWriteTime(char *FileName)
 {

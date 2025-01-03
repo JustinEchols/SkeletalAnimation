@@ -14,11 +14,16 @@ struct ui_id
 
 struct ui
 {
+
 	v2 MouseP;
+	v2 DeltaMouse;
+
 	b32 LeftClick;
 
 	s32 ActiveID;
 	s32 HotID;
+
+	struct asset_manager *Assets;
 };
 
 struct ui_button
@@ -27,6 +32,7 @@ struct ui_button
 	v2 P;
 	rect Rect;
 };
+
 
 #define IDFromU32s(A, B) IDFromU32s_((A), (B), (char *)(FILE_AND_LINE))
 internal ui_id

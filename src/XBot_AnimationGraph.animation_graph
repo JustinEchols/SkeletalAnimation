@@ -1,13 +1,4 @@
 # Hello, Sailor! This is a comment
-# TODO specify animation/tag after node
-# StateIdleRight		XBot_IdleRight
-# StateIdleLeft			XBot_IdleLeft
-# StateRunning			XBot_Running
-# StateRunningMirror	XBot_RunningMirror
-# StateSprint			XBot_FastRun
-# StateSprintMirror		XBot_FastRunMirror
-# StateJumpForward		XBot_JumpForward
-# StateIdleToSprint		XBot_IdleToSprint
 
 #
 # Idle
@@ -18,12 +9,14 @@ animation XBot_IdleRight
 message go_state_run StateRunning
 message go_state_sprint StateIdleToSprintMirror
 message go_state_crouch StateCrouchingIdleRight
+message go_state_jump StateJumpForwardMirror
 
 : StateIdleLeft
 animation XBot_IdleLeft
 message go_state_run StateRunningMirror
 message go_state_sprint StateIdleToSprint
 message go_state_crouch StateCrouchingIdleLeft
+message go_state_jump StateJumpForward
 
 : StateIdleToSprint
 animation XBot_IdleToSprint
@@ -57,6 +50,7 @@ message go_state_sprint StateSprintMirror 0.3 0.4
 message go_state_jump StateJumpForward 0.3 0.4
 message go_state_jump StateJumpForwardMirror 0.65 0.7
 message go_state_jump StateJumpForwardMirror 0.0 0.05
+message go_state_jump_down StateJumpDown 
 #message go_state_slide StateSlide 
 
 : StateRunningMirror
@@ -69,6 +63,11 @@ message go_state_sprint StateSprint 0.3 0.4
 message go_state_jump StateJumpForwardMirror 0.3 0.4
 message go_state_jump StateJumpForward 0.65 0.7
 message go_state_jump StateJumpForward 0.0 0.05
+message go_state_jump_down StateJumpDownMirror
+
+: StateRunToStop
+animation XBot_RunToStop
+message go_state_idle StateIdleRight 0.6 0.7
 
 
 #
@@ -100,8 +99,6 @@ when_done go_state_sprint StateSprintMirror t_remaining 0.3
 
 : StateJumpForward
 animation XBot_JumpForward
-controls_position
-#when_done go_state_run StateRunningMirror t_remaining 0.1
 message go_state_idle StateIdleLeft 0.8 0.9 
 message go_state_run StateRunningMirror 0.8 0.9 
 message go_state_sprint StateSprintMirror 0.8 0.9 
@@ -109,12 +106,15 @@ message go_state_jump StateJumpForwardMirror 0.8 0.9
 
 : StateJumpForwardMirror
 animation XBot_JumpForwardMirror
-controls_position
-#when_done go_state_run StateRunning t_remaining 0.1
 message go_state_idle StateIdleRight 0.8 0.9 
 message go_state_run StateRunning 0.8 0.9 
 message go_state_sprint StateSprint 0.8 0.9 
 message go_state_jump StateJumpForward 0.8 0.9 
+
+: StateJumpDown
+animation XBot_JumpDown
+message go_state_idle StateIdleRight 0.8 0.9
+message go_state_run StateRunning 0.8 0.9 
 
 # 
 # Crouching

@@ -66,6 +66,12 @@ typedef uintptr_t	umm;
 (Node)->Next=0)
 #define SLLQueuePush(First,Last,Node) SLLQueuePush_N(First,Last,Node,Next)
 
+struct file_group_info
+{
+	u32 Count;
+	char FileNames[64][256];
+};
+
 #if DEVELOPER
 struct debug_file
 {
@@ -84,6 +90,10 @@ typedef DEBUG_PLATFORM_FILE_FREE(debug_platform_file_free);
 
 #define DEBUG_PLATFORM_FILE_HAS_UPDATED(FunctionName) b32 FunctionName(char *FileName)
 typedef DEBUG_PLATFORM_FILE_HAS_UPDATED(debug_platform_file_has_updated);
+
+// TODO(Justin): Split this into a directory name and wildcard
+#define DEBUG_PLATFORM_FILE_GROUP_LOAD(FunctionName) file_group_info FunctionName(char *DirectoryNameAndWildCard)
+typedef DEBUG_PLATFORM_FILE_GROUP_LOAD(debug_platform_file_group_load);
 #endif
 
 // TODO(Justin): Consolidate these calls
@@ -96,6 +106,7 @@ typedef struct
 	debug_platform_file_read_entire		*DebugFileReadEntire;
 	debug_platform_file_write_entire	*DebugFileWriteEntire;
 	debug_platform_file_free			*DebugFileFree;
+	debug_platform_file_group_load		*DebugFileGroupLoad;
 #endif
 } platform_api;
 
@@ -140,6 +151,7 @@ enum
 	Key_Add,
 	Key_Subtract,
 	Key_Control,
+	Key_F10,
 
 	Key_Count
 };
@@ -170,6 +182,7 @@ struct game_keyboard
 			game_button Add;
 			game_button Subtract;
 			game_button Ctrl;
+			game_button F10;
 		};
 	};
 };

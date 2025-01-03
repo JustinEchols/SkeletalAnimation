@@ -128,6 +128,7 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 		AnimationPlayer->FreeChannels = 0;
 		AnimationPlayer->CurrentTime = 0.0f;
 		AnimationPlayer->dt = 0.0f;
+		AnimationPlayer->RootMotionAccumulator = {};
 
 		// TODO(Justin): Skeleton reference...
 		// TODO(Justin): Final pose should just be one key frame with joint count number of P, Q, and S...
@@ -149,9 +150,7 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 internal void
 AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 		f32 BlendDuration = 0.0f,
-		f32 TimeOffset = 0.0f,
-		b32 MaskingJoints = false,
-		b32 BlendingComposite = false)
+		f32 TimeOffset = 0.0f)
 {
 	Assert(AnimationPlayer->IsInitialized);
 
@@ -194,10 +193,11 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 	Animation->Duration = NewAnimation->Info->Duration;
 	Animation->CurrentTime = TimeOffset;
 	Animation->OldTime = 0.0f;
-	Animation->TimeScale = NewAnimation->TimeScale;
+	Animation->TimeScale = 1.0f;
 	Animation->BlendFactor = 1.0f;
 	Animation->BlendDuration = BlendDuration;
 	Animation->BlendCurrentTime = 0.0f;
+	Animation->MotionDeltaPerFrame = {};
 
 	if(BlendDuration != 0.0f)
 	{
@@ -209,10 +209,6 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 	}
 
 	Animation->BlendingOut = false;
-	Animation->BlendingComposite = BlendingComposite;
-	Animation->MaskingJoints = MaskingJoints;
-
-	Animation->JointMasks = NewAnimation->JointMasks;
 
 	Animation->ID = NewAnimation->ID;
 	Animation->Info = NewAnimation->Info;
@@ -223,7 +219,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 	AnimationPlayer->PlayingCount++;
 }
 
-// TODO(Justin): Better cubic?
+// TODO(Justin): Better cubic
 inline f32
 EaseFactor(f32 CurrentTime, f32 Duration)
 {
@@ -343,7 +339,7 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
 	// Moreoever there can be many animation states associated to one movement state??
 
 	animation_graph_node *Node = &Graph->CurrentNode;
-	animation *Animation = LookupAnimation(AssetManager, (char *)Node->Tag.Data);
+	animation *Animation = LookupAnimation(AssetManager, (char *)Node->Tag.Data).Animation;
 	if(Animation)
 	{
 		AnimationPlay(AnimationPlayer, Animation, BlendDuration);
@@ -431,7 +427,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 
 	if(AnimationPlayer->PlayingCount == 0)
 	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleLeft"), 0.2f);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleLeft").Animation, 0.2f);
 		return;
 	}
 
@@ -455,13 +451,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		case MovementState_Run:
 		{
 			char *Message = "go_state_run";
-			if((AnimationPlayer->MovementState == State) && StringsAreSame(Message, "go_state_run")) 
-			{
-			}
-			else
-			{
-				MessageSend(AssetManager, AnimationPlayer, Graph, Message);
-			}
+			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
 		case MovementState_Sprint:
 		{
@@ -496,14 +486,15 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	{
 		animation *Animation = *AnimationPtr;
 
+		Animation->MotionDeltaPerFrame = {};
+		v3 OldP = Animation->BlendedPose->Positions[0];
 		AnimationUpdate(Animation, AnimationPlayer->dt);
+		v3 NewP = Animation->BlendedPose->Positions[0];
+		Animation->MotionDeltaPerFrame += NewP - OldP;
 
 		if(ControlsPosition(Animation))
 		{
-			if(!Animation->BlendingOut)
-			{
-				AnimationPlayer->ControlsPosition = true;
-			}
+			AnimationPlayer->ControlsPosition = true;
 		}
 
 		if(ControlsTurning(Animation))
@@ -546,11 +537,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)
 	{
 		Assert(!Finished(Animation));
-		b32 Masking = false;
-		if(MaskingJoints(Animation))
-		{
-			Masking = true;
-		}
 
 		key_frame *BlendedPose = Animation->BlendedPose;
 		animation_info *Info = Animation->Info;
@@ -568,27 +554,24 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 				s32 JointIndex = JointIndexGet(Info->JointNames, Info->JointCount, Joint->Name);
 				if(JointIndex != -1)
 				{
-					b32 ShouldMixJoint = Masking ? Animation->JointMasks[JointIndex] : 1;
-					if(ShouldMixJoint)
-					{
-						FinalPose->Positions[Index]	+= Factor * BlendedPose->Positions[JointIndex];
-						FinalPose->Scales[Index]	+= Factor * BlendedPose->Scales[JointIndex];
+					FinalPose->Positions[Index]	+= Factor * BlendedPose->Positions[JointIndex];
+					FinalPose->Scales[Index]	+= Factor * BlendedPose->Scales[JointIndex];
 
-						// TODO(Justin): Pre-process the aniamtions so that the orientations are in the known correct neighborhood.
-						quaternion Scaled = Factor * BlendedPose->Orientations[JointIndex];
-						if(Dot(Scaled, FinalPose->Orientations[Index]) < 0.0f)
-						{
-							Scaled *= -1.0f;
-						}
-
-						FinalPose->Orientations[Index] += Scaled;
-					}
-					else
+					// TODO(Justin): Pre-process the aniamtions so that the orientations are in the known correct neighborhood.
+					quaternion Scaled = Factor * BlendedPose->Orientations[JointIndex];
+					if(Dot(Scaled, FinalPose->Orientations[Index]) < 0.0f)
 					{
-						int breakhere = 0;
+						Scaled *= -1.0f;
 					}
+
+					FinalPose->Orientations[Index] += Scaled;
 				}
 			}
+		}
+
+		if(AnimationPlayer->ControlsPosition)
+		{
+			AnimationPlayer->RootMotionAccumulator += Factor * Animation->MotionDeltaPerFrame;
 		}
 	}
 
@@ -596,6 +579,15 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	if(FactorSum)
 	{
 		Scale = 1.0f / FactorSum;
+	}
+
+	if(AnimationPlayer->ControlsPosition)
+	{
+		AnimationPlayer->RootMotionAccumulator = Scale * AnimationPlayer->RootMotionAccumulator;
+	}
+	else
+	{
+		AnimationPlayer->RootMotionAccumulator = {};
 	}
 
 	//
@@ -622,7 +614,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 }
 
 internal void
-ModelJointsUpdate(entity *Entity, v3 Offset = V3(0.0f))
+ModelJointsUpdate(entity *Entity)
 {
 	animation_player *AnimationPlayer = Entity->AnimationPlayer;
 	model *Model = AnimationPlayer->Model;
@@ -641,7 +633,12 @@ ModelJointsUpdate(entity *Entity, v3 Offset = V3(0.0f))
 			Xform.Position		= FinalPose->Positions[0];
 			Xform.Orientation	= FinalPose->Orientations[0];
 			Xform.Scale			= FinalPose->Scales[0];
-			Xform.Position		+= Offset;
+
+			if(AnimationPlayer->ControlsPosition)
+			{
+				v3 RootJointP = Mat4ColumnGet(RootJoint.Transform, 3);
+				Xform.Position = V3(Entity->P.x, Entity->P.y + RootJointP.y + AnimationPlayer->RootMotionAccumulator.y, Entity->P.z);
+			}
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
 			   !Equal(Xform.Scale, V3(0.0f)))
@@ -677,8 +674,6 @@ ModelJointsUpdate(entity *Entity, v3 Offset = V3(0.0f))
 		}
 	}
 }
-
-
 
 internal animation_graph_node * 
 AnimationGraphNodeAdd(animation_graph *Graph, char *Name)

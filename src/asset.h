@@ -85,9 +85,21 @@ struct asset_manager
 	animation *Animations;
 };
 
-internal texture *			LookupTexture(asset_manager *AssetManager, char *TextureName);
-internal model *			LookupModel(asset_manager *AssetManager, char *ModelName);
-internal animation *		LookupAnimation(asset_manager *AssetManager, char *AnimationName);
+struct asset_entry
+{
+	s32 Index;
+	union
+	{
+		texture *Texture;
+		model *Model;
+		animation *Animation;
+		animation_graph *Graph;
+	};
+};
+
+internal asset_entry		LookupTexture(asset_manager *AssetManager, char *TextureName);
+internal asset_entry		LookupModel(asset_manager *AssetManager, char *ModelName);
+internal asset_entry		LookupAnimation(asset_manager *AssetManager, char *AnimationName);
 internal animation_graph *	LookupGraph(asset_manager *AssetManager, char *GraphName);
 
 #define ASSET_H

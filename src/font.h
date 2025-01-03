@@ -22,6 +22,8 @@ struct font
 	s32 Ascender;
 	s32 Descender;
 	s32 LineHeight;
+	f32 Scale;
+	f32 LineGap;
 };
 
 #define FONT_H

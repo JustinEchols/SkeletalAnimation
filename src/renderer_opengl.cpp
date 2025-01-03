@@ -626,6 +626,7 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 	u32 FontShader	= OpenGL.FontShader;
 	u32 ScreenShader = OpenGL.Quad2dShader;
 	u32 DebugBBoxShader = OpenGL.DebugBBoxShader;
+	u32 DebugShadowMapShader = OpenGL.DebugShadowMapShader;
 
 	mat4 View		 = RenderBuffer->View;
 	mat4 Perspective = RenderBuffer->Perspective;
@@ -863,11 +864,11 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 			{
 				render_entry_render_to_texture *Entry = (render_entry_render_to_texture *)Data;
 
-				OpenGL.glUseProgram(ScreenShader);
+				OpenGL.glUseProgram(DebugShadowMapShader);
 				OpenGL.glActiveTexture(GL_TEXTURE0);
-				UniformBoolSet(ScreenShader, "Texture", 0);
-				UniformF32Set(ScreenShader, "WindowWidth", (f32)WindowWidth);
-				UniformF32Set(ScreenShader, "WindowHeight", (f32)WindowHeight);
+				UniformBoolSet(DebugShadowMapShader, "Texture", 0);
+				UniformF32Set(DebugShadowMapShader, "WindowWidth", (f32)WindowWidth);
+				UniformF32Set(DebugShadowMapShader, "WindowHeight", (f32)WindowHeight);
 				glBindTexture(GL_TEXTURE_2D, OpenGL.ShadowMapHandle);
 				OpenGL.glBindVertexArray(OpenGL.Quad2dVA);
 				OpenGL.glBindBuffer(GL_ARRAY_BUFFER, OpenGL.Quad2dVB);

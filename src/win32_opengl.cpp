@@ -217,6 +217,35 @@ void main()
 	Result = vec4(texture(Texture, UV).rgb, 1.0);
 })";
 
+char *DebugShadowMapVS = R"(
+#version 430 core
+layout (location = 0) in vec4 VertexXYUV;
+
+out vec2 UV;
+uniform float WindowWidth;
+uniform float WindowHeight;
+void main()
+{
+	float X = ((2.0 * VertexXYUV.x) / WindowWidth) - 1.0;
+	float Y = ((2.0 * VertexXYUV.y) / WindowHeight) - 1.0;
+	gl_Position = vec4(X, Y, 0.0, 1.0);
+	UV = VertexXYUV.zw;
+})";
+
+char *DebugShadowMapFS= R"(
+#version 430 core
+in vec2 UV;
+
+uniform sampler2D Texture;
+
+out vec4 Result;
+void main()
+{
+	float Depth = texture(Texture, UV).r;
+	Result = vec4(Depth, Depth, Depth, 1.0f);
+})";
+
+
 char *ShadowMapVS = R"(
 #version 430 core
 layout (location = 0) in vec3 P;
@@ -265,6 +294,7 @@ void main()
 })";
 
 // NOTE(Justin): Uses the Quad2dVS
+#if 0
 char *DebugShadowMapFS = R"(
 #version 430 core
 in vec2 UV;
@@ -276,6 +306,7 @@ void main()
 {
 	Result = vec4(vec3(texture(Texture, UV).r), 1.0);
 })";
+#endif
 
 char *DebugBBoxVS = R"(
 #version 430 core
@@ -310,6 +341,7 @@ struct open_gl
 	u32 MainShader;
 	u32 FontShader;
 	u32 Quad2dShader;
+	u32 DebugShadowMapShader;
 	u32 ShadowMapShader;
 	u32 DebugBBoxShader;
 

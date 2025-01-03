@@ -11,6 +11,7 @@
 #include <gl/gl.h>
 #include "wglext.h"
 #include "glext.h"
+#include "strings.cpp"
 #include "win32_file_io.cpp"
 #include "win32_opengl.cpp"
 
@@ -22,6 +23,7 @@ global_variable s32 Win32GlobalWindowWidth;
 global_variable s32 Win32GlobalWindowHeight;
 global_variable f32 Win32GlobalMouseX;
 global_variable f32 Win32GlobalMouseY;
+global_variable b32 Win32GlobalMouseCentered;
 global_variable open_gl OpenGL;
 global_variable WINDOWPLACEMENT Win32GlobalWindowPos = {sizeof(Win32GlobalWindowPos)};
 
@@ -39,6 +41,7 @@ struct win32_game_code
 internal win32_game_code 
 Win32GameCodeLoad(char *SrcDLLName, char *TempDLLName, char *LockFileName)
 {
+
 	win32_game_code Result = {};
 
 	WIN32_FILE_ATTRIBUTE_DATA Ignored;
@@ -83,8 +86,24 @@ Win32MousePositionGet(HWND Window)
 	Win32GlobalMouseY = (f32)Win32GlobalWindowHeight - (f32)Mouse.y; // Invert MouseY st y=0 is the bottom of the client area
 }
 
+internal void 
+Win32MousePositionCenter(HWND Window)
+{
+	RECT WindowRect;
+	GetWindowRect(Window, &WindowRect);
+	u32 CenterX = WindowRect.left + (Win32GlobalWindowWidth / 2);
+	u32 CenterY = WindowRect.top + (Win32GlobalWindowHeight / 2);
+
+	RECT SnapPosRect;
+	SnapPosRect.left = (s32)CenterX;
+	SnapPosRect.right = (s32)CenterX;
+	SnapPosRect.top = (s32)CenterY;
+	SnapPosRect.bottom = (s32)CenterY;
+	ClipCursor(&SnapPosRect);	
+}
+
 internal void
-Win32ClientRectGet(HWND Window)
+Win32GlobalClientDimUpdate(HWND Window)
 {
 	// TODO(Justin): Routine hides the fact that globals are updated. Is this ok to do?
 	RECT ClientR = {};
@@ -92,6 +111,20 @@ Win32ClientRectGet(HWND Window)
 	Win32GlobalWindowWidth = ClientR.right - ClientR.left;
 	Win32GlobalWindowHeight = ClientR.bottom - ClientR.top;
 }
+
+internal v2i
+Win32ClientDimGet(HWND Window)
+{
+	v2i Result = {};
+
+	RECT ClientR = {};
+	GetClientRect(Window, &ClientR);
+	Result.width = ClientR.right - ClientR.left;
+	Result.height = ClientR.bottom - ClientR.top;
+
+	return(Result);
+}
+
 
 internal void
 Win32FullScreen(HWND Window)
@@ -138,7 +171,7 @@ Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)
 		} break;
 		case WM_SIZE:
 		{
-			Win32ClientRectGet(Window);
+			Win32GlobalClientDimUpdate(Window);
 			glViewport(0, 0, (u32)Win32GlobalWindowWidth, (u32)Win32GlobalWindowHeight);
 		} break;
 		case WM_MOVE:
@@ -185,7 +218,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 								  WindowClass.lpszClassName,
 								  "Skeletal Animation",
 								  WS_OVERLAPPEDWINDOW | WS_VISIBLE,
-								  //CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT, CW_USEDEFAULT,
 								  CW_USEDEFAULT, CW_USEDEFAULT, 1280, 720,
 								  0,
 								  0,
@@ -210,6 +242,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		OpenGL.MainShader	= GLProgramCreate(MainVS, MainFS);
 		OpenGL.FontShader	= GLProgramCreate(FontVS, FontFS);
 		OpenGL.Quad2dShader = GLProgramCreate(Quad2dVS, Quad2dFS);
+		OpenGL.DebugShadowMapShader = GLProgramCreate(DebugShadowMapVS, DebugShadowMapFS);
 		OpenGL.ShadowMapShader = GLProgramCreate(ShadowMapVS, ShadowMapFS);
 		OpenGL.DebugBBoxShader = GLProgramCreate(DebugBBoxVS, DebugBBoxFS);
 
@@ -224,13 +257,8 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 							  &OpenGL.RBO,
 							  OpenGL.TextureWidth, OpenGL.TextureHeight);
 
-#if 0
-		OpenGL.ShadowMapWidth = 1920;
-		OpenGL.ShadowMapHeight = 1080;
-#else
 		OpenGL.ShadowMapWidth = 2048;
 		OpenGL.ShadowMapHeight = 2048;
-#endif
 		OpenGLShadowMapInitialize(&OpenGL.ShadowMapFBO,
 							  &OpenGL.ShadowMapHandle,
 							  OpenGL.ShadowMapWidth, OpenGL.ShadowMapHeight);
@@ -246,6 +274,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		GameMemory.PlatformAPI.DebugFileReadEntire	= DebugPlatformFileReadEntire;
 		GameMemory.PlatformAPI.DebugFileWriteEntire = DebugPlatformFileWriteEntire;
 		GameMemory.PlatformAPI.DebugFileFree		= DebugPlatformFileFree;
+		GameMemory.PlatformAPI.DebugFileGroupLoad	= DebugPlatformFileGroupLoad;
 
 		game_input GameInput[2] = {};
 		game_input *NewInput = &GameInput[0];
@@ -333,26 +362,36 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 							{
 								Win32KeyStateUpdate(&NewKeyboard->Ctrl, IsDown);
 							}
+							else if(KeyCode == VK_F10)
+							{
+								Win32KeyStateUpdate(&NewKeyboard->F10, IsDown);
+							}
 						}
 
 						if(IsDown)
 						{
 							b32 AltKeyWasDown = (Message.lParam & (1 << 29));
-							if(AltKeyWasDown)
+							if(AltKeyWasDown && (KeyCode == VK_RETURN))
 							{
-								if(KeyCode == VK_RETURN)
+								if(Message.hwnd)
 								{
-									if(Message.hwnd)
-									{
-										Win32FullScreen(Message.hwnd);
-									}
-								}
-								else if(KeyCode == VK_F4)
-								{
-									Win32GlobalRunning = false;
+									Win32FullScreen(Message.hwnd);
 								}
 							}
+
+							if(AltKeyWasDown && (KeyCode == VK_F4))
+							{
+								Win32GlobalRunning = false;
+							}
 						}
+
+						if(WasDown && (KeyCode == VK_F10))
+						{
+							Win32GlobalMouseCentered = !Win32GlobalMouseCentered;
+						}
+					} break;
+					case WM_MOUSEMOVE:
+					{
 					} break;
 					default:
 					{
@@ -383,6 +422,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			NewInput->dYMouse = Win32GlobalMouseY - OldInput->MouseY;
 			NewInput->MouseX  = Win32GlobalMouseX;
 			NewInput->MouseY  = Win32GlobalMouseY;
+
 			NewInput->BackBufferWidth = Win32GlobalWindowWidth;
 			NewInput->BackBufferHeight = Win32GlobalWindowHeight;
 

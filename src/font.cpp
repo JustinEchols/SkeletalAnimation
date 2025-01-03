@@ -1,4 +1,3 @@
-
 internal s32 
 FontInitialize(memory_arena *Arena, font *Font, char *FileName)
 {
@@ -22,6 +21,8 @@ FontInitialize(memory_arena *Arena, font *Font, char *FileName)
 	Font->Ascender = Face->ascender;
 	Font->Descender = Face->descender;
 	Font->LineHeight = Face->height;
+	Font->Scale = 0.35f;
+	Font->LineGap = Font->Scale * (f32)Font->LineHeight / 64.0f;
 
 	s32 Width = 0;
 	s32 Height = 48;
@@ -82,3 +83,4 @@ TextDim(font *Font, f32 Scale, char *String)
 
 	return(Result);
 }
+

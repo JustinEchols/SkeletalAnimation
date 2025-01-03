@@ -337,6 +337,7 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 	return(Info);
 }
 
+#if 0
 char *LowerJointTags[] =
 {
 	"Hips",
@@ -361,64 +362,10 @@ LowerJointMasksInitialize(animation *Animation, animation_info *Info)
 		}
 	}
 }
+#endif
 
-enum animation_name
-{
-	Animation_IdleRight,
-	Animation_IdleLeft,
-	Animation_Run,
-	Animation_Sprint,
-	Animation_JumpForward,
-	Animation_RunMirror,
-	Animation_SprintMirror,
-	Animation_StandingToIdleRight,
-	Animation_StandingToIdleLeft,
-	Animation_IdleToSprint,
-	Animation_IdleToSprintMirror,
-	Animation_RunToStop,
-	Animation_Running180,
-	Animation_CrouchedToIdleLeft,
-	Animation_CrouchedToIdleRight,
-	Animation_IdleLeftToCrouched,
-	Animation_IdleRightToCrouched,
-	Animation_CrouchingIdleLeft,
-	Animation_CrouchingIdleRight,
-	Animation_LeftTurn,
-	Animation_RightTurn,
-	Animation_Turn90RightToRun,
-	Animation_JumpForwardMirror,
-	Animation_RunningSlide,
-	Animation_RunningSlideMirror,
-};
-
-char *AnimationFiles[] =
-{
-	"../data/animations/XBot_IdleRight.animation",
-	"../data/animations/XBot_IdleLeft.animation",
-	"../data/animations/XBot_Running.animation",
-	"../data/animations/XBot_FastRun.animation",
-	"../data/animations/XBot_JumpForward.animation",
-	"../data/animations/XBot_RunningMirror.animation",
-	"../data/animations/XBot_FastRunMirror.animation",
-	"../data/animations/XBot_StandingToIdleRight.animation",
-	"../data/animations/XBot_StandingToIdleLeft.animation",
-	"../data/animations/XBot_IdleToSprint.animation",
-	"../data/animations/XBot_IdleToSprintMirror.animation",
-	"../data/animations/XBot_RunToStop.animation",
-	"../data/animations/XBot_Running180.animation",
-	"../data/animations/XBot_CrouchedToIdleLeft.animation",
-	"../data/animations/XBot_CrouchedToIdleRight.animation",
-	"../data/animations/XBot_IdleLeftToCrouched.animation",
-	"../data/animations/XBot_IdleRightToCrouched.animation",
-	"../data/animations/XBot_CrouchingIdleLeft.animation",
-	"../data/animations/XBot_CrouchingIdleRight.animation",
-	"../data/animations/XBot_LeftTurn.animation",
-	"../data/animations/XBot_RightTurn.animation",
-	"../data/animations/XBot_IdleTurn90RightToRun.animation",
-	"../data/animations/XBot_JumpForwardMirror.animation",
-	"../data/animations/XBot_RunningSlide.animation",
-	"../data/animations/XBot_RunningSlideMirror.animation",
-};
+char *AnimationDirectory = "animations";
+char *AnimationDirectoryAndWildCard = "animations\\XBot*";
 
 char *GraphFiles[] =
 {
@@ -453,41 +400,56 @@ char *FontFiles[] =
 	"c:/windows/fonts/arial.ttf",
 };
 
-internal texture *
+internal asset_entry 
 LookupTexture(asset_manager *AssetManager, char *TextureName)
 {
-	texture *Result = 0;
+	asset_entry Result = {};
+
+	texture *Texture = 0;
 	s32 Index = StringHashLookup(&AssetManager->TextureNames, TextureName);
 	if(Index != -1)
 	{
-		Result = AssetManager->Textures + Index;
+		Texture = AssetManager->Textures + Index;
 	}
+
+	Result.Index = Index;
+	Result.Texture = Texture;
 
 	return(Result);
 }
 
-internal model *
+internal asset_entry
 LookupModel(asset_manager *AssetManager, char *ModelName)
 {
-	model *Result = 0;
+	asset_entry Result = {};
+
+	model *Model = 0;
 	s32 Index = StringHashLookup(&AssetManager->ModelNames, ModelName);
 	if(Index != -1)
 	{
-		Result = AssetManager->Models + Index;
+		Model = AssetManager->Models + Index;
 	}
+
+	Result.Index = Index;
+	Result.Model = Model;
 
 	return(Result);
 }
 
-internal animation *
+internal asset_entry
 LookupAnimation(asset_manager *AssetManager, char *AnimationName)
 {
-	animation *Result = 0;
+	asset_entry Result = {};
+
+	animation *Animation = 0;
 	s32 Index = StringHashLookup(&AssetManager->AnimationNames, AnimationName);
 	if(Index != -1)
 	{
-		Result = AssetManager->Animations + Index;
+		Animation = AssetManager->Animations + Index;
 	}
+
+	Result.Index = Index;
+	Result.Animation = Animation;
 
 	return(Result);
 }
@@ -510,6 +472,7 @@ AssetManagerInitialize(asset_manager *Manager)
 {
 	char Buffer[256];
 	char ExtBuffer[256];
+	char AssetName[256];
 
 	//
 	// Textures
@@ -545,8 +508,8 @@ AssetManagerInitialize(asset_manager *Manager)
 		Assert(Index != -1);
 		model *Model = Manager->Models + Index;
 
-		texture *Texture = LookupTexture(Manager, "orange_texture_02");
-		Assert(Texture);
+		asset_entry Entry = LookupTexture(Manager, "orange_texture_02");
+		Assert(Entry.Texture);
 		if(StringsAreSame(ExtBuffer, "mesh"))
 		{
 			*Model = ModelLoad(&Manager->Arena, FullPath);
@@ -554,20 +517,20 @@ AssetManagerInitialize(asset_manager *Manager)
 		else
 		{
 			*Model = ObjLoad(&Manager->Arena, FullPath);
-			Model->Meshes[0].Texture = Texture;
+			Model->Meshes[0].Texture = Entry.Texture;
 		}
 
 		if(StringsAreSame(Buffer, "Cube"))
 		{
-			Model->Meshes[0].Texture = Texture;
+			Model->Meshes[0].Texture = Entry.Texture;
 		}
 		else if(StringsAreSame(Buffer, "Sphere"))
 		{
-			Model->Meshes[0].Texture = Texture;
+			Model->Meshes[0].Texture = Entry.Texture;
 		}
 		else if(StringsAreSame(Buffer, "Arrow"))
 		{
-			Model->Meshes[0].Texture = Texture;
+			Model->Meshes[0].Texture = Entry.Texture;
 		}
 	}
 
@@ -575,116 +538,59 @@ AssetManagerInitialize(asset_manager *Manager)
 	// Animations
 	//
 
+	file_group_info AnimationFileGroup = Platform.DebugFileGroupLoad(AnimationDirectoryAndWildCard);
+
 	ArenaSubset(&Manager->Arena, &Manager->AnimationNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->AnimationNames);
-	Manager->AnimationInfos = PushArray(&Manager->Arena, ArrayCount(AnimationFiles), animation_info);
-	Manager->Animations		= PushArray(&Manager->Arena, ArrayCount(AnimationFiles), animation);
-	for(u32 NameIndex = 0; NameIndex < ArrayCount(AnimationFiles); ++NameIndex)
+	Manager->AnimationInfos = PushArray(&Manager->Arena, AnimationFileGroup.Count, animation_info);
+	Manager->Animations		= PushArray(&Manager->Arena, AnimationFileGroup.Count, animation);
+	for(u32 FileIndex = 0; FileIndex < AnimationFileGroup.Count; ++FileIndex)
 	{
-		char *FullPath = AnimationFiles[NameIndex];
-		FileNameFromFullPath(FullPath, Buffer);
-		StringHashAdd(&Manager->AnimationNames, Buffer, NameIndex);
-		s32 Index = StringHashLookup(&Manager->AnimationNames, Buffer);
+		char *FileName = AnimationFileGroup.FileNames[FileIndex];
+		FileNameFromFullPath(FileName, AssetName);
+		StringHashAdd(&Manager->AnimationNames, AssetName, FileIndex);
+		s32 Index = StringHashLookup(&Manager->AnimationNames, AssetName);
 		Assert(Index != -1);
+
+		MemoryZero(Buffer, sizeof(Buffer));
+		strcat(Buffer, AnimationDirectory);
+		strcat(Buffer, "/");
+		strcat(Buffer, FileName);
 
 		animation_info *Info = Manager->AnimationInfos + Index;
 		animation *Animation = Manager->Animations + Index;
-		*Info = AnimationLoad(&Manager->Arena, FullPath);
+		*Info = AnimationLoad(&Manager->Arena, Buffer);
 		if(Info)
 		{
-			Animation->Name = StringCopy(&Manager->Arena, Buffer);
+			Animation->Name = StringCopy(&Manager->Arena, AssetName);
 			Animation->ID.Value = Index;
 			Animation->Info = Info;
 			Animation->BlendedPose = PushStruct(&Manager->Arena, key_frame);
 			key_frame *BlendedPose = Animation->BlendedPose;
 			AllocateJointXforms(&Manager->Arena, BlendedPose, Info->JointCount);
 
-			// TODO(Justin): Load this from a file.
-			switch(NameIndex)
+			// TODO(Justin): Either put this in the file format or let the 
+			// animation system determine this.
+			if(StringsAreSame(AssetName, "XBot_IdleRight") ||
+			   StringsAreSame(AssetName, "XBot_IdleLeft") ||
+			   StringsAreSame(AssetName, "XBot_Running") ||
+			   StringsAreSame(AssetName, "XBot_RunningMirror") ||
+	   		   StringsAreSame(AssetName, "XBot_FastRun") ||
+   			   StringsAreSame(AssetName, "XBot_FastRunMirror") ||
+   			   StringsAreSame(AssetName, "XBot_CrouchingIdleLeft") ||
+   			   StringsAreSame(AssetName, "XBot_CrouchingIdleRight"))
 			{
-				case Animation_IdleRight:
-				case Animation_IdleLeft:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_Looping;
-				} break;
-				case Animation_IdleToSprint:
-				case Animation_IdleToSprintMirror:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion);
-				} break;
-				case Animation_StandingToIdleRight:
-				case Animation_StandingToIdleLeft:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_ControlsPosition;
-				} break;
-				case Animation_Run:
-				case Animation_RunMirror:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_Looping;
-
-				} break;
-				case Animation_RunToStop:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = (AnimationFlags_ControlsPosition);
-				} break;
-				case Animation_Sprint:
-				case Animation_SprintMirror:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_Looping;
-				} break;
-				case Animation_JumpForward:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_ControlsPosition;
-					//Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion | AnimationFlags_ControlsPosition);
-				} break;
-				case Animation_Running180:
-				{
-					Animation->TimeScale = 1.0f;
-				} break;
-
-				case Animation_CrouchedToIdleLeft:
-				case Animation_CrouchedToIdleRight:
-				case Animation_IdleLeftToCrouched:
-				case Animation_IdleRightToCrouched:
-				{
-					Animation->TimeScale = 1.0f;
-				} break;
-				case Animation_CrouchingIdleLeft:
-				case Animation_CrouchingIdleRight:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_Looping;
-				} break;
-				case Animation_LeftTurn:
-				case Animation_RightTurn:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_ControlsTurning;
-				} break;
-				case Animation_Turn90RightToRun:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_ControlsTurning;
-				} break;
-				case Animation_JumpForwardMirror:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_ControlsPosition;
-				} break;
-				case Animation_RunningSlide:
-				case Animation_RunningSlideMirror:
-				{
-					Animation->TimeScale = 1.0f;
-					Animation->DefaultFlags = AnimationFlags_ControlsPosition;
-				} break;
-
+				Animation->DefaultFlags = AnimationFlags_Looping;
+			}
+			if(StringsAreSame(AssetName, "XBot_IdleToSprint") ||
+			   StringsAreSame(AssetName, "XBot_IdleToSprintMirror"))
+			{
+				Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion);
+			}
+			if(StringsAreSame(AssetName, "XBot_JumpForward") ||
+			   StringsAreSame(AssetName, "XBot_JumpForwardMirror"))
+			{
+				Animation->DefaultFlags = (AnimationFlags_ControlsPosition);
 			}
 		}
 	}
