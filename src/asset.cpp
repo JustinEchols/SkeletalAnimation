@@ -586,6 +586,7 @@ AssetManagerInitialize(asset_manager *Manager)
 			   StringsAreSame(AssetName, "XBot_IdleToSprintMirror"))
 			{
 				Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion);
+				//Animation->DefaultFlags = (AnimationFlags_ControlsPosition);
 			}
 			if(StringsAreSame(AssetName, "XBot_JumpForward") ||
 			   StringsAreSame(AssetName, "XBot_JumpForwardMirror"))

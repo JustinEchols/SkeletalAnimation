@@ -85,10 +85,15 @@ PlayerAdd(game_state *GameState, v3 P)
 	Entity->OBB.Z = Q * (-1.0f*ZAxis());
 	Entity->OBB.Dim = Entity->AABBDim;
 
-	// TODO(Justin): Capsule
-
 	// Sphere
 	Entity->Radius = 0.4f;
+
+	// TODO(Justin): Capsule
+	capsule C;
+	C.Radius = Entity->Radius;
+	C.Min = V3(0.0f, C.Radius, 0.0f);
+	C.Max = V3(0.0f, Entity->Height, 0.0f);
+	Entity->Capsule = C;
 
 	// Visuals
 	Entity->VisualScale = V3(0.01f);
@@ -565,11 +570,6 @@ AABBCollisionInfo(aabb AABB)
 	return(Result);
 }
 
-#define PLAYER_COLLIDER_AABB 0
-#define PLAYER_COLLIDER_OBB 0
-#define PLAYER_COLLIDER_SPHERE 1
-#define PLAYER_COLLIDER_CAPSULE 0
-#define PLAYER_COLLIDER_OFF 0
 
 internal b32
 MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 *tMin)
@@ -635,6 +635,44 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 	return(Collided);
 }
 
+inline v3 
+CapsuleSphereCenterVsOBB(v3 CapsuleP, capsule Capsule, v3 OBBP, obb OBB)
+{
+	v3 Result = {};
+
+	v3 A = CapsuleP + Capsule.Min;
+	v3 B = CapsuleP + Capsule.Max;
+
+	v3 OBBPointClosestToA = ClosestPointOnOBB(OBB, OBBP, A);
+	v3 OBBPointClosestToB = ClosestPointOnOBB(OBB, OBBP, B);
+
+	v3 DeltaA = OBBPointClosestToA - A;
+	v3 DeltaB = OBBPointClosestToB - B;
+
+	f32 dA = Dot(DeltaA, DeltaA);
+	f32 dB = Dot(DeltaB, DeltaB);
+
+	v3 Closest;
+	if(dA < dB)
+	{
+		Closest = OBBPointClosestToA;
+	}
+	else
+	{
+		Closest = OBBPointClosestToB;
+	}
+
+	Result = ClosestPointOnLineSegment(A, B, Closest);
+	
+	return(Result);
+}
+
+#define PLAYER_COLLIDER_AABB 0
+#define PLAYER_COLLIDER_OBB 0
+#define PLAYER_COLLIDER_SPHERE 0
+#define PLAYER_COLLIDER_CAPSULE 1
+#define PLAYER_COLLIDER_OFF 0
+
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 {
@@ -649,11 +687,10 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	v3 OldP = Entity->P;
 	v3 DesiredP = OldP + DeltaP;
 
-	// NOTE(Justin): Check if animation is driving movement.
-
 	animation_player *AnimationPlayer = Entity->AnimationPlayer;
 	if(AnimationPlayer && AnimationPlayer->ControlsPosition)
 	{
+
 		// TODO(Justin): Robustness
 		// TODO(Justin): Update velocity 
 		v3 AnimationDelta = AnimationPlayer->RootMotionAccumulator;
@@ -661,13 +698,17 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 							   Entity->VisualScale.y * AnimationDelta.y,
 							   Entity->VisualScale.z * AnimationDelta.z);
 
+
+
 		DeltaP = Conjugate(Entity->Orientation)*GameDelta;
 		DesiredP = OldP + DeltaP;
+
+		///Entity->dP = dt*DeltaP + Entity->dP;
 
 		AnimationPlayer->RootMotionAccumulator = {};
 	}
 
-	// TODO(Justin): Figure out the "correct" length here.
+	// TODO(Justin): Figure out the "correct" length here. Or have delta normalized instead of t normalized.
 	v3 GroundP = {};
 	v3 GroundDelta = V3(0.0f, -20.0f,0.0f);
 	entity *EntityBelow = 0;
@@ -711,7 +752,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 							HitEntity = TestEntity;
 						}
 					}
-#elif PLAYER_COLLIDER_SPHERE
+#elif defined PLAYER_COLLIDER_SPHERE 
 					// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
 					v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
 					if(MovingSphereHitOBB(RelP, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
@@ -721,7 +762,24 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 					}
 
 					// GroundCheck
-					if(MovingSphereHitOBB(RelP, Entity->Radius, GroundDelta, TestEntity->OBB, &GroundNormal, &tGround))
+					if(MovingSphereHitOBB(RelP, 0.8f*Entity->Radius, GroundDelta, TestEntity->OBB, &GroundNormal, &tGround))
+					{
+						EntityBelow = TestEntity;
+					}
+#elif defined PLAYER_COLLIDER_CAPSULE
+					// Compute the center of the sphere along the capsule axis.
+					v3 SphereCenter = CapsuleSphereCenterVSOBB(Entity->P, Entity->Capsule, TestEntity->P, TestEntity->OBB);
+					// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
+					v3 SphereRel = SphereCenter - (TestP + TestEntity->VolumeOffset);
+					if(MovingSphereHitOBB(SphereRel, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
+					{
+						Collided = true;
+						HitEntity = TestEntity;
+					}
+
+					// GroundCheck
+					v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
+					if(MovingSphereHitOBB(RelP, 0.8f*Entity->Radius, GroundDelta, TestEntity->OBB, &GroundNormal, &tGround))
 					{
 						EntityBelow = TestEntity;
 					}
@@ -762,6 +820,8 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		FlagAdd(Entity, EntityFlag_YSupported);
 	}
 }
+
+
 
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
@@ -1255,7 +1315,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
-				PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
+				//PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
+
+#if 1
+				v3 Min = Entity->P + Capsule.Min;
+				v3 Max = Entity->P + Capsule.Max;
+
+				T = Mat4Translate(Min);
+				S = Mat4Scale(0.1f);
+				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f, 0.0f, 0.0f));
+				T = Mat4Translate(Max);
+				S = Mat4Scale(0.1f);
+				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f, 0.0f, 0.0f));
+#endif
 #endif
 				//
 				// Ground arrow 
@@ -1281,7 +1353,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				model *Cube = LookupModel(Assets, "Cube").Model;
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
-				PushModel(RenderBuffer, Cube, T*R*S);
+				//PushModel(RenderBuffer, Cube, T*R*S);
 
 				//
 				// OBB
@@ -1313,6 +1385,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset + 0.5f*Z);
 				PushAABB(RenderBuffer, ZArrow, T*R*S, V3(0.0f, 0.0f, 1.0f));
 #endif
+
+				if(Entity->P.x == -7.0f && Entity->P.z == -10.0f)
+				{
+					v3 SphereCenter = CapsuleSphereCenterVsOBB(Player->P, Player->Capsule, Entity->P, Entity->OBB);
+					T = Mat4Translate(SphereCenter);
+					S = Mat4Scale(1.0f);
+					PushAABB(RenderBuffer, GameState->Sphere, T*S, V3(0.0f, 1.0f, 0.0f));
+				}
 
 			} break;
 			case EntityType_WalkableRegion:

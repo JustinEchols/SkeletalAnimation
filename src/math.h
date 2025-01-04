@@ -145,6 +145,7 @@ struct aabb
 	v3 Max;
 };
 
+// TODO(Justin): Oriented capsules
 struct capsule
 {
 	v3 Min;

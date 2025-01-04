@@ -125,7 +125,6 @@ Win32ClientDimGet(HWND Window)
 	return(Result);
 }
 
-
 internal void
 Win32FullScreen(HWND Window)
 {
@@ -156,7 +155,6 @@ Win32FullScreen(HWND Window)
                      SWP_NOOWNERZORDER | SWP_FRAMECHANGED);
     }
 }
-
 
 LRESULT CALLBACK
 Win32WindowCallBack(HWND Window, UINT Message, WPARAM wParam, LPARAM lParam)

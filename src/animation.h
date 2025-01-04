@@ -124,6 +124,7 @@ struct animation_player
 	f32 dt;
 
 	v3 RootMotionAccumulator;
+	v3 RootPLocked;
 
 	key_frame *FinalPose;
 	model *Model; 

@@ -581,15 +581,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		Scale = 1.0f / FactorSum;
 	}
 
-	if(AnimationPlayer->ControlsPosition)
-	{
-		AnimationPlayer->RootMotionAccumulator = Scale * AnimationPlayer->RootMotionAccumulator;
-	}
-	else
-	{
-		AnimationPlayer->RootMotionAccumulator = {};
-	}
-
 	//
 	// NOTE(Justin): Scale mixed animation, then copy.
 	//
@@ -610,6 +601,20 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			DestPose->Orientations[JointIndex]	= SrcPose->Orientations[JointIndex];
 			DestPose->Scales[JointIndex]		= SrcPose->Scales[JointIndex];
 		}
+	}
+
+	if(AnimationPlayer->ControlsPosition)
+	{
+		AnimationPlayer->RootMotionAccumulator = Scale * AnimationPlayer->RootMotionAccumulator;
+		if(Equal(AnimationPlayer->RootPLocked, V3(0.0f)))
+		{
+			AnimationPlayer->RootPLocked = AnimationPlayer->FinalPose->Positions[0];
+		}
+	}
+	else
+	{
+		AnimationPlayer->RootMotionAccumulator = {};
+		AnimationPlayer->RootPLocked = {};
 	}
 }
 
@@ -636,8 +641,7 @@ ModelJointsUpdate(entity *Entity)
 
 			if(AnimationPlayer->ControlsPosition)
 			{
-				v3 RootJointP = Mat4ColumnGet(RootJoint.Transform, 3);
-				Xform.Position = V3(Entity->P.x, Entity->P.y + RootJointP.y + AnimationPlayer->RootMotionAccumulator.y, Entity->P.z);
+				Xform.Position = Entity->P + AnimationPlayer->RootPLocked;
 			}
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
