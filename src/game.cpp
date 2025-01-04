@@ -92,7 +92,7 @@ PlayerAdd(game_state *GameState, v3 P)
 	capsule C;
 	C.Radius = Entity->Radius;
 	C.Min = V3(0.0f, C.Radius, 0.0f);
-	C.Max = V3(0.0f, Entity->Height, 0.0f);
+	C.Max = V3(0.0f, Entity->Height - C.Radius, 0.0f);
 	Entity->Capsule = C;
 
 	// Visuals
@@ -108,8 +108,8 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	FlagAdd(Entity, EntityFlag_Collides);
 
 	Entity->P = P;
-	Entity->dP = V3(0.0f);
-	Entity->ddP = V3(0.0f);
+	Entity->dP = {};
+	Entity->ddP = {};
 	Entity->Orientation = Orientation;
 
 	// NOTE(Justin): The cube mesh has dimensions 1x1x1. The AABBDim is used for collision
@@ -143,8 +143,8 @@ SphereAdd(game_state *GameState, v3 Center, f32 Radius)
 	FlagAdd(Entity, EntityFlag_Collides);
 
 	Entity->P = Center;
-	Entity->dP = V3(0.0f);
-	Entity->ddP = V3(0.0f);
+	Entity->dP = {};
+	Entity->ddP = {};
 	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
 
 	Entity->VisualScale = V3(1.0f);
@@ -159,8 +159,8 @@ WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	FlagAdd(Entity, EntityFlag_Collides);
 
 	Entity->P = P;
-	Entity->dP = V3(0.0f);
-	Entity->ddP = V3(0.0f);
+	Entity->dP = {};
+	Entity->ddP = {};
 	Entity->Orientation = Orientation;
 
 	// NOTE(Justin): The cube mesh has dimensions 1x1x1. The AABBDim is used for collision
@@ -752,7 +752,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 							HitEntity = TestEntity;
 						}
 					}
-#elif defined PLAYER_COLLIDER_SPHERE 
+#elif PLAYER_COLLIDER_SPHERE 
 					// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
 					v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
 					if(MovingSphereHitOBB(RelP, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
@@ -766,9 +766,9 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 					{
 						EntityBelow = TestEntity;
 					}
-#elif defined PLAYER_COLLIDER_CAPSULE
+#elif PLAYER_COLLIDER_CAPSULE
 					// Compute the center of the sphere along the capsule axis.
-					v3 SphereCenter = CapsuleSphereCenterVSOBB(Entity->P, Entity->Capsule, TestEntity->P, TestEntity->OBB);
+					v3 SphereCenter = CapsuleSphereCenterVsOBB(CurrentP, Entity->Capsule, TestEntity->P, TestEntity->OBB);
 					// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
 					v3 SphereRel = SphereCenter - (TestP + TestEntity->VolumeOffset);
 					if(MovingSphereHitOBB(SphereRel, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
@@ -779,7 +779,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 
 					// GroundCheck
 					v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
-					if(MovingSphereHitOBB(RelP, 0.8f*Entity->Radius, GroundDelta, TestEntity->OBB, &GroundNormal, &tGround))
+					if(MovingSphereHitOBB(RelP, Entity->Radius, GroundDelta, TestEntity->OBB, &GroundNormal, &tGround))
 					{
 						EntityBelow = TestEntity;
 					}
@@ -909,8 +909,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Gravity = 9.8f;
 
 		// NOTE(Justin): Initialize a default capsule st it can be used for any entity.
-		capsule Cap = CapsuleMinMaxRadius(V3(0.0f, 0.5f, 0.0f), V3(0.0f, 1.8f - 0.5f, 0.0f), 0.5f);
-		Player->Capsule = Cap;
+		capsule Cap = CapsuleMinMaxRadius(V3(0.0f, 0.4f, 0.0f), V3(0.0f, 1.8f - 0.4f, 0.0f), 0.4f);
 
 		GameState->Capsule = PushArray(Arena, 1, model);
 		model *Capsule = GameState->Capsule;
