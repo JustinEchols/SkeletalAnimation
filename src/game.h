@@ -117,6 +117,7 @@ enum movement_state
 	MovementState_TurningLeft,
 	MovementState_Crouch,
 	MovementState_Sliding,
+	MovementState_JumpOnTopOf,
 };
 
 enum entity_type
@@ -135,6 +136,8 @@ enum entity_flag
 	EntityFlag_YSupported = (1 << 2),
 	EntityFlag_Moveable = (1 << 3),
 	EntityFlag_JumpDown = (1 << 4),
+	EntityFlag_Collided = (1 << 5),
+	EntityFlag_Moving = (1 << 6),
 };
 
 #include "intrinsics.h"
@@ -147,6 +150,19 @@ enum entity_flag
 #include "ui.h"
 #include "asset.h"
 #include "render.h"
+
+struct collision_info
+{
+	v3 PlaneNormal;
+	v3 PointOnPlane;
+	v3 PointOfIntersection;
+	f32 tResult;
+};
+
+struct collision_result
+{
+	collision_info Info[6];
+};
 
 enum collision_volume_type
 {

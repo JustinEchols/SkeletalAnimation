@@ -21,7 +21,7 @@ FontInitialize(memory_arena *Arena, font *Font, char *FileName)
 	Font->Ascender = Face->ascender;
 	Font->Descender = Face->descender;
 	Font->LineHeight = Face->height;
-	Font->Scale = 0.35f;
+	Font->Scale = 0.3f;
 	Font->LineGap = Font->Scale * (f32)Font->LineHeight / 64.0f;
 
 	s32 Width = 0;

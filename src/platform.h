@@ -190,6 +190,7 @@ struct game_keyboard
 struct game_input
 {
 	game_keyboard Keyboard;
+	f32 FPS;
 	f32 DtForFrame;
 	f32 MouseX, MouseY;
 	f32 dXMouse, dYMouse;

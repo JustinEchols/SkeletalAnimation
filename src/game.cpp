@@ -3,38 +3,11 @@
 #include "texture.cpp"
 #include "font.cpp"
 #include "mesh.cpp"
+#include "entity.cpp"
 #include "animation.cpp"
 #include "ui.cpp"
 #include "asset.cpp"
 #include "render.cpp"
-
-internal entity * 
-EntityAdd(game_state *GameState, entity_type Type)
-{
-	Assert(GameState->EntityCount < ArrayCount(GameState->Entities));
-	entity *Entity = GameState->Entities + GameState->EntityCount++;
-	Entity->Type = Type;
-	return(Entity);
-}
-
-inline void
-FlagAdd(entity *Entity, u32 Flag)
-{
-	Entity->Flags |= Flag;
-}
-
-inline void
-FlagClear(entity *Entity, u32 Flag)
-{
-	Entity->Flags &= ~Flag;
-}
-
-inline b32 
-FlagIsSet(entity *Entity, u32 Flag)
-{
-	b32 Result = (Entity->Flags & Flag) != 0;
-	return(Result);
-}
 
 internal void
 PlayerAdd(game_state *GameState, v3 P)
@@ -62,7 +35,6 @@ PlayerAdd(game_state *GameState, v3 P)
 
 	// The visual scale of the player and the visual scale of the AABBDim are unrelated so 
 	// we have to scale the dim by 0.5.
-
 
 	// NOTE(Justin): The AABBDim is used for collision detection AND for AABB rendering. The visual
 	// scale is used to scale the player model. Therefore the visual scale and the AABBDim are unrelated
@@ -163,13 +135,6 @@ WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->ddP = {};
 	Entity->Orientation = Orientation;
 
-	// NOTE(Justin): The cube mesh has dimensions 1x1x1. The AABBDim is used for collision
-	// detection and the visual scale used for rendering
-	//
-	// The volume offset depends on what convention is used as far as the entity's position. The convention
-	// used is that the position is where on the ground the entity is located. So we offset the volume in the
-	// +y direction.
-
 	// ABB
 	Entity->AABBDim = 0.99f*Dim;
 	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
@@ -198,13 +163,6 @@ ElevatorAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->ddP = V3(0.0f);
 	Entity->Orientation = Orientation;
 
-	// NOTE(Justin): The cube mesh has dimensions 1x1x1. The AABBDim is used for collision
-	// detection and the visual scale used for rendering
-	//
-	// The volume offset depends on what convention is used as far as the entity's position. The convention
-	// used is that the position is where on the ground the entity is located. So we offset the volume in the
-	// +y direction.
-
 	// ABB
 	Entity->AABBDim = 0.99f*Dim;
 	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
@@ -218,34 +176,6 @@ ElevatorAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->OBB.Dim = 0.99f*Dim;
 
 	Entity->VisualScale = 0.5f*Dim;
-}
-
-inline mat4
-EntityTransform(entity *Entity, f32 Scale = 1.0f)
-{
-	mat4 Result = Mat4Identity();
-
-	mat4 R = QuaternionToMat4(Entity->Orientation);
-	Result = Mat4(Scale * Mat4ColumnGet(R, 0),
-				  Scale * Mat4ColumnGet(R, 1),
-				  Scale * Mat4ColumnGet(R, 2),
-				  Entity->P);
-
-	return(Result);
-}
-
-inline mat4
-EntityTransform(entity *Entity, v3 Scale = V3(1.0f))
-{
-	mat4 Result = Mat4Identity();
-
-	mat4 R = QuaternionToMat4(Entity->Orientation);
-	Result = Mat4(Scale.x * Mat4ColumnGet(R, 0),
-				  Scale.y * Mat4ColumnGet(R, 1),
-				  Scale.z * Mat4ColumnGet(R, 2),
-				  Entity->P);
-
-	return(Result);
 }
 
 inline void 
@@ -295,12 +225,15 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 		}
 		else
 		{
-			// TODO(Justin): Fix theta update.
 			quaternion QCurrent = Entity->Orientation;
 			quaternion QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), -1.0f*TargetAngleInRad);
 			Entity->Orientation = RotateTowards(QCurrent, QTarget, dt, AngularSpeed);
-			Entity->Theta = RadToDegrees(AngleBetween(Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f), Entity->Orientation));
 
+			// TODO(Justin): Determine if this works always and figure out why it "seems" to work. The confusing
+			// part is the -1. This seems to be incorrect when the player does a 180 when facing towards or away.
+			v3 Current = Entity->Orientation *V3(0.0f, 0.0f, 1.0f);
+			Entity->Theta = -1.0f*RadToDegrees(DirectionToEuler(Current).yaw);
+			Entity->dTheta = Entity->ThetaTarget - Entity->Theta;
 		}
 	}
 }
@@ -463,67 +396,6 @@ ClosestPointOnPlane(v3 PlaneNormal, v3 PointOnPlane, v3 P)
 
 }
 
-// NOTE(Justin): This is really PointIntersectsPlaneAndInABB.....
-internal b32
-PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin)
-{
-	b32 Collided = false;
-
-	// TODO(Justin): Figure out an approach to epsilons.
-	// NOTE(Justin): There might be an epsilon bug when epsilon = 0.001f when colliding with an OBB. 
-	// Some of the time the player will tunnel through the OBB. After chaning epsilon to 0.01f;
-	// the player does not tunnel. It is possible that the position the player is moved to when
-	// using 0.001f for epsilon, ends up being behind the non-aligned plane of the OBB. If the player
-	// gets moved there then they tunnel through the OBB.
-
-	//f32 tEpsilon = 0.001f;
-	f32 tEpsilon = 0.01f;
-	if(!Equal(DeltaP, V3(0.0f)))
-	{
-		f32 tResult = (D - Dot(PlaneNormal, RelP)) / Dot(PlaneNormal, DeltaP);
-		if((tResult >= 0.0f) && tResult < *tMin)
-		{
-			v3 PointOfIntersection = RelP + tResult * DeltaP;
-			if(InAABB(MKSumAABB, PointOfIntersection))
-			{
-				*tMin = Max(0.0f, tResult - tEpsilon);
-				Collided = true;
-			}
-		}
-	}
-
-	return(Collided);
-}
-
-internal b32
-PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, v3 *PointOfIntersection, f32 *tResult)
-{
-	b32 Intersected = false;
-
-	f32 tEpsilon = 0.001f;
-	if(!Equal(DeltaP, V3(0.0f)))
-	{
-		*tResult = (D - Dot(PlaneNormal, RelP)) / Dot(PlaneNormal, DeltaP);
-		*PointOfIntersection = RelP + (*tResult) * DeltaP;
-		Intersected = true;
-	}
-
-	return(Intersected);
-}
-
-struct collision_info
-{
-	v3 PlaneNormal;
-	v3 PointOnPlane;
-	v3 PointOfIntersection;
-	f32 tResult;
-};
-
-struct collision_result
-{
-	collision_info Info[6];
-};
-
 internal collision_result
 AABBCollisionInfo(aabb AABB)
 {
@@ -570,9 +442,58 @@ AABBCollisionInfo(aabb AABB)
 	return(Result);
 }
 
+// TODO(Justin): Figure out an approach to epsilons.
+// NOTE(Justin): There might be an epsilon bug when epsilon = 0.001f when colliding with an OBB. 
+// Some of the time the player will tunnel through the OBB. After chaning epsilon to 0.01f;
+// the player does not tunnel. It is possible that the position the player is moved to when
+// using 0.001f for epsilon, ends up being behind the non-aligned plane of the OBB. If the player
+// gets moved there then they tunnel through the OBB.
+
+//f32 tEpsilon = 0.001f;
+//f32 tEpsilon = 0.01f;
+
+// NOTE(Justin): This is really PointIntersectsPlaneAndInABB.....
+internal b32
+PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin, f32 tEpsilon = 0.01f)
+{
+	b32 Collided = false;
+	if(!Equal(DeltaP, V3(0.0f)))
+	{
+		f32 tResult = (D - Dot(PlaneNormal, RelP)) / Dot(PlaneNormal, DeltaP);
+		if((tResult >= 0.0f) && tResult < *tMin)
+		{
+			v3 PointOfIntersection = RelP + tResult * DeltaP;
+			if(InAABB(MKSumAABB, PointOfIntersection))
+			{
+				*tMin = Max(0.0f, tResult - tEpsilon);
+				Collided = true;
+			}
+		}
+	}
+
+	return(Collided);
+}
 
 internal b32
-MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 *tMin)
+RayAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, f32 *tMin, f32 tEpsilon = 0.01f)
+{
+	b32 Collided = false;
+	if(!Equal(DeltaP, V3(0.0f)))
+	{
+		f32 tResult = (D - Dot(PlaneNormal, RelP)) / Dot(PlaneNormal, DeltaP);
+		if((tResult >= 0.0f) && tResult < *tMin)
+		{
+			//v3 PointOfIntersection = RelP + tResult * DeltaP;
+			*tMin = Max(0.0f, tResult - tEpsilon);
+			Collided = true;
+		}
+	}
+
+	return(Collided);
+}
+
+internal b32
+MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 *tMin, f32 tEpsilon = 0.01f)
 {
 	b32 Collided = false;
 
@@ -612,7 +533,7 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 		v3 PlaneNormal = Info.PlaneNormal;
 		v3 PointOnPlane = Info.PointOnPlane;
 		f32 D = Dot(PlaneNormal, PointOnPlane);
-		if(PointAndPlaneIntersect(SphereCenter, Delta, PlaneNormal, D, MKSumAABB, tMin))
+		if(PointAndPlaneIntersect(SphereCenter, Delta, PlaneNormal, D, MKSumAABB, tMin, tEpsilon))
 		{
 			// TODO(Justin): Voronoi region check for full sphere swept vs OBB collision detection.
 
@@ -673,6 +594,19 @@ CapsuleSphereCenterVsOBB(v3 CapsuleP, capsule Capsule, v3 OBBP, obb OBB)
 #define PLAYER_COLLIDER_CAPSULE 1
 #define PLAYER_COLLIDER_OFF 0
 
+inline b32
+EntitiesCanCollide(entity *Mover, entity *A)
+{
+	b32 Result = false;
+	if(FlagIsSet(Mover, EntityFlag_Collides) && FlagIsSet(A, EntityFlag_Collides))
+	{
+		// TODO(Justin): Additional testing to see if they can collide.
+		Result = true;
+	}
+
+	return(Result);
+}
+
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 {
@@ -712,24 +646,26 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	v3 GroundP = {};
 	v3 GroundDelta = V3(0.0f, -20.0f,0.0f);
 	entity *EntityBelow = 0;
-
+	b32 HitSomethingBesidesRegion = false;
 	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
 	{
 		b32 Collided = false;
 
 		f32 tMin = 1.0f;
 		f32 tGround = 1.0f;
+		f32 tGroundMin = 1.0f;
 
 		v3 Normal = {};
 		v3 GroundNormal = {};
 
 		entity *HitEntity = 0;
+		entity *Region = 0;
 		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
 		{
 			entity *TestEntity = GameState->Entities + TestEntityIndex;
 			if(Entity != TestEntity)
 			{
-				if(FlagIsSet(Entity, EntityFlag_Collides) && FlagIsSet(TestEntity, EntityFlag_Collides))
+				if(EntitiesCanCollide(Entity, TestEntity))
 				{
 					v3 TestP = TestEntity->P;
 					v3 CurrentP = Entity->P; 
@@ -767,9 +703,8 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 						EntityBelow = TestEntity;
 					}
 #elif PLAYER_COLLIDER_CAPSULE
-					// Compute the center of the sphere along the capsule axis.
+					// Compute the center of the sphere along the capsule axis and then convert it to OBB space.
 					v3 SphereCenter = CapsuleSphereCenterVsOBB(CurrentP, Entity->Capsule, TestEntity->P, TestEntity->OBB);
-					// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
 					v3 SphereRel = SphereCenter - (TestP + TestEntity->VolumeOffset);
 					if(MovingSphereHitOBB(SphereRel, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
 					{
@@ -785,8 +720,46 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 					}
 #elif PLAYER_COLLIDER_OFF
 #endif
+
+					if(TestEntity->Type == EntityType_WalkableRegion)
+					{
+						if(InAABB(AABBCenterDim(TestEntity->P, TestEntity->AABBDim), DesiredP))
+						{
+							Region = TestEntity;
+						}
+					}
 				}
 			}
+		}
+
+		v3 TestP = Entity->P + tMin *DeltaP;
+		v3 RegionPOfTestP = TestP - (Region->P + Region->VolumeOffset);
+		aabb RegionAABB = AABBCenterDim(V3(0.0f), Region->AABBDim);
+		if(!InAABB(RegionAABB, RegionPOfTestP) || TestP.y < 0.01f)
+		{
+#if 0
+			v3 Delta = tMin*DeltaP;
+			v3 PointOnPlane = RegionAABB.Min;
+			v3 PlaneNormal = V3(0.0f, -1.0f, 0.0f);
+			f32 D = Dot(PointOnPlane, PlaneNormal);
+			if(RayAndPlaneIntersect(RegionPOfTestP, Delta, PlaneNormal, D, &tGroundMin, 0.0001f))
+			{
+				//v3 PointOfIntersection = Entity->P + tGroundMin * DeltaP;
+				Entity->P += tGroundMin * DeltaP;
+			}
+			//TODO(Justin): Disallow any moves that put the player outside the current
+			//walkable region. Assuming that the move is not a move to another walkable region.
+
+			//TODO(Justin): Fix sticking
+
+			//TODO(Justin): What is the correct move? The player ends up hovering above the  
+			//ground when doing this.
+#endif
+			int breakhere = 0;
+		}
+		else
+		{
+			//Entity->P += tMin * DeltaP; 
 		}
 
 		Entity->P += tMin * DeltaP; 
@@ -798,6 +771,11 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
 			DeltaP = DesiredP - Entity->P;
 			DeltaP = DeltaP - Dot(Normal, DeltaP) * Normal;
+
+			if(HitEntity->Type != EntityType_WalkableRegion)
+			{
+				HitSomethingBesidesRegion = true;
+			}
 		}
 		else
 		{
@@ -805,8 +783,9 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		}
 	}
 
+	// Check if falling
 	Assert(EntityBelow);
-	f32 YThreshold = 0.001f;
+	f32 YThreshold = 0.01f;
 	f32 dY = Entity->P.y - GroundP.y;
 	if(dY > YThreshold)
 	{
@@ -819,9 +798,32 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	{
 		FlagAdd(Entity, EntityFlag_YSupported);
 	}
+
+	if(HitSomethingBesidesRegion)
+	{
+		//FlagAdd(Entity, EntityFlag_Collided);
+	}
+	else
+	{
+		// TODO(Justin): The player can still collide with a walkable region
+		// how to interpret it?
+		FlagClear(Entity, EntityFlag_Collided);
+	}
 }
 
+inline void
+DebugDrawOBB(render_buffer *RenderBuffer, model *DebugCube, obb OBB, v3 P, v3 Offset, v3 Color)
+{
+	v3 X = OBB.X;
+	v3 Y = OBB.Y;
+	v3 Z = OBB.Z;
 
+	mat4 T = Mat4Translate(P + Offset);
+	mat4 R = Mat4(X, Y, Z);
+	mat4 S = Mat4Scale(OBB.Dim);
+
+	PushAABB(RenderBuffer, DebugCube, T*R*S, Color);
+}
 
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 {
@@ -854,7 +856,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		quaternion CubeOrientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
 
 		// Region
-		WalkableRegionAdd(GameState, V3(0.0f, 0.0f, -10.0f), V3(40.0f), CubeOrientation);
+		WalkableRegionAdd(GameState, V3(0.0f, 0.0f, -20.0f), V3(40.0f), CubeOrientation);
 
 		// Player
 		PlayerAdd(GameState, V3(0.0f, 0.01f, -10.0f));
@@ -877,7 +879,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		Dim = V3(2.0f, 0.5f, 2.0f);
 		v3 ElevatorP = StartP + V3(0.0f, 0.01f, 2.0f);
-		//ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
+		ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
 
 		Dim = V3(1.f, 1.0f, 5.0f);
 		StartP += V3(3.0f, 0.0f, -5.0f);
@@ -1037,21 +1039,51 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					a *= 1.5f;
 				}
 
+				if(Equal(OldPlayerddP, V3(0.0f)) &&
+				  !Equal(Entity->ddP, OldPlayerddP))
+				{
+					FlagAdd(Entity, EntityFlag_Moving);
+				}
+				else
+				{
+					FlagClear(Entity, EntityFlag_Moving);
+				}
+
+				if(Jumping && EntityCanJump(Entity))
+				{
+					f32 X = AbsVal(Entity->dP.x);
+					f32 Z = AbsVal(Entity->dP.z);
+					f32 MaxComponent = Max(X, Z);
+
+					// TODO(Justin): Handle diagonal
+					if(MaxComponent == X)
+					{
+						Entity->dP.x += SignOf(Entity->dP.x)*10.0f;
+					}
+					else
+					{
+						Entity->dP.z += SignOf(Entity->dP.z)*10.0f;
+					}
+
+
+					Entity->dP.y = 30.0f;
+
+				}
+
 				ddP = a * ddP;
 				ddP += -10.0f * Entity->dP;
 
 				if(!Equal(ddP, V3(0.0f)))
 				{
 					EntityMove(GameState, Entity, ddP, dt);
-					EntityOrientationUpdate(Entity, dt, 10.0f);
+					EntityOrientationUpdate(Entity, dt, 20.0f);
 				}
 
 				switch(Entity->MovementState)
 				{
 					case MovementState_Idle:
 					{
-						if(Equal(OldPlayerddP, V3(0.0f)) &&
-						  !Equal(Entity->ddP, OldPlayerddP))
+						if(EntityIsMoving(Entity))
 						{
 							if(Jumping)
 							{
@@ -1066,10 +1098,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 								Entity->MovementState = MovementState_Run;
 							}
 						}
-
-						if(Crouching)
+						else
 						{
-							Entity->MovementState = MovementState_Crouch;
+							if(Crouching)
+							{
+								Entity->MovementState = MovementState_Crouch;
+							}
 						}
 					} break;
 					case MovementState_Crouch:
@@ -1102,7 +1136,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 								Entity->MovementState = MovementState_Sliding;
 							}
 						}
-
 					} break;
 					case MovementState_Sprint:
 					{
@@ -1154,7 +1187,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 							{
 								Entity->MovementState = MovementState_Run;
 							}
-
 						}
 					} break;
 					case MovementState_Invalid:
@@ -1205,8 +1237,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	camera *Camera = &GameState->Camera;
 	if(!GameState->CameraIsFree)
 	{
-		 v3 CameraP = Player->P + GameState->CameraOffsetFromPlayer;
-		 CameraSet(Camera, CameraP, GameState->DefaultYaw, GameState->DefaultPitch);
+		v3 CameraP = Player->P + GameState->CameraOffsetFromPlayer;
+		//v3 CameraP = V3(Player->P.x, 0.0f, Player->P.z) + GameState->CameraOffsetFromPlayer;
+		CameraSet(Camera, CameraP, GameState->DefaultYaw, GameState->DefaultPitch);
 	}
 	else
 	{
@@ -1308,29 +1341,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + V3(0.0f, Entity->Radius, 0.0f));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
-				//PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
 #elif PLAYER_COLLIDER_CAPSULE
 				capsule Capsule = Player->Capsule;
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
 				//PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
-
-#if 1
-				v3 Min = Entity->P + Capsule.Min;
-				v3 Max = Entity->P + Capsule.Max;
-
-				T = Mat4Translate(Min);
-				S = Mat4Scale(0.1f);
-				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f, 0.0f, 0.0f));
-				T = Mat4Translate(Max);
-				S = Mat4Scale(0.1f);
-				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f, 0.0f, 0.0f));
-#endif
 #endif
 				//
 				// Ground arrow 
 				//
+
+
 
 				v3 P = Entity->P;
 				P.y += 0.1f;
@@ -1352,20 +1375,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				model *Cube = LookupModel(Assets, "Cube").Model;
 				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
-				//PushModel(RenderBuffer, Cube, T*R*S);
+				PushModel(RenderBuffer, Cube, T*R*S);
 
 				//
 				// OBB
 				//
 
-				v3 X = Entity->OBB.X;
-				v3 Y = Entity->OBB.Y;
-				v3 Z = Entity->OBB.Z;
-
-				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
-				R = Mat4(X, Y, Z);
-				S = Mat4Scale(Entity->OBB.Dim);
-				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
+				DebugDrawOBB(RenderBuffer, GameState->Cube, Entity->OBB, Entity->P, Entity->VolumeOffset, V3(1.0f));
 
 				//
 				// Axes.
@@ -1384,15 +1400,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset + 0.5f*Z);
 				PushAABB(RenderBuffer, ZArrow, T*R*S, V3(0.0f, 0.0f, 1.0f));
 #endif
-
-				if(Entity->P.x == -7.0f && Entity->P.z == -10.0f)
-				{
-					v3 SphereCenter = CapsuleSphereCenterVsOBB(Player->P, Player->Capsule, Entity->P, Entity->OBB);
-					T = Mat4Translate(SphereCenter);
-					S = Mat4Scale(1.0f);
-					PushAABB(RenderBuffer, GameState->Sphere, T*S, V3(0.0f, 1.0f, 0.0f));
-				}
-
 			} break;
 			case EntityType_WalkableRegion:
 			{
@@ -1456,6 +1463,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	char Buff[256];
 	string Text;
+
+	sprintf(Buff, "%s %.2f", "fps: ", GameInput->FPS);
+	Text = StringCopy(&TempState->Arena, Buff);
+	PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
+	P.y -= (Gap + dY);
+
 	sprintf(Buff, "%s %.2f", "time scale: ", GameState->TimeScale);
 	Text = StringCopy(&TempState->Arena, Buff);
 	PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
@@ -1635,7 +1648,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		P.y -= (Gap + dY);
 	}
 
-	animation_info *AnimationData = Assets->AnimationInfos;
+
 
 	sprintf(Buff, "%s", "+ShadowMapTexture");
 	Text = StringCopy(&TempState->Arena, Buff);

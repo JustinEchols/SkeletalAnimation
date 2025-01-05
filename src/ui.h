@@ -14,7 +14,6 @@ struct ui_id
 
 struct ui
 {
-
 	v2 MouseP;
 	v2 DeltaMouse;
 
@@ -22,6 +21,8 @@ struct ui
 
 	s32 ActiveID;
 	s32 HotID;
+
+	rect Rect;
 
 	struct asset_manager *Assets;
 };

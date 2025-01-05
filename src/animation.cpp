@@ -219,9 +219,8 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 	AnimationPlayer->PlayingCount++;
 }
 
-// TODO(Justin): Better cubic
 inline f32
-EaseFactor(f32 CurrentTime, f32 Duration)
+SmoothStep(f32 CurrentTime, f32 Duration)
 {
 	f32 tNormal = CurrentTime / Duration;
 	f32 Result = 3.0f * Square(tNormal) - 2.0f * Cube(tNormal);
@@ -303,11 +302,11 @@ AnimationUpdate(animation *Animation, f32 dt)
 	f32 BlendFactor = 1.0f;
 	if(Animation->BlendingOut)
 	{
-		BlendFactor = 1.0f - EaseFactor(Animation->BlendCurrentTime, Animation->BlendDuration);
+		BlendFactor = 1.0f - SmoothStep(Animation->BlendCurrentTime, Animation->BlendDuration);
 	}
 	else if(Animation->BlendingIn)
 	{
-		BlendFactor = EaseFactor(Animation->BlendCurrentTime, Animation->BlendDuration);
+		BlendFactor = SmoothStep(Animation->BlendCurrentTime, Animation->BlendDuration);
 	}
 	else
 	{
@@ -459,11 +458,15 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		} break;
 		case MovementState_Jump:
 		{
-			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
+			//MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
 		} break;
 		case MovementState_Sliding:
 		{
 			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_slide");
+		}
+		case MovementState_JumpOnTopOf:
+		{
+			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump_on_top_of");
 		}
 	}
 }
@@ -639,10 +642,16 @@ ModelJointsUpdate(entity *Entity)
 			Xform.Orientation	= FinalPose->Orientations[0];
 			Xform.Scale			= FinalPose->Scales[0];
 
-			if(AnimationPlayer->ControlsPosition)
-			{
-				Xform.Position = Entity->P + AnimationPlayer->RootPLocked;
-			}
+			// NOTE(Justin): This has the affect of removing xz translation while
+			// keeping up and down motion.
+
+			// The final set of transforms are in model space. All these positions
+			// get converted to world space in the shader. These means the root is converted to
+			// world space and is at the gameplay position. Therfore if doing gameplay driven animation
+			// all we need to do is remove the xz translation, since the root position is going to be translated there,
+			// and keep the up and down motion by using the y value of the root of the mixed pose
+			//Xform.Position = V3(0.0f, FinalPose->Positions[0].y,  0.0f);
+			//Xform.Position = V3(Entity->P.x, FinalPose->Positions[0].y,  Entity->P.z);
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
 			   !Equal(Xform.Scale, V3(0.0f)))

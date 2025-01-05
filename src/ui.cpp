@@ -33,5 +33,6 @@ UiBegin(ui *UI, game_input *GameInput, asset_manager *Assets)
 	UI->LeftClick = WasPressed(GameInput->MouseButtons[MouseButton_Left]);
 	UI->HotID = 0;
 	UI->Assets = Assets;
+	UI->Rect = RectMinDim(V2(0.0f), V2(100, 500.0f));
 }
 

@@ -21,14 +21,33 @@ global_variable b32 Win32GlobalRunning;
 global_variable s64 Win32GlobalTicksPerSecond;
 global_variable s32 Win32GlobalWindowWidth;
 global_variable s32 Win32GlobalWindowHeight;
+
 global_variable f32 Win32GlobalMouseX;
 global_variable f32 Win32GlobalMouseY;
+global_variable f32 Win32GlobalMousedX;
+global_variable f32 Win32GlobalMousedY;
 global_variable b32 Win32GlobalMouseCentered;
 global_variable open_gl OpenGL;
 global_variable WINDOWPLACEMENT Win32GlobalWindowPos = {sizeof(Win32GlobalWindowPos)};
 
 #include "renderer_opengl.h"
 #include "renderer_opengl.cpp"
+
+inline LARGE_INTEGER
+Win32WallClock(void)
+{
+	LARGE_INTEGER Result;
+	QueryPerformanceCounter(&Result);
+	return(Result);
+}
+
+inline f32
+Win32SecondsElapsed(LARGE_INTEGER Start, LARGE_INTEGER End)
+{
+	Assert(Win32GlobalTicksPerSecond > 0.0f);
+	f32 Result = ((f32)(End.QuadPart - Start.QuadPart) / (f32)Win32GlobalTicksPerSecond);
+	return(Result);
+}
 
 struct win32_game_code
 {
@@ -203,6 +222,12 @@ Win32KeyStateUpdate(game_button *Button, b32 IsDown)
 int WINAPI
 WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 {
+	LARGE_INTEGER TicksPerSecond;
+	QueryPerformanceFrequency(&TicksPerSecond);
+	Win32GlobalTicksPerSecond = TicksPerSecond.QuadPart;
+
+	UINT DesiredSchedulerMS = 1;
+	b32 SchedulerGranularitySet = (timeBeginPeriod(DesiredSchedulerMS) == TIMERR_NOERROR);
     WNDCLASSA WindowClass = {};
 
 	WindowClass.style = CS_OWNDC | CS_VREDRAW | CS_HREDRAW;
@@ -223,20 +248,22 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 								  0);
 	if(Window)
 	{
-		LARGE_INTEGER TicksPerSecond;
-		QueryPerformanceFrequency(&TicksPerSecond);
-		Win32GlobalTicksPerSecond = TicksPerSecond.QuadPart;
+		s32 MonitorRefreshRate = 60;
+		HDC RefreshDC = GetDC(Window);
+		s32 Win32RefreshRate = GetDeviceCaps(RefreshDC, VREFRESH);
+		ReleaseDC(Window, RefreshDC);
 
-		s32 MonitorRefreshRate = GetDeviceCaps(GetDC(Window), VREFRESH);
 		s32 GameUpdateHz = 0;
-		if(MonitorRefreshRate > 1)
+		if(Win32RefreshRate > 1)
 		{
-			GameUpdateHz = MonitorRefreshRate;
+			MonitorRefreshRate = Win32RefreshRate;
 		}
 
-		f32 TargetSecondsPerFrame = 1.0f / (f32)MonitorRefreshRate;
+		f32 GameRefreshRate = (f32)MonitorRefreshRate / 2.0f;
+		f32 TargetSecondsPerFrame = 1.0f / GameRefreshRate;
+		//f32 TargetSecondsPerFrame = 1.0f / 60.0f;
 
-		HGLRC OpenGLRC		= Win32OpenGLInit(GetDC(Window), &OpenGL);
+		HGLRC OpenGLRC		= Win32OpenGLInitialize(GetDC(Window), &OpenGL);
 		OpenGL.MainShader	= GLProgramCreate(MainVS, MainFS);
 		OpenGL.FontShader	= GLProgramCreate(FontVS, FontFS);
 		OpenGL.Quad2dShader = GLProgramCreate(Quad2dVS, Quad2dFS);
@@ -284,9 +311,14 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		Win32GlobalRunning = true;
 		f32 DtForFrame = 0.0f;
+
 		LARGE_INTEGER QueryTickCount;
 		QueryPerformanceCounter(&QueryTickCount);
 		s64 TickCountStart = QueryTickCount.QuadPart;
+
+		LARGE_INTEGER LastTickCount = Win32WallClock();
+		LARGE_INTEGER FrameBoundaryTickCount = Win32WallClock();
+
 		while(Win32GlobalRunning)
 		{
 			if(Win32FileHasUpdated("../build/game.dll", Game.DLLLastWriteTime))
@@ -390,6 +422,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 					} break;
 					case WM_MOUSEMOVE:
 					{
+
 					} break;
 					default:
 					{
@@ -420,7 +453,6 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			NewInput->dYMouse = Win32GlobalMouseY - OldInput->MouseY;
 			NewInput->MouseX  = Win32GlobalMouseX;
 			NewInput->MouseY  = Win32GlobalMouseY;
-
 			NewInput->BackBufferWidth = Win32GlobalWindowWidth;
 			NewInput->BackBufferHeight = Win32GlobalWindowHeight;
 
@@ -429,16 +461,52 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 				Game.UpdateAndRender(&GameMemory, NewInput);
 			}
 
+			LARGE_INTEGER WorkTickCount = Win32WallClock();
+			f32 SecondsElapsedForWork = Win32SecondsElapsed(LastTickCount, WorkTickCount);
+			f32 SecondsElapsedForFrame = SecondsElapsedForWork;
+			if(SecondsElapsedForFrame < TargetSecondsPerFrame)
+			{
+				if(SchedulerGranularitySet)
+				{
+					DWORD TimeToSleep = (DWORD)(1000.0f * (TargetSecondsPerFrame - SecondsElapsedForFrame));
+					if(TimeToSleep > 0)
+					{
+						Sleep(TimeToSleep);
+					}
+				}
+
+				f32 NewSecondsElapsedForFrame = Win32SecondsElapsed(LastTickCount, Win32WallClock());
+				if(NewSecondsElapsedForFrame < TargetSecondsPerFrame)
+				{
+					// TODO(Justin): Missed sleep.
+				}
+
+				while(SecondsElapsedForFrame < TargetSecondsPerFrame)
+				{
+					SecondsElapsedForFrame = Win32SecondsElapsed(LastTickCount, Win32WallClock());
+				}
+			}
+			else
+			{
+				// TODO(Justin): Missed frame.
+			}
+
+			// Tick count right before flip
+			LARGE_INTEGER EndTickCount = Win32WallClock();
+
 			HDC WindowDC = GetDC(Window);
 			SwapBuffers(WindowDC);
 			ReleaseDC(Window, WindowDC);
 
-			QueryPerformanceCounter(&QueryTickCount);
-			s64 TickCountEnd = QueryTickCount.QuadPart;
+			// Tick count right after flip
+			FrameBoundaryTickCount = Win32WallClock();
 
-			DtForFrame = (f32)(((f64)TickCountEnd - (f64)TickCountStart) / (f64)Win32GlobalTicksPerSecond);
-			TickCountStart = TickCountEnd;
+			s64 ElapsedTickCount = EndTickCount.QuadPart - LastTickCount.QuadPart;
+			f32 MsPerFrame = (f32)(((1000.0f * (f32)(ElapsedTickCount)) / (f32)Win32GlobalTicksPerSecond));
+			f32 FPS = (f32)Win32GlobalTicksPerSecond / (f32)ElapsedTickCount;
+			LastTickCount = EndTickCount;
 
+			NewInput->FPS = FPS;
 			game_input *Temp = NewInput;
 			NewInput = OldInput;
 			OldInput = Temp;

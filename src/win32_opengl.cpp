@@ -293,21 +293,6 @@ void main()
 {
 })";
 
-// NOTE(Justin): Uses the Quad2dVS
-#if 0
-char *DebugShadowMapFS = R"(
-#version 430 core
-in vec2 UV;
-
-uniform sampler2D Texture;
-
-out vec4 Result;
-void main()
-{
-	Result = vec4(vec3(texture(Texture, UV).r), 1.0);
-})";
-#endif
-
 char *DebugBBoxVS = R"(
 #version 430 core
 layout (location = 0) in vec3 P;
@@ -335,6 +320,14 @@ void main()
 	Result = vec4(Ambient + Diffuse.xyz, 1.0);
 })";
 
+// TODO(Justin): Move all the vertex array's and vertex buffers
+// to the open_gl struct and figure out a way to map and asset
+// to an allocated vertex array and vertex buffer. The vertex array
+// and vertex buffer are part of the graphics backend specification
+// and should not be part of the game implementation.
+
+// If each asset has a unique id that the game uses then we can
+// use that or turn it into an index
 #define OpenGLFunctionDeclare(Name, Type) PFN##Type##PROC Name
 struct open_gl
 {
@@ -604,7 +597,7 @@ int OpenGLAttribList[] =
 };
 
 internal HGLRC
-Win32OpenGLInit(HDC WindowDC, open_gl *OpenGL)
+Win32OpenGLInitialize(HDC WindowDC, open_gl *OpenGL)
 {
 	Win32WGLExtensionsLoad();
 	Win32PixelFormatSet(WindowDC);
