@@ -651,7 +651,6 @@ ModelJointsUpdate(entity *Entity)
 			// all we need to do is remove the xz translation, since the root position is going to be translated there,
 			// and keep the up and down motion by using the y value of the root of the mixed pose
 			//Xform.Position = V3(0.0f, FinalPose->Positions[0].y,  0.0f);
-			//Xform.Position = V3(Entity->P.x, FinalPose->Positions[0].y,  Entity->P.z);
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
 			   !Equal(Xform.Scale, V3(0.0f)))

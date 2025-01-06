@@ -442,6 +442,8 @@ AABBCollisionInfo(aabb AABB)
 	return(Result);
 }
 
+// NOTE(Justin): The epsilon bug was a bug in EntityMove(). The desired position was not being
+// updated.
 // TODO(Justin): Figure out an approach to epsilons.
 // NOTE(Justin): There might be an epsilon bug when epsilon = 0.001f when colliding with an OBB. 
 // Some of the time the player will tunnel through the OBB. After chaning epsilon to 0.01f;
@@ -454,7 +456,7 @@ AABBCollisionInfo(aabb AABB)
 
 // NOTE(Justin): This is really PointIntersectsPlaneAndInABB.....
 internal b32
-PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin, f32 tEpsilon = 0.01f)
+PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin, f32 tEpsilon = 0.001f)
 {
 	b32 Collided = false;
 	if(!Equal(DeltaP, V3(0.0f)))
@@ -588,11 +590,7 @@ CapsuleSphereCenterVsOBB(v3 CapsuleP, capsule Capsule, v3 OBBP, obb OBB)
 	return(Result);
 }
 
-#define PLAYER_COLLIDER_AABB 0
-#define PLAYER_COLLIDER_OBB 0
-#define PLAYER_COLLIDER_SPHERE 0
-#define PLAYER_COLLIDER_CAPSULE 1
-#define PLAYER_COLLIDER_OFF 0
+
 
 inline b32
 EntitiesCanCollide(entity *Mover, entity *A)
@@ -600,19 +598,28 @@ EntitiesCanCollide(entity *Mover, entity *A)
 	b32 Result = false;
 	if(FlagIsSet(Mover, EntityFlag_Collides) && FlagIsSet(A, EntityFlag_Collides))
 	{
-		// TODO(Justin): Additional testing to see if they can collide.
+		// TODO(Justin): Additional testing to see if they can collide. E.g.
+		// Both entities may be able to collide with each other but based
+		// on the positions and velocities they may not. In this case
+		// we should early out.
 		Result = true;
 	}
 
 	return(Result);
 }
 
+#define PLAYER_COLLIDER_AABB 0
+#define PLAYER_COLLIDER_OBB 0
+#define PLAYER_COLLIDER_SPHERE 0
+#define PLAYER_COLLIDER_CAPSULE 1
+#define PLAYER_COLLIDER_OFF 0
+
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 {
 	if(!FlagIsSet(Entity, EntityFlag_YSupported))
 	{
-		ddP += V3(0.0f, -80.0f, 0.0f);
+		ddP += V3(0.0f, -GameState->Gravity, 0.0f);
 	}
 
 	v3 DeltaP = 0.5f * dt * dt * ddP + dt * Entity->dP;
@@ -653,13 +660,14 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 
 		f32 tMin = 1.0f;
 		f32 tGround = 1.0f;
-		f32 tGroundMin = 1.0f;
 
 		v3 Normal = {};
 		v3 GroundNormal = {};
 
 		entity *HitEntity = 0;
 		entity *Region = 0;
+
+		DesiredP = Entity->P + DeltaP;
 		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
 		{
 			entity *TestEntity = GameState->Entities + TestEntityIndex;
@@ -723,7 +731,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 
 					if(TestEntity->Type == EntityType_WalkableRegion)
 					{
-						if(InAABB(AABBCenterDim(TestEntity->P, TestEntity->AABBDim), DesiredP))
+						if(InAABB(AABBCenterDim(TestEntity->P, TestEntity->AABBDim), CurrentP))
 						{
 							Region = TestEntity;
 						}
@@ -732,35 +740,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			}
 		}
 
-		v3 TestP = Entity->P + tMin *DeltaP;
-		v3 RegionPOfTestP = TestP - (Region->P + Region->VolumeOffset);
-		aabb RegionAABB = AABBCenterDim(V3(0.0f), Region->AABBDim);
-		if(!InAABB(RegionAABB, RegionPOfTestP) || TestP.y < 0.01f)
-		{
-#if 0
-			v3 Delta = tMin*DeltaP;
-			v3 PointOnPlane = RegionAABB.Min;
-			v3 PlaneNormal = V3(0.0f, -1.0f, 0.0f);
-			f32 D = Dot(PointOnPlane, PlaneNormal);
-			if(RayAndPlaneIntersect(RegionPOfTestP, Delta, PlaneNormal, D, &tGroundMin, 0.0001f))
-			{
-				//v3 PointOfIntersection = Entity->P + tGroundMin * DeltaP;
-				Entity->P += tGroundMin * DeltaP;
-			}
-			//TODO(Justin): Disallow any moves that put the player outside the current
-			//walkable region. Assuming that the move is not a move to another walkable region.
-
-			//TODO(Justin): Fix sticking
-
-			//TODO(Justin): What is the correct move? The player ends up hovering above the  
-			//ground when doing this.
-#endif
-			int breakhere = 0;
-		}
-		else
-		{
-			//Entity->P += tMin * DeltaP; 
-		}
+		// TODO(Justin): Fix colliding with bottom of OBB.
 
 		Entity->P += tMin * DeltaP; 
 		GroundP = Entity->P;
@@ -771,11 +751,6 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
 			DeltaP = DesiredP - Entity->P;
 			DeltaP = DeltaP - Dot(Normal, DeltaP) * Normal;
-
-			if(HitEntity->Type != EntityType_WalkableRegion)
-			{
-				HitSomethingBesidesRegion = true;
-			}
 		}
 		else
 		{
@@ -783,7 +758,6 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		}
 	}
 
-	// Check if falling
 	Assert(EntityBelow);
 	f32 YThreshold = 0.01f;
 	f32 dY = Entity->P.y - GroundP.y;
@@ -797,17 +771,6 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	else
 	{
 		FlagAdd(Entity, EntityFlag_YSupported);
-	}
-
-	if(HitSomethingBesidesRegion)
-	{
-		//FlagAdd(Entity, EntityFlag_Collided);
-	}
-	else
-	{
-		// TODO(Justin): The player can still collide with a walkable region
-		// how to interpret it?
-		FlagClear(Entity, EntityFlag_Collided);
 	}
 }
 
@@ -857,6 +820,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		// Region
 		WalkableRegionAdd(GameState, V3(0.0f, 0.0f, -20.0f), V3(40.0f), CubeOrientation);
+		WalkableRegionAdd(GameState, V3(-30.0f, 0.0f, -10.0f), V3(10.0f), CubeOrientation);
 
 		// Player
 		PlayerAdd(GameState, V3(0.0f, 0.01f, -10.0f));
@@ -879,7 +843,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		Dim = V3(2.0f, 0.5f, 2.0f);
 		v3 ElevatorP = StartP + V3(0.0f, 0.01f, 2.0f);
-		ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
+		//ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
 
 		Dim = V3(1.f, 1.0f, 5.0f);
 		StartP += V3(3.0f, 0.0f, -5.0f);
@@ -908,7 +872,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->ZNear = 0.2f;
 		GameState->ZFar = 200.0f;
 		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
-		GameState->Gravity = 9.8f;
+		GameState->Gravity = 80.0f;
 
 		// NOTE(Justin): Initialize a default capsule st it can be used for any entity.
 		capsule Cap = CapsuleMinMaxRadius(V3(0.0f, 0.4f, 0.0f), V3(0.0f, 1.8f - 0.4f, 0.0f), 0.4f);
@@ -1049,7 +1013,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					FlagClear(Entity, EntityFlag_Moving);
 				}
 
-				if(Jumping && EntityCanJump(Entity))
+				if(Jumping && EntityIsGrounded(Entity))
 				{
 					f32 X = AbsVal(Entity->dP.x);
 					f32 Z = AbsVal(Entity->dP.z);
@@ -1198,7 +1162,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			} break;
 			case EntityType_Elevator:
 			{
-				f32 MaxY = 2.0f;
+				f32 MaxY = 4.0f;
 				v3 ElevatorddP = {};
 
 				if(Entity->P.y >= 1.0f && Entity->P.y < MaxY)

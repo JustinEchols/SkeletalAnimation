@@ -35,7 +35,7 @@ EntityIsMoving(entity *Entity)
 }
 
 inline b32
-EntityCanJump(entity *Entity)
+EntityIsGrounded(entity *Entity)
 {
 	b32 Result = FlagIsSet(Entity, EntityFlag_YSupported);
 	return(Result);
