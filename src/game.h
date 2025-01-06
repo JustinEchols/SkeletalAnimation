@@ -1,4 +1,6 @@
 #if !defined(GAME_H)
+/*
+*/
 
 // NOTE(Justin): JUMP ANIMATION. 
 // The issue at hand is that when the jump is finished

@@ -590,8 +590,6 @@ CapsuleSphereCenterVsOBB(v3 CapsuleP, capsule Capsule, v3 OBBP, obb OBB)
 	return(Result);
 }
 
-
-
 inline b32
 EntitiesCanCollide(entity *Mover, entity *A)
 {
@@ -712,6 +710,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 					}
 #elif PLAYER_COLLIDER_CAPSULE
 					// Compute the center of the sphere along the capsule axis and then convert it to OBB space.
+					// TODO(Justin): Make sure the chosen sphere center is correct. It seems ok..
 					v3 SphereCenter = CapsuleSphereCenterVsOBB(CurrentP, Entity->Capsule, TestEntity->P, TestEntity->OBB);
 					v3 SphereRel = SphereCenter - (TestP + TestEntity->VolumeOffset);
 					if(MovingSphereHitOBB(SphereRel, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
@@ -740,7 +739,22 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			}
 		}
 
-		// TODO(Justin): Fix colliding with bottom of OBB.
+		v3 TestP = Entity->P + tMin * DeltaP; 
+		if(TestP.y < 0.01f && EntityIsGrounded(Entity) && (Normal.y < 0.0f))
+		{
+			// NOTE(Justin): This is supposed to handle the situation when the player collides with an OBB and is underneath the OBB and on the ground and running toward
+			// the corner.
+			//
+			//  /
+			// /_   <-- O
+			//
+			// The collide and slide solution does not work because the new position of the player will be behind the ground plane (tunnel through the ground).
+			// By breaking and setting the velocity to 0 we effectively are not accepting the move.
+			// TODO(Justin): Robustness
+
+			Entity->dP = {};
+			break;
+		}
 
 		Entity->P += tMin * DeltaP; 
 		GroundP = Entity->P;
@@ -1040,7 +1054,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				if(!Equal(ddP, V3(0.0f)))
 				{
 					EntityMove(GameState, Entity, ddP, dt);
-					EntityOrientationUpdate(Entity, dt, 20.0f);
+					EntityOrientationUpdate(Entity, dt, 15.0f);
 				}
 
 				switch(Entity->MovementState)
@@ -1311,7 +1325,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
-				//PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
+				PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
 #endif
 				//
 				// Ground arrow 
