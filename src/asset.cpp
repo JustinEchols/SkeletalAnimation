@@ -589,7 +589,9 @@ AssetManagerInitialize(asset_manager *Manager)
 				//Animation->DefaultFlags = (AnimationFlags_ControlsPosition);
 			}
 			if(StringsAreSame(AssetName, "XBot_JumpForward") ||
-			   StringsAreSame(AssetName, "XBot_JumpForwardMirror"))
+			   StringsAreSame(AssetName, "XBot_JumpForwardMirror") ||
+			   StringsAreSame(AssetName, "XBot_RunningSlide") ||
+			   StringsAreSame(AssetName, "XBot_RunningSlideMirror"))
 			{
 				Animation->DefaultFlags = (AnimationFlags_ControlsPosition);
 			}

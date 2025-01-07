@@ -225,15 +225,24 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 		}
 		else
 		{
-			quaternion QCurrent = Entity->Orientation;
-			quaternion QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), -1.0f*TargetAngleInRad);
-			Entity->Orientation = RotateTowards(QCurrent, QTarget, dt, AngularSpeed);
+			f32 TargetAngleInDegrees = RadToDegrees(TargetAngleInRad);
+			quaternion QTarget;
+			if((TargetAngleInDegrees == 0.0f) ||
+			   (TargetAngleInDegrees == -0.0f) ||
+			   (TargetAngleInDegrees == 180.0f) ||
+			   (TargetAngleInDegrees == -180.0f))
+			{
+				QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), TargetAngleInRad);
+			}
+			else
+			{
+				QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), -1.0f*TargetAngleInRad);
+			}
 
-			// TODO(Justin): Determine if this works always and figure out why it "seems" to work. The confusing
-			// part is the -1. This seems to be incorrect when the player does a 180 when facing towards or away.
+			quaternion QCurrent = Entity->Orientation;
+			Entity->Orientation = RotateTowards(QCurrent, QTarget, dt, AngularSpeed);
 			v3 Current = Entity->Orientation *V3(0.0f, 0.0f, 1.0f);
 			Entity->Theta = -1.0f*RadToDegrees(DirectionToEuler(Current).yaw);
-			Entity->dTheta = Entity->ThetaTarget - Entity->Theta;
 		}
 	}
 }
@@ -740,16 +749,17 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		}
 
 		v3 TestP = Entity->P + tMin * DeltaP; 
-		if(TestP.y < 0.01f && EntityIsGrounded(Entity) && (Normal.y < 0.0f))
+		f32 GroundY = Region->P.y + 0.01f;
+		if(TestP.y < GroundY && EntityIsGrounded(Entity) && (Normal.y < 0.0f))
 		{
 			// NOTE(Justin): This is supposed to handle the situation when the player collides with an OBB and is underneath the OBB and on the ground and running toward
 			// the corner.
 			//
 			//  /
-			// /_   <-- O
+			// /___   <-- O
 			//
 			// The collide and slide solution does not work because the new position of the player will be behind the ground plane (tunnel through the ground).
-			// By breaking and setting the velocity to 0 we effectively are not accepting the move.
+			// Setting the velocity to 0 and then breaking, we effectively are not accepting the move.
 			// TODO(Justin): Robustness
 
 			Entity->dP = {};
@@ -1216,14 +1226,18 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	if(!GameState->CameraIsFree)
 	{
 		v3 CameraP = Player->P + GameState->CameraOffsetFromPlayer;
-		//v3 CameraP = V3(Player->P.x, 0.0f, Player->P.z) + GameState->CameraOffsetFromPlayer;
 		CameraSet(Camera, CameraP, GameState->DefaultYaw, GameState->DefaultPitch);
 	}
 	else
 	{
 		v3 P = Camera->P + GameState->CameraSpeed*dt*CameraddP;
 		Camera->P = P;
-		CameraDirectionUpdate(Camera, GameInput->dXMouse, GameInput->dYMouse, dt);
+
+		// TODO(justin) FPS camera 
+		if(IsDown(GameInput->MouseButtons[MouseButton_Left]))
+		{
+			CameraDirectionUpdate(Camera, GameInput->dXMouse, GameInput->dYMouse, dt);
+		}
 	}
 
 	//
@@ -1270,21 +1284,36 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	PushClear(RenderBuffer, V4(0.3f, 0.4f, 0.4f, 1.0f));
 
 	//
-	// NOTE(Justin): Ground quad.
+	// NOTE(Justin): Render ground quads of walkable regions.
 	//
 
+	mat4 T;
+	mat4 R;
+	mat4 S;
 	quad GroundQuad = GameState->Quad;
-	for(u32 Index = 0; Index < ArrayCount(GroundQuad.Vertices); ++Index)
-	{
-		GroundQuad.Vertices[Index].UV *= 250.0f;
-	}
-
-	mat4 T = Mat4Translate(V3(0.0f, 0.0f, -250.0f));
-	mat4 R = Mat4Identity();
-	mat4 S = Mat4Scale(500.0f);
 	asset_entry Entry = LookupTexture(Assets, "texture_01");
-	PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
-	PushQuad3D(RenderBuffer, GroundQuad.Vertices, T*R*S, Entry.Index);
+	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
+	{
+		entity *Entity = GameState->Entities + EntityIndex;
+		if(Entity->Type == EntityType_WalkableRegion)
+		{
+			v3 P = Entity->P;
+			v3 Dim = Entity->AABBDim;
+			T = Mat4Translate(P);
+			R = Mat4Identity();
+			S = Mat4Scale(Dim.x);
+
+			for(u32 Index = 0; Index < ArrayCount(GroundQuad.Vertices); ++Index)
+			{
+				GroundQuad.Vertices[Index].UV *= 0.5f*Dim.x;
+			}
+
+			PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
+			PushQuad3D(RenderBuffer, GroundQuad.Vertices, T*R*S, Entry.Index);
+
+			GroundQuad = QuadDefault();
+		}
+	}
 
 	//
 	// NOTE(Justin): Entities.
@@ -1325,7 +1354,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
-				PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
+				//PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
 #endif
 				//
 				// Ground arrow 
@@ -1626,14 +1655,32 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		P.y -= (Gap + dY);
 	}
 
+	sprintf(Buff, "%s", "+Joints");
+	Text = StringCopy(&TempState->Arena, Buff);
+	Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 
+	ui_button JointButton;
+	JointButton.ID = 3;
+	JointButton.P = P;
+	JointButton.Rect = Rect;
+	if(!Button(UI, &JointButton))
+	{
+		PushText(RenderBuffer, Text, FontInfo, JointButton.P, Scale, DefaultColor);
+		P.y -= (Gap + dY);
+	}
+	else
+	{
+		Text.Data[0] = '-';
+		PushText(RenderBuffer, Text, FontInfo, JointButton.P, Scale, HoverColor);
+		P.y -= (Gap + dY);
+	}
 
 	sprintf(Buff, "%s", "+ShadowMapTexture");
 	Text = StringCopy(&TempState->Arena, Buff);
 	Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 
 	ui_button TextureButton;
-	TextureButton.ID = 3;
+	TextureButton.ID = 4;
 	TextureButton.P = P;
 	TextureButton.Rect = Rect;
 	if(!Button(UI, &TextureButton))

@@ -69,6 +69,7 @@ message go_state_idle StateIdleLeft 0.0 0.25
 message go_state_idle StateIdleRight 0.25 0.5
 message go_state_run StateRunningMirror 0.2 0.3
 message go_state_run StateRunning 0.4 0.5
+message go_state_180_left_to_right StateSprintTo180FromLeftToRight
 
 : StateSprintMirror
 animation XBot_FastRunMirror
@@ -76,6 +77,7 @@ message go_state_idle StateIdleRight 0.0 0.25
 message go_state_idle StateIdleLeft 0.25 0.5
 message go_state_run StateRunning 0.2 0.3
 message go_state_run StateRunningMirror 0.4 0.5
+message go_state_180_left_to_right StateSprintTo180FromLeftToRight
 
 : StateSprintTo180FromLeftToRight
 animation XBot_Running180

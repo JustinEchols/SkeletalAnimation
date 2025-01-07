@@ -85,7 +85,7 @@ JointTransformFromSQT(sqt SQT)
 }
 
 inline sqt
-JointTransformInterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 JointIndex)
+InterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 JointIndex)
 {
 	sqt Result;
 
@@ -278,7 +278,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 		key_frame *KeyFrame = Info->KeyFrames + KeyFrameIndex;
 		key_frame *NextKeyFrame = Info->KeyFrames + (KeyFrameIndex + 1);
 
-		sqt RootTransform = JointTransformInterpolatedSQT(KeyFrame, t, NextKeyFrame, 0);
+		sqt RootTransform = InterpolatedSQT(KeyFrame, t, NextKeyFrame, 0);
 		if(RemoveLocomotion(Animation))
 		{
 			v3 RootStartP = Info->KeyFrames[0].Positions[0];
@@ -292,7 +292,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 
 		for(u32 JointIndex = 1; JointIndex < Info->JointCount; ++JointIndex)
 		{
-			sqt Transform = JointTransformInterpolatedSQT(KeyFrame, t, NextKeyFrame, JointIndex);
+			sqt Transform = InterpolatedSQT(KeyFrame, t, NextKeyFrame, JointIndex);
 			BlendedPose->Positions[JointIndex]	  = Transform.Position;
 			BlendedPose->Orientations[JointIndex] = Transform.Orientation;
 			BlendedPose->Scales[JointIndex]		  = Transform.Scale;
@@ -454,7 +454,8 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		} break;
 		case MovementState_Sprint:
 		{
-			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_sprint");
+			char *Message = "go_state_sprint";
+			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
 		case MovementState_Jump:
 		{
@@ -584,6 +585,20 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		Scale = 1.0f / FactorSum;
 	}
 
+	if(AnimationPlayer->ControlsPosition)
+	{
+		AnimationPlayer->RootMotionAccumulator = Scale * AnimationPlayer->RootMotionAccumulator;
+		if(Equal(AnimationPlayer->RootPLocked, V3(0.0f)))
+		{
+			AnimationPlayer->RootPLocked = AnimationPlayer->FinalPose->Positions[0];
+		}
+	}
+	else
+	{
+		AnimationPlayer->RootMotionAccumulator = {};
+		AnimationPlayer->RootPLocked = {};
+	}
+
 	//
 	// NOTE(Justin): Scale mixed animation, then copy.
 	//
@@ -604,20 +619,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			DestPose->Orientations[JointIndex]	= SrcPose->Orientations[JointIndex];
 			DestPose->Scales[JointIndex]		= SrcPose->Scales[JointIndex];
 		}
-	}
-
-	if(AnimationPlayer->ControlsPosition)
-	{
-		AnimationPlayer->RootMotionAccumulator = Scale * AnimationPlayer->RootMotionAccumulator;
-		if(Equal(AnimationPlayer->RootPLocked, V3(0.0f)))
-		{
-			AnimationPlayer->RootPLocked = AnimationPlayer->FinalPose->Positions[0];
-		}
-	}
-	else
-	{
-		AnimationPlayer->RootMotionAccumulator = {};
-		AnimationPlayer->RootPLocked = {};
 	}
 }
 
@@ -641,6 +642,8 @@ ModelJointsUpdate(entity *Entity)
 			Xform.Position		= FinalPose->Positions[0];
 			Xform.Orientation	= FinalPose->Orientations[0];
 			Xform.Scale			= FinalPose->Scales[0];
+
+			// TODO(Justin): Disable root motion
 
 			// NOTE(Justin): This has the affect of removing xz translation while
 			// keeping up and down motion.
@@ -762,7 +765,6 @@ AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *Anim
 
 	f32 RemainingTime = Oldest->Info->Duration - Oldest->CurrentTime;
 	animation_graph_node *Node = &Graph->CurrentNode;
-
 
 	animation_graph_arc Arc = Node->WhenDone;
 	if((Arc.Destination.Size != 0) && (RemainingTime <= Arc.RemainingTimeBeforeCrossFade))

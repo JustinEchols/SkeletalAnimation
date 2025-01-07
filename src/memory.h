@@ -58,7 +58,7 @@ MemoryCopy(memory_index Size, void *SrcInit, void *DestInit)
 }
 
 internal void
-MemoryZero(void * Src, memory_index Size)
+MemoryZero(void *Src, memory_index Size)
 {
 	u8 *P = (u8 *)Src;
 	while(Size--)
