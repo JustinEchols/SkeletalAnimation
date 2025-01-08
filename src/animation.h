@@ -81,6 +81,7 @@ struct animation_graph_arc
 	f32 t0, t1;
 	b32 BlendDurationSet;
 	f32 BlendDuration;
+	f32 TimeOffset;
 };
 
 // TODO(Justin): Node type? Additive, nblend, composite...

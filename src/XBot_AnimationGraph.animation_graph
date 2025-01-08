@@ -6,14 +6,15 @@
 
 : StateIdleRight
 animation XBot_IdleRight
-message go_state_run StateRunning
+message go_state_run StateRunning t_offset 0.4
+#message go_state_run StateIdleRightToWalk t_offset 0.7
 message go_state_sprint StateIdleToSprintMirror
 message go_state_crouch StateCrouchingIdleRight
 message go_state_jump StateJumpForwardMirror
 
 : StateIdleLeft
 animation XBot_IdleLeft
-message go_state_run StateRunningMirror
+message go_state_run StateRunningMirror t_offset 0.4
 message go_state_sprint StateIdleToSprint
 message go_state_crouch StateCrouchingIdleLeft
 message go_state_jump StateJumpForward
@@ -29,6 +30,11 @@ animation XBot_IdleToSprintMirror
 message go_state_idle StateIdleRight 0.0 0.4
 message go_state_idle StateIdleLeft 0.4 0.8
 when_done go_state_sprint StateSprintMirror t_remaining 0.6
+
+#: StateIdleRightToWalk
+#animation XBot_Walking00
+#message go_state_run StateRunning 0.9 1.0
+
 
 #
 # Running 

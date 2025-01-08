@@ -844,7 +844,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		// Region
 		WalkableRegionAdd(GameState, V3(0.0f, 0.0f, -20.0f), V3(40.0f), CubeOrientation);
-		WalkableRegionAdd(GameState, V3(-30.0f, 0.0f, -10.0f), V3(10.0f), CubeOrientation);
+		//WalkableRegionAdd(GameState, V3(-20.0f, 0.0f, -10.0f), V3(10.0f), CubeOrientation);
 
 		// Player
 		PlayerAdd(GameState, V3(0.0f, 0.01f, -10.0f));
@@ -1329,6 +1329,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
 				model *Model = LookupModel(Assets, "XBot").Model;
 				PushModel(RenderBuffer, Model, Transform);
+				mesh *Mesh = &Model->Meshes[0];
 
 				//
 				// Debug volume
@@ -1356,14 +1357,32 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				S = Mat4Scale(1.0f);
 				//PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
 #endif
+
+#if 0
+				R = Mat4Identity();
+				S = Mat4Scale(0.2f);
+
+				T = Mat4Translate(Entity->LeftFootP);
+				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+
+				T = Mat4Translate(Entity->RightFootP);
+				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+
+				T = Mat4Translate(Entity->LeftHandP);
+				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+
+				T = Mat4Translate(Entity->RightHandP);
+				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+#endif
+
+
 				//
 				// Ground arrow 
 				//
 
-
-
+#if 1
 				v3 P = Entity->P;
-				P.y += 0.1f;
+				P.y += 0.01f;
 				T = Mat4Translate(P);
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(V3(0.5f));
@@ -1371,6 +1390,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				Entry = LookupTexture(Assets, "left_arrow");
 				PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
 				PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, Entry.Index);
+#endif
+
 			} break;
 			case EntityType_Cube:
 			{

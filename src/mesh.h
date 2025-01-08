@@ -66,6 +66,11 @@ struct model
 	u32 MeshCount;
 	mesh *Meshes;
 
+	u32 LeftFootJointIndex;
+	u32 RightFootJointIndex;
+	u32 LeftHandJointIndex;
+	u32 RightHandJointIndex;
+
 	f32 Height;
 
 	// Data modified by renderer.

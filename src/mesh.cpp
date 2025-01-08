@@ -247,4 +247,3 @@ DebugModelSphereInitialize(memory_arena *Arena, f32 Radius)
 
 	return(Model);
 }
-

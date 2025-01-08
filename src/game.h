@@ -216,6 +216,11 @@ struct entity
 	// Rendering
 	// Should this be part of the game asset?
 	v3 VisualScale;
+
+	v3 LeftFootP;
+	v3 RightFootP;
+	v3 LeftHandP;
+	v3 RightHandP;
 };
 
 struct camera

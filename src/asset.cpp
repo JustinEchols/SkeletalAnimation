@@ -272,6 +272,29 @@ ModelLoad(memory_arena *Arena, char *FileName)
 				Mesh->ModelSpaceTransforms[JointIndex] = I;
 
 				JointSource++;
+
+				if(MeshIndex == 0)
+				{
+					if(StringsAreSame(CString(Dest->Name), "mixamorig_RightFoot"))
+					{
+						Model.RightFootJointIndex = JointIndex;
+					}
+
+					if(StringsAreSame(CString(Dest->Name), "mixamorig_LeftFoot"))
+					{
+						Model.LeftFootJointIndex = JointIndex;
+					}
+
+					if(StringsAreSame(CString(Dest->Name), "mixamorig_RightHand"))
+					{
+						Model.RightHandJointIndex = JointIndex;
+					}
+
+					if(StringsAreSame(CString(Dest->Name), "mixamorig_LeftHand"))
+					{
+						Model.LeftHandJointIndex = JointIndex;
+					}
+				}
 			}
 
 			MeshSource++;
@@ -578,7 +601,8 @@ AssetManagerInitialize(asset_manager *Manager)
 	   		   StringsAreSame(AssetName, "XBot_FastRun") ||
    			   StringsAreSame(AssetName, "XBot_FastRunMirror") ||
    			   StringsAreSame(AssetName, "XBot_CrouchingIdleLeft") ||
-   			   StringsAreSame(AssetName, "XBot_CrouchingIdleRight"))
+   			   StringsAreSame(AssetName, "XBot_CrouchingIdleRight") ||
+   			   StringsAreSame(AssetName, "XBot_Walking00"))
 			{
 				Animation->DefaultFlags = AnimationFlags_Looping;
 			}

@@ -319,7 +319,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 // NOTE(Justin): Right now the nodes of the graph represent the animation states
 internal void
 SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
-										  animation_graph *Graph, string Dest, f32 BlendDuration)
+					animation_graph *Graph, string Dest, f32 BlendDuration, f32 TimeOffset)
 {
 	for(u32 Index = 0; Index < Graph->NodeCount; ++Index)
 	{
@@ -341,7 +341,7 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
 	animation *Animation = LookupAnimation(AssetManager, (char *)Node->Tag.Data).Animation;
 	if(Animation)
 	{
-		AnimationPlay(AnimationPlayer, Animation, BlendDuration);
+		AnimationPlay(AnimationPlayer, Animation, BlendDuration, TimeOffset);
 	}
 }
 
@@ -364,9 +364,12 @@ AnimationOldestGet(animation_player *AnimationPlayer)
 internal void
 MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, animation_graph *Graph, char *Message)
 {
-	animation_graph_node *Node = &Graph->CurrentNode;
 	string Dest = {};
+
+	animation_graph_node *Node = &Graph->CurrentNode;
+
 	f32 DefaultBlendDuration = 0.2f;
+	f32 DefaultTimeOffset = 0.0f;
 	for(u32 ArcIndex = 0; ArcIndex < Node->ArcCount; ++ArcIndex)
 	{
 		animation_graph_arc *Arc = Node->Arcs + ArcIndex;
@@ -400,6 +403,7 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 			if(ShouldSend)
 			{
 				Dest = Arc->Destination;
+				DefaultTimeOffset = Arc->TimeOffset;
 				if(Arc->BlendDurationSet)
 				{
 					DefaultBlendDuration = Arc->BlendDuration;
@@ -412,7 +416,7 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 	if(Dest.Size != 0)
 	{
 		AnimationPlayer->MovementState = AnimationPlayer->NewState;
-		SwitchToNode(AssetManager, AnimationPlayer, Graph, Dest, DefaultBlendDuration);
+		SwitchToNode(AssetManager, AnimationPlayer, Graph, Dest, DefaultBlendDuration, DefaultTimeOffset);
 	}
 }
 
@@ -426,7 +430,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 
 	if(AnimationPlayer->PlayingCount == 0)
 	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleLeft").Animation, 0.2f);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleRight").Animation, 0.2f);
 		return;
 	}
 
@@ -669,9 +673,9 @@ ModelJointsUpdate(entity *Entity)
 				joint *Joint = Mesh->Joints + JointIndex;
 				mat4 JointTransform = Joint->Transform;
 
-				Xform.Position = FinalPose->Positions[JointIndex];
-				Xform.Orientation = FinalPose->Orientations[JointIndex];
-				Xform.Scale = FinalPose->Scales[JointIndex];
+				Xform.Position		= FinalPose->Positions[JointIndex];
+				Xform.Orientation	= FinalPose->Orientations[JointIndex];
+				Xform.Scale			= FinalPose->Scales[JointIndex];
 
 				if(!Equal(Xform.Position, V3(0.0f)) &&
 				   !Equal(Xform.Scale, V3(0.0f)))
@@ -687,6 +691,30 @@ ModelJointsUpdate(entity *Entity)
 				Mesh->ModelSpaceTransforms[JointIndex] = JointTransform * InvBind;
 			}
 		}
+
+#if 0
+		// TODO(Justin): Store transform.
+		mat4 Transform	= EntityTransform(Entity, Entity->VisualScale);
+
+		mat4 LeftFootT	= Model->Meshes[0].ModelSpaceTransforms[Model->LeftFootJointIndex];
+		mat4 RightFootT = Model->Meshes[0].ModelSpaceTransforms[Model->RightFootJointIndex];
+
+		mat4 LeftHandT	= Model->Meshes[0].ModelSpaceTransforms[Model->LeftHandJointIndex];
+		//mat4 RightHandT = Model->Meshes[0].ModelSpaceTransforms[Model->RightHandJointIndex];
+		mat4 RightHandT = Model->Meshes[0].ModelSpaceTransforms[Model->RightHandJointIndex];
+
+		v3 LeftFootModelP	= Mat4ColumnGet(LeftFootT, 3);
+		v3 RightFootModelP	= Mat4ColumnGet(RightFootT, 3);
+
+		v3 LeftHandModelP	= Mat4ColumnGet(LeftHandT, 3);
+		v3 RightHandModelP	= Mat4ColumnGet(RightHandT, 3);
+
+		Entity->LeftFootP	= Transform *LeftFootModelP;
+		Entity->RightFootP	= Transform *RightFootModelP;
+
+		Entity->LeftHandP	= Transform *LeftHandModelP;
+		Entity->RightHandP	= Transform *RightHandModelP;
+#endif
 	}
 }
 
@@ -728,6 +756,14 @@ AnimationGraphNodeAddArc(memory_arena *Arena, animation_graph_node *Node, char *
 }
 
 internal void
+ArcAddTimeInterval(animation_graph_arc *Arc, f32 t0, f32 t1)
+{
+	Arc->Type = ArcType_TimeInterval;
+	Arc->t0 = t0;
+	Arc->t1 = t1;
+}
+
+internal void
 AnimationGraphNodeAddWhenDoneArc(memory_arena *Arena, animation_graph_node *Node, char *Message, char *Dest,
 		f32 RemainingTimeBeforeCrossFade = 0.2f,
 		arc_type Type = ArcType_None,
@@ -764,13 +800,14 @@ AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *Anim
 	}
 
 	f32 RemainingTime = Oldest->Info->Duration - Oldest->CurrentTime;
-	animation_graph_node *Node = &Graph->CurrentNode;
+	f32 DefaultTimeOffset = 0.0f;
 
+	animation_graph_node *Node = &Graph->CurrentNode;
 	animation_graph_arc Arc = Node->WhenDone;
 	if((Arc.Destination.Size != 0) && (RemainingTime <= Arc.RemainingTimeBeforeCrossFade))
 	{
 		f32 FadeTime = Clamp01(RemainingTime);
-		SwitchToNode(AssetManager, AnimationPlayer, Graph, Arc.Destination, FadeTime);
+		SwitchToNode(AssetManager, AnimationPlayer, Graph, Arc.Destination, FadeTime, DefaultTimeOffset);
 	}
 }
 
@@ -862,21 +899,41 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 				char *Word = strtok((char *)Buffer, " ");
 				if(StringsAreSame(Word, "message"))
 				{
+					animation_graph_node *Node = &G->Nodes[G->Index];
+					Assert(Node->ArcCount < ArrayCount(Node->Arcs));
+					animation_graph_arc *Arc = Node->Arcs + Node->ArcCount++;
+
 					char *InBoundMessage = strtok(0, " ");
 					char *DestNodeName = strtok(0, " ");
 					char *Param = strtok(0, " ");
-					arc_type Type = ArcType_None;
+
+					Arc->Destination = StringCopy(&G->Arena, DestNodeName);
+					Arc->Message	 = StringCopy(&G->Arena, InBoundMessage);
+					Arc->Type = ArcType_None;
+
 					f32 t0 = 0.0f;
 					f32 t1 = 0.0f;
+					f32 TimeOffset = 0.0f;
 					if(Param)
 					{
-						t0 = F32FromASCII(Param);
-						Param = strtok(0, " ");
-						t1 = F32FromASCII(Param);
-						Type = ArcType_TimeInterval;
-					}
+						if(StringsAreSame("t_offset", Param))
+						{
+							Param = strtok(0, " ");
+							TimeOffset = F32FromASCII(Param);
 
-					AnimationGraphNodeAddArc(&G->Arena, &G->Nodes[G->Index], InBoundMessage, DestNodeName, Type, t0, t1);
+							Arc->TimeOffset = TimeOffset;
+						}
+						else
+						{
+							t0 = F32FromASCII(Param);
+							Param = strtok(0, " ");
+							t1 = F32FromASCII(Param);
+
+							Arc->Type = ArcType_TimeInterval;
+							Arc->t0 = t0;
+							Arc->t1 = t1;
+						}
+					}
 				}
 				else if(StringsAreSame(Word, "animation"))
 				{
