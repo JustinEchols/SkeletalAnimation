@@ -1,5 +1,6 @@
 /build
 /deprecated
 /src/tags
-/dependencies/freetype
+/dependencies/freetype/include
+/dependencies/freetype/freetype.lib
 
