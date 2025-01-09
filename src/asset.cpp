@@ -591,34 +591,6 @@ AssetManagerInitialize(asset_manager *Manager)
 			Animation->BlendedPose = PushStruct(&Manager->Arena, key_frame);
 			key_frame *BlendedPose = Animation->BlendedPose;
 			AllocateJointXforms(&Manager->Arena, BlendedPose, Info->JointCount);
-
-			// TODO(Justin): Either put this in the file format or let the 
-			// animation system determine this.
-			if(StringsAreSame(AssetName, "XBot_IdleRight") ||
-			   StringsAreSame(AssetName, "XBot_IdleLeft") ||
-			   StringsAreSame(AssetName, "XBot_Running") ||
-			   StringsAreSame(AssetName, "XBot_RunningMirror") ||
-	   		   StringsAreSame(AssetName, "XBot_FastRun") ||
-   			   StringsAreSame(AssetName, "XBot_FastRunMirror") ||
-   			   StringsAreSame(AssetName, "XBot_CrouchingIdleLeft") ||
-   			   StringsAreSame(AssetName, "XBot_CrouchingIdleRight") ||
-   			   StringsAreSame(AssetName, "XBot_Walking00"))
-			{
-				Animation->DefaultFlags = AnimationFlags_Looping;
-			}
-			if(StringsAreSame(AssetName, "XBot_IdleToSprint") ||
-			   StringsAreSame(AssetName, "XBot_IdleToSprintMirror"))
-			{
-				Animation->DefaultFlags = (AnimationFlags_RemoveLocomotion);
-				//Animation->DefaultFlags = (AnimationFlags_ControlsPosition);
-			}
-			if(StringsAreSame(AssetName, "XBot_JumpForward") ||
-			   StringsAreSame(AssetName, "XBot_JumpForwardMirror") ||
-			   StringsAreSame(AssetName, "XBot_RunningSlide") ||
-			   StringsAreSame(AssetName, "XBot_RunningSlideMirror"))
-			{
-				Animation->DefaultFlags = (AnimationFlags_ControlsPosition);
-			}
 		}
 	}
 

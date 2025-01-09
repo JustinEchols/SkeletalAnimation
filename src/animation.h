@@ -62,6 +62,7 @@ struct animation
 	key_frame *BlendedPose;
 
 	v3 MotionDeltaPerFrame;
+	f32 TurningDeltaPerFrame;
 };
 
 
@@ -89,10 +90,9 @@ struct animation_graph_node
 {
 	string Name;
 	string Tag; // TODO(Justin): Right now this is the actual name of the animation...
+	u32 AnimationFlags;
 	u32 Index;
 	u32 ArcCount;
-	b32 ControlsPosition;
-	b32 ControlsTurning;
 	animation_graph_arc Arcs[16];
 	animation_graph_arc WhenDone;
 };
@@ -125,6 +125,7 @@ struct animation_player
 	f32 dt;
 
 	v3 RootMotionAccumulator;
+	f32 RootTurningAccumulator;
 	v3 RootPLocked;
 
 	key_frame *FinalPose;

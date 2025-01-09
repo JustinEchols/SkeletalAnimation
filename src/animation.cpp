@@ -148,9 +148,8 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 }
 
 internal void
-AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
-		f32 BlendDuration = 0.0f,
-		f32 TimeOffset = 0.0f)
+//AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, f32 BlendDuration = 0.0f, f32 TimeOffset = 0.0f)
+AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation, u32 AnimationFlags, f32 BlendDuration = 0.0f, f32 TimeOffset = 0.0f)
 {
 	Assert(AnimationPlayer->IsInitialized);
 
@@ -189,7 +188,8 @@ AnimationPlay(animation_player *AnimationPlayer, animation *NewAnimation,
 	}
 
 	Animation->Name = NewAnimation->Name;
-	Animation->Flags = NewAnimation->DefaultFlags | AnimationFlags_Playing;
+	//Animation->Flags = NewAnimation->DefaultFlags | AnimationFlags_Playing;
+	Animation->Flags = AnimationFlags | AnimationFlags_Playing;
 	Animation->Duration = NewAnimation->Info->Duration;
 	Animation->CurrentTime = TimeOffset;
 	Animation->OldTime = 0.0f;
@@ -316,10 +316,14 @@ AnimationUpdate(animation *Animation, f32 dt)
 	Animation->BlendFactor = Clamp01(BlendFactor);
 }
 
-// NOTE(Justin): Right now the nodes of the graph represent the animation states
+// NOTE(Justin): Nodes of the graph represent the animation states
+// NOTE(Justin): BlendDuration and TimeOffset are control parameters of the arc that connects
+// the current node to the node that is being switched too.
+// NOTE(Justin): Animation flags are now defined at the Node level. When we switch to the current node
+// the node itself contains the animation flags and these are passed as arguements when calling AnimationPlay()
+
 internal void
-SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
-					animation_graph *Graph, string Dest, f32 BlendDuration, f32 TimeOffset)
+SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer, animation_graph *Graph, string Dest, f32 ArcBlendDuration, f32 ArcTimeOffset)
 {
 	for(u32 Index = 0; Index < Graph->NodeCount; ++Index)
 	{
@@ -341,7 +345,7 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer,
 	animation *Animation = LookupAnimation(AssetManager, (char *)Node->Tag.Data).Animation;
 	if(Animation)
 	{
-		AnimationPlay(AnimationPlayer, Animation, BlendDuration, TimeOffset);
+		AnimationPlay(AnimationPlayer, Animation, Node->AnimationFlags, ArcBlendDuration, ArcTimeOffset);
 	}
 }
 
@@ -370,6 +374,7 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 
 	f32 DefaultBlendDuration = 0.2f;
 	f32 DefaultTimeOffset = 0.0f;
+	u32 DefaultFlags = Node->AnimationFlags;
 	for(u32 ArcIndex = 0; ArcIndex < Node->ArcCount; ++ArcIndex)
 	{
 		animation_graph_arc *Arc = Node->Arcs + ArcIndex;
@@ -430,7 +435,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 
 	if(AnimationPlayer->PlayingCount == 0)
 	{
-		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleRight").Animation, 0.2f);
+		AnimationPlay(AnimationPlayer, LookupAnimation(AssetManager, "XBot_IdleRight").Animation, AnimationFlags_Looping, 0.2f);
 		return;
 	}
 
@@ -439,8 +444,10 @@ Animate(entity *Entity, asset_manager *AssetManager)
 	// for some time until it can transition to the sprint state. Only when the animation
 	// state has switched do we acceps the new state. Not sure if this is a good idea or not.
 
-	movement_state State = Entity->MovementState;
-	AnimationPlayer->NewState = State;
+
+	AnimationPlayer->NewState = Entity->MovementState;
+	movement_state OldState = AnimationPlayer->MovementState;
+	movement_state State	= AnimationPlayer->NewState;
 	switch(State)
 	{
 		case MovementState_Idle:
@@ -454,6 +461,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		case MovementState_Run:
 		{
 			char *Message = "go_state_run";
+			f32 dTheta = Entity->ThetaTarget - Entity->Theta;
 			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
 		case MovementState_Sprint:
@@ -495,10 +503,18 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		animation *Animation = *AnimationPtr;
 
 		Animation->MotionDeltaPerFrame = {};
+		Animation->TurningDeltaPerFrame = 0.0f;
+
 		v3 OldP = Animation->BlendedPose->Positions[0];
+		quaternion OldQ = Animation->BlendedPose->Orientations[0];
+
 		AnimationUpdate(Animation, AnimationPlayer->dt);
+
 		v3 NewP = Animation->BlendedPose->Positions[0];
+		quaternion NewQ = Animation->BlendedPose->Orientations[0];
+
 		Animation->MotionDeltaPerFrame += NewP - OldP;
+		Animation->TurningDeltaPerFrame = YawFromQuaternion(NewQ) - YawFromQuaternion(OldQ);
 
 		if(ControlsPosition(Animation))
 		{
@@ -581,6 +597,11 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		{
 			AnimationPlayer->RootMotionAccumulator += Factor * Animation->MotionDeltaPerFrame;
 		}
+
+		if(AnimationPlayer->ControlsTurning)
+		{
+			AnimationPlayer->RootTurningAccumulator += Factor * Animation->TurningDeltaPerFrame;
+		}
 	}
 
 	f32 Scale = 1.0f;
@@ -592,15 +613,19 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	if(AnimationPlayer->ControlsPosition)
 	{
 		AnimationPlayer->RootMotionAccumulator = Scale * AnimationPlayer->RootMotionAccumulator;
-		if(Equal(AnimationPlayer->RootPLocked, V3(0.0f)))
-		{
-			AnimationPlayer->RootPLocked = AnimationPlayer->FinalPose->Positions[0];
-		}
 	}
 	else
 	{
 		AnimationPlayer->RootMotionAccumulator = {};
-		AnimationPlayer->RootPLocked = {};
+	}
+
+	if(AnimationPlayer->ControlsTurning)
+	{
+		AnimationPlayer->RootTurningAccumulator = Scale * AnimationPlayer->RootTurningAccumulator;
+	}
+	else
+	{
+		AnimationPlayer->RootTurningAccumulator = {};
 	}
 
 	//
@@ -646,6 +671,10 @@ ModelJointsUpdate(entity *Entity)
 			Xform.Position		= FinalPose->Positions[0];
 			Xform.Orientation	= FinalPose->Orientations[0];
 			Xform.Scale			= FinalPose->Scales[0];
+
+			if(AnimationPlayer->ControlsTurning)
+			{
+			}
 
 			// TODO(Justin): Disable root motion
 
@@ -850,6 +879,8 @@ AdvanceLine(u8 **Content)
 	}
 }
 
+// TODO(Jusitn): Need to validate that the animations specified in the
+// graph are correct.
 internal void 
 AnimationGraphInitialize(animation_graph *G, char *FileName)
 {
@@ -913,10 +944,11 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 
 					f32 t0 = 0.0f;
 					f32 t1 = 0.0f;
+
 					f32 TimeOffset = 0.0f;
 					if(Param)
 					{
-						if(StringsAreSame("t_offset", Param))
+						if(StringsAreSame("t_start", Param))
 						{
 							Param = strtok(0, " ");
 							TimeOffset = F32FromASCII(Param);
@@ -938,8 +970,9 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 				else if(StringsAreSame(Word, "animation"))
 				{
 					// TODO(Justin): This should be a tag. E.g. idle not the actual name of the animaation?
-					char *AnimationName = strtok(0, " ");
-					G->Nodes[G->Index].Tag = StringCopy(&G->Arena, AnimationName);
+					animation_graph_node *Node = &G->Nodes[G->Index];
+					char *Param = strtok(0, " ");
+					Node->Tag = StringCopy(&G->Arena, Param);
 				}
 				else if(StringsAreSame(Word, "when_done"))
 				{
@@ -968,11 +1001,19 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 				}
 				else if(StringsAreSame(Word, "controls_position"))
 				{
-					G->Nodes[G->Index].ControlsPosition = true;
+					G->Nodes[G->Index].AnimationFlags |= AnimationFlags_ControlsPosition;
 				}
 				else if(StringsAreSame(Word, "controls_turning"))
 				{
-					G->Nodes[G->Index].ControlsTurning = true;
+					G->Nodes[G->Index].AnimationFlags |= AnimationFlags_ControlsTurning;
+				}
+				else if(StringsAreSame(Word, "looping"))
+				{
+					G->Nodes[G->Index].AnimationFlags |= AnimationFlags_Looping;
+				}
+				else if(StringsAreSame(Word, "remove_locomotion"))
+				{
+					G->Nodes[G->Index].AnimationFlags |= AnimationFlags_RemoveLocomotion;
 				}
 				else if(*Word == '#')
 				{

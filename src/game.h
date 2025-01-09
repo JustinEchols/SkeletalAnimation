@@ -2,6 +2,14 @@
 /*
 */
 
+// NOTE(Justin): ANIMATION GRAPH 1/8/2025
+// Animation flags are now defined in the animation graph under the 
+// animation state name. After SwitchToNode is called and right before
+// AnimationPlay() the current node is retrieved and contains the animation
+// flags. An additional paramter was added to AnimationPlay() to provide the
+// ability to specify animation flag parameters from the current node
+// which had previously been specified whenever an animation asset was loaded.
+
 // NOTE(Justin): JUMP ANIMATION. 
 // The issue at hand is that when the jump is finished
 // two animations start bledning together. The jump animation

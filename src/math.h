@@ -1433,6 +1433,14 @@ RotateTowards(quaternion Current, quaternion Target, f32 dt, f32 AngularSpeed)
 	return(Result);
 }
 
+inline f32
+YawFromQuaternion(quaternion Q)
+{
+	f32 Result = ATan2(2.0f * (Q.w*Q.y + Q.x*Q.z), 1.0f - 2.0f*(Q.y*Q.y + Q.z*Q.z));
+	return(Result);
+}
+
+
 //
 // NOTE(Justin): rect operations
 //

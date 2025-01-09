@@ -1,40 +1,53 @@
 # Hello, Sailor! This is a comment
 
+# Format
+# An animtion state is defined by : AnimationStateName
+# Animation flags are declared after the state, which include
+# looping, remove_locomotion, controls_position, and controls_turning
+# State transitions, or arcs between nodes, start with "message"
+# then the message itself e.g. "go_state_idle" then additional parameters
+# The additional parameters control how the transition happens from the current
+# state to the next state. Parameters such as start time, a time interval,
+# time remaining..
+
 #
 # Idle
 #
 
 : StateIdleRight
 animation XBot_IdleRight
-message go_state_run StateRunning t_offset 0.4
-#message go_state_run StateIdleRightToWalk t_offset 0.7
+looping
+message go_state_run StateRunning t_start 0.4
 message go_state_sprint StateIdleToSprintMirror
 message go_state_crouch StateCrouchingIdleRight
 message go_state_jump StateJumpForwardMirror
+message go_state_turn_90_right StateIdleRightTurn90Right
 
 : StateIdleLeft
 animation XBot_IdleLeft
-message go_state_run StateRunningMirror t_offset 0.4
+looping
+message go_state_run StateRunningMirror t_start 0.4
 message go_state_sprint StateIdleToSprint
 message go_state_crouch StateCrouchingIdleLeft
 message go_state_jump StateJumpForward
 
 : StateIdleToSprint
-animation XBot_IdleToSprint
+animation XBot_IdleToSprint 
+remove_locomotion
 message go_state_idle StateIdleLeft 0.0 0.4
 message go_state_idle StateIdleRight 0.4 0.8
 when_done go_state_sprint StateSprint t_remaining 0.6
 
 : StateIdleToSprintMirror
-animation XBot_IdleToSprintMirror
+animation XBot_IdleToSprintMirror 
+remove_locomotion
 message go_state_idle StateIdleRight 0.0 0.4
 message go_state_idle StateIdleLeft 0.4 0.8
 when_done go_state_sprint StateSprintMirror t_remaining 0.6
 
-#: StateIdleRightToWalk
-#animation XBot_Walking00
-#message go_state_run StateRunning 0.9 1.0
-
+: StateIdleRightTurn90Right
+animation XBot_RightTurn
+when_done go_state_run StateRunning t_remaining 0.1
 
 #
 # Running 
@@ -42,6 +55,7 @@ when_done go_state_sprint StateSprintMirror t_remaining 0.6
 
 : StateRunning
 animation XBot_Running
+looping
 message go_state_idle StateIdleLeft 0.0 0.4
 message go_state_idle StateIdleRight 0.4 0.7
 message go_state_sprint StateSprint 0.0 0.1
@@ -54,6 +68,7 @@ message go_state_slide StateSlide
 
 : StateRunningMirror
 animation XBot_RunningMirror
+looping
 message go_state_idle StateIdleRight 0.0 0.4
 message go_state_idle StateIdleLeft 0.4 0.7
 message go_state_sprint StateSprintMirror 0.0 0.1
@@ -64,13 +79,13 @@ message go_state_jump StateJumpForward 0.65 0.7
 message go_state_jump StateJumpForward 0.0 0.05
 message go_state_slide StateSlideMirror 
 
-
 #
 # Sprinting 
 #
 
 : StateSprint
 animation XBot_FastRun
+looping
 message go_state_idle StateIdleLeft 0.0 0.25
 message go_state_idle StateIdleRight 0.25 0.5
 message go_state_run StateRunningMirror 0.2 0.3
@@ -79,6 +94,7 @@ message go_state_180_left_to_right StateSprintTo180FromLeftToRight
 
 : StateSprintMirror
 animation XBot_FastRunMirror
+looping
 message go_state_idle StateIdleRight 0.0 0.25
 message go_state_idle StateIdleLeft 0.25 0.5
 message go_state_run StateRunning 0.2 0.3
@@ -119,10 +135,12 @@ message go_state_run StateRunning 0.8 0.9
 
 : StateCrouchingIdleLeft
 animation XBot_CrouchingIdleLeft
+looping
 message go_state_idle StateIdleLeft
 
 : StateCrouchingIdleRight
 animation XBot_CrouchingIdleRight
+looping
 message go_state_idle StateIdleRight
 
 #

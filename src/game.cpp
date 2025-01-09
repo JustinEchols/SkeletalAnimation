@@ -222,9 +222,11 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 		animation_player *AnimationPlayer = Entity->AnimationPlayer;
 		if(AnimationPlayer && AnimationPlayer->ControlsTurning)
 		{
+			AnimationPlayer->RootTurningAccumulator = 0.0f;
 		}
 		else
 		{
+			// TODO(Justin): Simplify this!
 			f32 TargetAngleInDegrees = RadToDegrees(TargetAngleInRad);
 			quaternion QTarget;
 			if((TargetAngleInDegrees == 0.0f) ||
@@ -241,9 +243,15 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 
 			quaternion QCurrent = Entity->Orientation;
 			Entity->Orientation = RotateTowards(QCurrent, QTarget, dt, AngularSpeed);
+#if 0
 			v3 Current = Entity->Orientation *V3(0.0f, 0.0f, 1.0f);
 			Entity->Theta = -1.0f*RadToDegrees(DirectionToEuler(Current).yaw);
+#else
+
+#endif
 		}
+
+		Entity->Theta = -1.0f*RadToDegrees(YawFromQuaternion(Entity->Orientation));
 	}
 }
 
@@ -1617,6 +1625,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 														   Player->AnimationPlayer->RootMotionAccumulator.z);
 		Text = StringCopy(&TempState->Arena, Buff);
 		if(Player->AnimationPlayer->ControlsPosition)
+		{
+			PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
+			P.y -= (Gap + dY);
+		}
+		else
+		{
+			PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
+			P.y -= (Gap + dY);
+		}
+
+		sprintf(Buff, "RootTurningAccumulator: %f", Player->AnimationPlayer->RootTurningAccumulator);
+		Text = StringCopy(&TempState->Arena, Buff);
+		if(Player->AnimationPlayer->ControlsTurning)
 		{
 			PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
 			P.y -= (Gap + dY);
