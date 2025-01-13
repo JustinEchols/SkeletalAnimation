@@ -1,0 +1,21 @@
+[1]
+
+: StateIdleRight
+animation Ninja_IdleRight
+looping
+message go_state_run StateRunning
+
+: StateIdleLeft
+animation Ninja_IdleLeft
+looping
+message go_state_run StateRunningMirror
+
+: StateRunning
+animation Ninja_Run
+looping
+message go_state_idle StateIdleRight
+
+: StateRunningMirror
+animation Ninja_RunMirror
+looping
+message go_state_idle StateIdleLeft
