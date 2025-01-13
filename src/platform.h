@@ -53,7 +53,7 @@ typedef uintptr_t	umm;
 #define F32Max					3.40282e+38
 #define OffsetOf(type, Member) (umm)&(((type *)0)->Member)
 
-#define CString(String) (char *)String.Data
+#define CString(String)			(char *)String.Data
 
 #define FILE_AND_LINE__(A, B) A "|" #B
 #define FILE_AND_LINE_(A, B) FILE_AND_LINE__(A, B)
@@ -100,10 +100,17 @@ typedef DEBUG_PLATFORM_FILE_GROUP_LOAD(debug_platform_file_group_load);
 
 // TODO(Justin): Consolidate these calls
 typedef void platform_render_to_opengl(struct render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHeight);
+typedef void platform_upload_animated_model_to_gpu(struct model *Model);
+typedef void platform_upload_model_to_gpu(struct model *Model);
+typedef void platform_upload_texture_to_gpu(struct texture *Texture);
 
 typedef struct 
 {
 	platform_render_to_opengl *RenderToOpenGL;
+	platform_upload_animated_model_to_gpu *UploadAnimatedModelToGPU;
+	platform_upload_model_to_gpu *UploadModelToGPU;
+	platform_upload_texture_to_gpu *UploadTextureToGPU;
+
 #if DEVELOPER
 	debug_platform_file_read_entire		*DebugFileReadEntire;
 	debug_platform_file_write_entire	*DebugFileWriteEntire;
@@ -143,16 +150,29 @@ WasPressed(game_button Button)
 
 enum 
 {
-	Key_W,
-	Key_A,
-	Key_S,
-	Key_D,
+
+	Key_MoveUp,
+	Key_MoveLeft,
+	Key_MoveRight,
+	Key_MoveDown,
+
+	Key_ActionUp,
+	Key_ActionLeft,
+	Key_ActionRight,
+	Key_ActionDown,
+
+	Key_LeftShoulder,
+	Key_RightShoulder,
+
+	Key_Start,
+	Key_Back,
+
 	Key_E,
 	Key_Shift,
 	Key_Space,
 	Key_Add,
 	Key_Subtract,
-	Key_Control,
+	Key_Ctrl,
 	Key_F10,
 
 	Key_Count
@@ -167,17 +187,36 @@ enum mouse_button
 	MouseButton_Count
 };
 
-struct game_keyboard
+struct game_controller_input
 {
+	b32 IsConnected;
+	b32 IsAnalog;
+	f32 StickAverageX;
+	f32 StickAverageY;
+	f32 StickdX;
+	f32 StickdY;
+
 	union
 	{
-		game_button Buttons[Key_Count];
+		game_button Buttons[19];
 		struct
 		{
-			game_button W;
-			game_button A;
-			game_button S;
-			game_button D;
+			game_button MoveForward;
+			game_button MoveLeft;
+			game_button MoveRight;
+			game_button MoveBack;
+
+			game_button ActionUp;
+			game_button ActionLeft;
+			game_button ActionRight;
+			game_button ActionDown;
+
+			game_button LeftShoulder;
+			game_button RightShoulder;
+
+			game_button Start;
+			game_button Back;
+
 			game_button E;
 			game_button Shift;
 			game_button Space;
@@ -185,19 +224,22 @@ struct game_keyboard
 			game_button Subtract;
 			game_button Ctrl;
 			game_button F10;
+
+
 		};
 	};
 };
 
 struct game_input
 {
-	game_keyboard Keyboard;
 	f32 FPS;
 	f32 DtForFrame;
 	f32 MouseX, MouseY;
 	f32 dXMouse, dYMouse;
-	game_button MouseButtons[5];
 	s32 BackBufferWidth, BackBufferHeight;
+
+	game_controller_input Controllers[5];
+	game_button MouseButtons[5];
 };
 
 struct game_memory
@@ -215,6 +257,13 @@ struct game_memory
 
 #define GAME_UPDATE_AND_RENDER(FunctionName) void FunctionName(game_memory *GameMemory, game_input *GameInput)
 typedef GAME_UPDATE_AND_RENDER(game_update_and_render);
+
+inline game_controller_input *ControllerGet(game_input *Input, int unsigned ControllerIndex)
+{
+	Assert(ControllerIndex < ArrayCount(Input->Controllers));
+	game_controller_input *Result = &Input->Controllers[ControllerIndex];
+	return(Result);
+}
 
 #ifdef __cplusplus
 }

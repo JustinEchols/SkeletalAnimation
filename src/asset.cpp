@@ -360,39 +360,16 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 	return(Info);
 }
 
-#if 0
-char *LowerJointTags[] =
-{
-	"Hips",
-	"Leg",
-	"Foot",
-	"Toe"
-};
+char *AnimationDirectory = "animations/XBot";
+char *AnimationDirectoryAndWildCard = "animations\\XBot\\XBot*";
 
-internal void 
-LowerJointMasksInitialize(animation *Animation, animation_info *Info)
-{
-	for(u32 JointIndex = 0; JointIndex < Info->JointCount; ++JointIndex)
-	{
-		string JointName = Info->JointNames[JointIndex];
-		for(u32 StringIndex = 0; StringIndex < ArrayCount(LowerJointTags); ++StringIndex)
-		{
-			char *MaskTag = LowerJointTags[StringIndex];
-			if(SubStringExists(JointName, MaskTag))
-			{
-				Animation->JointMasks[JointIndex] = true;
-			}
-		}
-	}
-}
-#endif
-
-char *AnimationDirectory = "animations";
-char *AnimationDirectoryAndWildCard = "animations\\XBot*";
+char *NinjaAnimationsDirectory = "animations/Ninja";
+char *NinjaAnimationsDirectoryAndWildCard = "animations\\Ninja\\Ninja*";
 
 char *GraphFiles[] =
 {
 	"../src/XBot_AnimationGraph.animation_graph",
+	"../src/Ninja_AnimationGraph.animation_graph",
 };
 
 char *TextureFiles[] =
@@ -403,6 +380,9 @@ char *TextureFiles[] =
 	"../data/textures/texture_13.png",
 	"../data/textures/orange_texture_02.png",
 	"../data/textures/red_texture_02.png",
+	"../data/textures/Ninja_diffuse.png",
+	"../data/textures/Ninja_normal.png",
+	"../data/textures/Ninja_specular.png",
 };
 
 char *ModelFiles[] =
@@ -416,6 +396,8 @@ char *ModelFiles[] =
 	"../data/models/Capsule.obj",
 	"../data/models/Cylinder.obj",
 	"../data/models/Cone.obj",
+	"../data/models/YBot.mesh",
+	"../data/models/Ninja.mesh",
 };
 
 char *FontFiles[] =
@@ -432,6 +414,7 @@ LookupTexture(asset_manager *AssetManager, char *TextureName)
 	s32 Index = StringHashLookup(&AssetManager->TextureNames, TextureName);
 	if(Index != -1)
 	{
+		Assert(Index >= 0 && Index < ArrayCount(AssetManager->Textures));
 		Texture = AssetManager->Textures + Index;
 	}
 
@@ -450,6 +433,7 @@ LookupModel(asset_manager *AssetManager, char *ModelName)
 	s32 Index = StringHashLookup(&AssetManager->ModelNames, ModelName);
 	if(Index != -1)
 	{
+		Assert(Index >= 0 && Index < ArrayCount(AssetManager->Models));
 		Model = AssetManager->Models + Index;
 	}
 
@@ -460,19 +444,19 @@ LookupModel(asset_manager *AssetManager, char *ModelName)
 }
 
 internal asset_entry
-LookupAnimation(asset_manager *AssetManager, char *AnimationName)
+LookupSampledAnimation(asset_manager *AssetManager, char *AnimationName)
 {
 	asset_entry Result = {};
 
-	animation *Animation = 0;
+	animation_info *SampledAnimation = 0;
 	s32 Index = StringHashLookup(&AssetManager->AnimationNames, AnimationName);
 	if(Index != -1)
 	{
-		Animation = AssetManager->Animations + Index;
+		SampledAnimation = AssetManager->SampledAnimations + Index;
 	}
 
 	Result.Index = Index;
-	Result.Animation = Animation;
+	Result.SampledAnimation = SampledAnimation;
 
 	return(Result);
 }
@@ -484,6 +468,7 @@ LookupGraph(asset_manager *AssetManager, char *AnimationGraphName)
 	s32 Index = StringHashLookup(&AssetManager->GraphNames, AnimationGraphName);
 	if(Index != -1)
 	{
+		Assert(Index >= 0 && Index < ArrayCount(AssetManager->Graphs));
 		Result = AssetManager->Graphs + Index;
 	}
 
@@ -503,11 +488,12 @@ AssetManagerInitialize(asset_manager *Manager)
 
 	ArenaSubset(&Manager->Arena, &Manager->TextureNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->TextureNames);
+	StringHashAdd(&Manager->TextureNames, "(null)", 0);
 	for(u32 NameIndex = 0; NameIndex < ArrayCount(TextureFiles); ++NameIndex)
 	{
 		char *FullPath = TextureFiles[NameIndex];
 		FileNameFromFullPath(FullPath, Buffer);
-		StringHashAdd(&Manager->TextureNames, Buffer, NameIndex);
+		StringHashAdd(&Manager->TextureNames, Buffer, NameIndex + 1);
 		s32 Index = StringHashLookup(&Manager->TextureNames, Buffer);
 		Assert(Index != -1);
 		texture *Texture = Manager->Textures + Index;
@@ -531,29 +517,46 @@ AssetManagerInitialize(asset_manager *Manager)
 		Assert(Index != -1);
 		model *Model = Manager->Models + Index;
 
-		asset_entry Entry = LookupTexture(Manager, "orange_texture_02");
-		Assert(Entry.Texture);
 		if(StringsAreSame(ExtBuffer, "mesh"))
 		{
 			*Model = ModelLoad(&Manager->Arena, FullPath);
+
+			if(StringsAreSame(Buffer, "Cube"))
+			{
+				asset_entry Entry = LookupTexture(Manager, "orange_texture_02");
+				Assert(Entry.Texture);
+				Model->Meshes[0].DiffuseTexture = Entry.Index;
+				Model->Meshes[0].MaterialFlags |= MaterialFlag_Diffuse;
+			}
 		}
 		else
 		{
 			*Model = ObjLoad(&Manager->Arena, FullPath);
-			Model->Meshes[0].Texture = Entry.Texture;
+
+			asset_entry Entry = LookupTexture(Manager, "orange_texture_02");
+			Assert(Entry.Texture);
+			Model->Meshes[0].DiffuseTexture = Entry.Index;
+			Model->Meshes[0].MaterialFlags |= MaterialFlag_Diffuse;
 		}
 
-		if(StringsAreSame(Buffer, "Cube"))
+		Model->Name = StringCopy(&Manager->Arena, Buffer);
+
+		if(StringsAreSame(Buffer, "Ninja"))
 		{
-			Model->Meshes[0].Texture = Entry.Texture;
+			asset_entry Diffuse = LookupTexture(Manager, "Ninja_diffuse");
+			asset_entry Specular = LookupTexture(Manager, "Ninja_specular");
+			Model->Meshes[0].MaterialFlags |= (MaterialFlag_Diffuse | MaterialFlag_Specular);
+			Model->Meshes[0].DiffuseTexture = Diffuse.Index;
+			Model->Meshes[0].SpecularTexture = Specular.Index;
 		}
-		else if(StringsAreSame(Buffer, "Sphere"))
+
+		if(Model->HasSkeleton)
 		{
-			Model->Meshes[0].Texture = Entry.Texture;
+			Platform.UploadAnimatedModelToGPU(Model);
 		}
-		else if(StringsAreSame(Buffer, "Arrow"))
+		else
 		{
-			Model->Meshes[0].Texture = Entry.Texture;
+			Platform.UploadModelToGPU(Model);
 		}
 	}
 
@@ -561,15 +564,16 @@ AssetManagerInitialize(asset_manager *Manager)
 	// Animations
 	//
 
-	file_group_info AnimationFileGroup = Platform.DebugFileGroupLoad(AnimationDirectoryAndWildCard);
+	file_group_info XBotFileGroup	= Platform.DebugFileGroupLoad(AnimationDirectoryAndWildCard);
+	file_group_info NinjaFileGroup	= Platform.DebugFileGroupLoad(NinjaAnimationsDirectoryAndWildCard);
+	u32 TotalCount = XBotFileGroup.Count + NinjaFileGroup.Count;
 
 	ArenaSubset(&Manager->Arena, &Manager->AnimationNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->AnimationNames);
-	Manager->AnimationInfos = PushArray(&Manager->Arena, AnimationFileGroup.Count, animation_info);
-	Manager->Animations		= PushArray(&Manager->Arena, AnimationFileGroup.Count, animation);
-	for(u32 FileIndex = 0; FileIndex < AnimationFileGroup.Count; ++FileIndex)
+	Manager->SampledAnimations = PushArray(&Manager->Arena, TotalCount, animation_info);
+	for(u32 FileIndex = 0; FileIndex < XBotFileGroup.Count; ++FileIndex)
 	{
-		char *FileName = AnimationFileGroup.FileNames[FileIndex];
+		char *FileName = XBotFileGroup.FileNames[FileIndex];
 		FileNameFromFullPath(FileName, AssetName);
 		StringHashAdd(&Manager->AnimationNames, AssetName, FileIndex);
 		s32 Index = StringHashLookup(&Manager->AnimationNames, AssetName);
@@ -580,17 +584,40 @@ AssetManagerInitialize(asset_manager *Manager)
 		strcat(Buffer, "/");
 		strcat(Buffer, FileName);
 
-		animation_info *Info = Manager->AnimationInfos + Index;
-		animation *Animation = Manager->Animations + Index;
-		*Info = AnimationLoad(&Manager->Arena, Buffer);
-		if(Info)
+		animation_info *SampledAnimation = Manager->SampledAnimations + Index;
+		*SampledAnimation = AnimationLoad(&Manager->Arena, Buffer);
+		Assert(SampledAnimation);
+		if(SampledAnimation)
 		{
-			Animation->Name = StringCopy(&Manager->Arena, AssetName);
-			Animation->ID.Value = Index;
-			Animation->Info = Info;
-			Animation->BlendedPose = PushStruct(&Manager->Arena, key_frame);
-			key_frame *BlendedPose = Animation->BlendedPose;
-			AllocateJointXforms(&Manager->Arena, BlendedPose, Info->JointCount);
+			SampledAnimation->Name = StringCopy(&Manager->Arena, AssetName);
+			SampledAnimation->ReservedForChannel = PushStruct(&Manager->Arena, key_frame);
+			key_frame *ReservedForChannel = SampledAnimation->ReservedForChannel;
+			AllocateJointXforms(&Manager->Arena, ReservedForChannel, SampledAnimation->JointCount);
+		}
+	}
+
+	// TODO(Justin): Clean this up.
+	for(u32 FileIndex = 0; FileIndex < NinjaFileGroup.Count; ++FileIndex)
+	{
+		char *FileName = NinjaFileGroup.FileNames[FileIndex];
+		FileNameFromFullPath(FileName, AssetName);
+		StringHashAdd(&Manager->AnimationNames, AssetName, XBotFileGroup.Count + FileIndex);
+		s32 Index = StringHashLookup(&Manager->AnimationNames, AssetName);
+		Assert(Index != -1);
+
+		MemoryZero(Buffer, sizeof(Buffer));
+		strcat(Buffer, NinjaAnimationsDirectory);
+		strcat(Buffer, "/");
+		strcat(Buffer, FileName);
+
+		animation_info *SampledAnimation = Manager->SampledAnimations + Index;
+		*SampledAnimation = AnimationLoad(&Manager->Arena, Buffer);
+		if(SampledAnimation)
+		{
+			SampledAnimation->Name = StringCopy(&Manager->Arena, AssetName);
+			SampledAnimation->ReservedForChannel = PushStruct(&Manager->Arena, key_frame);
+			key_frame *ReservedForChannel = SampledAnimation->ReservedForChannel;
+			AllocateJointXforms(&Manager->Arena, ReservedForChannel, SampledAnimation->JointCount);
 		}
 	}
 
@@ -600,6 +627,7 @@ AssetManagerInitialize(asset_manager *Manager)
 
 	ArenaSubset(&Manager->Arena, &Manager->GraphNames.Arena, Kilobyte(4));
 	StringHashInit(&Manager->GraphNames);
+	//for(u32 NameIndex = 0; NameIndex < 1/*ArrayCount(GraphFiles)*/; ++NameIndex)
 	for(u32 NameIndex = 0; NameIndex < ArrayCount(GraphFiles); ++NameIndex)
 	{
 		char *FullPath = GraphFiles[NameIndex];

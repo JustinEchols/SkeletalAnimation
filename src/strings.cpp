@@ -74,6 +74,8 @@ BufferNextWord(u8 **C, u8 *Buff)
 	Buff[Index] = 0;
 }
 
+
+
 internal string
 StringFromRange(u8 *First, u8 *Last)
 {

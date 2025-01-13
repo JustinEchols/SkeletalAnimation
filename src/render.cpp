@@ -33,6 +33,7 @@ PushClear(render_buffer *RenderBuffer, v4 Color)
 	}
 }
 
+#if 1
 inline void
 PushTexture(render_buffer *RenderBuffer, texture *Texture, s32 Index)
 {
@@ -44,6 +45,24 @@ PushTexture(render_buffer *RenderBuffer, texture *Texture, s32 Index)
 		Entry->Index = Index;
 	}
 }
+#else
+inline void
+PushTexture(render_buffer *RenderBuffer, char *TextureName)
+{
+	asset_entry Texture = LookupTexture(RenderBuffer->Assets, TextureName);
+	if(Texture.Texture)
+	{
+		render_entry_texture *Entry = PushRenderElement(RenderBuffer, render_entry_texture);
+		if(Entry)
+		{
+			texture **Tex = RenderBuffer->Textures + Texture.Index;
+			*Tex = Texture.Texture;
+			Entry->Index = Texture.Index;
+		}
+	}
+}
+
+#endif
 
 inline void
 PushQuad3D(render_buffer *RenderBuffer, quad_vertex *Vertices, mat4 Transform, u32 TextureIndex)
@@ -70,17 +89,42 @@ PushQuad2D(render_buffer *RenderBuffer, f32 *Vertices, u32 TextureIndex)
 }
 
 inline void
-PushModel(render_buffer *RenderBuffer, model *Model, mat4 Transform)
+PushModel(render_buffer *RenderBuffer, char *ModelName, mat4 Transform)
 {
-	render_entry_model *Entry = PushRenderElement(RenderBuffer, render_entry_model);
-	if(Entry)
+	model *Model = LookupModel(RenderBuffer->Assets, ModelName).Model;
+	if(Model)
 	{
-		Entry->Model = Model;
-		Entry->Transform = Transform;
+		for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+		{
+			mesh *Mesh = Model->Meshes + MeshIndex;
+
+			if(Mesh->DiffuseTexture)
+			{
+				texture *Texture = RenderBuffer->Assets->Textures + Mesh->DiffuseTexture;
+				if(Texture)
+				{
+					PushTexture(RenderBuffer, Texture, Mesh->DiffuseTexture);
+				}
+			}
+
+			if(Mesh->SpecularTexture)
+			{
+				texture *Texture = RenderBuffer->Assets->Textures + Mesh->SpecularTexture;
+				if(Texture)
+				{
+					PushTexture(RenderBuffer, Texture, Mesh->SpecularTexture);
+				}
+			}
+		}
+
+		render_entry_model *Entry = PushRenderElement(RenderBuffer, render_entry_model);
+		if(Entry)
+		{
+			Entry->Model = Model;
+			Entry->Transform = Transform;
+		}
 	}
 }
-
-
 
 // NOTE(Justin): Testing a different push buffer call
 inline void

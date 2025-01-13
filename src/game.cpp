@@ -9,14 +9,14 @@
 #include "asset.cpp"
 #include "render.cpp"
 
-internal void
+internal entity * 
 PlayerAdd(game_state *GameState, v3 P)
 {
 	entity *Entity = EntityAdd(GameState, EntityType_Player);
-	GameState->PlayerEntityIndex = GameState->EntityCount - 1;
 
 	FlagAdd(Entity, EntityFlag_YSupported);
 	FlagAdd(Entity, EntityFlag_Collides);
+	FlagAdd(Entity, EntityFlag_Moveable);
 
 	Entity->P = P;
 	Entity->dP = V3(0.0f);
@@ -28,20 +28,6 @@ PlayerAdd(game_state *GameState, v3 P)
 	Entity->dTheta = 0.0f;
 	Entity->Orientation = Quaternion(V3(0.0f, -1.0f, 0.0f), Radians);
 	Entity->MovementState = MovementState_Idle;
-
-	//
-	// AABB 
-	//
-
-	// The visual scale of the player and the visual scale of the AABBDim are unrelated so 
-	// we have to scale the dim by 0.5.
-
-	// NOTE(Justin): The AABBDim is used for collision detection AND for AABB rendering. The visual
-	// scale is used to scale the player model. Therefore the visual scale and the AABBDim are unrelated
-	//
-	// The volume offset depends on what convention is used as far as the entity's position. The convention
-	// used is that the position is where on the ground the entity is located. So we offset the volume in the
-	// +y direction.
 
 	Entity->Height = 1.8f;
 
@@ -69,6 +55,13 @@ PlayerAdd(game_state *GameState, v3 P)
 
 	// Visuals
 	Entity->VisualScale = V3(0.01f);
+
+	if(GameState->PlayerEntityIndex == 0)
+	{
+		GameState->PlayerEntityIndex = Entity->ID;
+	}
+
+	return(Entity);
 }
 
 internal void
@@ -220,12 +213,12 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 	if(Entity->Theta != Entity->ThetaTarget)
 	{
 		animation_player *AnimationPlayer = Entity->AnimationPlayer;
-		if(AnimationPlayer && AnimationPlayer->ControlsTurning)
+		//if(AnimationPlayer && AnimationPlayer->ControlsTurning)
+		//{
+		//}
+		//else
 		{
-			AnimationPlayer->RootTurningAccumulator = 0.0f;
-		}
-		else
-		{
+
 			// TODO(Justin): Simplify this!
 			f32 TargetAngleInDegrees = RadToDegrees(TargetAngleInRad);
 			quaternion QTarget;
@@ -243,12 +236,6 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 
 			quaternion QCurrent = Entity->Orientation;
 			Entity->Orientation = RotateTowards(QCurrent, QTarget, dt, AngularSpeed);
-#if 0
-			v3 Current = Entity->Orientation *V3(0.0f, 0.0f, 1.0f);
-			Entity->Theta = -1.0f*RadToDegrees(DirectionToEuler(Current).yaw);
-#else
-
-#endif
 		}
 
 		Entity->Theta = -1.0f*RadToDegrees(YawFromQuaternion(Entity->Orientation));
@@ -410,7 +397,6 @@ ClosestPointOnPlane(v3 PlaneNormal, v3 PointOnPlane, v3 P)
 	ClosestPoint = P - Dot(PlaneNormal, P - PointOnPlane) * PlaneNormal;
 
 	return(ClosestPoint);
-
 }
 
 internal collision_result
@@ -468,9 +454,6 @@ AABBCollisionInfo(aabb AABB)
 // using 0.001f for epsilon, ends up being behind the non-aligned plane of the OBB. If the player
 // gets moved there then they tunnel through the OBB.
 
-//f32 tEpsilon = 0.001f;
-//f32 tEpsilon = 0.01f;
-
 // NOTE(Justin): This is really PointIntersectsPlaneAndInABB.....
 internal b32
 PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin, f32 tEpsilon = 0.001f)
@@ -502,13 +485,45 @@ RayAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, f32 *tMin, f32 t
 		f32 tResult = (D - Dot(PlaneNormal, RelP)) / Dot(PlaneNormal, DeltaP);
 		if((tResult >= 0.0f) && tResult < *tMin)
 		{
-			//v3 PointOfIntersection = RelP + tResult * DeltaP;
 			*tMin = Max(0.0f, tResult - tEpsilon);
 			Collided = true;
 		}
 	}
 
 	return(Collided);
+}
+
+// TODO(Justin): Correct this..
+inline v3 
+CapsuleSphereCenterVsOBB(v3 CapsuleP, capsule Capsule, v3 OBBP, obb OBB)
+{
+	v3 Result = {};
+
+	v3 A = CapsuleP + Capsule.Min;
+	v3 B = CapsuleP + Capsule.Max;
+
+	v3 OBBPointClosestToA = ClosestPointOnOBB(OBB, OBBP, A);
+	v3 OBBPointClosestToB = ClosestPointOnOBB(OBB, OBBP, B);
+
+	v3 DeltaA = OBBPointClosestToA - A;
+	v3 DeltaB = OBBPointClosestToB - B;
+
+	f32 dA = Dot(DeltaA, DeltaA);
+	f32 dB = Dot(DeltaB, DeltaB);
+
+	v3 Closest;
+	if(dA < dB)
+	{
+		Closest = OBBPointClosestToA;
+	}
+	else
+	{
+		Closest = OBBPointClosestToB;
+	}
+
+	Result = ClosestPointOnLineSegment(A, B, Closest);
+	
+	return(Result);
 }
 
 internal b32
@@ -575,37 +590,6 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 	return(Collided);
 }
 
-inline v3 
-CapsuleSphereCenterVsOBB(v3 CapsuleP, capsule Capsule, v3 OBBP, obb OBB)
-{
-	v3 Result = {};
-
-	v3 A = CapsuleP + Capsule.Min;
-	v3 B = CapsuleP + Capsule.Max;
-
-	v3 OBBPointClosestToA = ClosestPointOnOBB(OBB, OBBP, A);
-	v3 OBBPointClosestToB = ClosestPointOnOBB(OBB, OBBP, B);
-
-	v3 DeltaA = OBBPointClosestToA - A;
-	v3 DeltaB = OBBPointClosestToB - B;
-
-	f32 dA = Dot(DeltaA, DeltaA);
-	f32 dB = Dot(DeltaB, DeltaB);
-
-	v3 Closest;
-	if(dA < dB)
-	{
-		Closest = OBBPointClosestToA;
-	}
-	else
-	{
-		Closest = OBBPointClosestToB;
-	}
-
-	Result = ClosestPointOnLineSegment(A, B, Closest);
-	
-	return(Result);
-}
 
 inline b32
 EntitiesCanCollide(entity *Mover, entity *A)
@@ -658,9 +642,6 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 
 		DeltaP = Conjugate(Entity->Orientation)*GameDelta;
 		DesiredP = OldP + DeltaP;
-
-		///Entity->dP = dt*DeltaP + Entity->dP;
-
 		AnimationPlayer->RootMotionAccumulator = {};
 	}
 
@@ -686,7 +667,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
 		{
 			entity *TestEntity = GameState->Entities + TestEntityIndex;
-			if(Entity != TestEntity)
+			if(Entity->ID != TestEntity->ID)
 			{
 				if(EntitiesCanCollide(Entity, TestEntity))
 				{
@@ -758,18 +739,18 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 
 		v3 TestP = Entity->P + tMin * DeltaP; 
 		f32 GroundY = Region->P.y + 0.01f;
-		if(TestP.y < GroundY && EntityIsGrounded(Entity) && (Normal.y < 0.0f))
+		if(TestP.y < GroundY && IsGrounded(Entity) && (Normal.y < 0.0f))
 		{
-			// NOTE(Justin): This is supposed to handle the situation when the player collides with an OBB and is underneath the OBB and on the ground and running toward
-			// the corner.
+			// NOTE(Justin): This is supposed to handle the situation when the player collides with an OBB and 
+			// is underneath the OBB and on the ground and running toward the corner.
 			//
 			//  /
 			// /___   <-- O
 			//
-			// The collide and slide solution does not work because the new position of the player will be behind the ground plane (tunnel through the ground).
-			// Setting the velocity to 0 and then breaking, we effectively are not accepting the move.
+			// The collide and slide solution does not work because the new position of the player will be 
+			// behind the ground plane (tunnel through the ground). Setting the velocity to 0 and then breaking, 
+			// we effectively are not accepting the move.
 			// TODO(Justin): Robustness
-
 			Entity->dP = {};
 			break;
 		}
@@ -840,7 +821,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		// NOTE(Justin): Assets.
 		//
 
-		ArenaSubset(&GameState->Arena, &GameState->AssetManager.Arena, Kilobyte(512));
+		ArenaSubset(&GameState->Arena, &GameState->AssetManager.Arena, Kilobyte(1024));
 		AssetManagerInitialize(&GameState->AssetManager);
 		asset_manager *Assets = &GameState->AssetManager;
 
@@ -852,16 +833,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		// Region
 		WalkableRegionAdd(GameState, V3(0.0f, 0.0f, -20.0f), V3(40.0f), CubeOrientation);
-		//WalkableRegionAdd(GameState, V3(-20.0f, 0.0f, -10.0f), V3(10.0f), CubeOrientation);
-
-		// Player
-		PlayerAdd(GameState, V3(0.0f, 0.01f, -10.0f));
-		entity *Player			= GameState->Entities + GameState->PlayerEntityIndex;
-		Player->AnimationPlayer = PushStruct(Arena, animation_player);
-		Player->AnimationGraph	= PushStruct(Arena, animation_graph);
-		model *XBot				= LookupModel(Assets, "XBot").Model;
-		AnimationPlayerInitialize(Player->AnimationPlayer, XBot, Arena);
-		Player->AnimationGraph	= LookupGraph(Assets, "XBot_AnimationGraph");
 
 		// Cubes 
 		v3 StartP = V3(-3.0f, 0.0f, -10.0f);
@@ -873,8 +844,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		StartP += V3(6.0f, 0.0f, -0.0f);
 		CubeAdd(GameState, StartP, Dim, CubeOrientation);
 
-		Dim = V3(2.0f, 0.5f, 2.0f);
-		v3 ElevatorP = StartP + V3(0.0f, 0.01f, 2.0f);
+		//Dim = V3(2.0f, 0.5f, 2.0f);
+		//v3 ElevatorP = StartP + V3(0.0f, 0.01f, 2.0f);
 		//ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
 
 		Dim = V3(1.f, 1.0f, 5.0f);
@@ -894,7 +865,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->DefaultYaw = -90.0f;
 		GameState->DefaultPitch = -10.0f;
 		GameState->CameraOffsetFromPlayer = V3(0.0f, 2.0f, 5.0f);
-		CameraSet(&GameState->Camera, Player->P + GameState->CameraOffsetFromPlayer, -90.0f, -10.0f);
+		CameraSet(&GameState->Camera, V3(0.0f, 0.0f, -10.0f) + GameState->CameraOffsetFromPlayer, -90.0f, -10.0f);
 		GameState->Camera.RotationAboutY = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
 		CameraTransformUpdate(GameState);
 
@@ -935,108 +906,149 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		TempState->IsInitialized = true;
 	}
 
-	v3 ddP = {};
 	v3 CameraddP = {};
-	game_keyboard *Keyboard = &GameInput->Keyboard;
-	if(IsDown(Keyboard->Add))
+	for(u32 ControllerIndex = 0; ControllerIndex < ArrayCount(GameInput->Controllers); ++ControllerIndex)
 	{
-		GameState->TimeScale *= 1.1f;
-	}
-	if(IsDown(Keyboard->Subtract))
-	{
-		GameState->TimeScale *= 0.9f;
-	}
+		game_controller_input *Controller = ControllerGet(GameInput, ControllerIndex);
+		u32 ID = GameState->PlayerIDForController[ControllerIndex];
+		if(ID == 0)
+		{
+			if(Controller->Start.EndedDown)
+			{
+				model *Model = 0;
+				animation_graph *G = 0;
+				asset_entry Entry = {};
+				if(GameState->PlayerEntityIndex == 0)
+				{
+					Model = LookupModel(&GameState->AssetManager, "XBot").Model;
+					G  = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
+					Entry = LookupSampledAnimation(&GameState->AssetManager, "XBot_IdleRight");
+				}
+				else
+				{
+					Model = LookupModel(&GameState->AssetManager, "YBot").Model;
+					G  = LookupGraph(&GameState->AssetManager, "Ninja_AnimationGraph");
+					Entry = LookupSampledAnimation(&GameState->AssetManager, "Ninja_IdleRight");
+				}
 
-	if(WasPressed(Keyboard->F10))
-	{
-		GameState->CameraIsFree = !GameState->CameraIsFree;
-	}
+				entity *Player = PlayerAdd(GameState, V3(0.0f, 0.01f, -10.0f));
+				Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
+				Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
 
-	b32 Sprinting = false;
-	b32 Jumping = false;
-	b32 Crouching = false;
-	if(!GameState->CameraIsFree)
-	{
-		if(IsDown(Keyboard->W))
-		{
-			ddP += V3(0.0f, 0.0f, -1.0f);
+				AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
+				Player->AnimationGraph = G;
+				AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
+				GameState->PlayerIDForController[ControllerIndex] = Player->ID;
+			}
 		}
-		if(IsDown(Keyboard->A))
+		else
 		{
-			ddP += V3(-1.0f, 0.0f, 0.0f);
-		}
-		if(IsDown(Keyboard->S))
-		{
-			ddP += V3(0.0f, 0.0f, 1.0f);
-		}
-		if(IsDown(Keyboard->D))
-		{
-			ddP += V3(1.0f, 0.0f, 0.0f);
-		}
-		if(IsDown(Keyboard->Shift))
-		{
-			Sprinting = true;
-		}
-		if(IsDown(Keyboard->Space))
-		{
-			Jumping = true;
-		}
-		if(IsDown(Keyboard->Ctrl))
-		{
-			Crouching = true;
-		}
-	}
-	else
-	{
-		if(IsDown(Keyboard->W))
-		{
-			CameraddP += 1.0f*GameState->Camera.Direction;
-		}
-		if(IsDown(Keyboard->A))
-		{
-			CameraddP += -1.0f*Cross(GameState->Camera.Direction, YAxis());
-		}
-		if(IsDown(Keyboard->S))
-		{
-			CameraddP += -1.0f*GameState->Camera.Direction;
-		}
-		if(IsDown(Keyboard->D))
-		{
-			CameraddP += 1.0f*Cross(GameState->Camera.Direction, YAxis());
-		}
+			entity *Entity = GameState->Entities + GameState->PlayerIDForController[ControllerIndex];
+			move_info *MoveInfo = &Entity->MoveInfo;
+			*MoveInfo = {};
+			if(Controller->IsAnalog)
+			{
+				MoveInfo->ddP = V3(Controller->StickAverageX, 0.0f, -1.0f*Controller->StickAverageY);
 
-		CameraddP = Normalize(CameraddP);
-	}
+				if(IsDown(Controller->ActionDown))
+				{
+					MoveInfo->Jumping = true;
+				}
+				
+				f32 D = Dot(MoveInfo->ddP, MoveInfo->ddP);
+				if(D >= 1.0f)
+				{
+					MoveInfo->Sprinting = true;
+				}
+			}
+			else
+			{
+				if(!GameState->CameraIsFree)
+				{
+					if(IsDown(Controller->MoveForward))
+					{
+						MoveInfo->ddP += V3(0.0f, 0.0f, -1.0f);
+					}
+					if(IsDown(Controller->MoveLeft))
+					{
+						MoveInfo->ddP += V3(-1.0f, 0.0f, 0.0f);
+					}
+					if(IsDown(Controller->MoveBack))
+					{
+						MoveInfo->ddP += V3(0.0f, 0.0f, 1.0f);
+					}
+					if(IsDown(Controller->MoveRight))
+					{
+						MoveInfo->ddP += V3(1.0f, 0.0f, 0.0f);
+					}
+					if(IsDown(Controller->Shift))
+					{
+						MoveInfo->Sprinting = true;
+					}
+					if(IsDown(Controller->Space))
+					{
+						MoveInfo->Jumping = true;
+					}
+					if(IsDown(Controller->Ctrl))
+					{
+						MoveInfo->Crouching = true;
+					}
+				}
+				else
+				{
+					if(IsDown(Controller->MoveForward))
+					{
+						CameraddP += 1.0f*GameState->Camera.Direction;
+					}
+					if(IsDown(Controller->MoveLeft))
+					{
+						CameraddP += -1.0f*Cross(GameState->Camera.Direction, YAxis());
+					}
+					if(IsDown(Controller->MoveBack))
+					{
+						CameraddP += -1.0f*GameState->Camera.Direction;
+					}
+					if(IsDown(Controller->MoveRight))
+					{
+						CameraddP += 1.0f*Cross(GameState->Camera.Direction, YAxis());
+					}
+					CameraddP = Normalize(CameraddP);
+				}
+			}
 
-	if(!Equal(ddP, V3(0.0f)))
-	{
-		ddP = Normalize(ddP);
-	}
-	else
-	{
+			if(!Equal(MoveInfo->ddP, V3(0.0f)))
+			{
+				MoveInfo->ddP = Normalize(MoveInfo->ddP);
+				MoveInfo->Moving = true;
+			}
+		}
 	}
 
 	f32 dt = GameInput->DtForFrame;
 	dt *= GameState->TimeScale;
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
+		v3 ddP = {};
 		entity *Entity = GameState->Entities + EntityIndex;
 		switch(Entity->Type)
 		{
 			case EntityType_Player:
 			{
+				move_info *MoveInfo = &Entity->MoveInfo;
+
+				ddP = MoveInfo->ddP;
+
 				f32 a = 50.0f;
 
 				v3 OldPlayerddP = Entity->ddP;
 				Entity->ddP = ddP;
 
-				if(Sprinting)
+				if(MoveInfo->Sprinting)
 				{
 					a *= 1.5f;
 				}
 
-				if(Equal(OldPlayerddP, V3(0.0f)) &&
-				  !Equal(Entity->ddP, OldPlayerddP))
+				if(MoveInfo->Moving)
 				{
 					FlagAdd(Entity, EntityFlag_Moving);
 				}
@@ -1045,7 +1057,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					FlagClear(Entity, EntityFlag_Moving);
 				}
 
-				if(Jumping && EntityIsGrounded(Entity))
+				if(MoveInfo->Jumping && IsGrounded(Entity))
 				{
 					f32 X = AbsVal(Entity->dP.x);
 					f32 Z = AbsVal(Entity->dP.z);
@@ -1061,135 +1073,24 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 						Entity->dP.z += SignOf(Entity->dP.z)*10.0f;
 					}
 
-
 					Entity->dP.y = 30.0f;
-
+				}
+				else
+				{
+					MoveInfo->Jumping = false;
 				}
 
 				ddP = a * ddP;
 				ddP += -10.0f * Entity->dP;
 
-				if(!Equal(ddP, V3(0.0f)))
-				{
-					EntityMove(GameState, Entity, ddP, dt);
-					EntityOrientationUpdate(Entity, dt, 15.0f);
-				}
-
 				switch(Entity->MovementState)
 				{
-					case MovementState_Idle:
-					{
-						if(EntityIsMoving(Entity))
-						{
-							if(Jumping)
-							{
-								Entity->MovementState = MovementState_Jump;
-							}
-							else if(Sprinting)
-							{
-								Entity->MovementState = MovementState_Sprint;
-							}
-							else
-							{
-								Entity->MovementState = MovementState_Run;
-							}
-						}
-						else
-						{
-							if(Crouching)
-							{
-								Entity->MovementState = MovementState_Crouch;
-							}
-						}
-					} break;
-					case MovementState_Crouch:
-					{
-						if(!Crouching)
-						{
-							Entity->MovementState = MovementState_Idle;
-						}
-					} break;
-					case MovementState_Run:
-					{
-						if(Equal(Entity->ddP, V3(0.0f)))
-						{
-							Entity->MovementState = MovementState_Idle;
-						}
-						else
-						{
-							if(Sprinting)
-							{
-								Entity->MovementState = MovementState_Sprint;
-							}
-
-							if(Jumping)
-							{
-								Entity->MovementState = MovementState_Jump;
-							}
-
-							if(Crouching)
-							{
-								Entity->MovementState = MovementState_Sliding;
-							}
-						}
-					} break;
-					case MovementState_Sprint:
-					{
-						if(Equal(Entity->ddP, V3(0.0f)))
-						{
-							Entity->MovementState = MovementState_Idle;
-						}
-						else
-						{
-							if(!Sprinting)
-							{
-								Entity->MovementState = MovementState_Run;
-							}
-						}
-					} break;
-					case MovementState_Jump:
-					{
-						FlagClear(Entity, EntityFlag_YSupported);
-
-						if(!Jumping)
-						{
-							if(Equal(Entity->ddP, V3(0.0f)))
-							{
-								Entity->MovementState = MovementState_Idle;
-							}
-							else if(Sprinting)
-							{
-								Entity->MovementState = MovementState_Sprint;
-							}
-							else
-							{
-								Entity->MovementState = MovementState_Run;
-							}
-						}
-					} break;
-					case MovementState_Sliding:
-					{
-						if(Equal(Entity->ddP, V3(0.0f)))
-						{
-							Entity->MovementState = MovementState_Idle;
-						}
-						else
-						{
-							if(Sprinting)
-							{
-								Entity->MovementState = MovementState_Sprint;
-							}
-							else
-							{
-								Entity->MovementState = MovementState_Run;
-							}
-						}
-					} break;
-					case MovementState_Invalid:
-					{
-						Entity->MovementState = MovementState_Invalid;
-					} break;
-
+					case MovementState_Idle:	EvaluateIdle(Entity, *MoveInfo); break;
+					case MovementState_Crouch:	EvaluateCrouch(Entity, *MoveInfo); break;
+					case MovementState_Run:		EvaluateRun(Entity, *MoveInfo); break;
+					case MovementState_Sprint:	EvaluateSprint(Entity, *MoveInfo); break;
+					case MovementState_Jump:	EvaluateJump(Entity, *MoveInfo); break;
+					case MovementState_Sliding:	EvaluateSliding(Entity, *MoveInfo); break;
 				};
 			} break;
 			case EntityType_Elevator:
@@ -1209,27 +1110,28 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				{
 					ElevatorddP = {0.0f, 1.0f, 0.0f};
 				}
-
-				Entity->ddP = ElevatorddP;
-				EntityMove(GameState, Entity, ElevatorddP, dt);
+				ddP = ElevatorddP;
 			} break;
+		}
+
+		if(!Equal(ddP, V3(0.0f)))
+		{
+			if(CanMove(Entity))
+			{
+				EntityMove(GameState, Entity, ddP, dt);
+				EntityOrientationUpdate(Entity, dt, 15.0f);
+			}
 		}
 	}
 
 	asset_manager *Assets = &GameState->AssetManager;
 
 	//
-	// NOTE(Justin): Animation update, will have to be rolled into physics work per entity....
+	// TODO(Justin): Will animation update, will have to be rolled into physics work per entity?
 	//
 
 	temporary_memory AnimationMemory = TemporaryMemoryBegin(&TempState->Arena);
-
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
-	Animate(Player, Assets);
-	AnimationPlayerUpdate(Player->AnimationPlayer, &TempState->Arena, dt);
-	ModelJointsUpdate(Player);
-	AnimationGraphPerFrameUpdate(Assets, Player->AnimationPlayer, Player->AnimationGraph);
-
 	camera *Camera = &GameState->Camera;
 	if(!GameState->CameraIsFree)
 	{
@@ -1291,42 +1193,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	PushClear(RenderBuffer, V4(0.3f, 0.4f, 0.4f, 1.0f));
 
-	//
-	// NOTE(Justin): Render ground quads of walkable regions.
-	//
-
 	mat4 T;
 	mat4 R;
 	mat4 S;
-	quad GroundQuad = GameState->Quad;
-	asset_entry Entry = LookupTexture(Assets, "texture_01");
-	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
-	{
-		entity *Entity = GameState->Entities + EntityIndex;
-		if(Entity->Type == EntityType_WalkableRegion)
-		{
-			v3 P = Entity->P;
-			v3 Dim = Entity->AABBDim;
-			T = Mat4Translate(P);
-			R = Mat4Identity();
-			S = Mat4Scale(Dim.x);
-
-			for(u32 Index = 0; Index < ArrayCount(GroundQuad.Vertices); ++Index)
-			{
-				GroundQuad.Vertices[Index].UV *= 0.5f*Dim.x;
-			}
-
-			PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
-			PushQuad3D(RenderBuffer, GroundQuad.Vertices, T*R*S, Entry.Index);
-
-			GroundQuad = QuadDefault();
-		}
-	}
-
-	//
-	// NOTE(Justin): Entities.
-	//
-
+	asset_entry Entry = {};
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
 		entity *Entity = GameState->Entities + EntityIndex;
@@ -1334,10 +1204,40 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			case EntityType_Player:
 			{
-				mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
-				model *Model = LookupModel(Assets, "XBot").Model;
-				PushModel(RenderBuffer, Model, Transform);
-				mesh *Mesh = &Model->Meshes[0];
+				Animate(Entity, Assets);
+				AnimationPlayerUpdate(Entity->AnimationPlayer, &TempState->Arena, dt);
+				animation_player *AnimationPlayer = Entity->AnimationPlayer;
+				animation_graph *AnimationGraph = Entity->AnimationGraph;
+				if(AnimationPlayer)
+				{
+					if(AnimationPlayer->ControlsTurning)
+					{
+						if(Equal(AnimationPlayer->OrientationLockedAt, Quaternion()))
+						{
+							AnimationPlayer->OrientationLockedAt = Player->Orientation;
+						}
+					}
+				}
+
+				ModelJointsUpdate(Entity);
+				AnimationGraphPerFrameUpdate(Assets, AnimationPlayer, AnimationGraph);
+
+				T = Mat4Translate(Entity->P);
+				R = QuaternionToMat4(Entity->Orientation);
+				S = Mat4Scale(Entity->VisualScale);
+				if(AnimationPlayer->ControlsTurning)
+				{
+					R = QuaternionToMat4(AnimationPlayer->OrientationLockedAt);
+				}
+				else
+				{
+					AnimationPlayer->RootTurningAccumulator = 0.0f;
+					AnimationPlayer->OrientationLockedAt = Quaternion();
+				}
+
+				PushModel(RenderBuffer, CString(AnimationPlayer->Model->Name),T*R*S);
+
+				// TODO(Justin): Move debug diagrams to ui.
 
 				//
 				// Debug volume
@@ -1366,40 +1266,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				//PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
 #endif
 
-#if 0
-				R = Mat4Identity();
-				S = Mat4Scale(0.2f);
-
-				T = Mat4Translate(Entity->LeftFootP);
-				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
-
-				T = Mat4Translate(Entity->RightFootP);
-				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
-
-				T = Mat4Translate(Entity->LeftHandP);
-				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
-
-				T = Mat4Translate(Entity->RightHandP);
-				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
-#endif
-
-
 				//
 				// Ground arrow 
 				//
 
-#if 1
 				v3 P = Entity->P;
 				P.y += 0.01f;
 				T = Mat4Translate(P);
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(V3(0.5f));
 
-				Entry = LookupTexture(Assets, "left_arrow");
-				PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
-				PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, Entry.Index);
-#endif
-
+				//Entry = LookupTexture(Assets, "left_arrow");
+				//PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
+				//PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, Entry.Index);
 			} break;
 			case EntityType_Cube:
 			{
@@ -1408,10 +1287,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				T = Mat4Translate(EntityP);
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(Entity->VisualScale);
-
-				model *Cube = LookupModel(Assets, "Cube").Model;
-				PushTexture(RenderBuffer, Cube->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Cube->Meshes[0].Texture->Name.Data));
-				PushModel(RenderBuffer, Cube, T*R*S);
+				PushModel(RenderBuffer, "Cube", T*R*S);
 
 				//
 				// OBB
@@ -1439,7 +1315,23 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			} break;
 			case EntityType_WalkableRegion:
 			{
-				v3 EntityP = Entity->P;
+				quad GroundQuad = GameState->Quad;
+				Entry = LookupTexture(Assets, "texture_01");
+
+				v3 P = Entity->P;
+				v3 Dim = Entity->AABBDim;
+				T = Mat4Translate(P);
+				R = Mat4Identity();
+				S = Mat4Scale(Dim.x);
+
+				for(u32 Index = 0; Index < ArrayCount(GroundQuad.Vertices); ++Index)
+				{
+					GroundQuad.Vertices[Index].UV *= 0.5f*Dim.x;
+				}
+
+				PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
+				PushQuad3D(RenderBuffer, GroundQuad.Vertices, T*R*S, Entry.Index);
+
 				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
 				S = Mat4Scale(Entity->AABBDim);
 				PushAABB(RenderBuffer, GameState->Cube, T*S, V3(1.0f));
@@ -1453,7 +1345,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				model *Sphere = LookupModel(Assets, "Sphere").Model;
 				PushTexture(RenderBuffer, Sphere->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Sphere->Meshes[0].Texture->Name.Data));
-				PushModel(RenderBuffer, Sphere, T*S);
+				//PushModel(RenderBuffer, Sphere, T*S);
 
 				T = Mat4Translate(EntityP);
 				S = Mat4Scale(1.0f);
@@ -1478,6 +1370,20 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	//
 	// NOTE(Justin): Test font/ui.
 	//
+
+	game_controller_input *Keyboard = ControllerGet(GameInput, 0);
+	if(IsDown(Keyboard->Add))
+	{
+		GameState->TimeScale *= 1.1f;
+	}
+	if(IsDown(Keyboard->Subtract))
+	{
+		GameState->TimeScale *= 0.9f;
+	}
+	if(WasPressed(Keyboard->F10))
+	{
+		GameState->CameraIsFree = !GameState->CameraIsFree;
+	}
 
 	entity *Entity = GameState->Entities + GameState->PlayerEntityIndex;
 
@@ -1697,23 +1603,39 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		P.y -= (Gap + dY);
 	}
 
-	sprintf(Buff, "%s", "+Joints");
+	sprintf(Buff, "+DrawHandAndFootPositions");
 	Text = StringCopy(&TempState->Arena, Buff);
 	Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
+	ui_button HandAndFoot;
+	HandAndFoot.ID = __LINE__;
+	HandAndFoot.P = P;
+	HandAndFoot.Rect = Rect;
 
-	ui_button JointButton;
-	JointButton.ID = 3;
-	JointButton.P = P;
-	JointButton.Rect = Rect;
-	if(!Button(UI, &JointButton))
+	if(Button(UI, &HandAndFoot))
 	{
-		PushText(RenderBuffer, Text, FontInfo, JointButton.P, Scale, DefaultColor);
+		Text.Data[0] = '-';
+		PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
+
+		T = EntityTransform(Entity, Entity->VisualScale);
+		R = Mat4Identity();
+		S = Mat4Scale(0.2f);
+
+		T = Mat4Translate(Entity->LeftFootP);
+		PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+
+		T = Mat4Translate(Entity->RightFootP);
+		PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+
+		T = Mat4Translate(Entity->LeftHandP);
+		PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
+
+		T = Mat4Translate(Entity->RightHandP);
+		PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
 		P.y -= (Gap + dY);
 	}
 	else
 	{
-		Text.Data[0] = '-';
-		PushText(RenderBuffer, Text, FontInfo, JointButton.P, Scale, HoverColor);
+		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
 	}
 
@@ -1754,7 +1676,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		PushClear(RenderToTextureBuffer, V4(1.0f));
 		mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
 		model *Model = LookupModel(Assets, "XBot").Model;
-		PushModel(RenderToTextureBuffer, Model, Transform);
+		//PushModel(RenderToTextureBuffer, Model, Transform);
 
 		Platform.RenderToOpenGL(RenderToTextureBuffer, GameState->Texture.Width, GameState->Texture.Height);
 

@@ -118,7 +118,7 @@
 
 enum movement_state
 {
-	MovementState_Invalid,
+	//MovementState_Invalid,
 	MovementState_Idle,
 	MovementState_Run,
 	MovementState_Sprint,
@@ -138,6 +138,7 @@ enum entity_type
 	EntityType_Sphere,
 	EntityType_WalkableRegion,
 	EntityType_Elevator,
+	EntityType_Ninja,
 };
 
 enum entity_flag
@@ -145,9 +146,8 @@ enum entity_flag
 	EntityFlag_Collides = (1 << 1),
 	EntityFlag_YSupported = (1 << 2),
 	EntityFlag_Moveable = (1 << 3),
-	EntityFlag_JumpDown = (1 << 4),
-	EntityFlag_Collided = (1 << 5),
-	EntityFlag_Moving = (1 << 6),
+	EntityFlag_Collided = (1 << 4),
+	EntityFlag_Moving = (1 << 5),
 };
 
 #include "intrinsics.h"
@@ -160,6 +160,15 @@ enum entity_flag
 #include "ui.h"
 #include "asset.h"
 #include "render.h"
+
+struct move_info
+{
+	b32 Sprinting;
+	b32 Jumping;
+	b32 Crouching;
+	b32 Moving;
+	v3 ddP;
+};
 
 struct collision_info
 {
@@ -192,6 +201,7 @@ struct entity
 {
 	entity_type Type;
 	u32 Flags;
+	u32 ID; // For now this is just an index into the entity array.
 
 	// Gameplay
 	v3 P;
@@ -229,6 +239,8 @@ struct entity
 	v3 RightFootP;
 	v3 LeftHandP;
 	v3 RightHandP;
+
+	move_info MoveInfo;
 };
 
 struct camera
@@ -277,6 +289,8 @@ struct game_state
 	model *Capsule;
 	model *Cube;
 	model *Sphere;
+
+	u32 PlayerIDForController[ArrayCount(((game_input *)0)->Controllers)];
 };
 
 struct temp_state

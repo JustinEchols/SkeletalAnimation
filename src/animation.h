@@ -7,8 +7,11 @@ struct key_frame
 	v3 *Scales;
 };
 
+// NOTE(Justin): Sampled animation
 struct animation_info
 {
+	string Name;
+
 	u32 JointCount;
 	u32 KeyFrameCount;
 
@@ -18,6 +21,8 @@ struct animation_info
 
 	string *JointNames;
 	key_frame *KeyFrames;
+
+	key_frame *ReservedForChannel;
 };
 
 struct animation_id
@@ -36,18 +41,17 @@ enum animation_flags
 	AnimationFlags_ControlsTurning = (1 << 7),
 };
 
+// NOTE(Justin): Animation channel 
 struct animation
 {
 	string Name;
 
-	u32 DefaultFlags;
 	u32 Flags;
-
 	f32 Duration;
 	f32 CurrentTime; 
 	f32 OldTime; 
 	f32 TimeScale; 
-	f32 TimeOffset;
+	f32 StartTime; // Does this need to be stored?
 
 	f32 BlendFactor;
 	f32 BlendDuration;
@@ -65,7 +69,6 @@ struct animation
 	f32 TurningDeltaPerFrame;
 };
 
-
 enum arc_type 
 {
 	ArcType_None,
@@ -82,15 +85,17 @@ struct animation_graph_arc
 	f32 t0, t1;
 	b32 BlendDurationSet;
 	f32 BlendDuration;
-	f32 TimeOffset;
+	f32 StartTime;
 };
 
 // TODO(Justin): Node type? Additive, nblend, composite...
+// TODO(Justin): Right now Tag is the actual name of the animation...
 struct animation_graph_node
 {
 	string Name;
-	string Tag; // TODO(Justin): Right now this is the actual name of the animation...
+	string Tag; 
 	u32 AnimationFlags;
+	f32 TimeScale;
 	u32 Index;
 	u32 ArcCount;
 	animation_graph_arc Arcs[16];
@@ -125,8 +130,10 @@ struct animation_player
 	f32 dt;
 
 	v3 RootMotionAccumulator;
-	f32 RootTurningAccumulator;
 	v3 RootPLocked;
+
+	f32 RootTurningAccumulator;
+	quaternion OrientationLockedAt;
 
 	key_frame *FinalPose;
 	model *Model; 

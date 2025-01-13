@@ -62,7 +62,11 @@ in vec4 SurfaceLightP;
 in vec2 UV;
 
 uniform bool OverRideTexture;
-uniform sampler2D Texture;
+uniform bool UsingDiffuse;
+uniform bool UsingSpecular;
+
+uniform sampler2D DiffuseTexture;
+uniform sampler2D SpecularTexture;
 uniform sampler2D ShadowMapTexture;
 
 uniform vec3 Ambient;
@@ -134,30 +138,37 @@ void main()
 
 	float D = max(dot(SurfaceToLightNormalized, Normal), 0.0);
 	float S = pow(max(dot(ReflectedDirection, Normal), 0.0), Shininess);
+	float A = 1.0f;
 
 	vec3 Diff = vec3(0.0);
 	vec3 Amb = vec3(0.0);
-	float A = 1.0f;
+	vec3 Spec = vec3(0.0);
+
+	Amb = Ambient * Diffuse.xyz;
 	if(OverRideTexture)
 	{
-		Amb = Ambient * Diffuse.xyz;
 		Diff = D * LightColor * Diffuse.xyz;
-	}
-	else
-	{
-		vec4 Texel = texture(Texture, UV);
-		Amb = Ambient * Texel.xyz;
-		Diff = D * LightColor * Texel.xyz;
-		A = Texel.a;
+		Spec = S * LightColor * Specular.xyz;
 	}
 
-	vec3 Spec = S * LightColor * Specular.xyz;
+	if(UsingDiffuse)
+	{
+		vec4 DiffuseTexel = texture(DiffuseTexture, UV);
+		Amb = Ambient * DiffuseTexel.xyz;
+		Diff = D * LightColor * DiffuseTexel.xyz;
+		A = DiffuseTexel.a;
+	}
+
+	if(UsingSpecular)
+	{
+		vec4 SpecularTexel = texture(SpecularTexture, UV);
+		Spec = S * LightColor * SpecularTexel.xyz;
+	}
 
 	vec3 LightProjectedP = SurfaceLightP.xyz / SurfaceLightP.w;
 	LightProjectedP = 0.5 * LightProjectedP + 0.5;
-
 	float ShadowValue = SimpleShadowMapValue(SurfaceLightP);
-	//float ShadowValue = SimplePCFShadowMapValue(SurfaceLightP);
+
 	Result = vec4(Amb + ShadowValue*(Diff + Spec), A);
 })";
 

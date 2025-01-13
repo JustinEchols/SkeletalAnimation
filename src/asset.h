@@ -81,8 +81,7 @@ struct asset_manager
 	font Font;
 
 	// TODO(Justin): Clean this up
-	animation_info *AnimationInfos;
-	animation *Animations;
+	animation_info *SampledAnimations;
 };
 
 struct asset_entry
@@ -92,14 +91,14 @@ struct asset_entry
 	{
 		texture *Texture;
 		model *Model;
-		animation *Animation;
 		animation_graph *Graph;
+		animation_info *SampledAnimation;
 	};
 };
 
 internal asset_entry		LookupTexture(asset_manager *AssetManager, char *TextureName);
 internal asset_entry		LookupModel(asset_manager *AssetManager, char *ModelName);
-internal asset_entry		LookupAnimation(asset_manager *AssetManager, char *AnimationName);
+internal asset_entry		LookupSampledAnimation(asset_manager *AssetManager, char *AnimationName);
 internal animation_graph *	LookupGraph(asset_manager *AssetManager, char *GraphName);
 
 #define ASSET_H

@@ -32,6 +32,13 @@ struct vertex
 	joint_info JointInfo;
 };
 
+enum material_flags
+{
+	MaterialFlag_Diffuse = (1 << 1),
+	MaterialFlag_Specular = (1 << 2),
+	MaterialFlag_Normal = (1 << 3),
+};
+
 struct mesh
 {
 	string Name;
@@ -50,18 +57,24 @@ struct mesh
 	mat4 *JointTransforms;
 	mat4 *ModelSpaceTransforms;
 
+	// Materials
 	material_spec MaterialSpec;
+	u32 MaterialFlags;
+	u32 DiffuseTexture;
+	u32 SpecularTexture;
+	u32 NormalTexture;
 
-	// Data modified by renderer.
+	// Data modified by renderer. Remove this!
 	u32 VA;
 	u32 VB;
 	u32 IBO;
-	//u32 TextureIndex;
 	texture *Texture;
 };
 
 struct model
 {
+	string Name;
+
 	b32 HasSkeleton;
 	u32 MeshCount;
 	mesh *Meshes;

@@ -83,7 +83,7 @@ DEBUG_PLATFORM_FILE_GROUP_LOAD(DebugPlatformFileGroupLoad)
 
 	WIN32_FIND_DATA Found;
 	HANDLE FileHandle = FindFirstFile(DirectoryNameAndWildCard, &Found);
-	while (FileHandle != INVALID_HANDLE_VALUE)
+	while(FileHandle != INVALID_HANDLE_VALUE)
 	{
 		char *Src = Found.cFileName;
 		MemoryCopy(StringLen(Src), Src, Result.FileNames[Result.Count++]);
