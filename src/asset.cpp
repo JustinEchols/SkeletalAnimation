@@ -360,44 +360,27 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 	return(Info);
 }
 
-char *AnimationDirectory = "animations/XBot";
-char *AnimationDirectoryAndWildCard = "animations\\XBot\\XBot*";
 
-char *NinjaAnimationsDirectory = "animations/Ninja";
-char *NinjaAnimationsDirectoryAndWildCard = "animations\\Ninja\\Ninja*";
+char *TexturesDirectory				= "textures";
+char *TexturesDirectoryAndWildCard	= "textures\\*";
+
+char *ModelsDirectory				= "models";
+char *ModelsDirectoryAndWildCard	= "models\\*";
+
+char *AnimationDirectory			= "animations/XBot";
+char *AnimationDirectoryAndWildCard = "animations\\XBot\\*";
+
+char *NinjaAnimationsDirectory		= "animations/Ninja";
+char *NinjaAnimationsDirectoryAndWildCard = "animations\\Ninja\\*";
+
+char *YBotAnimationsDirectory		= "animations/YBot";
+char *YBotAnimationsDirectoryAndWildCard = "animations\\YBot\\*";
 
 char *GraphFiles[] =
 {
 	"../src/XBot_AnimationGraph.animation_graph",
+	"../src/YBot_AnimationGraph.animation_graph",
 	"../src/Ninja_AnimationGraph.animation_graph",
-};
-
-char *TextureFiles[] =
-{
-	"../data/textures/tile_gray.bmp",
-	"../data/textures/left_arrow.png",
-	"../data/textures/texture_01.png",
-	"../data/textures/texture_13.png",
-	"../data/textures/orange_texture_02.png",
-	"../data/textures/red_texture_02.png",
-	"../data/textures/Ninja_diffuse.png",
-	"../data/textures/Ninja_normal.png",
-	"../data/textures/Ninja_specular.png",
-};
-
-char *ModelFiles[] =
-{
-	"../data/models/XBot.mesh",
-	"../data/models/Cube.mesh",
-	"../data/models/Sphere.mesh",
-	"../data/models/Arrow.mesh",
-	"../data/models/XArrow.mesh",
-	"../data/models/YArrow.mesh",
-	"../data/models/Capsule.obj",
-	"../data/models/Cylinder.obj",
-	"../data/models/Cone.obj",
-	"../data/models/YBot.mesh",
-	"../data/models/Ninja.mesh",
 };
 
 char *FontFiles[] =
@@ -482,6 +465,8 @@ AssetManagerInitialize(asset_manager *Manager)
 	char ExtBuffer[256];
 	char AssetName[256];
 
+	// TODO(Justin): Clean this up.
+
 	//
 	// Textures
 	//
@@ -489,16 +474,27 @@ AssetManagerInitialize(asset_manager *Manager)
 	ArenaSubset(&Manager->Arena, &Manager->TextureNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->TextureNames);
 	StringHashAdd(&Manager->TextureNames, "(null)", 0);
-	for(u32 NameIndex = 0; NameIndex < ArrayCount(TextureFiles); ++NameIndex)
+
+	file_group_info TextureGroup = Platform.DebugFileGroupLoad(TexturesDirectoryAndWildCard);
+	for(u32 FileIndex = 0; FileIndex < TextureGroup.Count; ++FileIndex)
 	{
-		char *FullPath = TextureFiles[NameIndex];
-		FileNameFromFullPath(FullPath, Buffer);
-		StringHashAdd(&Manager->TextureNames, Buffer, NameIndex + 1);
-		s32 Index = StringHashLookup(&Manager->TextureNames, Buffer);
+		// TODO(Justin): Remove incorrect files
+		char *FileName = TextureGroup.FileNames[FileIndex];
+		if(FileName[0] == '.') continue;
+
+		FileNameFromFullPath(FileName, AssetName);
+		StringHashAdd(&Manager->TextureNames, AssetName, FileIndex + 1);
+		s32 Index = StringHashLookup(&Manager->TextureNames, AssetName);
 		Assert(Index != -1);
 		texture *Texture = Manager->Textures + Index;
-		*Texture = TextureLoad(FullPath);
-		Texture->Name = StringCopy(&Manager->Arena, (char *)Buffer);
+
+		MemoryZero(Buffer, sizeof(Buffer));
+		strcat(Buffer, TexturesDirectory);
+		strcat(Buffer, "/");
+		strcat(Buffer, FileName);
+
+		*Texture = TextureLoad(Buffer);
+		Texture->Name = StringCopy(&Manager->Arena, (char *)AssetName);
 	}
 
 	//
@@ -507,21 +503,30 @@ AssetManagerInitialize(asset_manager *Manager)
 
 	ArenaSubset(&Manager->Arena, &Manager->ModelNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->ModelNames);
-	for(u32 NameIndex = 0; NameIndex < ArrayCount(ModelFiles); ++NameIndex)
+
+	file_group_info ModelGroup = Platform.DebugFileGroupLoad(ModelsDirectoryAndWildCard);
+	for(u32 FileIndex = 0; FileIndex < ModelGroup.Count; ++FileIndex)
 	{
-		char *FullPath = ModelFiles[NameIndex];
-		FileNameFromFullPath(FullPath, Buffer);
-		ExtFromFullPath(FullPath, ExtBuffer);
-		StringHashAdd(&Manager->ModelNames, Buffer, NameIndex);
-		s32 Index = StringHashLookup(&Manager->ModelNames, Buffer);
+		char *FileName = ModelGroup.FileNames[FileIndex];
+		if(FileName[0] == '.') continue;
+		
+		FileNameFromFullPath(FileName, AssetName);
+		ExtFromFullPath(FileName, ExtBuffer);
+		StringHashAdd(&Manager->ModelNames, AssetName, FileIndex);
+		s32 Index = StringHashLookup(&Manager->ModelNames, AssetName);
 		Assert(Index != -1);
 		model *Model = Manager->Models + Index;
 
+		MemoryZero(Buffer, sizeof(Buffer));
+		strcat(Buffer, ModelsDirectory);
+		strcat(Buffer, "/");
+		strcat(Buffer, FileName);
+
 		if(StringsAreSame(ExtBuffer, "mesh"))
 		{
-			*Model = ModelLoad(&Manager->Arena, FullPath);
+			*Model = ModelLoad(&Manager->Arena, Buffer);
 
-			if(StringsAreSame(Buffer, "Cube"))
+			if(StringsAreSame(AssetName, "Cube"))
 			{
 				asset_entry Entry = LookupTexture(Manager, "orange_texture_02");
 				Assert(Entry.Texture);
@@ -531,7 +536,7 @@ AssetManagerInitialize(asset_manager *Manager)
 		}
 		else
 		{
-			*Model = ObjLoad(&Manager->Arena, FullPath);
+			*Model = ObjLoad(&Manager->Arena, Buffer);
 
 			asset_entry Entry = LookupTexture(Manager, "orange_texture_02");
 			Assert(Entry.Texture);
@@ -539,7 +544,7 @@ AssetManagerInitialize(asset_manager *Manager)
 			Model->Meshes[0].MaterialFlags |= MaterialFlag_Diffuse;
 		}
 
-		Model->Name = StringCopy(&Manager->Arena, Buffer);
+		Model->Name = StringCopy(&Manager->Arena, AssetName);
 
 		if(StringsAreSame(Buffer, "Ninja"))
 		{
@@ -565,8 +570,10 @@ AssetManagerInitialize(asset_manager *Manager)
 	//
 
 	file_group_info XBotFileGroup	= Platform.DebugFileGroupLoad(AnimationDirectoryAndWildCard);
+	file_group_info YBotFileGroup = Platform.DebugFileGroupLoad(YBotAnimationsDirectoryAndWildCard);
 	file_group_info NinjaFileGroup	= Platform.DebugFileGroupLoad(NinjaAnimationsDirectoryAndWildCard);
-	u32 TotalCount = XBotFileGroup.Count + NinjaFileGroup.Count;
+
+	u32 TotalCount = XBotFileGroup.Count + NinjaFileGroup.Count + YBotFileGroup.Count;
 
 	ArenaSubset(&Manager->Arena, &Manager->AnimationNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->AnimationNames);
@@ -574,6 +581,8 @@ AssetManagerInitialize(asset_manager *Manager)
 	for(u32 FileIndex = 0; FileIndex < XBotFileGroup.Count; ++FileIndex)
 	{
 		char *FileName = XBotFileGroup.FileNames[FileIndex];
+		if(FileName[0] == '.') continue;
+
 		FileNameFromFullPath(FileName, AssetName);
 		StringHashAdd(&Manager->AnimationNames, AssetName, FileIndex);
 		s32 Index = StringHashLookup(&Manager->AnimationNames, AssetName);
@@ -596,10 +605,11 @@ AssetManagerInitialize(asset_manager *Manager)
 		}
 	}
 
-	// TODO(Justin): Clean this up.
 	for(u32 FileIndex = 0; FileIndex < NinjaFileGroup.Count; ++FileIndex)
 	{
 		char *FileName = NinjaFileGroup.FileNames[FileIndex];
+		if(FileName[0] == '.') continue;
+
 		FileNameFromFullPath(FileName, AssetName);
 		StringHashAdd(&Manager->AnimationNames, AssetName, XBotFileGroup.Count + FileIndex);
 		s32 Index = StringHashLookup(&Manager->AnimationNames, AssetName);
@@ -621,13 +631,38 @@ AssetManagerInitialize(asset_manager *Manager)
 		}
 	}
 
+	for(u32 FileIndex = 0; FileIndex < YBotFileGroup.Count; ++FileIndex)
+	{
+		char *FileName = YBotFileGroup.FileNames[FileIndex];
+		if(FileName[0] == '.') continue;
+
+		FileNameFromFullPath(FileName, AssetName);
+		StringHashAdd(&Manager->AnimationNames, AssetName, (XBotFileGroup.Count + NinjaFileGroup.Count) + FileIndex);
+		s32 Index = StringHashLookup(&Manager->AnimationNames, AssetName);
+		Assert(Index != -1);
+
+		MemoryZero(Buffer, sizeof(Buffer));
+		strcat(Buffer, YBotAnimationsDirectory);
+		strcat(Buffer, "/");
+		strcat(Buffer, FileName);
+
+		animation_info *SampledAnimation = Manager->SampledAnimations + Index;
+		*SampledAnimation = AnimationLoad(&Manager->Arena, Buffer);
+		if(SampledAnimation)
+		{
+			SampledAnimation->Name = StringCopy(&Manager->Arena, AssetName);
+			SampledAnimation->ReservedForChannel = PushStruct(&Manager->Arena, key_frame);
+			key_frame *ReservedForChannel = SampledAnimation->ReservedForChannel;
+			AllocateJointXforms(&Manager->Arena, ReservedForChannel, SampledAnimation->JointCount);
+		}
+	}
+
 	//
 	// Graphs
 	//
 
 	ArenaSubset(&Manager->Arena, &Manager->GraphNames.Arena, Kilobyte(4));
 	StringHashInit(&Manager->GraphNames);
-	//for(u32 NameIndex = 0; NameIndex < 1/*ArrayCount(GraphFiles)*/; ++NameIndex)
 	for(u32 NameIndex = 0; NameIndex < ArrayCount(GraphFiles); ++NameIndex)
 	{
 		char *FullPath = GraphFiles[NameIndex];
@@ -638,6 +673,8 @@ AssetManagerInitialize(asset_manager *Manager)
 		animation_graph *G = Manager->Graphs + Index;
 		ArenaSubset(&Manager->Arena, &G->Arena, Kilobyte(4));
 		AnimationGraphInitialize(G, FullPath);
+
+		int breakhere = 0;
 	}
 
 	//
@@ -645,4 +682,8 @@ AssetManagerInitialize(asset_manager *Manager)
 	//
 
 	FontInitialize(&Manager->Arena, &Manager->Font, FontFiles[0]);
+
+	Manager->XBotGraphFileInfo = {};
+	Manager->XBotGraphFileInfo.Path = "../src/XBot_AnimationGraph.animation_graph";
+	Platform.DebugFileIsDirty(Manager->XBotGraphFileInfo.Path, &Manager->XBotGraphFileInfo.FileDate);
 }

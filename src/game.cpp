@@ -46,7 +46,7 @@ PlayerAdd(game_state *GameState, v3 P)
 	// Sphere
 	Entity->Radius = 0.4f;
 
-	// TODO(Justin): Capsule
+	// Capsule
 	capsule C;
 	C.Radius = Entity->Radius;
 	C.Min = V3(0.0f, C.Radius, 0.0f);
@@ -200,6 +200,10 @@ MovementStateToString(char *Buffer, movement_state State)
 		{
 			sprintf(Buffer, "%s", "MovementState: Sliding");
 		} break;
+		case MovementState_Attack:
+		{
+			sprintf(Buffer, "%s", "MovementState: Attack");
+		} break;
 	}
 }
 
@@ -212,45 +216,35 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 	Entity->ThetaTarget = RadToDegrees(TargetAngleInRad);
 	if(Entity->Theta != Entity->ThetaTarget)
 	{
-		animation_player *AnimationPlayer = Entity->AnimationPlayer;
-		//if(AnimationPlayer && AnimationPlayer->ControlsTurning)
+		//animation_player *AnimationPlayer = Entity->AnimationPlayer;
+		//if(!AnimationPlayer->ControlsTurning && (AnimationPlayer->RootTurningAccumulator == 0.0f))
 		//{
+		//	// NOTE(Justin): If the animation player does not control turning keep recording
+		//	// the player's orientation. When the animation player decides to control turning
+		//	// the orientation that we start playing the animation at is the last recorded orientation
+		//	// of the player!
+		//	AnimationPlayer->OrientationLockedAt = Entity->Orientation;
 		//}
-		//else
+
+		// TODO(Justin): Simplify this!
+		f32 TargetAngleInDegrees = RadToDegrees(TargetAngleInRad);
+		quaternion QTarget;
+		if((TargetAngleInDegrees == 0.0f) ||
+		   (TargetAngleInDegrees == -0.0f) ||
+		   (TargetAngleInDegrees == 180.0f) ||
+		   (TargetAngleInDegrees == -180.0f))
 		{
-
-			// TODO(Justin): Simplify this!
-			f32 TargetAngleInDegrees = RadToDegrees(TargetAngleInRad);
-			quaternion QTarget;
-			if((TargetAngleInDegrees == 0.0f) ||
-			   (TargetAngleInDegrees == -0.0f) ||
-			   (TargetAngleInDegrees == 180.0f) ||
-			   (TargetAngleInDegrees == -180.0f))
-			{
-				QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), TargetAngleInRad);
-			}
-			else
-			{
-				QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), -1.0f*TargetAngleInRad);
-			}
-
-			quaternion QCurrent = Entity->Orientation;
-			Entity->Orientation = RotateTowards(QCurrent, QTarget, dt, AngularSpeed);
+			QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), TargetAngleInRad);
+		}
+		else
+		{
+			QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), -1.0f*TargetAngleInRad);
 		}
 
+		quaternion QCurrent = Entity->Orientation;
+		Entity->Orientation = RotateTowards(QCurrent, QTarget, dt, AngularSpeed);
 		Entity->Theta = -1.0f*RadToDegrees(YawFromQuaternion(Entity->Orientation));
 	}
-}
-
-inline quaternion 
-OrientationUpdate(quaternion Orientation, f32 TargetAngleInDegrees, f32 dt, f32 AngularSpeed)
-{
-	quaternion Result = Orientation;
-	quaternion Target = Quaternion(V3(0.0f, 1.0f, 0.0f), DegreeToRad(TargetAngleInDegrees));
-	Target = Conjugate(Target);
-	Result = RotateTowards(Orientation, Target, dt, AngularSpeed);
-
-	return(Result);
 }
 
 internal quad
@@ -445,16 +439,7 @@ AABBCollisionInfo(aabb AABB)
 	return(Result);
 }
 
-// NOTE(Justin): The epsilon bug was a bug in EntityMove(). The desired position was not being
-// updated.
 // TODO(Justin): Figure out an approach to epsilons.
-// NOTE(Justin): There might be an epsilon bug when epsilon = 0.001f when colliding with an OBB. 
-// Some of the time the player will tunnel through the OBB. After chaning epsilon to 0.01f;
-// the player does not tunnel. It is possible that the position the player is moved to when
-// using 0.001f for epsilon, ends up being behind the non-aligned plane of the OBB. If the player
-// gets moved there then they tunnel through the OBB.
-
-// NOTE(Justin): This is really PointIntersectsPlaneAndInABB.....
 internal b32
 PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin, f32 tEpsilon = 0.001f)
 {
@@ -741,16 +726,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		f32 GroundY = Region->P.y + 0.01f;
 		if(TestP.y < GroundY && IsGrounded(Entity) && (Normal.y < 0.0f))
 		{
-			// NOTE(Justin): This is supposed to handle the situation when the player collides with an OBB and 
-			// is underneath the OBB and on the ground and running toward the corner.
-			//
-			//  /
-			// /___   <-- O
-			//
-			// The collide and slide solution does not work because the new position of the player will be 
-			// behind the ground plane (tunnel through the ground). Setting the velocity to 0 and then breaking, 
-			// we effectively are not accepting the move.
-			// TODO(Justin): Robustness
+			// NOTE(Justin): OBB collision edge case. Do not accept the move by setting the velocity to 0 and breaking.
 			Entity->dP = {};
 			break;
 		}
@@ -892,6 +868,29 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		model *Sphere = GameState->Sphere;
 		*Sphere = DebugModelSphereInitialize(Arena, 0.5f);
 
+		// Player
+#if 0
+		model *Model = LookupModel(&GameState->AssetManager, "YBot").Model;
+		animation_graph *G  = LookupGraph(&GameState->AssetManager, "YBot_AnimationGraph");
+		asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "YBot_FightIdleRight");
+#else
+		model *Model = LookupModel(&GameState->AssetManager, "XBot").Model;
+		animation_graph *G  = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
+		asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "XBot_IdleRight");
+#endif
+
+		entity *Player = PlayerAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+		Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
+		Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
+		Player->Acceleration = 50.0f;
+		Player->Drag = 10.0f;
+		Player->AngularSpeed = 15.0f;
+
+		AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
+		Player->AnimationGraph = G;
+		AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
+		GameState->PlayerIDForController[0] = Player->ID;
+
 		GameMemory->IsInitialized = true;
 	}
 
@@ -906,7 +905,23 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		TempState->IsInitialized = true;
 	}
 
-	v3 CameraddP = {};
+#if DEVELOPER
+	if(!GameInput->ReloadingGame && Platform.DebugFileIsDirty(GameState->AssetManager.XBotGraphFileInfo.Path, &GameState->AssetManager.XBotGraphFileInfo.FileDate))
+	{
+		entity *Entity = GameState->Entities + GameState->PlayerEntityIndex;
+
+		animation_graph *G = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
+		ArenaClear(&G->Arena);
+		G->NodeCount = 0;
+		G->Index = 0;
+		G->CurrentNode = {};
+		MemoryZero(&G->Nodes, sizeof(G->Nodes));
+
+		AnimationGraphInitialize(G, "../src/XBot_AnimationGraph.animation_graph");
+		Entity->AnimationGraph = G;
+	}
+#endif
+
 	for(u32 ControllerIndex = 0; ControllerIndex < ArrayCount(GameInput->Controllers); ++ControllerIndex)
 	{
 		game_controller_input *Controller = ControllerGet(GameInput, ControllerIndex);
@@ -918,22 +933,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				model *Model = 0;
 				animation_graph *G = 0;
 				asset_entry Entry = {};
-				if(GameState->PlayerEntityIndex == 0)
-				{
-					Model = LookupModel(&GameState->AssetManager, "XBot").Model;
-					G  = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
-					Entry = LookupSampledAnimation(&GameState->AssetManager, "XBot_IdleRight");
-				}
-				else
-				{
-					Model = LookupModel(&GameState->AssetManager, "YBot").Model;
-					G  = LookupGraph(&GameState->AssetManager, "Ninja_AnimationGraph");
-					Entry = LookupSampledAnimation(&GameState->AssetManager, "Ninja_IdleRight");
-				}
+
+				Model = LookupModel(&GameState->AssetManager, "XBot").Model;
+				G  = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
+				Entry = LookupSampledAnimation(&GameState->AssetManager, "XBot_IdleRight");
 
 				entity *Player = PlayerAdd(GameState, V3(0.0f, 0.01f, -10.0f));
 				Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
 				Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
+				Player->Acceleration = 50.0f;
+				Player->Drag = 10.0f;
+				Player->AngularSpeed = 15.0f;
 
 				AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
 				Player->AnimationGraph = G;
@@ -946,80 +956,103 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			entity *Entity = GameState->Entities + GameState->PlayerIDForController[ControllerIndex];
 			move_info *MoveInfo = &Entity->MoveInfo;
 			*MoveInfo = {};
+			f32 Acceleration = 0.0f;
+
+			// NOTE(Justin): For debug camera
+			if(GameState->CameraIsFree) continue;
+
+			b32 Sprinting = false;
 			if(Controller->IsAnalog)
 			{
 				MoveInfo->ddP = V3(Controller->StickAverageX, 0.0f, -1.0f*Controller->StickAverageY);
 
-				if(IsDown(Controller->ActionDown))
+				if(IsDown(Controller->ActionDown) && IsGrounded(Entity))
 				{
-					MoveInfo->Jumping = true;
+					MoveInfo->CanJump = true;
+					MoveInfo->AnyAction = true;
+				}
+
+				if(IsDown(Controller->ActionLeft))
+				{
+					MoveInfo->Attacking = true;
+					MoveInfo->AnyAction = true;
 				}
 				
-				f32 D = Dot(MoveInfo->ddP, MoveInfo->ddP);
-				if(D >= 1.0f)
+				Acceleration = Dot(MoveInfo->ddP, MoveInfo->ddP);
+				if(Acceleration >= 1.0f)
 				{
-					MoveInfo->Sprinting = true;
+					Sprinting = true;
+					MoveInfo->AnyAction = true;
 				}
 			}
 			else
 			{
-				if(!GameState->CameraIsFree)
+				if(IsDown(Controller->MoveForward))
 				{
-					if(IsDown(Controller->MoveForward))
-					{
-						MoveInfo->ddP += V3(0.0f, 0.0f, -1.0f);
-					}
-					if(IsDown(Controller->MoveLeft))
-					{
-						MoveInfo->ddP += V3(-1.0f, 0.0f, 0.0f);
-					}
-					if(IsDown(Controller->MoveBack))
-					{
-						MoveInfo->ddP += V3(0.0f, 0.0f, 1.0f);
-					}
-					if(IsDown(Controller->MoveRight))
-					{
-						MoveInfo->ddP += V3(1.0f, 0.0f, 0.0f);
-					}
-					if(IsDown(Controller->Shift))
-					{
-						MoveInfo->Sprinting = true;
-					}
-					if(IsDown(Controller->Space))
-					{
-						MoveInfo->Jumping = true;
-					}
-					if(IsDown(Controller->Ctrl))
-					{
-						MoveInfo->Crouching = true;
-					}
+					MoveInfo->ddP += V3(0.0f, 0.0f, -1.0f);
 				}
-				else
+				if(IsDown(Controller->MoveLeft))
 				{
-					if(IsDown(Controller->MoveForward))
-					{
-						CameraddP += 1.0f*GameState->Camera.Direction;
-					}
-					if(IsDown(Controller->MoveLeft))
-					{
-						CameraddP += -1.0f*Cross(GameState->Camera.Direction, YAxis());
-					}
-					if(IsDown(Controller->MoveBack))
-					{
-						CameraddP += -1.0f*GameState->Camera.Direction;
-					}
-					if(IsDown(Controller->MoveRight))
-					{
-						CameraddP += 1.0f*Cross(GameState->Camera.Direction, YAxis());
-					}
-					CameraddP = Normalize(CameraddP);
+					MoveInfo->ddP += V3(-1.0f, 0.0f, 0.0f);
 				}
+				if(IsDown(Controller->MoveBack))
+				{
+					MoveInfo->ddP += V3(0.0f, 0.0f, 1.0f);
+				}
+				if(IsDown(Controller->MoveRight))
+				{
+					MoveInfo->ddP += V3(1.0f, 0.0f, 0.0f);
+				}
+				if(IsDown(Controller->Shift))
+				{
+					Sprinting = true;
+					MoveInfo->AnyAction = true;
+				}
+				if(IsDown(Controller->Space) && IsGrounded(Entity))
+				{
+					MoveInfo->CanJump = true;
+					MoveInfo->AnyAction = true;
+				}
+				if(IsDown(Controller->Ctrl) && IsGrounded(Entity))
+				{
+					MoveInfo->Crouching = true;
+					MoveInfo->AnyAction = true;
+				}
+				if(WasPressed(GameInput->MouseButtons[MouseButton_Left]))
+				{
+					MoveInfo->Attacking = true;
+					MoveInfo->AnyAction = true;
+				}
+
+				Acceleration = Dot(MoveInfo->ddP, MoveInfo->ddP);
+
 			}
 
-			if(!Equal(MoveInfo->ddP, V3(0.0f)))
+			if(Acceleration != 0.0f)
 			{
 				MoveInfo->ddP = Normalize(MoveInfo->ddP);
-				MoveInfo->Moving = true;
+				MoveInfo->AnyAction = true;
+				MoveInfo->Accelerating = true;
+			}
+
+			if(Sprinting && MoveInfo->Accelerating)
+			{
+				MoveInfo->CanSprint = true;
+			}
+
+			if(!Sprinting && MoveInfo->Accelerating)
+			{
+				//MoveInfo.CanRun = true;
+			}
+
+			if(Equal(Entity->dP, V3(0.0f)))
+			{
+				MoveInfo->NoVelocity = true;
+			}
+
+			if(MoveInfo->NoVelocity && !MoveInfo->AnyAction)
+			{
+				MoveInfo->StandingStill = true;
 			}
 		}
 	}
@@ -1034,63 +1067,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			case EntityType_Player:
 			{
-				move_info *MoveInfo = &Entity->MoveInfo;
-
-				ddP = MoveInfo->ddP;
-
-				f32 a = 50.0f;
-
-				v3 OldPlayerddP = Entity->ddP;
-				Entity->ddP = ddP;
-
-				if(MoveInfo->Sprinting)
-				{
-					a *= 1.5f;
-				}
-
-				if(MoveInfo->Moving)
-				{
-					FlagAdd(Entity, EntityFlag_Moving);
-				}
-				else
-				{
-					FlagClear(Entity, EntityFlag_Moving);
-				}
-
-				if(MoveInfo->Jumping && IsGrounded(Entity))
-				{
-					f32 X = AbsVal(Entity->dP.x);
-					f32 Z = AbsVal(Entity->dP.z);
-					f32 MaxComponent = Max(X, Z);
-
-					// TODO(Justin): Handle diagonal
-					if(MaxComponent == X)
-					{
-						Entity->dP.x += SignOf(Entity->dP.x)*10.0f;
-					}
-					else
-					{
-						Entity->dP.z += SignOf(Entity->dP.z)*10.0f;
-					}
-
-					Entity->dP.y = 30.0f;
-				}
-				else
-				{
-					MoveInfo->Jumping = false;
-				}
-
-				ddP = a * ddP;
-				ddP += -10.0f * Entity->dP;
+				move_info MoveInfo = Entity->MoveInfo;
+				EvaluatePlayerMove(Entity, MoveInfo, &ddP);
 
 				switch(Entity->MovementState)
 				{
-					case MovementState_Idle:	EvaluateIdle(Entity, *MoveInfo); break;
-					case MovementState_Crouch:	EvaluateCrouch(Entity, *MoveInfo); break;
-					case MovementState_Run:		EvaluateRun(Entity, *MoveInfo); break;
-					case MovementState_Sprint:	EvaluateSprint(Entity, *MoveInfo); break;
-					case MovementState_Jump:	EvaluateJump(Entity, *MoveInfo); break;
-					case MovementState_Sliding:	EvaluateSliding(Entity, *MoveInfo); break;
+					case MovementState_Idle:	EvaluateIdle(Entity, MoveInfo); break;
+					case MovementState_Crouch:	EvaluateCrouch(Entity, MoveInfo); break;
+					case MovementState_Run:		EvaluateRun(Entity, MoveInfo); break;
+					case MovementState_Sprint:	EvaluateSprint(Entity, MoveInfo); break;
+					case MovementState_Jump:	EvaluateJump(Entity, MoveInfo); break;
+					case MovementState_Sliding:	EvaluateSliding(Entity, MoveInfo); break;
+					case MovementState_Attack:	EvaluateAttack(Entity, MoveInfo, dt); break;
+					case MovementState_InAir:	EvaluateInAir(Entity, MoveInfo); break;
 				};
 			} break;
 			case EntityType_Elevator:
@@ -1114,57 +1103,33 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			} break;
 		}
 
-		if(!Equal(ddP, V3(0.0f)))
+		if(!Equal(ddP, V3(0.0f)) && FlagIsSet(Entity, EntityFlag_Moving))
 		{
 			if(CanMove(Entity))
 			{
 				EntityMove(GameState, Entity, ddP, dt);
-				EntityOrientationUpdate(Entity, dt, 15.0f);
+				EntityOrientationUpdate(Entity, dt, Entity->AngularSpeed);
 			}
 		}
 	}
 
 	asset_manager *Assets = &GameState->AssetManager;
 
-	//
-	// TODO(Justin): Will animation update, will have to be rolled into physics work per entity?
-	//
+
 
 	temporary_memory AnimationMemory = TemporaryMemoryBegin(&TempState->Arena);
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	camera *Camera = &GameState->Camera;
+
 	if(!GameState->CameraIsFree)
 	{
 		v3 CameraP = Player->P + GameState->CameraOffsetFromPlayer;
 		CameraSet(Camera, CameraP, GameState->DefaultYaw, GameState->DefaultPitch);
 	}
-	else
-	{
-		v3 P = Camera->P + GameState->CameraSpeed*dt*CameraddP;
-		Camera->P = P;
-
-		// TODO(justin) FPS camera 
-		if(IsDown(GameInput->MouseButtons[MouseButton_Left]))
-		{
-			CameraDirectionUpdate(Camera, GameInput->dXMouse, GameInput->dYMouse, dt);
-		}
-	}
 
 	//
 	// NOTE(Justin): Render.
 	//
-
-	// NOTE(Justin): The viewing volume and transformations of the light are orientated with respect to 
-	// the light's viewing transformation. E.g. This directionatl light is to the right,down, and forward. We
-	// place the light up, to the left, and at the front of the scene. The orthographic clip volume is
-	// orientated the same was as the light. Meaning the left face of the volume is am xy plane in world space
-	// that is further in the -Z DIRECTION. The right face is also an xy plane in world space
-	// that is closer in the +Z DIRECTOIN. Changing the left and right values of the volume will
-	// change what objects cast shadows based on their Z POSITION. If a z coordinate of an object
-	// is more negative than the left face the object WILL NOT CAST A SHADOW. If the light source is
-	// directional, then this is a visual artifact since the object SHOULD cast a shadow because the light
-	// source is directional.
-	// 
 
 	v3 LightDir = V3(1.0f, -1.0f, -1.0f);
 	v3 LightP = V3(-10.0f, 10.0f, 0.0f);
@@ -1208,34 +1173,39 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				AnimationPlayerUpdate(Entity->AnimationPlayer, &TempState->Arena, dt);
 				animation_player *AnimationPlayer = Entity->AnimationPlayer;
 				animation_graph *AnimationGraph = Entity->AnimationGraph;
-				if(AnimationPlayer)
-				{
-					if(AnimationPlayer->ControlsTurning)
-					{
-						if(Equal(AnimationPlayer->OrientationLockedAt, Quaternion()))
-						{
-							AnimationPlayer->OrientationLockedAt = Player->Orientation;
-						}
-					}
-				}
-
 				ModelJointsUpdate(Entity);
 				AnimationGraphPerFrameUpdate(Assets, AnimationPlayer, AnimationGraph);
 
 				T = Mat4Translate(Entity->P);
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(Entity->VisualScale);
+
+				if(!AnimationPlayer->ControlsTurning && (AnimationPlayer->RootTurningAccumulator == 0.0f))
+				{
+					// NOTE(Justin): If the animation player does not control turning keep recording
+					// the player's orientation. When the animation player decides to control turning
+					// the orientation that we start playing the animation at is the last recorded orientation
+					// of the player!
+					AnimationPlayer->OrientationLockedAt = Entity->Orientation;
+				}
+
 				if(AnimationPlayer->ControlsTurning)
 				{
 					R = QuaternionToMat4(AnimationPlayer->OrientationLockedAt);
 				}
 				else
 				{
-					AnimationPlayer->RootTurningAccumulator = 0.0f;
-					AnimationPlayer->OrientationLockedAt = Quaternion();
+					if(AnimationPlayer->RootTurningAccumulator != 0.0f)
+					{
+						//Target = RotateTowards(AnimationPlayer->OrientationLockedAt, Entity->Orientation, dt, 1.0f);
+						AnimationPlayer->OrientationLockedAt = RotateTowards(AnimationPlayer->OrientationLockedAt, Entity->Orientation, dt, 5.0f);
+						R = QuaternionToMat4(AnimationPlayer->OrientationLockedAt);
+						AnimationPlayer->RootTurningAccumulator = 0.0f;
+					}
 				}
 
 				PushModel(RenderBuffer, CString(AnimationPlayer->Model->Name),T*R*S);
+
 
 				// TODO(Justin): Move debug diagrams to ui.
 
@@ -1273,12 +1243,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				v3 P = Entity->P;
 				P.y += 0.01f;
 				T = Mat4Translate(P);
-				R = QuaternionToMat4(Entity->Orientation);
+				//R = QuaternionToMat4(Entity->Orientation);
+				R = QuaternionToMat4(AnimationPlayer->OrientationLockedAt);
 				S = Mat4Scale(V3(0.5f));
 
-				//Entry = LookupTexture(Assets, "left_arrow");
-				//PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
-				//PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, Entry.Index);
+				Entry = LookupTexture(Assets, "left_arrow");
+				PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
+				PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, Entry.Index);
 			} break;
 			case EntityType_Cube:
 			{
@@ -1380,9 +1351,45 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	{
 		GameState->TimeScale *= 0.9f;
 	}
+
 	if(WasPressed(Keyboard->F10))
 	{
 		GameState->CameraIsFree = !GameState->CameraIsFree;
+	}
+
+	if(GameState->CameraIsFree)
+	{
+		v3 CameraddP = {};
+		if(IsDown(Keyboard->MoveForward))
+		{
+			CameraddP += 1.0f*GameState->Camera.Direction;
+		}
+		if(IsDown(Keyboard->MoveLeft))
+		{
+			CameraddP += -1.0f*Cross(GameState->Camera.Direction, YAxis());
+		}
+		if(IsDown(Keyboard->MoveBack))
+		{
+			CameraddP += -1.0f*GameState->Camera.Direction;
+		}
+		if(IsDown(Keyboard->MoveRight))
+		{
+			CameraddP += 1.0f*Cross(GameState->Camera.Direction, YAxis());
+		}
+
+		if(!Equal(CameraddP, V3(0.0f)))
+		{
+			CameraddP = Normalize(CameraddP);
+		}
+
+		v3 P = Camera->P + GameState->CameraSpeed*dt*CameraddP;
+		Camera->P = P;
+
+		// TODO(justin) FPS camera 
+		if(IsDown(GameInput->MouseButtons[MouseButton_Left]))
+		{
+			CameraDirectionUpdate(Camera, GameInput->dXMouse, GameInput->dYMouse, dt);
+		}
 	}
 
 	entity *Entity = GameState->Entities + GameState->PlayerEntityIndex;

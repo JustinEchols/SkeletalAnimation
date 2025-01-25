@@ -34,5 +34,7 @@ UiBegin(ui *UI, game_input *GameInput, asset_manager *Assets)
 	UI->HotID = 0;
 	UI->Assets = Assets;
 	UI->Rect = RectMinDim(V2(0.0f), V2(100, 500.0f));
+	UI->Font = &Assets->Font;
+	UI->P = V2(0.0f, (f32)GameInput->BackBufferHeight - UI->Font->LineGap);
 }
 

@@ -93,104 +93,207 @@ EntityTransform(entity *Entity, v3 Scale = V3(1.0f))
 }
 
 inline void
-EvaluateIdle(entity *Entity, move_info MoveInfo)
+EvaluatePlayerMove(entity *Entity, move_info MoveInfo, v3 *ddP)
 {
-	Assert(Entity->MovementState == MovementState_Idle);
-	if(MoveInfo.Moving)
+	f32 a = Entity->Acceleration;
+	*ddP = MoveInfo.ddP;
+	Entity->ddP = *ddP;
+
+	if(MoveInfo.CanSprint)
 	{
-		if(MoveInfo.Jumping)
+		a *= 1.5f;
+	}
+
+	if(MoveInfo.CanJump)
+	{
+		f32 X = AbsVal(Entity->dP.x);
+		f32 Z = AbsVal(Entity->dP.z);
+		f32 MaxComponent = Max(X, Z);
+
+		// TODO(Justin): Handle diagonal
+		if(MaxComponent == X)
 		{
-			Entity->MovementState = MovementState_Jump;
-		}
-		else if(MoveInfo.Sprinting)
-		{
-			Entity->MovementState = MovementState_Sprint;
+			Entity->dP.x += SignOf(Entity->dP.x)*10.0f;
 		}
 		else
 		{
-			Entity->MovementState = MovementState_Run;
+			Entity->dP.z += SignOf(Entity->dP.z)*10.0f;
 		}
+
+		Entity->dP.y = 30.0f;
 	}
-	else
+
+	*ddP = a * (*ddP);
+	*ddP += -Entity->Drag * Entity->dP;
+}
+
+inline void
+EvaluateIdle(entity *Entity, move_info MoveInfo)
+{
+	if(MoveInfo.StandingStill)
 	{
-		if(MoveInfo.Crouching)
-		{
-			Entity->MovementState = MovementState_Crouch;
-		}
+		// No velocity and no action
+		FlagClear(Entity, EntityFlag_Moving);
+		return;
+	}
+
+	FlagAdd(Entity, EntityFlag_Moving);
+
+	if(MoveInfo.Attacking)
+	{
+		Entity->MovementState = MovementState_Attack;
+		Entity->Attack.Type = AttackType_Neutral;
+		Entity->Attack.CurrentTime = 0.0f;
+		Entity->Attack.Duration = 0.2f;
+		return;
+	}
+
+	if(MoveInfo.CanJump)
+	{
+		// Grounded and jump pressed
+		Entity->MovementState = MovementState_Jump;
+		return;
+	}
+
+	if(MoveInfo.Crouching)
+	{
+		// Grounded and crouch pressed
+		Entity->MovementState = MovementState_Crouch;
+		return;
+	}
+
+	if(MoveInfo.CanSprint)
+	{
+		// Accelerating and sprinting 
+		Entity->MovementState = MovementState_Sprint;
+		return;
+	}
+
+	if(!MoveInfo.CanSprint && MoveInfo.Accelerating)
+	{
+		// Accelerating and not sprinting 
+		Entity->MovementState = MovementState_Run;
+		return;
 	}
 }
 
 inline void
 EvaluateRun(entity *Entity, move_info MoveInfo)
 {
-	Assert(Entity->MovementState == MovementState_Run);
-	if(!MoveInfo.Moving)
+	if(!MoveInfo.AnyAction)
 	{
 		Entity->MovementState = MovementState_Idle;
+		return;
 	}
-	else
+
+	if(MoveInfo.Attacking)
 	{
-		if(MoveInfo.Sprinting)
-		{
-			Entity->MovementState = MovementState_Sprint;
-		}
+		Entity->MovementState = MovementState_Attack;
+		Entity->Attack.Type = AttackType_Forward;
+		Entity->Attack.CurrentTime = 0.0f;
+		Entity->Attack.Duration = 0.2f;
+		return;
+	}
 
-		if(MoveInfo.Jumping)
-		{
-			Entity->MovementState = MovementState_Jump;
-		}
+	if(MoveInfo.CanJump)
+	{
+		Entity->MovementState = MovementState_Jump;
+		return;
+	}
 
-		if(MoveInfo.Crouching)
-		{
-			Entity->MovementState = MovementState_Sliding;
-		}
+	if(MoveInfo.CanSprint)
+	{
+		Entity->MovementState = MovementState_Sprint;
+		return;
+	}
+
+	if(MoveInfo.Crouching)
+	{
+		Entity->MovementState = MovementState_Sliding;
+		return;
 	}
 }
 
 inline void
 EvaluateSprint(entity *Entity, move_info MoveInfo)
 {
-	Assert(Entity->MovementState == MovementState_Sprint);
-	if(!MoveInfo.Moving)
+	//if(!MoveInfo.AnyAction)
+	//{
+	//	Entity->MovementState = MovementState_Idle;
+	//	return;
+	//}
+
+	if(MoveInfo.Attacking)
+	{
+		Entity->MovementState = MovementState_Attack;
+		Entity->Attack.Type = AttackType_Dash;
+		Entity->Attack.CurrentTime = 0.0f;
+		Entity->Attack.Duration = 0.2f;
+		return;
+	}
+
+	if(MoveInfo.CanJump)
+	{
+		Entity->MovementState = MovementState_Jump;
+		return;
+	}
+
+	if(!MoveInfo.CanSprint && MoveInfo.Accelerating)
+	{
+		Entity->MovementState = MovementState_Run;
+		return;
+	}
+
+	if(!MoveInfo.CanSprint)
 	{
 		Entity->MovementState = MovementState_Idle;
-	}
-	else
-	{
-		if(!MoveInfo.Sprinting)
-		{
-			Entity->MovementState = MovementState_Run;
-		}
+		return;
 	}
 }
 
 inline void
 EvaluateJump(entity *Entity, move_info MoveInfo)
 {
-	Assert(Entity->MovementState == MovementState_Jump);
 	FlagClear(Entity, EntityFlag_YSupported);
+	Entity->MovementState = MovementState_InAir;
+}
 
-	if(!MoveInfo.Jumping)
+inline void
+EvaluateInAir(entity *Entity, move_info MoveInfo)
+{
+	if(IsGrounded(Entity))
 	{
-		if(!MoveInfo.Moving)
+		if(!MoveInfo.AnyAction)
 		{
 			Entity->MovementState = MovementState_Idle;
 		}
-		else if(MoveInfo.Sprinting)
+
+		if(MoveInfo.CanSprint)
 		{
 			Entity->MovementState = MovementState_Sprint;
 		}
-		else
+
+		if(!MoveInfo.CanSprint && MoveInfo.Accelerating)
 		{
 			Entity->MovementState = MovementState_Run;
 		}
+
+		return;
+	}
+
+	if(MoveInfo.Attacking)
+	{
+		Entity->MovementState = MovementState_Attack;
+		Entity->Attack.Type = AttackType_Air;
+		Entity->Attack.CurrentTime = 0.0f;
+		Entity->Attack.Duration = 0.2f;
 	}
 }
+
 
 inline void
 EvaluateCrouch(entity *Entity, move_info MoveInfo)
 {
-	Assert(Entity->MovementState == MovementState_Crouch);
 	if(!MoveInfo.Crouching)
 	{
 		Entity->MovementState = MovementState_Idle;
@@ -200,20 +303,79 @@ EvaluateCrouch(entity *Entity, move_info MoveInfo)
 inline void
 EvaluateSliding(entity *Entity, move_info MoveInfo)
 {
-	Assert(Entity->MovementState == MovementState_Sliding);
-	if(!MoveInfo.Moving)
+	if(!MoveInfo.AnyAction)
 	{
 		Entity->MovementState = MovementState_Idle;
+		return;
 	}
-	else
+
+	if(MoveInfo.CanSprint)
 	{
-		if(MoveInfo.Sprinting)
-		{
-			Entity->MovementState = MovementState_Sprint;
-		}
-		else
-		{
-			Entity->MovementState = MovementState_Run;
-		}
+		Entity->MovementState = MovementState_Sprint;
 	}
+
+	if(!MoveInfo.CanSprint && MoveInfo.Accelerating)
+	{
+		Entity->MovementState = MovementState_Run;
+	}
+}
+
+inline void
+EvaluateAttack(entity *Entity, move_info MoveInfo, f32 dt)
+{
+	FlagAdd(Entity, EntityFlag_Attacking);
+
+	Entity->Attack.CurrentTime += dt;
+	if(Entity->Attack.CurrentTime >= Entity->Attack.Duration)
+	{
+		Entity->Attack.Type = AttackType_None;
+		Entity->Attack.CurrentTime = Entity->Attack.Duration;
+	}
+
+	switch(Entity->Attack.Type)
+	{
+		case AttackType_Neutral:
+		case AttackType_Forward:
+		{
+			FlagClear(Entity, EntityFlag_Moving);
+		} break;
+		case AttackType_Dash:
+		case AttackType_Air:
+		{
+		} break;
+		case AttackType_None:
+		{
+			FlagClear(Entity, EntityFlag_Attacking);
+
+			if(!MoveInfo.AnyAction)
+			{
+				Entity->MovementState = MovementState_Idle;
+				return;
+			}
+
+			FlagAdd(Entity, EntityFlag_Moving);
+
+			if(MoveInfo.CanJump)
+			{
+				Entity->MovementState = MovementState_Jump;
+				return;
+			}
+
+			if(MoveInfo.CanSprint)
+			{
+				Entity->MovementState = MovementState_Sprint;
+				return;
+			}
+
+			if(!MoveInfo.CanSprint && MoveInfo.Accelerating)
+			{
+				Entity->MovementState = MovementState_Run;
+				return;
+			}
+
+
+
+		}break;
+	};
+
 }

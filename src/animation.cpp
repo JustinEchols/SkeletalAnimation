@@ -150,10 +150,28 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 	AnimationPlayer->IsInitialized = true;
 }
 
+// TODO(Justin): Really think through the correct way to handle trying to play the same animation multiple times
+// If the current animation is being blended in or out we probably dont want to 
+// want to start playing the same animation..
+
+// TODO(Justin): How do we blend if current is blending in?
+// TODO(Justin): How do we blend if current is blending out?
+
 internal void
-AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimation, u32 ID, u32 AnimationFlags, f32 BlendDuration = 0.0f, f32 StartTime = 0.0f)
+AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimation, u32 ID, u32 AnimationFlags,
+		f32 BlendDuration = 0.0f,
+		f32 StartTime = 0.0f,
+		f32 TimeScale = 1.0f)
 {
 	Assert(AnimationPlayer->IsInitialized);
+
+	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
+	{
+		if(Current->ID.Value == ID)
+		{
+			//return;
+		}
+	}
 
 	if(!AnimationPlayer->FreeChannels)
 	{
@@ -166,24 +184,14 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 
 	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
 	{
-		if(Current->ID.Value == ID)
-		{
-			// TODO(Justin): Really think through the correct way to handle this....
-			// If the current animation is being blended in or out we probably dont want to 
-			// want to start playing the same animation..
-		}
-	}
 
-	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
-	{
-		// TODO(Justin): How do we blend if current is blending in?
-		// TODO(Justin): How do we blend if current is blending out?
 		if(!Current->BlendingOut)
 		{
 			Current->BlendDuration = BlendDuration;
 			Current->BlendCurrentTime = 0.0f;
 			Current->BlendingOut = true;
 			Current->BlendingIn = false;
+			Current->TimeScale = TimeScale;
 		}
 	}
 
@@ -192,7 +200,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	Animation->Duration = SampledAnimation->Duration;
 	Animation->CurrentTime = StartTime;
 	Animation->OldTime = 0.0f;
-	Animation->TimeScale = 1.0f;
+	Animation->TimeScale = TimeScale;
 	Animation->BlendFactor = 1.0f;
 	Animation->BlendDuration = BlendDuration;
 	Animation->BlendCurrentTime = 0.0f;
@@ -242,7 +250,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 
 	if(CrossFading(Animation))
 	{
-		Animation->BlendCurrentTime += dt;
+		Animation->BlendCurrentTime += dt * Animation->TimeScale;
 		if((Animation->BlendCurrentTime > Animation->BlendDuration) && Animation->BlendingOut)
 		{
 			FlagAdd(Animation, AnimationFlags_Finished);
@@ -258,9 +266,9 @@ AnimationUpdate(animation *Animation, f32 dt)
 	{
 		key_frame *BlendedPose = Animation->BlendedPose;
 
-		f32 tNormalized = Animation->CurrentTime / Info->Duration;
+		f32 t01 = Animation->CurrentTime / Info->Duration;
 		u32 LastKeyFrameIndex = Info->KeyFrameCount - 1;
-		u32 KeyFrameIndex = F32TruncateToS32(tNormalized * (f32)LastKeyFrameIndex);
+		u32 KeyFrameIndex = F32TruncateToS32(t01 * (f32)LastKeyFrameIndex);
 
 		f32 DtPerKeyFrame = Info->Duration / (f32)LastKeyFrameIndex;
 		f32 KeyFrameTime = KeyFrameIndex * DtPerKeyFrame;
@@ -336,25 +344,15 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer, ani
 	asset_entry Entry = LookupSampledAnimation(AssetManager, CString(Node->Tag));
 	if(Entry.SampledAnimation)
 	{
-		AnimationPlay(AnimationPlayer, Entry.SampledAnimation, Entry.Index, Node->AnimationFlags, ArcBlendDuration, ArcTimeOffset);
+		AnimationPlay(AnimationPlayer, Entry.SampledAnimation, Entry.Index, Node->AnimationFlags, ArcBlendDuration, ArcTimeOffset, Node->TimeScale);
 	}
 }
 
-internal animation *
-AnimationOldestGet(animation_player *AnimationPlayer)
-{
-	animation *Result = 0;
-
-	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
-	{
-		if(!Current->Next)
-		{
-			Result = Current;
-		}
-	}
-
-	return(Result);
-}
+// NOTE(Justin): We send a message and do work to determine what animation should be played
+// and how to start playiang it. Therefore at this step the new animation has not been
+// determined and is not playing. This means that we should look at the most recent animation
+// to determine what the next animation should be. This animation is
+// the animation at the top of the linked list.
 
 internal void
 MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, animation_graph *Graph, char *Message)
@@ -365,7 +363,6 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 
 	f32 DefaultBlendDuration = 0.2f;
 	f32 DefaultTimeOffset = 0.0f;
-	u32 DefaultFlags = Node->AnimationFlags;
 	for(u32 ArcIndex = 0; ArcIndex < Node->ArcCount; ++ArcIndex)
 	{
 		animation_graph_arc *Arc = Node->Arcs + ArcIndex;
@@ -374,11 +371,6 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 			b32 ShouldSend = true;
 			if(Arc->Type == ArcType_TimeInterval)
 			{
-				// NOTE(Justin): We send a message and do work to determine what animation should be played
-				// and how to start playiang it. Therefore at this step the new animation has not been
-				// determined and is not playing. This means that we should look at the most recent animation
-				// to determine what the next animation should be. This animation is
-				// the animation at the top of the linked list.
 				animation *Animation = AnimationPlayer->Channels;
 				f32 t = Animation->CurrentTime;
 				if((t < Arc->t0) || (t > Arc->t1))
@@ -427,9 +419,6 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		return;
 	}
 
-	//Assert(Graph);
-	//Assert(AnimationPlayer);
-
 	// Right now the animation player lags behind the gameplay state. Meaning if the gameplay
 	// state says sprint and the player was running. The animation state stays in running
 	// for some time until it can transition to the sprint state. Only when the animation
@@ -442,7 +431,8 @@ Animate(entity *Entity, asset_manager *AssetManager)
 	{
 		case MovementState_Idle:
 		{
-			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_idle");
+			char *Message = "go_state_idle";
+			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
 		case MovementState_Crouch:
 		{
@@ -454,7 +444,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 			f32 dTheta = Entity->ThetaTarget - Entity->Theta;
 			if(dTheta < -30.0f)
 			{
-				Message = "go_state_turn_90_right";
+				Message = "go_state_turn_90_right_to_run";
 			}
 			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
@@ -470,11 +460,16 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		case MovementState_Sliding:
 		{
 			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_slide");
-		}
-		case MovementState_JumpOnTopOf:
+		} break;
+		case MovementState_Attack:
 		{
-			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump_on_top_of");
-		}
+			char *Message = "go_state_neutral_attack";
+			if(Entity->Attack.Type == AttackType_Forward)
+			{
+				Message = "go_state_forward_attack";
+			}
+			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
+		} break;
 	}
 }
 
@@ -485,8 +480,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	{
 		return;
 	}
-
-	//Assert(AnimationPlayer->IsInitialized);
 
 	AnimationPlayer->CurrentTime += dt;
 	AnimationPlayer->dt = dt;
@@ -500,6 +493,20 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	for(animation **AnimationPtr = &AnimationPlayer->Channels; *AnimationPtr;)
 	{
 		animation *Animation = *AnimationPtr;
+
+		if(ControlsTurning(Animation))
+		{
+			if(!Animation->BlendingOut)
+			{
+				AnimationPlayer->ControlsTurning = true;
+			}
+		}
+
+		if(ControlsPosition(Animation))
+		{
+			AnimationPlayer->ControlsPosition = true;
+		}
+
 
 		Animation->MotionDeltaPerFrame = {};
 		Animation->TurningDeltaPerFrame = 0.0f;
@@ -515,21 +522,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		Animation->MotionDeltaPerFrame += NewP - OldP;
 		Animation->TurningDeltaPerFrame = AngleBetween(NewQ, OldQ);
 
-		if(ControlsPosition(Animation))
-		{
-			AnimationPlayer->ControlsPosition = true;
-		}
-
-		if(ControlsTurning(Animation))
-		{
-			if(!Animation->BlendingOut)
-			{
-				AnimationPlayer->ControlsTurning = true;
-			}
-		}
-
 		// TODO(Justin): Is this the correct location to remove finished 
-		// animations? Or should do we need to remove them in the final loop?
 		if(Finished(Animation))
 		{
 			*AnimationPtr = Animation->Next;
@@ -592,8 +585,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 						Scaled *= -1.0f;
 					}
 
-					if(ControlsTurning(Animation) && Animation->BlendingOut) continue;
-
 					FinalPose->Orientations[Index] += Scaled;
 				}
 			}
@@ -604,7 +595,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			AnimationPlayer->RootMotionAccumulator += Factor * Animation->MotionDeltaPerFrame;
 		}
 
-		if(AnimationPlayer->ControlsTurning)
+		if(ControlsTurning(Animation))//Player->ControlsTurning)
 		{
 			AnimationPlayer->RootTurningAccumulator += Factor * Animation->TurningDeltaPerFrame;
 		}
@@ -699,24 +690,22 @@ ModelJointsUpdate(entity *Entity)
 			Xform.Orientation	= FinalPose->Orientations[0];
 			Xform.Scale			= FinalPose->Scales[0];
 
+			// TODO(Justin): Root motion and Root turning
 			if(AnimationPlayer->ControlsTurning)
 			{
 			}
-
-			// TODO(Justin): Disable root motion
-
-			// NOTE(Justin): This has the affect of removing xz translation while
-			// keeping up and down motion.
 
 			// The final set of transforms are in model space. All these positions
 			// get converted to world space in the shader. These means the root is converted to
 			// world space and is at the gameplay position. Therfore if doing gameplay driven animation
 			// all we need to do is remove the xz translation, since the root position is going to be translated there,
 			// and keep the up and down motion by using the y value of the root of the mixed pose
-			//Xform.Position = V3(0.0f, FinalPose->Positions[0].y,  0.0f);
 
 			if(AnimationPlayer->ControlsPosition)
 			{
+				// NOTE(Justin): This has the affect of removing xz translation while
+				// keeping up and down motion.
+				//Xform.Position = V3(0.0f, FinalPose->Positions[0].y,  0.0f);
 			}
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
@@ -790,22 +779,24 @@ AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *Anim
 	//animation *Oldest = AnimationOldestGet(AnimationPlayer);
 
 	// Should this just be the current node?
-	animation *Oldest = AnimationPlayer->Channels;
-	if(!Oldest)
+	animation *MostRecent = AnimationPlayer->Channels;
+	if(!MostRecent)
 	{
 		return;
 	}
 
-	f32 RemainingTime = Oldest->Info->Duration - Oldest->CurrentTime;
+	f32 RemainingTime = MostRecent->Info->Duration - MostRecent->CurrentTime;
 	f32 DefaultTimeOffset = 0.0f;
 
 	animation_graph_node *Node = &Graph->CurrentNode;
 	animation_graph_arc Arc = Node->WhenDone;
 	if((Arc.Destination.Size != 0) && (RemainingTime <= Arc.RemainingTimeBeforeCrossFade))
 	{
-		f32 FadeTime = Clamp01(RemainingTime);
+		AnimationPlayer->MovementState = AnimationPlayer->NewState;
+
+		f32 BlendDuration = Clamp01(RemainingTime);
 		DefaultTimeOffset = Arc.StartTime;
-		SwitchToNode(AssetManager, AnimationPlayer, Graph, Arc.Destination, FadeTime, DefaultTimeOffset);
+		SwitchToNode(AssetManager, AnimationPlayer, Graph, Arc.Destination, BlendDuration, DefaultTimeOffset);
 	}
 }
 
@@ -816,8 +807,8 @@ AnimationGraphNodeAdd(animation_graph *Graph, char *Name)
 	animation_graph_node *Node = Graph->Nodes + Graph->NodeCount;
 	Node->Name = StringCopy(&Graph->Arena, Name);
 	Node->Index = Graph->NodeCount;
-	// TODO(justin): This is supposed to be a tag that maps to a string which is the name of the animation..
-	//Node->Tag = StringCopy(Graph->Arena, Animation); 
+	Node->AnimationFlags = 0;
+	Node->TimeScale = 1.0f;
 	Node->WhenDone = {};
 
 	return(Node);
@@ -867,6 +858,8 @@ AdvanceLine(u8 **Content)
 
 // TODO(Jusitn): Fix parsing bug. A space, " ", after the state name
 // does not parse correctly.
+
+// TODO(Jusitn): Error handling
 internal void 
 AnimationGraphInitialize(animation_graph *G, char *FileName)
 {
@@ -935,7 +928,7 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 
 				Arc->Destination = StringCopy(&G->Arena, DestNodeName);
 				Arc->Message	 = StringCopy(&G->Arena, InBoundMessage);
-				Arc->Type = ArcType_None;
+				Arc->Type		 = ArcType_None;
 
 				f32 t0 = 0.0f;
 				f32 t1 = 0.0f;
@@ -968,6 +961,7 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 						Arc->t0 = t0;
 						Arc->t1 = t1;
 					}
+
 					Param = strtok(0, " ");
 				}
 			}
@@ -981,7 +975,7 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 
 				Arc->Destination = StringCopy(&G->Arena, DestNodeName);
 				Arc->Message	 = StringCopy(&G->Arena, InBoundMessage);
-				Arc->Type = ArcType_WhenDone;
+				Arc->Type		 = ArcType_WhenDone;
 
 				while(Param)
 				{
@@ -1021,6 +1015,12 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 			{
 				Node->AnimationFlags |= AnimationFlags_RemoveLocomotion;
 			}
+			else if(StringsAreSame(Word, "t_scale"))
+			{
+				char *Param = strtok(0, " ");
+				Node->TimeScale = F32FromASCII(Param);
+			}
+
 			else if(*Word == '#')
 			{
 				// Comment, do nothing.

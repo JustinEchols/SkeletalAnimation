@@ -14,16 +14,22 @@ struct ui_id
 
 struct ui
 {
+	rect Rect;
+	v2 P;
 	v2 MouseP;
 	v2 DeltaMouse;
 
 	b32 LeftClick;
+	b32 WentDown;
+	b32 WentUp;
+
+	ui_id Active;
+	ui_id Hot;
 
 	s32 ActiveID;
 	s32 HotID;
 
-	rect Rect;
-
+	font *Font;
 	struct asset_manager *Assets;
 };
 

@@ -68,6 +68,21 @@ typedef uintptr_t	umm;
 (Node)->Next=0)
 #define SLLQueuePush(First,Last,Node) SLLQueuePush_N(First,Last,Node,Next)
 
+struct platform_file_handle
+{
+	b32 NoErrors;
+	void *Platform;
+};
+
+struct platform_file_info
+{
+	u64 FileDate;
+	u64 FileSize;
+	//char *BaseName;
+	char *Path;
+	void *Platform;
+};
+
 struct file_group_info
 {
 	u32 Count;
@@ -96,6 +111,9 @@ typedef DEBUG_PLATFORM_FILE_HAS_UPDATED(debug_platform_file_has_updated);
 // TODO(Justin): Split this into a directory name and wildcard
 #define DEBUG_PLATFORM_FILE_GROUP_LOAD(FunctionName) file_group_info FunctionName(char *DirectoryNameAndWildCard)
 typedef DEBUG_PLATFORM_FILE_GROUP_LOAD(debug_platform_file_group_load);
+
+#define DEBUG_PLATFORM_FILE_IS_DIRTY(FunctionName) b32 FunctionName(char *Path, u64 *Date)
+typedef DEBUG_PLATFORM_FILE_IS_DIRTY(debug_platform_file_is_dirty);
 #endif
 
 // TODO(Justin): Consolidate these calls
@@ -116,6 +134,7 @@ typedef struct
 	debug_platform_file_write_entire	*DebugFileWriteEntire;
 	debug_platform_file_free			*DebugFileFree;
 	debug_platform_file_group_load		*DebugFileGroupLoad;
+	debug_platform_file_is_dirty		*DebugFileIsDirty;
 #endif
 } platform_api;
 
@@ -136,7 +155,14 @@ struct game_button
 inline b32
 IsDown(game_button Button)
 {
-	b32 Result = (Button.EndedDown);
+	b32 Result = Button.EndedDown;
+	return(Result);
+}
+
+inline b32
+WasDown(game_button Button)
+{
+	b32 Result = ((Button.HalfTransitionCount == 1) && (!Button.EndedDown));
 	return(Result);
 }
 
@@ -150,7 +176,6 @@ WasPressed(game_button Button)
 
 enum 
 {
-
 	Key_MoveUp,
 	Key_MoveLeft,
 	Key_MoveRight,
@@ -173,6 +198,7 @@ enum
 	Key_Add,
 	Key_Subtract,
 	Key_Ctrl,
+	Key_F9,
 	Key_F10,
 
 	Key_Count
@@ -198,7 +224,7 @@ struct game_controller_input
 
 	union
 	{
-		game_button Buttons[19];
+		game_button Buttons[Key_Count];
 		struct
 		{
 			game_button MoveForward;
@@ -223,15 +249,15 @@ struct game_controller_input
 			game_button Add;
 			game_button Subtract;
 			game_button Ctrl;
+			game_button F9;
 			game_button F10;
-
-
 		};
 	};
 };
 
 struct game_input
 {
+	b32 ReloadingGame;
 	f32 FPS;
 	f32 DtForFrame;
 	f32 MouseX, MouseY;
@@ -254,6 +280,8 @@ struct game_memory
 
 	platform_api PlatformAPI;
 };
+
+
 
 #define GAME_UPDATE_AND_RENDER(FunctionName) void FunctionName(game_memory *GameMemory, game_input *GameInput)
 typedef GAME_UPDATE_AND_RENDER(game_update_and_render);

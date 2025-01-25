@@ -107,6 +107,26 @@ Win32FileLastWriteTime(char *FileName)
 	return(LastWriteTime);
 }
 
+DEBUG_PLATFORM_FILE_IS_DIRTY(DebugPlatformFileIsDirty)
+{
+	b32 Result = false;
+
+	WIN32_FILE_ATTRIBUTE_DATA Data;
+	if(GetFileAttributesEx(Path, GetFileExInfoStandard, &Data))
+	{
+		u64 NewDate = (((u64)Data.ftLastWriteTime.dwHighDateTime << (u64)32) | (u64)Data.ftLastWriteTime.dwLowDateTime);
+		if(NewDate > (*Date))
+		{
+			*Date = NewDate;
+			Result = true;
+		}
+	}
+
+	return(Result);
+}
+
+
+
 inline b32
 Win32FileHasUpdated(char *FileName, FILETIME LastWriteTime)
 {

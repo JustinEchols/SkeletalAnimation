@@ -31,6 +31,7 @@ struct asset_model_header
 	u32 Version;
 	b32 HasSkeleton;
 	u32 MeshCount;
+
 	u64 OffsetToMeshInfo;
 };
 
@@ -77,11 +78,13 @@ struct asset_manager
 
 	texture Textures[32];
 	model Models[16];
-	animation_graph Graphs[2];
+	animation_graph Graphs[8];
 	font Font;
 
 	// TODO(Justin): Clean this up
 	animation_info *SampledAnimations;
+
+	platform_file_info XBotGraphFileInfo;
 };
 
 struct asset_entry

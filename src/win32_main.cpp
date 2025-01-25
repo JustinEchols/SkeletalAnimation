@@ -332,6 +332,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 		GameMemory.PlatformAPI.DebugFileWriteEntire = DebugPlatformFileWriteEntire;
 		GameMemory.PlatformAPI.DebugFileFree		= DebugPlatformFileFree;
 		GameMemory.PlatformAPI.DebugFileGroupLoad	= DebugPlatformFileGroupLoad;
+		GameMemory.PlatformAPI.DebugFileIsDirty		= DebugPlatformFileIsDirty;
 
 		game_input GameInput[2] = {};
 		game_input *NewInput = &GameInput[0];
@@ -357,6 +358,7 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 			{
 				Win32GameCodeUnload(&Game);
 				Game = Win32GameCodeLoad("../build/game.dll", "../build/game_temp.dll", "../build/lock.tmp");
+				NewInput->ReloadingGame = true;
 			}
 
 			NewInput->DtForFrame = TargetSecondsPerFrame;
@@ -423,6 +425,10 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 							else if(KeyCode == VK_CONTROL)
 							{
 								Win32KeyStateUpdate(&NewKeyboard->Ctrl, IsDown);
+							}
+							else if(KeyCode == VK_F9)
+							{
+								Win32KeyStateUpdate(&NewKeyboard->F9, IsDown);
 							}
 							else if(KeyCode == VK_F10)
 							{

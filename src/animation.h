@@ -8,6 +8,7 @@ struct key_frame
 };
 
 // NOTE(Justin): Sampled animation
+// TODO(Justin): Remove current time 
 struct animation_info
 {
 	string Name;
@@ -19,10 +20,9 @@ struct animation_info
 	f32 Duration;
 	f32 FrameRate;
 
-	string *JointNames;
+	string *JointNames; // Names of all the joints that this sampled animation affects
 	key_frame *KeyFrames;
-
-	key_frame *ReservedForChannel;
+	key_frame *ReservedForChannel; // Memory reserved for blended pose of animation channel
 };
 
 struct animation_id
@@ -65,6 +65,7 @@ struct animation
 
 	key_frame *BlendedPose;
 
+	quaternion OrientationLockedAt;
 	v3 MotionDeltaPerFrame;
 	f32 TurningDeltaPerFrame;
 };

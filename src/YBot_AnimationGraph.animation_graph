@@ -1,0 +1,64 @@
+[1]
+
+: StateIdleLeft
+animation YBot_FightIdleLeft
+looping
+message go_state_run StateRunning
+message go_state_sprint StateSprint
+message go_state_neutral_attack StateNeutralAttackLeft
+
+: StateIdleRight
+animation YBot_FightIdleRight
+looping
+message go_state_run StateRunningMirror
+message go_state_sprint StateSprint t_start 0.4
+message go_state_neutral_attack StateNeutralAttackRight
+
+: StateRunning
+animation YBot_Running
+looping
+message go_state_idle StateIdleLeft t_interval 0.0 0.2
+message go_state_idle StateIdleRight t_interval 0.3 0.5
+message go_state_idle StateIdleRight t_interval 0.51 0.63
+message go_state_sprint StateSprint
+message go_state_forward_attack StateForwardAttack
+
+: StateRunningMirror
+animation YBot_RunningMirror
+looping
+message go_state_idle StateIdleRight t_interval 0.0 0.2
+message go_state_idle StateIdleLeft t_interval 0.3 0.5
+message go_state_idle StateIdleLeft t_interval 0.51 0.63
+message go_state_sprint StateSprintMirror
+message go_state_forward_attack StateForwardAttack 0.5 0.63
+message go_state_forward_attack StateForwardAttack 0.0 0.2
+
+: StateSprint
+animation YBot_Running
+looping
+t_scale 1.5
+message go_state_idle StateIdleLeft t_interval 0.0 0.2
+message go_state_idle StateIdleRight t_interval 0.0 0.3 0.4
+messgae go_state_run StateRunning 
+
+#
+# Combat
+#
+
+# Duration 0.67
+: StateNeutralAttackLeft
+animation YBot_JabLeft
+t_scale 1.34
+when_done go_state_idle StateIdleLeft t_remaining 0.3
+
+# Duration 0.67
+: StateNeutralAttackRight
+animation YBot_JabRight
+t_scale 1.34
+when_done go_state_idle StateIdleRight t_remaining 0.3
+
+# Duration 1.0
+: StateForwardAttack
+animation YBot_SideKick
+t_scale 2.0
+when_done go_state_run StateRunning t_remaining 0.3
