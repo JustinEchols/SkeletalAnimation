@@ -431,6 +431,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 	{
 		case MovementState_Idle:
 		{
+			// TODO(Justin): Transition to idle!
 			char *Message = "go_state_idle";
 			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
@@ -446,6 +447,10 @@ Animate(entity *Entity, asset_manager *AssetManager)
 			{
 				Message = "go_state_turn_90_right_to_run";
 			}
+			if(dTheta > 30.0f)
+			{
+				Message = "go_state_turn_90_left_to_run";
+			}
 			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
 		case MovementState_Sprint:
@@ -455,7 +460,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		} break;
 		case MovementState_Jump:
 		{
-			//MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
+			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
 		} break;
 		case MovementState_Sliding:
 		{
@@ -538,7 +543,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	}
 
 	//
-	// NOTE(Justin): Use scratch pose to mix all channels into, then copy to the final pose.
+	// NOTE(Justin): Use scratch arena to mix all channels, then copy to the final pose.
 	//
 
 	model *Model = AnimationPlayer->Model;
@@ -578,7 +583,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 					FinalPose->Positions[Index]	+= Factor * BlendedPose->Positions[JointIndex];
 					FinalPose->Scales[Index]	+= Factor * BlendedPose->Scales[JointIndex];
 
-					// TODO(Justin): Pre-process the aniamtions so that the orientations are in the known correct neighborhood.
+					// TODO(Justin): Pre-process the animations so that the orientations are in the known correct neighborhood.
 					quaternion Scaled = Factor * BlendedPose->Orientations[JointIndex];
 					if(Dot(Scaled, FinalPose->Orientations[Index]) < 0.0f)
 					{
@@ -595,7 +600,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			AnimationPlayer->RootMotionAccumulator += Factor * Animation->MotionDeltaPerFrame;
 		}
 
-		if(ControlsTurning(Animation))//Player->ControlsTurning)
+		if(ControlsTurning(Animation))
 		{
 			AnimationPlayer->RootTurningAccumulator += Factor * Animation->TurningDeltaPerFrame;
 		}
@@ -618,7 +623,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	}
 
 	//
-	// NOTE(Justin): Scale mixed animation, then copy.
+	// NOTE(Justin): Scale the mixed channels, then copy.
 	//
 
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
@@ -689,11 +694,6 @@ ModelJointsUpdate(entity *Entity)
 			Xform.Position		= FinalPose->Positions[0];
 			Xform.Orientation	= FinalPose->Orientations[0];
 			Xform.Scale			= FinalPose->Scales[0];
-
-			// TODO(Justin): Root motion and Root turning
-			if(AnimationPlayer->ControlsTurning)
-			{
-			}
 
 			// The final set of transforms are in model space. All these positions
 			// get converted to world space in the shader. These means the root is converted to

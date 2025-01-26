@@ -123,6 +123,7 @@ EvaluatePlayerMove(entity *Entity, move_info MoveInfo, v3 *ddP)
 		Entity->dP.y = 30.0f;
 	}
 
+	// TODO(Justin): Varying drag 
 	*ddP = a * (*ddP);
 	*ddP += -Entity->Drag * Entity->dP;
 }
@@ -276,6 +277,11 @@ EvaluateInAir(entity *Entity, move_info MoveInfo)
 		if(!MoveInfo.CanSprint && MoveInfo.Accelerating)
 		{
 			Entity->MovementState = MovementState_Run;
+		}
+
+		if(MoveInfo.CanJump)
+		{
+			Entity->MovementState = MovementState_Jump;
 		}
 
 		return;

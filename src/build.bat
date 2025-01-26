@@ -23,7 +23,7 @@ REM )
 
 set MainFile=win32_main.cpp
 set GameFile=game.cpp
-set CommonCompilerFlags=-Od -MTd -nologo -fp:except- -fp:fast -Gm- -GR- -EHa -Zo -Oi -Z7 -WX -W4 -wd4201 -wd4100 -wd4505 -wd4189 -D_CRT_SECURE_NO_WARNINGS=1 -DDEVELOPER=1
+set CommonCompilerFlags=-O2 -MTd -nologo -fp:except- -fp:fast -Gm- -GR- -EHa -Zo -Oi -Z7 -WX -W4 -wd4201 -wd4100 -wd4505 -wd4189 -D_CRT_SECURE_NO_WARNINGS=1 -DDEVELOPER=1
 set CommonLinkerFlags=-incremental:no user32.lib gdi32.lib opengl32.lib kernel32.lib winmm.lib xinput.lib
 set IncludeDirectories= /I "../dependencies/freetype/include"
 set LibDirectories= /LIBPATH:"../dependencies/freetype"

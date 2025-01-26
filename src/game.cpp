@@ -934,9 +934,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				animation_graph *G = 0;
 				asset_entry Entry = {};
 
-				Model = LookupModel(&GameState->AssetManager, "XBot").Model;
-				G  = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
-				Entry = LookupSampledAnimation(&GameState->AssetManager, "XBot_IdleRight");
+				Model = LookupModel(&GameState->AssetManager, "YBot").Model;
+				G  = LookupGraph(&GameState->AssetManager, "YBot_AnimationGraph");
+				Entry = LookupSampledAnimation(&GameState->AssetManager, "YBot_FightIdleRight");
 
 				entity *Player = PlayerAdd(GameState, V3(0.0f, 0.01f, -10.0f));
 				Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
@@ -1182,10 +1182,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				if(!AnimationPlayer->ControlsTurning && (AnimationPlayer->RootTurningAccumulator == 0.0f))
 				{
-					// NOTE(Justin): If the animation player does not control turning keep recording
-					// the player's orientation. When the animation player decides to control turning
-					// the orientation that we start playing the animation at is the last recorded orientation
-					// of the player!
 					AnimationPlayer->OrientationLockedAt = Entity->Orientation;
 				}
 
@@ -1197,7 +1193,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				{
 					if(AnimationPlayer->RootTurningAccumulator != 0.0f)
 					{
-						//Target = RotateTowards(AnimationPlayer->OrientationLockedAt, Entity->Orientation, dt, 1.0f);
 						AnimationPlayer->OrientationLockedAt = RotateTowards(AnimationPlayer->OrientationLockedAt, Entity->Orientation, dt, 5.0f);
 						R = QuaternionToMat4(AnimationPlayer->OrientationLockedAt);
 						AnimationPlayer->RootTurningAccumulator = 0.0f;
@@ -1243,7 +1238,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				v3 P = Entity->P;
 				P.y += 0.01f;
 				T = Mat4Translate(P);
-				//R = QuaternionToMat4(Entity->Orientation);
 				R = QuaternionToMat4(AnimationPlayer->OrientationLockedAt);
 				S = Mat4Scale(V3(0.5f));
 

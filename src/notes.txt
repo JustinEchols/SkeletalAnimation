@@ -1,128 +1,143 @@
+NOTE(Justin): 20250125 ANIMATION TURNING
+If the animation player does not control turning keep recording
+the player's orientation. When the animation player decides to control turning
+the orientation that we start playing the animation at is the last recorded orientation
+of the player! This is the OrientationLockedAt variable. When a new animation starts
+blending in the animation player's state is no longer considered controlling turning
+(assuming there does not exist another animation playing that also controls turning)
+However, the turning animation is still playing and we keep recording the turning
+delta per frame and accumulating it in the animation player's global root turning
+accumulator. Before rendering we check to see if the turning accumulator is not 0.
+If it is not zero we know that an animation that control's turning is still palying.
+We then rotate the OrientationLockedAt quaternion towards the player's orientation
+while this is still the case. In this approach the visual "position" of the player
+lags behind the actual gameplay position and we need to keep track of a few pieces
+of information in order for the turning to happen in a desired way.
 
-// NOTE(Justin): COLLISION BUG
-The epsilon bug was a bug in EntityMove(). The desired position was not being updated.
-// NOTE(Justin): There might be an epsilon bug when epsilon = 0.001f when colliding with an OBB. 
-// Some of the time the player will tunnel through the OBB. After chaning epsilon to 0.01f;
-// the player does not tunnel. It is possible that the position the player is moved to when
-// using 0.001f for epsilon, ends up being behind the non-aligned plane of the OBB. If the player
-// gets moved there then they tunnel through the OBB.
+NOTE(Justin): COLLISION BUG
+ epsilon bug was a bug in EntityMove(). The desired position was not being updated.
+NOTE(Justin): There might be an epsilon bug when epsilon = 0.001f when colliding with an OBB. 
+Some of the time the player will tunnel through the OBB. After chaning epsilon to 0.01f;
+the player does not tunnel. It is possible that the position the player is moved to when
+using 0.001f for epsilon, ends up being behind the non-aligned plane of the OBB. If the player
+gets moved there then they tunnel through the OBB.
 
-// NOTE(Justin): DIRECTIONAL LIGHTING The viewing volume and transformations of the light are orientated with respect to 
-// the light's viewing transformation. E.g. This directionatl light is to the right,down, and forward. We
-// place the light up, to the left, and at the front of the scene. The orthographic clip volume is
-// orientated the same was as the light. Meaning the left face of the volume is am xy plane in world space
-// that is further in the -Z DIRECTION. The right face is also an xy plane in world space
-// that is closer in the +Z DIRECTOIN. Changing the left and right values of the volume will
-// change what objects cast shadows based on their Z POSITION. If a z coordinate of an object
-// is more negative than the left face the object WILL NOT CAST A SHADOW. If the light source is
-// directional, then this is a visual artifact since the object SHOULD cast a shadow because the light
-// source is directional.
-// 
+NOTE(Justin): DIRECTIONAL LIGHTING The viewing volume and transformations of the light are orientated with respect to 
+the light's viewing transformation. E.g. This directionatl light is to the right,down, and forward. We
+place the light up, to the left, and at the front of the scene. The orthographic clip volume is
+orientated the same was as the light. Meaning the left face of the volume is am xy plane in world space
+that is further in the -Z DIRECTION. The right face is also an xy plane in world space
+that is closer in the +Z DIRECTOIN. Changing the left and right values of the volume will
+change what objects cast shadows based on their Z POSITION. If a z coordinate of an object
+is more negative than the left face the object WILL NOT CAST A SHADOW. If the light source is
+directional, then this is a visual artifact since the object SHOULD cast a shadow because the light
+source is directional.
 
-// NOTE(Justin): ANIMATION GRAPH 1/8/2025
-// Animation flags are now defined in the animation graph under the 
-// animation state name. After SwitchToNode is called and right before
-// AnimationPlay() the current node is retrieved and contains the animation
-// flags. An additional paramter was added to AnimationPlay() to provide the
-// ability to specify animation flag parameters from the current node
-// which had previously been specified whenever an animation asset was loaded.
 
-// NOTE(Justin): JUMP ANIMATION. 
-// The issue at hand is that when the jump is finished
-// two animations start bledning together. The jump animation
-// is near the end and the position is far away while the other animation
-// blending in is near the model space origin. The result is that
-// the position interpolates towards the model origin resulting in
-// the player sliding back world space during the blend.
-//
-// SOlUTION. If an animation controls the position of the player, it only
-// controls it while it is NOT BLENDING OUT. During playback the previous
-// updates are the same. However when the animation starts blending out
-// we keep checking to see if the current aniomation is blending in.
-// While the current animation is blending in we set the root position
-// of the FinalPose to be the root position of the currently blending
-// in animation. After the current it done blending in we set the 
-// total accumulated delta computed during the controls position animation
-// to 0. The next iteration we skip setting the root position and continue
-// BAU.
+NOTE(Justin): ANIMATION GRAPH 1/8/2025
+Animation flags are now defined in the animation graph under the 
+animation state name. After SwitchToNode is called and right before
+AnimationPlay() the current node is retrieved and contains the animation
+flags. An additional paramter was added to AnimationPlay() to provide the
+ability to specify animation flag parameters from the current node
+which had previously been specified whenever an animation asset was loaded.
 
-// NOTE(Justin): COLLISION. 
-// The vector from the center of the OBB to the center of the sphere, that is computed in world space,
-// is RelP and is the position vector of the center of the sphere in
-// relative space/OBB space/configuration space/minkowski space.
-//
-// We compute the coordinates of RelP and DeltaP in this space and are then able to do an AABB test with
-// the center of the AABB at the origin, 0. Then, each face of the AABB is a plane
-// and we can determine each normal and signed distance D of the plane. The normal is just pre-populated
-// data and the signed distance of the plane is computed by taking the dot product with the normal
-// and either the min or max of the AABB depending on which normal is currently being tested. The
-// reason why the dot product is done with the min or max is due to the fact that these are actual
-// points on the respective planes. I.e. D = n.X, where X is either AABB.Min or AABB.max.
+NOTE(Justin): JUMP ANIMATION. 
+The issue at hand is that when the jump is finished
+two animations start bledning together. The jump animation
+is near the end and the position is far away while the other animation
+blending in is near the model space origin. The result is that
+the position interpolates towards the model origin resulting in
+the player sliding back world space during the blend.
 
-// The radius is the HALF DIM of the bounding box constructed from the
-// sphere. So, the correct MK sum needs to use TWICE the radius, per the implementation of
-// AABBCenterDim(-).
+SOlUTION. If an animation controls the position of the player, it only
+controls it while it is NOT BLENDING OUT. During playback the previous
+updates are the same. However when the animation starts blending out
+we keep checking to see if the current aniomation is blending in.
+While the current animation is blending in we set the root position
+of the FinalPose to be the root position of the currently blending
+in animation. After the current it done blending in we set the 
+total accumulated delta computed during the controls position animation
+to 0. The next iteration we skip setting the root position and continue
+BAU.
 
-// NOTE(Justin): COLLISION. 
-// NOTE(Justin): If the ground normal is way to big compared to the rest of the units
-// in the game then the tGround value will be 0 a majority of the time. Which
-// is a bug. 
+NOTE(Justin): COLLISION. 
+The vector from the center of the OBB to the center of the sphere, that is computed in world space,
+is RelP and is the position vector of the center of the sphere in
+relative space/OBB space/configuration space/minkowski space.
 
-// NOTE(Justin): ANIMATION. Calling animation play everytime is what allows
-// the animation system to "work" currently. If we only allow an animation to play during a 
-// state change then if a sudden state change happens such as idle -> run -> idle
-// what ends up happening is that the idle and run animation do not complete the cross fade.
-// Since the cross fade is not complete both animations are still active. Since both are still active
-// the idle animation is active. if the idle animation is still active and we try and play another idle 
-// animation then it will return immedialtey. The result is that the original blend between idle and run
-// will complete the cross fade. When this happens the idle animation drops and we are left with a running animation
-// that keeps looping even though from the game perspective the player is not moving.
-//
-// Q: How do we fix this without having to call animation play everytime?
-// Or is calling animation play everytime an ok solution?
-//
-// Q: Do we force the blend to complete before moving to another animation?
-// If we play animation that is currently blending with another then we already force the blend to complete before
-// playing the animation 
+We compute the coordinates of RelP and DeltaP in this space and are then able to do an AABB test with
+the center of the AABB at the origin, 0. Then, each face of the AABB is a plane
+and we can determine each normal and signed distance D of the plane. The normal is just pre-populated
+data and the signed distance of the plane is computed by taking the dot product with the normal
+and either the min or max of the AABB depending on which normal is currently being tested. The
+reason why the dot product is done with the min or max is due to the fact that these are actual
+points on the respective planes. I.e. D = n.X, where X is either AABB.Min or AABB.max.
 
-//
-// There seem to be a lot of problems in different places in the animation system that
-// arise from the case when two animations are blending and something else happens..
-// What is the best way to handle this?
-//
+The radius is the HALF DIM of the bounding box constructed from the
+sphere. So, the correct MK sum needs to use TWICE the radius, per the implementation of
+AABBCenterDim(-).
 
-// TODO(Justin): ANIMTATION - Finish updating this comment.
-// 12.10.2024 7:06 PM - Animation Driven Movement
-// Added a bool that tells whether or not the animation player is driving the in game position.
-// So a node has a controls position flag and the animation player has a controls position flag.
-// The reason being is when the animation that controls position is almost done, the animation starts
-// blending out with another animation AND HAS ALREADY SWITCHED TO A NEW NODE. We need information
-// on whether or not there is a previously playing animation that controlled the in game position of the player.
-// This bool tells us that. When updating each channel we look to see whether or not that channel controls
-// the position of the player. If it does then the animation player is considered to be controlling player
-// to.
-//
-// The animation delta accumulated overtime is the delta betwwen the current and next root position OF THE FINAL
-// MIXED POSE.
+NOTE(Justin): COLLISION. 
+NOTE(Justin): If the ground normal is way to big compared to the rest of the units
+in the game then the tGround value will be 0 a majority of the time. Which
+is a bug. 
 
-// 12.10.2024 7:06 PM - Animation Driven Movement (Old Comments)
-// How this hackiness works. The player's position accumulated a delta vector
-// for each frame that the animation is playing. The delta vector is the root position
-// before and after the animation player updates. We then move the player by this delta amount.
-// Now the rig itself will also be updating each frame the animation is playing. So we need to offset
-// the rigs position by a delta vector too. Otherwise the gameplay position and visual position both 
-// accumulate a delta for each frame. The offset needed is going to be the total delta from the start
-// of the animation to the current time because the player position has already accumulated it. This vecotr
-// is the rigs tpose root position minus the current position in the animation.
+NOTE(Justin): ANIMATION. Calling animation play everytime is what allows
+the animation system to "work" currently. If we only allow an animation to play during a 
+state change then if a sudden state change happens such as idle -> run -> idle
+what ends up happening is that the idle and run animation do not complete the cross fade.
+Since the cross fade is not complete both animations are still active. Since both are still active
+the idle animation is active. if the idle animation is still active and we try and play another idle 
+animation then it will return immedialtey. The result is that the original blend between idle and run
+will complete the cross fade. When this happens the idle animation drops and we are left with a running animation
+that keeps looping even though from the game perspective the player is not moving.
 
-// This method has a problem. We are still playing the animation. So when we go to blend it with another
-// animation, the visual position has been updated the entire time. So when we start blending in another animation
-// the player teleports to the blended position.
+Q: How do we fix this without having to call animation play everytime?
+Or is calling animation play everytime an ok solution?
 
-// 11.24.2024 12:42 PM - Animation Player
-// Animation player does not change states until switch to node is called.
-// This allows to not switch nodes until certain conditions are true. For example, transitioning between
-// running and sprinting states needs to happen at the proper times and until the animation time is within
-// a valid interval the state remains the same.
+Q: Do we force the blend to complete before moving to another animation?
+If we play animation that is currently blending with another then we already force the blend to complete before
+playing the animation 
 
-//////////////////////////////////////////
+
+There seem to be a lot of problems in different places in the animation system that
+arise from the case when two animations are blending and something else happens..
+What is the best way to handle this?
+
+
+TODO(Justin): ANIMTATION - Finish updating this comment.
+12.10.2024 7:06 PM - Animation Driven Movement
+Added a bool that tells whether or not the animation player is driving the in game position.
+So a node has a controls position flag and the animation player has a controls position flag.
+The reason being is when the animation that controls position is almost done, the animation starts
+blending out with another animation AND HAS ALREADY SWITCHED TO A NEW NODE. We need information
+on whether or not there is a previously playing animation that controlled the in game position of the player.
+This bool tells us that. When updating each channel we look to see whether or not that channel controls
+the position of the player. If it does then the animation player is considered to be controlling player
+to.
+
+The animation delta accumulated overtime is the delta betwwen the current and next root position OF THE FINAL
+MIXED POSE.
+
+12.10.2024 7:06 PM - Animation Driven Movement (Old Comments)
+How this hackiness works. The player's position accumulated a delta vector
+for each frame that the animation is playing. The delta vector is the root position
+before and after the animation player updates. We then move the player by this delta amount.
+Now the rig itself will also be updating each frame the animation is playing. So we need to offset
+the rigs position by a delta vector too. Otherwise the gameplay position and visual position both 
+accumulate a delta for each frame. The offset needed is going to be the total delta from the start
+of the animation to the current time because the player position has already accumulated it. This vecotr
+is the rigs tpose root position minus the current position in the animation.
+
+This method has a problem. We are still playing the animation. So when we go to blend it with another
+animation, the visual position has been updated the entire time. So when we start blending in another animation
+the player teleports to the blended position.
+
+11.24.2024 12:42 PM - Animation Player
+Animation player does not change states until switch to node is called.
+This allows to not switch nodes until certain conditions are true. For example, transitioning between
+running and sprinting states needs to happen at the proper times and until the animation time is within
+a valid interval the state remains the same.
+
+///////////////////////////////////////
