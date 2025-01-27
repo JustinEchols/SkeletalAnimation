@@ -9,6 +9,56 @@
 #include "asset.cpp"
 #include "render.cpp"
 
+internal void
+CollisionRuleAdd(game_state *GameState, u32 A, u32 B, b32 ShouldCollide, collision_type CollisionType)
+{
+	if(A > B)
+	{
+		u32 Temp = A;
+		A = B;
+		B = Temp;
+	}
+
+	u32 HashIndex = A % (ArrayCount(GameState->CollisionRuleHash) - 1);
+	Assert((HashIndex >= 0) && (HashIndex < ArrayCount(GameState->CollisionRuleHash)));
+
+	pairwise_collision_rule *Found = 0;
+	for(pairwise_collision_rule *Rule = GameState->CollisionRuleHash[HashIndex];
+			Rule;
+			Rule = Rule->NextInHash)
+	{
+		if((Rule->IDA == A) && (Rule->IDB == B))
+		{
+			Found = Rule;
+			break;
+		}
+	}
+
+	if(!Found)
+	{
+		Found = GameState->CollisionRuleFirstFree;
+		if(Found)
+		{
+			GameState->CollisionRuleFirstFree = Found->NextInHash;
+		}
+		else
+		{
+			Found = PushStruct(&GameState->Arena, pairwise_collision_rule);
+		}
+
+		Found->NextInHash = GameState->CollisionRuleHash[HashIndex];
+		GameState->CollisionRuleHash[HashIndex] = Found;
+	}
+
+	if(Found)
+	{
+		Found->IDA = A;
+		Found->IDB = B;
+		Found->ShouldCollide = ShouldCollide;
+		Found->CollisionType = CollisionType;
+	}
+}
+
 internal entity * 
 PlayerAdd(game_state *GameState, v3 P)
 {
@@ -97,6 +147,8 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->OBB.Dim = 0.99f*Dim;
 
 	Entity->VisualScale = 0.5f*Dim;
+
+	CollisionRuleAdd(GameState, GameState->PlayerEntityIndex, Entity->ID, true, CollisionType_MovingCapsuleOBB);
 }
 
 internal void
@@ -141,6 +193,8 @@ WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->OBB.Dim = 0.99f*Dim;
 
 	Entity->VisualScale = 0.5f*Dim;
+
+	CollisionRuleAdd(GameState, GameState->PlayerEntityIndex, Entity->ID, true, CollisionType_MovingCapsuleOBB);
 }
 
 internal void
@@ -149,6 +203,7 @@ ElevatorAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	entity *Entity = EntityAdd(GameState, EntityType_Elevator);
 
 	FlagAdd(Entity, EntityFlag_Moveable);
+	FlagAdd(Entity, EntityFlag_Moving);
 	FlagAdd(Entity, EntityFlag_Collides);
 
 	Entity->P = P;
@@ -216,16 +271,6 @@ EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 	Entity->ThetaTarget = RadToDegrees(TargetAngleInRad);
 	if(Entity->Theta != Entity->ThetaTarget)
 	{
-		//animation_player *AnimationPlayer = Entity->AnimationPlayer;
-		//if(!AnimationPlayer->ControlsTurning && (AnimationPlayer->RootTurningAccumulator == 0.0f))
-		//{
-		//	// NOTE(Justin): If the animation player does not control turning keep recording
-		//	// the player's orientation. When the animation player decides to control turning
-		//	// the orientation that we start playing the animation at is the last recorded orientation
-		//	// of the player!
-		//	AnimationPlayer->OrientationLockedAt = Entity->Orientation;
-		//}
-
 		// TODO(Justin): Simplify this!
 		f32 TargetAngleInDegrees = RadToDegrees(TargetAngleInRad);
 		quaternion QTarget;
@@ -575,28 +620,35 @@ MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 
 	return(Collided);
 }
 
-
 inline b32
-EntitiesCanCollide(entity *Mover, entity *A)
+EntitiesCanCollide(game_state *GameState, entity *A, entity *B, collision_type *DestType)
 {
 	b32 Result = false;
-	if(FlagIsSet(Mover, EntityFlag_Collides) && FlagIsSet(A, EntityFlag_Collides))
+
+	if(A->ID == B->ID)
 	{
-		// TODO(Justin): Additional testing to see if they can collide. E.g.
-		// Both entities may be able to collide with each other but based
-		// on the positions and velocities they may not. In this case
-		// we should early out.
-		Result = true;
+		return(Result);
+	}
+
+	if(!FlagIsSet(A, EntityFlag_Collides) || !FlagIsSet(B, EntityFlag_Collides))
+	{
+		return(Result);
+	}
+
+	u32 HashIndex = A->ID % (ArrayCount(GameState->CollisionRuleHash) - 1);
+	Assert((HashIndex >= 0) && (HashIndex < ArrayCount(GameState->CollisionRuleHash)));
+
+	for(pairwise_collision_rule *Rule = GameState->CollisionRuleHash[HashIndex]; Rule; Rule = Rule->NextInHash)
+	{
+		if((Rule->IDA == A->ID) && (Rule->IDB == B->ID))
+		{
+			Result = Rule->ShouldCollide;
+			*DestType = Rule->CollisionType;
+		}
 	}
 
 	return(Result);
 }
-
-#define PLAYER_COLLIDER_AABB 0
-#define PLAYER_COLLIDER_OBB 0
-#define PLAYER_COLLIDER_SPHERE 0
-#define PLAYER_COLLIDER_CAPSULE 1
-#define PLAYER_COLLIDER_OFF 0
 
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
@@ -615,15 +667,12 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	animation_player *AnimationPlayer = Entity->AnimationPlayer;
 	if(AnimationPlayer && AnimationPlayer->ControlsPosition)
 	{
-
 		// TODO(Justin): Robustness
 		// TODO(Justin): Update velocity 
 		v3 AnimationDelta = AnimationPlayer->RootMotionAccumulator;
 		v3 GameDelta = 2.0f*V3(Entity->VisualScale.x * AnimationDelta.x,
-							   Entity->VisualScale.y * AnimationDelta.y,
-							   Entity->VisualScale.z * AnimationDelta.z);
-
-
+				Entity->VisualScale.y * AnimationDelta.y,
+				Entity->VisualScale.z * AnimationDelta.z);
 
 		DeltaP = Conjugate(Entity->Orientation)*GameDelta;
 		DesiredP = OldP + DeltaP;
@@ -634,7 +683,6 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	v3 GroundP = {};
 	v3 GroundDelta = V3(0.0f, -20.0f,0.0f);
 	entity *EntityBelow = 0;
-	b32 HitSomethingBesidesRegion = false;
 	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
 	{
 		b32 Collided = false;
@@ -652,71 +700,33 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
 		{
 			entity *TestEntity = GameState->Entities + TestEntityIndex;
-			if(Entity->ID != TestEntity->ID)
+			collision_type CollisionType = CollisionType_None;
+			if(EntitiesCanCollide(GameState, Entity, TestEntity, &CollisionType))
 			{
-				if(EntitiesCanCollide(Entity, TestEntity))
+				v3 TestP = TestEntity->P;
+				v3 CurrentP = Entity->P; 
+
+				// TODO(Justin): Make sure the chosen sphere center is correct.
+				v3 SphereCenter = CapsuleSphereCenterVsOBB(CurrentP, Entity->Capsule, TestEntity->P, TestEntity->OBB);
+				v3 SphereRel = SphereCenter - (TestP + TestEntity->VolumeOffset);
+				if(MovingSphereHitOBB(SphereRel, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
 				{
-					v3 TestP = TestEntity->P;
-					v3 CurrentP = Entity->P; 
-#if PLAYER_COLLIDER_AABB
-					v3 RelP		= (CurrentP + Entity->VolumeOffset) - (TestP + TestEntity->VolumeOffset);
-					v3 AABBDim	= Entity->AABBDim + TestEntity->AABBDim;
+					Collided = true;
+					HitEntity = TestEntity;
+				}
 
-					aabb MKSumAABB = AABBCenterDim(V3(0.0f), AABBDim);
-					collision_result CollisionResult = CollisionInfoDefault(MKSumAABB);
-					for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
-					{
-						collision_info Info = CollisionResult.Info[InfoIndex];
-						v3 PlaneNormal = Info.PlaneNormal;
-						v3 PointOnPlane = Info.PointOnPlane;
-						f32 D = Dot(PlaneNormal, PointOnPlane);
-						if(PointAndPlaneIntersect(RelP, DeltaP, PlaneNormal, D, MKSumAABB, &tMin))
-						{
-							Normal = Info.PlaneNormal;
-							Collided = true;
-							HitEntity = TestEntity;
-						}
-					}
-#elif PLAYER_COLLIDER_SPHERE 
-					// Compute the delta from the OBB's center to the Sphere's center in XYZ space.
-					v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
-					if(MovingSphereHitOBB(RelP, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
-					{
-						Collided = true;
-						HitEntity = TestEntity;
-					}
+				// GroundCheck
+				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
+				if(MovingSphereHitOBB(RelP, Entity->Radius, GroundDelta, TestEntity->OBB, &GroundNormal, &tGround))
+				{
+					EntityBelow = TestEntity;
+				}
 
-					// GroundCheck
-					if(MovingSphereHitOBB(RelP, 0.8f*Entity->Radius, GroundDelta, TestEntity->OBB, &GroundNormal, &tGround))
+				if(TestEntity->Type == EntityType_WalkableRegion)
+				{
+					if(InAABB(AABBCenterDim(TestEntity->P, TestEntity->AABBDim), CurrentP))
 					{
-						EntityBelow = TestEntity;
-					}
-#elif PLAYER_COLLIDER_CAPSULE
-					// Compute the center of the sphere along the capsule axis and then convert it to OBB space.
-					// TODO(Justin): Make sure the chosen sphere center is correct. It seems ok..
-					v3 SphereCenter = CapsuleSphereCenterVsOBB(CurrentP, Entity->Capsule, TestEntity->P, TestEntity->OBB);
-					v3 SphereRel = SphereCenter - (TestP + TestEntity->VolumeOffset);
-					if(MovingSphereHitOBB(SphereRel, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
-					{
-						Collided = true;
-						HitEntity = TestEntity;
-					}
-
-					// GroundCheck
-					v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
-					if(MovingSphereHitOBB(RelP, Entity->Radius, GroundDelta, TestEntity->OBB, &GroundNormal, &tGround))
-					{
-						EntityBelow = TestEntity;
-					}
-#elif PLAYER_COLLIDER_OFF
-#endif
-
-					if(TestEntity->Type == EntityType_WalkableRegion)
-					{
-						if(InAABB(AABBCenterDim(TestEntity->P, TestEntity->AABBDim), CurrentP))
-						{
-							Region = TestEntity;
-						}
+						Region = TestEntity;
 					}
 				}
 			}
@@ -805,6 +815,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Texture.Width = 256;
 		GameState->Texture.Height = 256;
 
+		EntityAdd(GameState, EntityType_Null);
+		entity *Player = PlayerAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+
 		quaternion CubeOrientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
 
 		// Region
@@ -820,8 +833,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		StartP += V3(6.0f, 0.0f, -0.0f);
 		CubeAdd(GameState, StartP, Dim, CubeOrientation);
 
-		//Dim = V3(2.0f, 0.5f, 2.0f);
-		//v3 ElevatorP = StartP + V3(0.0f, 0.01f, 2.0f);
+		Dim = V3(2.0f, 0.5f, 2.0f);
+		v3 ElevatorP = StartP + V3(0.0f, 1.0f, 2.0f);
 		//ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
 
 		Dim = V3(1.f, 1.0f, 5.0f);
@@ -876,10 +889,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 #else
 		model *Model = LookupModel(&GameState->AssetManager, "XBot").Model;
 		animation_graph *G  = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
-		asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "XBot_IdleRight");
+		asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "XBot_IdleLeft");
 #endif
-
-		entity *Player = PlayerAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 		Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
 		Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
 		Player->Acceleration = 50.0f;
@@ -903,6 +914,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					  GameMemory->TemporaryStorageSize - sizeof(temp_state));
 
 		TempState->IsInitialized = true;
+
+
 	}
 
 #if DEVELOPER
@@ -956,7 +969,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			entity *Entity = GameState->Entities + GameState->PlayerIDForController[ControllerIndex];
 			move_info *MoveInfo = &Entity->MoveInfo;
 			*MoveInfo = {};
-			f32 Acceleration = 0.0f;
+			f32 AccelerationSq = 0.0f;
 
 			// NOTE(Justin): For debug camera
 			if(GameState->CameraIsFree) continue;
@@ -978,8 +991,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					MoveInfo->AnyAction = true;
 				}
 				
-				Acceleration = Dot(MoveInfo->ddP, MoveInfo->ddP);
-				if(Acceleration >= 1.0f)
+				AccelerationSq = Dot(MoveInfo->ddP, MoveInfo->ddP);
+				if(AccelerationSq >= 1.0f)
 				{
 					Sprinting = true;
 					MoveInfo->AnyAction = true;
@@ -1024,11 +1037,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					MoveInfo->AnyAction = true;
 				}
 
-				Acceleration = Dot(MoveInfo->ddP, MoveInfo->ddP);
+				AccelerationSq = Dot(MoveInfo->ddP, MoveInfo->ddP);
 
 			}
 
-			if(Acceleration != 0.0f)
+			if(AccelerationSq != 0.0f)
 			{
 				MoveInfo->ddP = Normalize(MoveInfo->ddP);
 				MoveInfo->AnyAction = true;
@@ -1045,7 +1058,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				//MoveInfo.CanRun = true;
 			}
 
-			if(Equal(Entity->dP, V3(0.0f)))
+			MoveInfo->Speed = Length(Entity->dP);
+			if(MoveInfo->Speed < 0.1f)
 			{
 				MoveInfo->NoVelocity = true;
 			}
@@ -1069,7 +1083,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			{
 				move_info MoveInfo = Entity->MoveInfo;
 				EvaluatePlayerMove(Entity, MoveInfo, &ddP);
-
 				switch(Entity->MovementState)
 				{
 					case MovementState_Idle:	EvaluateIdle(Entity, MoveInfo); break;
@@ -1103,9 +1116,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			} break;
 		}
 
-		if(!Equal(ddP, V3(0.0f)) && FlagIsSet(Entity, EntityFlag_Moving))
+		if(!Equal(ddP, V3(0.0f)) && CanMove(Entity))
 		{
-			if(CanMove(Entity))
+			if(IsMoving(Entity))
 			{
 				EntityMove(GameState, Entity, ddP, dt);
 				EntityOrientationUpdate(Entity, dt, Entity->AngularSpeed);
@@ -1114,9 +1127,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	}
 
 	asset_manager *Assets = &GameState->AssetManager;
-
-
-
 	temporary_memory AnimationMemory = TemporaryMemoryBegin(&TempState->Arena);
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	camera *Camera = &GameState->Camera;
@@ -1182,15 +1192,18 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				if(!AnimationPlayer->ControlsTurning && (AnimationPlayer->RootTurningAccumulator == 0.0f))
 				{
+					// Record gameplay orientation until animation player controls turning 
 					AnimationPlayer->OrientationLockedAt = Entity->Orientation;
 				}
 
 				if(AnimationPlayer->ControlsTurning)
 				{
+					// Controls turning animation is playing
 					R = QuaternionToMat4(AnimationPlayer->OrientationLockedAt);
 				}
 				else
 				{
+					// Catch up the locked orientation to current orientation.
 					if(AnimationPlayer->RootTurningAccumulator != 0.0f)
 					{
 						AnimationPlayer->OrientationLockedAt = RotateTowards(AnimationPlayer->OrientationLockedAt, Entity->Orientation, dt, 5.0f);
@@ -1201,35 +1214,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				PushModel(RenderBuffer, CString(AnimationPlayer->Model->Name),T*R*S);
 
-
 				// TODO(Justin): Move debug diagrams to ui.
 
 				//
 				// Debug volume
 				//
 
-#if PLAYER_COLLIDER_AABB
-				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
-				R = QuaternionToMat4(Entity->Orientation);
-				S = Mat4Scale(Entity->AABBDim);
-				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
-#elif PLAYER_COLLIDER_OBB
-				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
-				R = Mat4(Entity->OBB.X, Entity->OBB.Y, Entity->OBB.Z);
-				S = Mat4Scale(Entity->OBB.Dim);
-				PushAABB(RenderBuffer, GameState->Cube, T*R*S, V3(1.0f));
-#elif PLAYER_COLLIDER_SPHERE
-				T = Mat4Translate(Entity->P + V3(0.0f, Entity->Radius, 0.0f));
-				R = QuaternionToMat4(Entity->Orientation);
-				S = Mat4Scale(1.0f);
-				PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
-#elif PLAYER_COLLIDER_CAPSULE
 				capsule Capsule = Player->Capsule;
 				T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(1.0f);
 				//PushCapsule(RenderBuffer, GameState->Capsule, T*R*S, V3(1.0f));
-#endif
 
 				//
 				// Ground arrow 
@@ -1243,7 +1238,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				Entry = LookupTexture(Assets, "left_arrow");
 				PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
-				PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, Entry.Index);
+				//PushQuad3D(RenderBuffer, GameState->Quad.Vertices, T*R*S, Entry.Index);
 			} break;
 			case EntityType_Cube:
 			{
@@ -1419,16 +1414,21 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	sprintf(Buff, "+Player");
 	Text = StringCopy(&TempState->Arena, Buff);
-	rect Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
-	ui_button EntityButton;
-	EntityButton.ID = 1;
-	EntityButton.P = P;
-	EntityButton.Rect = Rect;
+	if(Button(UI, P, 1, "+Player"))
+	{
+		UI->EntityTreeview = !UI->EntityTreeview;
+	}
 
-	if(Button(UI, &EntityButton))
+	if(Button(UI, P, 1, "+AnimationPlayer"))
+	{
+		UI->EntityTreeview = !UI->EntityTreeview;
+	}
+
+
+	if(UI->EntityTreeview)
 	{
 		Text.Data[0] = '-';
-		PushText(RenderBuffer, Text, FontInfo, EntityButton.P, Scale, HoverColor);
+		PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
 		P.y -= (Gap + dY);
 
 		P.x += 20.0f;
@@ -1503,17 +1503,18 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	}
 	else
 	{
-		PushText(RenderBuffer, Text, FontInfo, EntityButton.P, Scale, DefaultColor);
+		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
 		P.y -= (Gap + dY);
 	}
 
+#if 0
 	//
 	// NOTE(Jusitn): Animation information.
 	//
 
 	sprintf(Buff, "%s", "+Animation Control");
 	Text = StringCopy(&TempState->Arena, Buff);
-	Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
+	rect Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
 
 	ui_button AnimationButton;
 	AnimationButton.ID = 2;
@@ -1703,6 +1704,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		PushRenderToTexture(RenderBuffer, (f32 *)Vertices);
 	}
+#endif
 
 	Platform.RenderToOpenGL(RenderBuffer, (u32)GameInput->BackBufferWidth, (u32)GameInput->BackBufferHeight);
 

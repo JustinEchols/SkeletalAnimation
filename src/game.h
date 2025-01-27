@@ -1,6 +1,14 @@
 #if !defined(GAME_H)
 
 /*
+ * Animation
+ *	- Jumping
+ *	- Landing
+ *	- Combat
+ *	- Multiple controls turning animations
+ *
+ * Physics
+ *	- Pairwise collision rules
  *
 */
 
@@ -42,7 +50,7 @@ enum movement_state
 
 enum entity_type
 {
-	EntityType_Invalid,
+	EntityType_Null,
 	EntityType_Player,
 	EntityType_Cube,
 	EntityType_Sphere,
@@ -75,13 +83,13 @@ struct move_info
 {
 	b32 AnyAction;
 	b32 StandingStill;
-	//b32 Sprinting;
 	b32 CanSprint;
 	b32 CanJump;
 	b32 Crouching;
 	b32 Attacking;
 	b32 NoVelocity;
 	b32 Accelerating;
+	f32 Speed;
 
 	v3 ddP;
 };
@@ -97,6 +105,22 @@ struct collision_info
 struct collision_result
 {
 	collision_info Info[6];
+};
+
+enum collision_type
+{
+	CollisionType_None,
+	CollisionType_MovingCapsuleOBB,
+	CollisionType_MovingCapsuleMovingCapsule,
+};
+
+struct pairwise_collision_rule
+{
+	u32 IDA;
+	u32 IDB;
+	b32 ShouldCollide;
+	collision_type CollisionType;
+	pairwise_collision_rule *NextInHash;
 };
 
 struct entity
@@ -166,10 +190,12 @@ struct game_state
 	u32 EntityCount;
 	entity Entities[4096];
 
+	pairwise_collision_rule *CollisionRuleHash[256];
+	pairwise_collision_rule *CollisionRuleFirstFree;
+
 	quad Quad;
 
 	b32 CameraIsFree;
-	b32 CameraReset;
 	f32 CameraSpeed;
 	f32 DefaultYaw;
 	f32 DefaultPitch;
@@ -189,17 +215,16 @@ struct game_state
 	f32 ZFar;
 	f32 Gravity;
 
-	asset_manager AssetManager;
+	u32 PlayerIDForController[ArrayCount(((game_input *)0)->Controllers)];
 
 	ui UI;
+	asset_manager AssetManager;
 
 	texture Texture;
 	model Cylinder;
 	model *Capsule;
 	model *Cube;
 	model *Sphere;
-
-	u32 PlayerIDForController[ArrayCount(((game_input *)0)->Controllers)];
 };
 
 struct temp_state

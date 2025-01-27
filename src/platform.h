@@ -41,6 +41,7 @@ typedef uintptr_t	umm;
 #define local_persist			static
 #define global_variable			static
 #define Assert(Expression)		if(!(Expression)) {*(int *)0 = 0;}
+#define InvalidDefaultCase		default: {Assert(0);}
 #define ArrayCount(A)			(sizeof(A) / sizeof((A)[0]))
 #define Kilobyte(Count)			(1024 * Count)
 #define Megabyte(Count)			(1024 * Kilobyte(Count))

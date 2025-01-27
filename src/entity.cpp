@@ -92,14 +92,25 @@ EntityTransform(entity *Entity, v3 Scale = V3(1.0f))
 	return(Result);
 }
 
+// NOTE(Justin): Each frame we clear the move_info struct
+// for the player and record the input for the frame. We
+// then prep the physics based off of
+// the input current flags of the player. After the move is evaluated
+// we go to the movement state the entity is currently in and then
+// update the state and flags of the entity. So, the interface is
+// between the move_info and player movement state and player flags.
+
 inline void
 EvaluatePlayerMove(entity *Entity, move_info MoveInfo, v3 *ddP)
 {
 	f32 a = Entity->Acceleration;
-	*ddP = MoveInfo.ddP;
-	Entity->ddP = *ddP;
 
-	if(MoveInfo.CanSprint)
+	if(!IsMoving(Entity) && MoveInfo.Accelerating)
+	{
+		a *= 5.0f;
+	}
+
+	if((Entity->Flags & EntityFlag_Moving ) && MoveInfo.CanSprint)
 	{
 		a *= 1.5f;
 	}
@@ -123,7 +134,11 @@ EvaluatePlayerMove(entity *Entity, move_info MoveInfo, v3 *ddP)
 		Entity->dP.y = 30.0f;
 	}
 
+	Entity->ddP = MoveInfo.ddP;
+
 	// TODO(Justin): Varying drag 
+
+	*ddP = MoveInfo.ddP;
 	*ddP = a * (*ddP);
 	*ddP += -Entity->Drag * Entity->dP;
 }

@@ -1,40 +1,63 @@
 
+internal void
+UiBegin(ui *Ui, game_input *GameInput, asset_manager *Assets)
+{
+	Ui->MouseP = V2(GameInput->MouseX, GameInput->MouseY);
+	Ui->Rect = RectMinDim(V2(0.0f), V2(100, 500.0f));
+	Ui->LeftDown = IsDown(GameInput->MouseButtons[MouseButton_Left]);
+	Ui->LeftUp = WasDown(GameInput->MouseButtons[MouseButton_Left]);
+	Ui->HotID = 0;
+	Ui->Assets = Assets;
+	Ui->Font = &Assets->Font;
+	Ui->P = V2(0.0f, (f32)GameInput->BackBufferHeight - Ui->Font->LineGap);
+}
+
 inline b32
-Button(ui *UI, ui_button *Button)
+UiWidgetUpdate(ui *Ui, s32 ID, b32 Over)
 {
 	b32 Result = false;
 
-	if(InRect(Button->Rect, UI->MouseP))
+	// Interaction begin
+	if(Ui->ActiveID == 0)
 	{
-		UI->HotID = Button->ID;
-		if(UI->ActiveID == 0 && UI->LeftClick)
+		if(Over)
 		{
-			UI->ActiveID = Button->ID;
+			Ui->HotID = ID;
 		}
-		else if(UI->ActiveID == Button->ID && UI->LeftClick)
+
+		if((Ui->HotID == ID) && Ui->LeftDown)
 		{
-			UI->ActiveID = 0;
-		}
-		else if((UI->ActiveID != Button->ID) && UI->LeftClick)
-		{
-			UI->ActiveID = Button->ID;
+			Ui->ActiveID = ID;
 		}
 	}
 
-	Result = (UI->ActiveID == Button->ID);
+	// Interaction end
+	if(Ui->ActiveID == ID)
+	{
+		if(Over)
+		{
+			Ui->HotID = ID;
+		}
+
+		if(Ui->LeftUp)
+		{
+			if(Ui->HotID == ID)
+			{
+				Result = true;
+			}
+
+			Ui->ActiveID = 0;
+		}
+	}
 
 	return(Result);
 }
 
-internal void
-UiBegin(ui *UI, game_input *GameInput, asset_manager *Assets)
+internal b32
+Button(ui *Ui, v2 P, s32 ID, char *Label)
 {
-	UI->MouseP = V2(GameInput->MouseX, GameInput->MouseY);
-	UI->LeftClick = WasPressed(GameInput->MouseButtons[MouseButton_Left]);
-	UI->HotID = 0;
-	UI->Assets = Assets;
-	UI->Rect = RectMinDim(V2(0.0f), V2(100, 500.0f));
-	UI->Font = &Assets->Font;
-	UI->P = V2(0.0f, (f32)GameInput->BackBufferHeight - UI->Font->LineGap);
+	rect Rect = RectMinDim(P, TextDim(Ui->Font, Ui->Font->Scale, Label));
+	b32 Over = InRect(Rect, Ui->MouseP);
+	b32 Result = UiWidgetUpdate(Ui, ID, Over);
+	return(Result);
 }
-

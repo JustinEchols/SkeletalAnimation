@@ -169,7 +169,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	{
 		if(Current->ID.Value == ID)
 		{
-			//return;
+			return;
 		}
 	}
 
@@ -442,6 +442,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		case MovementState_Run:
 		{
 			char *Message = "go_state_run";
+
 			f32 dTheta = Entity->ThetaTarget - Entity->Theta;
 			if(dTheta < -30.0f)
 			{
@@ -451,6 +452,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 			{
 				Message = "go_state_turn_90_left_to_run";
 			}
+
 			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
 		case MovementState_Sprint:
@@ -460,7 +462,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		} break;
 		case MovementState_Jump:
 		{
-			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
+			//MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
 		} break;
 		case MovementState_Sliding:
 		{
