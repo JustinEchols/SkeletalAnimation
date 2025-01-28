@@ -8,7 +8,8 @@
  *	- Multiple controls turning animations
  *
  * Physics
- *	- Pairwise collision rules
+ *	- Moving Capsule vs Moving OBB
+ *	- Moving Capsule vs Moving Capsule
  *
 */
 
@@ -234,6 +235,7 @@ struct temp_state
 };
 
 global_variable platform_api Platform;
+global_variable ui Ui;
 
 #define GAME_H
 #endif

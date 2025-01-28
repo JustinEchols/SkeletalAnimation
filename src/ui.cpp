@@ -1,52 +1,56 @@
 
 internal void
-UiBegin(ui *Ui, game_input *GameInput, asset_manager *Assets)
+UiBegin(render_buffer *RenderBuffer, memory_arena *TempArena, game_input *GameInput, asset_manager *Assets)
 {
-	Ui->MouseP = V2(GameInput->MouseX, GameInput->MouseY);
-	Ui->Rect = RectMinDim(V2(0.0f), V2(100, 500.0f));
-	Ui->LeftDown = IsDown(GameInput->MouseButtons[MouseButton_Left]);
-	Ui->LeftUp = WasDown(GameInput->MouseButtons[MouseButton_Left]);
-	Ui->HotID = 0;
-	Ui->Assets = Assets;
-	Ui->Font = &Assets->Font;
-	Ui->P = V2(0.0f, (f32)GameInput->BackBufferHeight - Ui->Font->LineGap);
+	Ui.MouseP = V2(GameInput->MouseX, GameInput->MouseY);
+	Ui.LeftDown = IsDown(GameInput->MouseButtons[MouseButton_Left]);
+	Ui.LeftUp = WasDown(GameInput->MouseButtons[MouseButton_Left]);
+	Ui.Hot.ID = 0;
+	Ui.Assets = Assets;
+	Ui.Font = &Assets->Font;
+	Ui.P = V2(0.0f, (f32)GameInput->BackBufferHeight - Ui.Font->LineGap);
+
+	Ui.AtY = Ui.P.y;
+	Ui.LineGap = Ui.Font->LineGap + 5.0f;
+	Ui.RenderBuffer = RenderBuffer;
+	Ui.TempArena = TempArena;
+	Ui.HoverColor = V3(1.0f, 1.0f, 0.0f);
+	Ui.DefaultColor = V3(1.0f);
 }
 
-inline b32
-UiWidgetUpdate(ui *Ui, s32 ID, b32 Over)
+internal b32
+UiWidgetUpdate(void *ID, b32 Over)
 {
 	b32 Result = false;
 
-	// Interaction begin
-	if(Ui->ActiveID == 0)
+	if(!AlreadyInteracting())
 	{
 		if(Over)
 		{
-			Ui->HotID = ID;
+			Ui.Hot.ID = ID;
 		}
 
-		if((Ui->HotID == ID) && Ui->LeftDown)
+		if(Hot(ID) && Ui.LeftDown)
 		{
-			Ui->ActiveID = ID;
+			Ui.InteractingWith.ID = ID;
 		}
 	}
 
-	// Interaction end
-	if(Ui->ActiveID == ID)
+	if(InteractingWith(ID))
 	{
 		if(Over)
 		{
-			Ui->HotID = ID;
+			Ui.Hot.ID = ID;
 		}
 
-		if(Ui->LeftUp)
+		if(Ui.LeftUp)
 		{
-			if(Ui->HotID == ID)
+			if(Hot(ID))
 			{
 				Result = true;
 			}
 
-			Ui->ActiveID = 0;
+			Ui.InteractingWith.ID = 0;
 		}
 	}
 
@@ -54,10 +58,10 @@ UiWidgetUpdate(ui *Ui, s32 ID, b32 Over)
 }
 
 internal b32
-Button(ui *Ui, v2 P, s32 ID, char *Label)
+UiButton(char *Label, void *ID)
 {
-	rect Rect = RectMinDim(P, TextDim(Ui->Font, Ui->Font->Scale, Label));
-	b32 Over = InRect(Rect, Ui->MouseP);
-	b32 Result = UiWidgetUpdate(Ui, ID, Over);
+	rect Rect = RectMinDim(Ui.P, TextDim(Ui.Font, Ui.Font->Scale, Label));
+	b32 Over = InRect(Rect, Ui.MouseP);
+	b32 Result = UiWidgetUpdate(ID, Over);
 	return(Result);
 }

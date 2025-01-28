@@ -8,6 +8,7 @@
 #include "ui.cpp"
 #include "asset.cpp"
 #include "render.cpp"
+#include "debug.cpp"
 
 internal void
 CollisionRuleAdd(game_state *GameState, u32 A, u32 B, b32 ShouldCollide, collision_type CollisionType)
@@ -224,42 +225,6 @@ ElevatorAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->OBB.Dim = 0.99f*Dim;
 
 	Entity->VisualScale = 0.5f*Dim;
-}
-
-inline void 
-MovementStateToString(char *Buffer, movement_state State)
-{
-	switch(State)
-	{
-		case MovementState_Idle:
-		{
-			sprintf(Buffer, "%s", "MovementState: Idle");
-		} break;
-		case MovementState_Run:
-		{
-			sprintf(Buffer, "%s", "MovementState: Running");
-		} break;
-		case MovementState_Sprint:
-		{
-			sprintf(Buffer, "%s", "MovementState: Sprint");
-		} break;
-		case MovementState_Jump:
-		{
-			sprintf(Buffer, "%s", "MovementState: JumpForward");
-		} break;
-		case MovementState_Crouch:
-		{
-			sprintf(Buffer, "%s", "MovementState: Crouch");
-		} break;
-		case MovementState_Sliding:
-		{
-			sprintf(Buffer, "%s", "MovementState: Sliding");
-		} break;
-		case MovementState_Attack:
-		{
-			sprintf(Buffer, "%s", "MovementState: Attack");
-		} break;
-	}
 }
 
 inline void
@@ -1383,328 +1348,32 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	entity *Entity = GameState->Entities + GameState->PlayerEntityIndex;
 
-	font *FontInfo =  &Assets->Font;
-	f32 Scale = FontInfo->Scale;
-	f32 Gap = FontInfo->LineGap;
-	f32 X = 0.0f;
-	f32 Y = (f32)GameInput->BackBufferHeight - Gap;
-	f32 dY = 5.0f;
-	s32 WindowWidth = GameInput->BackBufferWidth;
-	s32 WindowHeight = GameInput->BackBufferHeight;
-	v2 MouseP = V2(GameInput->MouseX, GameInput->MouseY);
-	v2 P = V2(X, Y);
-	v3 HoverColor = V3(1.0f, 1.0f, 0.0f);
-	v3 DefaultColor = V3(1.0f);
-
-	ui *UI = &GameState->UI;
-	UiBegin(UI, GameInput, Assets);
+	UiBegin(RenderBuffer, &TempState->Arena, GameInput, Assets);
 
 	char Buff[256];
 	string Text;
 
 	sprintf(Buff, "%s %.2f", "fps: ", GameInput->FPS);
-	Text = StringCopy(&TempState->Arena, Buff);
-	PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-	P.y -= (Gap + dY);
+	Text = StringCopy(Ui.TempArena, Buff);
+	PushText(RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
+	Ui.P.y -= Ui.LineGap;
 
 	sprintf(Buff, "%s %.2f", "time scale: ", GameState->TimeScale);
-	Text = StringCopy(&TempState->Arena, Buff);
-	PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-	P.y -= (Gap + dY);
+	Text = StringCopy(Ui.TempArena, Buff);
+	PushText(RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
+	Ui.P.y -= Ui.LineGap;
 
-	sprintf(Buff, "+Player");
-	Text = StringCopy(&TempState->Arena, Buff);
-	if(Button(UI, P, 1, "+Player"))
-	{
-		UI->EntityTreeview = !UI->EntityTreeview;
-	}
+	if(UiButton("+Player", DebugDrawEntity)) Ui.DebugEntityView = !Ui.DebugEntityView;
+	DebugDrawEntity("-Player", Entity);
 
-	if(Button(UI, P, 1, "+AnimationPlayer"))
-	{
-		UI->EntityTreeview = !UI->EntityTreeview;
-	}
+	if(UiButton("+AnimationPlayer", DebugDrawAnimationPlayer)) Ui.DebugAnimationPlayerView = !Ui.DebugAnimationPlayerView;
+	DebugDrawAnimationPlayer("-AnimationPlayer", Entity->AnimationPlayer);
 
+	if(UiButton("+HandAndFoot", DebugDrawHandAndFoot)) Ui.DebugDrawHandAndFoot = !Ui.DebugDrawHandAndFoot;
+	DebugDrawHandAndFoot("-HandAndFoot", Entity, GameState->Sphere);
 
-	if(UI->EntityTreeview)
-	{
-		Text.Data[0] = '-';
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
-		P.y -= (Gap + dY);
-
-		P.x += 20.0f;
-		sprintf(Buff, "p: %.1f %.1f %.1f", Entity->P.x, Entity->P.y, Entity->P.z);
-		Text = StringCopy(&TempState->Arena, Buff);
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-
-		sprintf(Buff, "dP: %.1f %.1f %.1f", Entity->dP.x, Entity->dP.y, Entity->dP.z);
-		Text = StringCopy(&TempState->Arena, Buff);
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-
-		sprintf(Buff, "ddP: %.1f %.1f %.1f", Entity->ddP.x, Entity->ddP.y, Entity->ddP.z);
-		Text = StringCopy(&TempState->Arena, Buff);
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-
-		sprintf(Buff, "Theta: %.2f", Entity->Theta);
-		Text = StringCopy(&TempState->Arena, Buff);
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-
-		sprintf(Buff, "ThetaTarget: %.2f", Entity->ThetaTarget);
-		Text = StringCopy(&TempState->Arena, Buff);
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-
-		sprintf(Buff, "dTheta: %.2f", Entity->dTheta);
-		Text = StringCopy(&TempState->Arena, Buff);
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-
-		// NOTE(Justin): 
-		// dTheta > 0 -> CCW turning left
-		// dTheta < 0 -> CW turning right 
-
-		b32 TurningLeft = (Entity->dTheta > 0.0f);
-		b32 TurningRight = (Entity->dTheta < 0.0f);
-		if(TurningRight)
-		{
-			sprintf(Buff, "turning: Right");
-		}
-		else if(TurningLeft)
-		{
-			sprintf(Buff, "turning: Left");
-		}
-		else
-		{
-			sprintf(Buff, "turning: Still");
-		}
-
-		Text = StringCopy(&TempState->Arena, Buff);
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-
-		
-		if(FlagIsSet(Player, EntityFlag_YSupported))
-		{
-			sprintf(Buff, "y supported: true");
-		}
-		else
-		{
-			sprintf(Buff, "y supported: false");
-		}
-
-		Text = StringCopy(&TempState->Arena, Buff);
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-
-		P.x -= 20.0f;
-	}
-	else
-	{
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-	}
-
-#if 0
-	//
-	// NOTE(Jusitn): Animation information.
-	//
-
-	sprintf(Buff, "%s", "+Animation Control");
-	Text = StringCopy(&TempState->Arena, Buff);
-	rect Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
-
-	ui_button AnimationButton;
-	AnimationButton.ID = 2;
-	AnimationButton.P = P;
-	AnimationButton.Rect = Rect;
-	if(Button(UI, &AnimationButton))
-	{
-		Text.Data[0] = '-';
-		PushText(RenderBuffer, Text, FontInfo, AnimationButton.P, Scale, HoverColor);
-		P.y -= (Gap + dY);
-
-		P.x += 20.0f;
-
-		sprintf(Buff, "RootMotionAccumulator: %.1f %.1f %.1f",	   Player->AnimationPlayer->RootMotionAccumulator.x,
-														   Player->AnimationPlayer->RootMotionAccumulator.y,
-														   Player->AnimationPlayer->RootMotionAccumulator.z);
-		Text = StringCopy(&TempState->Arena, Buff);
-		if(Player->AnimationPlayer->ControlsPosition)
-		{
-			PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
-			P.y -= (Gap + dY);
-		}
-		else
-		{
-			PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-			P.y -= (Gap + dY);
-		}
-
-		sprintf(Buff, "RootTurningAccumulator: %f", Player->AnimationPlayer->RootTurningAccumulator);
-		Text = StringCopy(&TempState->Arena, Buff);
-		if(Player->AnimationPlayer->ControlsTurning)
-		{
-			PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
-			P.y -= (Gap + dY);
-		}
-		else
-		{
-			PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-			P.y -= (Gap + dY);
-		}
-
-		MovementStateToString(Buff, Entity->AnimationPlayer->MovementState);
-		Text = StringCopy(&TempState->Arena, Buff);
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-
-		for(animation *Animation = Player->AnimationPlayer->Channels; Animation; Animation = Animation->Next)
-		{
-			if(Animation)
-			{
-				sprintf(Buff, "Name: %s", Animation->Name.Data);
-				Text = StringCopy(&TempState->Arena, Buff);
-				PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-				P.y -= (Gap + dY);
-
-				sprintf(Buff, "%s %.2f", "Duration: ", Animation->Duration);
-				Text = StringCopy(&TempState->Arena, Buff);
-				PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-				P.y -= (Gap + dY);
-
-				sprintf(Buff, "%s %.2f", "t: ", Animation->CurrentTime);
-				Text = StringCopy(&TempState->Arena, Buff);
-				PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-				P.y -= (Gap + dY);
-
-				sprintf(Buff, "%s %.2f", "blend duration: ", Animation->BlendDuration);
-				Text = StringCopy(&TempState->Arena, Buff);
-				PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-				P.y -= (Gap + dY);
-
-				sprintf(Buff, "%s %.2f", "blend_t: ", Animation->BlendCurrentTime);
-				Text = StringCopy(&TempState->Arena, Buff);
-				PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-				P.y -= (Gap + dY);
-
-				sprintf(Buff, "%s %.2f", "blend: ", Animation->BlendFactor);
-				Text = StringCopy(&TempState->Arena, Buff);
-				PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-				P.y -= (Gap + dY);
-			}
-			P.y -= (Gap + dY);
-		}
-		P.x -= 20.0f;
-	}
-	else
-	{
-		PushText(RenderBuffer, Text, FontInfo, AnimationButton.P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-	}
-
-	sprintf(Buff, "+DrawHandAndFootPositions");
-	Text = StringCopy(&TempState->Arena, Buff);
-	Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
-	ui_button HandAndFoot;
-	HandAndFoot.ID = __LINE__;
-	HandAndFoot.P = P;
-	HandAndFoot.Rect = Rect;
-
-	if(Button(UI, &HandAndFoot))
-	{
-		Text.Data[0] = '-';
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, HoverColor);
-
-		T = EntityTransform(Entity, Entity->VisualScale);
-		R = Mat4Identity();
-		S = Mat4Scale(0.2f);
-
-		T = Mat4Translate(Entity->LeftFootP);
-		PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
-
-		T = Mat4Translate(Entity->RightFootP);
-		PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
-
-		T = Mat4Translate(Entity->LeftHandP);
-		PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
-
-		T = Mat4Translate(Entity->RightHandP);
-		PushAABB(RenderBuffer, GameState->Sphere, T*R*S, V3(1.0f));
-		P.y -= (Gap + dY);
-	}
-	else
-	{
-		PushText(RenderBuffer, Text, FontInfo, P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-	}
-
-	sprintf(Buff, "%s", "+ShadowMapTexture");
-	Text = StringCopy(&TempState->Arena, Buff);
-	Rect = RectMinDim(P, TextDim(FontInfo, Scale, Buff));
-
-	ui_button TextureButton;
-	TextureButton.ID = 4;
-	TextureButton.P = P;
-	TextureButton.Rect = Rect;
-	if(!Button(UI, &TextureButton))
-	{
-		PushText(RenderBuffer, Text, FontInfo, TextureButton.P, Scale, DefaultColor);
-		P.y -= (Gap + dY);
-	}
-	else
-	{
-		Text.Data[0] = '-';
-		PushText(RenderBuffer, Text, FontInfo, TextureButton.P, Scale, HoverColor);
-		P.y -= (Gap + dY);
-
-		//
-		// NOTE(Justin): Render to texture
-		//
-
-		// TODO(Justin); Cleanup
-		mat4 Persp = Mat4Perspective(GameState->FOV, 256.0f/256.0f, GameState->ZNear, GameState->ZFar);
-		render_buffer *RenderToTextureBuffer = RenderBufferAllocate(&TempState->Arena, Megabyte(64),
-				GameState->CameraTransform,
-				Persp,
-				Mat4Identity(),
-				Assets,
-				Camera->P,
-				V3(0.0f),
-				2);
-
-		PushClear(RenderToTextureBuffer, V4(1.0f));
-		mat4 Transform = EntityTransform(Entity, Entity->VisualScale);
-		model *Model = LookupModel(Assets, "XBot").Model;
-		//PushModel(RenderToTextureBuffer, Model, Transform);
-
-		Platform.RenderToOpenGL(RenderToTextureBuffer, GameState->Texture.Width, GameState->Texture.Height);
-
-		//
-		// NOTE(Justin): Render to default frame buffer
-		//
-
-		f32 Width = 256.0f;
-		f32 Height = 256.0f;
-		P = V2(0.0f, P.y - Height);
-
-		Rect = RectMinDim(P, V2(Width, Height));
-		f32 Vertices[6][4] =
-		{
-			{Rect.Min.x, Rect.Min.y, 0.0f, 0.0f},
-			{Rect.Max.x, Rect.Min.y, 1.0f, 0.0f},
-			{Rect.Max.x, Rect.Max.y, 1.0f, 1.0f},
-
-			{Rect.Max.x, Rect.Max.y, 1.0f, 1.0f},
-			{Rect.Min.x, Rect.Max.y, 0.0f, 1.0f},
-			{Rect.Min.x, Rect.Min.y, 0.0f, 0.0f},
-		};
-
-		PushRenderToTexture(RenderBuffer, (f32 *)Vertices);
-	}
-#endif
+	if(UiButton("+Texture", DebugDrawTexture)) Ui.DebugDrawTexture = !Ui.DebugDrawTexture;
+	DebugDrawTexture("-Texture", GameState);
 
 	Platform.RenderToOpenGL(RenderBuffer, (u32)GameInput->BackBufferWidth, (u32)GameInput->BackBufferHeight);
 
