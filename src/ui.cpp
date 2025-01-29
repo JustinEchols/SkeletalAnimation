@@ -9,7 +9,6 @@ UiBegin(render_buffer *RenderBuffer, memory_arena *TempArena, game_input *GameIn
 	Ui.Assets = Assets;
 	Ui.Font = &Assets->Font;
 	Ui.P = V2(0.0f, (f32)GameInput->BackBufferHeight - Ui.Font->LineGap);
-
 	Ui.AtY = Ui.P.y;
 	Ui.LineGap = Ui.Font->LineGap + 5.0f;
 	Ui.RenderBuffer = RenderBuffer;

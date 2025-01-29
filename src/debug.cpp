@@ -36,56 +36,52 @@ MovementStateToString(char *Buffer, movement_state State)
 }
 
 internal void
-DebugDrawEntity(char *Label, entity *Entity)
+DebugDrawString(char *String, v3 Color = V3(1.0f))
+{
+	string Text = StringCopy(Ui.TempArena, String);
+	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
+	Ui.P.y -= Ui.LineGap;
+}
+
+internal void
+DebugDrawFloat(char *String, f32 F32, v3 Color = V3(1.0f))
 {
 	char Buff[256];
-	string Text;
+	sprintf(Buff, "%s %.2f", String, F32);
+	string Text = StringCopy(Ui.TempArena, Buff);
+	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
+	Ui.P.y -= Ui.LineGap;
+}
 
+internal void
+DebugDrawVector3(char *String, v3 Vector3, v3 Color = V3(1.0f))
+{
+	char Buff[256];
+	sprintf(Buff, "%s %.1f %.1f %.1f", String, Vector3.x, Vector3.y, Vector3.z);
+	string Text = StringCopy(Ui.TempArena, Buff);
+	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
+	Ui.P.y -= Ui.LineGap;
+}
+
+internal void
+DebugDrawEntity(char *Label, entity *Entity)
+{
 	if(!Ui.DebugEntityView)
 	{
-		sprintf(Buff, "+Player");
-		Text = StringCopy(Ui.TempArena, Buff);
-		PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-		Ui.P.y -= Ui.LineGap;
+		DebugDrawString("+Player");
 		return;
 	}
 
-	sprintf(Buff, Label);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.HoverColor);
-	Ui.P.y -= Ui.LineGap;
+	DebugDrawString("-Player", Ui.HoverColor);
 
 	Ui.P.x += 20.0f;
 
-	sprintf(Buff, "p: %.1f %.1f %.1f", Entity->P.x, Entity->P.y, Entity->P.z);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
-
-	sprintf(Buff, "dP: %.1f %.1f %.1f", Entity->dP.x, Entity->dP.y, Entity->dP.z);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
-
-	sprintf(Buff, "ddP: %.1f %.1f %.1f", Entity->ddP.x, Entity->ddP.y, Entity->ddP.z);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
-
-	sprintf(Buff, "Theta: %.2f", Entity->Theta);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
-
-	sprintf(Buff, "ThetaTarget: %.2f", Entity->ThetaTarget);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
-
-	sprintf(Buff, "dTheta: %.2f", Entity->dTheta);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
+	DebugDrawVector3("p: ", Entity->P);
+	DebugDrawVector3("dP: ", Entity->dP);
+	DebugDrawVector3("ddP: ", Entity->ddP);
+	DebugDrawFloat("Theta: ", Entity->Theta);
+	DebugDrawFloat("ThetaTarget: ", Entity->ThetaTarget);
+	DebugDrawFloat("dTheta: ", Entity->dTheta);
 
 	// NOTE(Justin): 
 	// dTheta > 0 -> CCW turning left
@@ -93,116 +89,81 @@ DebugDrawEntity(char *Label, entity *Entity)
 
 	b32 TurningLeft = (Entity->dTheta > 0.0f);
 	b32 TurningRight = (Entity->dTheta < 0.0f);
+	char *Turning = "";
 	if(TurningRight)
 	{
-		sprintf(Buff, "turning: Right");
+		Turning = "turning: Right";
 	}
 	else if(TurningLeft)
 	{
-		sprintf(Buff, "turning: Left");
+		Turning = "turning: Left";
 	}
 	else
 	{
-		sprintf(Buff, "turning: Still");
+		Turning = "turning: Still";
 	}
 
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
+	DebugDrawString(Turning);
 
+	char *YSupported = "";
 	if(FlagIsSet(Entity, EntityFlag_YSupported))
 	{
-		sprintf(Buff, "y supported: true");
+		YSupported = "y supported: true";
 	}
 	else
 	{
-		sprintf(Buff, "y supported: false");
+		YSupported = "y supported: false";
 	}
 
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
+	DebugDrawString(YSupported);
+
 	Ui.P.x -= 20.0f;
 }
 
 internal void
 DebugDrawAnimationPlayer(char *Label, animation_player *AnimationPlayer)
 {
-	char Buff[256];
-	string Text;
-
 	if(!Ui.DebugAnimationPlayerView)
 	{
-		sprintf(Buff, "+AnimationPlayer");
-		Text = StringCopy(Ui.TempArena, Buff);
-		PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-		Ui.P.y -= Ui.LineGap;
+		DebugDrawString("+AnimationPlayer");
 		return;
 	}
 
-	sprintf(Buff, Label);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.HoverColor);
-	Ui.P.y -= Ui.LineGap;
+	DebugDrawString("-AnimationPlayer", Ui.HoverColor);
 
 	Ui.P.x += 20.0f;
 
-	sprintf(Buff, "RootMotionAccumulator: %.1f %.1f %.1f",	AnimationPlayer->RootMotionAccumulator.x,
-															AnimationPlayer->RootMotionAccumulator.y,
-															AnimationPlayer->RootMotionAccumulator.z);
-	Text = StringCopy(Ui.TempArena, Buff);
+	if(AnimationPlayer->ControlsPosition)
+	{
+		DebugDrawVector3("RootMotionAccumulator: ", AnimationPlayer->RootMotionAccumulator, Ui.HoverColor);
+	}
+	else
+	{
+		DebugDrawVector3("RootMotionAccumulator: ", AnimationPlayer->RootMotionAccumulator);
+	}
 
-	v3 Color = V3(1.0f);
-	if(AnimationPlayer->ControlsPosition) Color = Ui.HoverColor;
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
-	Ui.P.y -= Ui.LineGap;
+	if(AnimationPlayer->ControlsTurning)
+	{
+		DebugDrawFloat("RootTurningAccumulator: ", AnimationPlayer->RootTurningAccumulator, Ui.HoverColor);
+	}
+	else
+	{
+		DebugDrawFloat("RootTurningAccumulator: ", AnimationPlayer->RootTurningAccumulator);
+	}
 
-	sprintf(Buff, "RootTurningAccumulator: %f", AnimationPlayer->RootTurningAccumulator);
-	Text = StringCopy(Ui.TempArena, Buff);
-	Color = V3(1.0f);
-	if(AnimationPlayer->ControlsTurning) Color = Ui.HoverColor;
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
-	Ui.P.y -= Ui.LineGap;
-
+	char Buff[256];
 	MovementStateToString(Buff, AnimationPlayer->MovementState);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
+	DebugDrawString(Buff);
 
 	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)
 	{
-		if(Animation)
-		{
-			sprintf(Buff, "Name: %s", Animation->Name.Data);
-			Text = StringCopy(Ui.TempArena, Buff);
-			PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-			Ui.P.y -= Ui.LineGap;
+		DebugDrawString(CString(Animation->Name));
+		DebugDrawFloat("Duration: ", Animation->Duration);
+		DebugDrawFloat("t: ", Animation->CurrentTime);
+		DebugDrawFloat("blend duration: ", Animation->BlendDuration);
+		DebugDrawFloat("t_blend: ", Animation->BlendCurrentTime);
+		DebugDrawFloat("factor: ", Animation->BlendFactor);
 
-			sprintf(Buff, "%s %.2f", "Duration: ", Animation->Duration);
-			Text = StringCopy(Ui.TempArena, Buff);
-			PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-			Ui.P.y -= Ui.LineGap;
-
-			sprintf(Buff, "%s %.2f", "t: ", Animation->CurrentTime);
-			Text = StringCopy(Ui.TempArena, Buff);
-			PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-			Ui.P.y -= Ui.LineGap;
-
-			sprintf(Buff, "%s %.2f", "blend duration: ", Animation->BlendDuration);
-			Text = StringCopy(Ui.TempArena, Buff);
-			PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-			Ui.P.y -= Ui.LineGap;
-
-			sprintf(Buff, "%s %.2f", "blend_t: ", Animation->BlendCurrentTime);
-			Text = StringCopy(Ui.TempArena, Buff);
-			PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-			Ui.P.y -= Ui.LineGap;
-
-			sprintf(Buff, "%s %.2f", "blend: ", Animation->BlendFactor);
-			Text = StringCopy(Ui.TempArena, Buff);
-			PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-			Ui.P.y -= Ui.LineGap;
-		}
 		Ui.P.y -= Ui.LineGap;
 	}
 	Ui.P.x -= 20.0f;
@@ -211,22 +172,13 @@ DebugDrawAnimationPlayer(char *Label, animation_player *AnimationPlayer)
 internal void
 DebugDrawHandAndFoot(char *Label, entity *Entity, model *Sphere)
 {
-	char Buff[256];
-	string Text;
-
 	if(!Ui.DebugDrawHandAndFoot)
 	{
-		sprintf(Buff, "+HandAndFoot");
-		Text = StringCopy(Ui.TempArena, Buff);
-		PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-		Ui.P.y -= Ui.LineGap;
+		DebugDrawString("+HandAndFoot");
 		return;
 	}
 
-	sprintf(Buff, Label);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.HoverColor);
-	Ui.P.y -= Ui.LineGap;
+	DebugDrawString("-HandAndFoot", Ui.HoverColor);
 
 	mat4 T = EntityTransform(Entity, Entity->VisualScale);
 	mat4 R = Mat4Identity();
@@ -248,22 +200,13 @@ DebugDrawHandAndFoot(char *Label, entity *Entity, model *Sphere)
 internal void
 DebugDrawTexture(char *Label, game_state *GameState)
 {
-	char Buff[256];
-	string Text;
-
 	if(!Ui.DebugDrawTexture)
 	{
-		sprintf(Buff, "+Texture");
-		Text = StringCopy(Ui.TempArena, Buff);
-		PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-		Ui.P.y -= Ui.LineGap;
+		DebugDrawString("+Texture");
 		return;
 	}
 
-	sprintf(Buff, Label);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.HoverColor);
-	Ui.P.y -= Ui.LineGap;
+	DebugDrawString("-Texture", Ui.HoverColor);
 
 	//
 	// NOTE(Justin): Render to texture

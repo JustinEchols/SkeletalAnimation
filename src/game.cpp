@@ -1350,18 +1350,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	UiBegin(RenderBuffer, &TempState->Arena, GameInput, Assets);
 
-	char Buff[256];
-	string Text;
-
-	sprintf(Buff, "%s %.2f", "fps: ", GameInput->FPS);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
-
-	sprintf(Buff, "%s %.2f", "time scale: ", GameState->TimeScale);
-	Text = StringCopy(Ui.TempArena, Buff);
-	PushText(RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Ui.DefaultColor);
-	Ui.P.y -= Ui.LineGap;
+	DebugDrawFloat("fps: ", GameInput->FPS);
+	DebugDrawFloat("time scale: ", GameState->TimeScale);
 
 	if(UiButton("+Player", DebugDrawEntity)) Ui.DebugEntityView = !Ui.DebugEntityView;
 	DebugDrawEntity("-Player", Entity);
