@@ -85,6 +85,9 @@ struct asset_manager
 	animation_info *SampledAnimations;
 
 	platform_file_info XBotGraphFileInfo;
+	platform_file_info YBotGraphFileInfo;
+
+	model Capsule;
 };
 
 struct asset_entry

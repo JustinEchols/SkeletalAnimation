@@ -29,9 +29,12 @@ struct ui
 	struct asset_manager *Assets;
 
 	b32 DebugEntityView;
+	b32 DebugCollisionVolume;
+	b32 DebugGroundArrow;
 	b32 DebugAnimationPlayerView;
 	b32 DebugDrawHandAndFoot;
 	b32 DebugDrawTexture;
+	b32 DebugDrawAnimation;
 
 	f32 AtY;
 	f32 LeftEdge;

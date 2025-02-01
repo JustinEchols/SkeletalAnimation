@@ -69,6 +69,7 @@ enum entity_flag
 	EntityFlag_Attacking = (1 << 6),
 };
 
+
 #include "intrinsics.h"
 #include "math.h"
 #include "strings.h"
@@ -79,6 +80,7 @@ enum entity_flag
 #include "ui.h"
 #include "asset.h"
 #include "render.h"
+
 
 struct move_info
 {
@@ -197,6 +199,7 @@ struct game_state
 	quad Quad;
 
 	b32 CameraIsFree;
+	b32 CameraIsLocked;
 	f32 CameraSpeed;
 	f32 DefaultYaw;
 	f32 DefaultPitch;
@@ -218,7 +221,6 @@ struct game_state
 
 	u32 PlayerIDForController[ArrayCount(((game_input *)0)->Controllers)];
 
-	ui UI;
 	asset_manager AssetManager;
 
 	texture Texture;

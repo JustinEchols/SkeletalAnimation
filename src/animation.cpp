@@ -134,10 +134,6 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 	AnimationPlayer->RootMotionAccumulator = {};
 	AnimationPlayer->RootTurningAccumulator = {};
 
-	// TODO(Justin): Skeleton reference...
-	// TODO(Justin): Final pose should just be one key frame with joint count number of P, Q, and S...
-	// The blended animations array is an array of key_frames. One key_frame for each mesh. Each key_frame is the final pose
-	// , which is a blend of all the currently playing animations, for that mesh.
 	AnimationPlayer->FinalPose = PushArray(AnimationPlayer->Arena, Model->MeshCount, key_frame);
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 	{

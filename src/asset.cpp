@@ -571,9 +571,8 @@ AssetManagerInitialize(asset_manager *Manager)
 
 	file_group_info XBotFileGroup	= Platform.DebugFileGroupLoad(AnimationDirectoryAndWildCard);
 	file_group_info YBotFileGroup = Platform.DebugFileGroupLoad(YBotAnimationsDirectoryAndWildCard);
-	file_group_info NinjaFileGroup	= Platform.DebugFileGroupLoad(NinjaAnimationsDirectoryAndWildCard);
 
-	u32 TotalCount = XBotFileGroup.Count + NinjaFileGroup.Count + YBotFileGroup.Count;
+	u32 TotalCount = XBotFileGroup.Count + YBotFileGroup.Count;
 
 	ArenaSubset(&Manager->Arena, &Manager->AnimationNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->AnimationNames);
@@ -605,39 +604,13 @@ AssetManagerInitialize(asset_manager *Manager)
 		}
 	}
 
-	for(u32 FileIndex = 0; FileIndex < NinjaFileGroup.Count; ++FileIndex)
-	{
-		char *FileName = NinjaFileGroup.FileNames[FileIndex];
-		if(FileName[0] == '.') continue;
-
-		FileNameFromFullPath(FileName, AssetName);
-		StringHashAdd(&Manager->AnimationNames, AssetName, XBotFileGroup.Count + FileIndex);
-		s32 Index = StringHashLookup(&Manager->AnimationNames, AssetName);
-		Assert(Index != -1);
-
-		MemoryZero(Buffer, sizeof(Buffer));
-		strcat(Buffer, NinjaAnimationsDirectory);
-		strcat(Buffer, "/");
-		strcat(Buffer, FileName);
-
-		animation_info *SampledAnimation = Manager->SampledAnimations + Index;
-		*SampledAnimation = AnimationLoad(&Manager->Arena, Buffer);
-		if(SampledAnimation)
-		{
-			SampledAnimation->Name = StringCopy(&Manager->Arena, AssetName);
-			SampledAnimation->ReservedForChannel = PushStruct(&Manager->Arena, key_frame);
-			key_frame *ReservedForChannel = SampledAnimation->ReservedForChannel;
-			AllocateJointXforms(&Manager->Arena, ReservedForChannel, SampledAnimation->JointCount);
-		}
-	}
-
 	for(u32 FileIndex = 0; FileIndex < YBotFileGroup.Count; ++FileIndex)
 	{
 		char *FileName = YBotFileGroup.FileNames[FileIndex];
 		if(FileName[0] == '.') continue;
 
 		FileNameFromFullPath(FileName, AssetName);
-		StringHashAdd(&Manager->AnimationNames, AssetName, (XBotFileGroup.Count + NinjaFileGroup.Count) + FileIndex);
+		StringHashAdd(&Manager->AnimationNames, AssetName, (XBotFileGroup.Count  + FileIndex));
 		s32 Index = StringHashLookup(&Manager->AnimationNames, AssetName);
 		Assert(Index != -1);
 
@@ -683,7 +656,19 @@ AssetManagerInitialize(asset_manager *Manager)
 
 	FontInitialize(&Manager->Arena, &Manager->Font, FontFiles[0]);
 
+	//
+	// Debug
+	//
+
 	Manager->XBotGraphFileInfo = {};
 	Manager->XBotGraphFileInfo.Path = "../src/XBot_AnimationGraph.animation_graph";
 	Platform.DebugFileIsDirty(Manager->XBotGraphFileInfo.Path, &Manager->XBotGraphFileInfo.FileDate);
+
+	Manager->YBotGraphFileInfo = {};
+	Manager->YBotGraphFileInfo.Path = "../src/YBot_AnimationGraph.animation_graph";
+	Platform.DebugFileIsDirty(Manager->YBotGraphFileInfo.Path, &Manager->YBotGraphFileInfo.FileDate);
+
+	capsule Cap = CapsuleMinMaxRadius(V3(0.0f, 0.4f, 0.0f), V3(0.0f, 1.8f - 0.4f, 0.0f), 0.4f);
+	Manager->Capsule	= DebugModelCapsuleInitialize(&Manager->Arena, Cap.Min, Cap.Max, Cap.Radius);
+	Platform.UploadModelToGPU(&Manager->Capsule);
 }

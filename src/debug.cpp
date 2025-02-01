@@ -64,6 +64,67 @@ DebugDrawVector3(char *String, v3 Vector3, v3 Color = V3(1.0f))
 }
 
 internal void
+DebugDrawOBB(render_buffer *RenderBuffer, model *DebugCube, obb OBB, v3 P, v3 Offset, v3 Color)
+{
+	v3 X = OBB.X;
+	v3 Y = OBB.Y;
+	v3 Z = OBB.Z;
+
+	mat4 T = Mat4Translate(P + Offset);
+	mat4 R = Mat4(X, Y, Z);
+	mat4 S = Mat4Scale(OBB.Dim);
+
+	PushAABB(RenderBuffer, DebugCube, T*R*S, Color);
+}
+
+internal void
+DebugDrawCollisionVolume(entity *Entity)
+{
+	if(!Ui.DebugCollisionVolume)
+	{
+		DebugDrawString("CollisionVolume");
+		return;
+	}
+
+	DebugDrawString("CollisionVolume", Ui.HoverColor);
+
+	capsule Capsule = Entity->Capsule;
+	mat4 T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
+	mat4 R = QuaternionToMat4(Entity->Orientation);
+	mat4 S = Mat4Scale(1.0f);
+	PushCapsule(Ui.RenderBuffer, &Ui.Assets->Capsule, T*R*S, V3(1.0f));
+}
+
+internal void
+DebugDrawGroundArrow(entity *Entity, quad Quad)
+{
+	if(!Ui.DebugGroundArrow)
+	{
+		DebugDrawString("GroundArrow");
+		return;
+	}
+
+	if(!Entity->AnimationPlayer)
+	{
+		DebugDrawString("GroundArrow");
+		return;
+	}
+
+	DebugDrawString("GroundArrow", Ui.HoverColor);
+
+	v3 P = Entity->P;
+	P.y += 0.01f;
+	mat4 T = Mat4Translate(P);
+	mat4 R = QuaternionToMat4(Entity->AnimationPlayer->OrientationLockedAt);
+	mat4 S = Mat4Scale(V3(0.5f));
+
+	asset_entry Entry = LookupTexture(Ui.Assets, "left_arrow");
+	PushTexture(Ui.RenderBuffer, Entry.Texture, Entry.Index);
+	PushQuad3D(Ui.RenderBuffer, Quad.Vertices, T*R*S, Entry.Index);
+}
+
+
+internal void
 DebugDrawEntity(char *Label, entity *Entity)
 {
 	if(!Ui.DebugEntityView)
@@ -81,14 +142,16 @@ DebugDrawEntity(char *Label, entity *Entity)
 	DebugDrawVector3("ddP: ", Entity->ddP);
 	DebugDrawFloat("Theta: ", Entity->Theta);
 	DebugDrawFloat("ThetaTarget: ", Entity->ThetaTarget);
-	DebugDrawFloat("dTheta: ", Entity->dTheta);
+
+	f32 dTheta = Entity->ThetaTarget - Entity->Theta;
+	DebugDrawFloat("dTheta: ", dTheta);
 
 	// NOTE(Justin): 
 	// dTheta > 0 -> CCW turning left
 	// dTheta < 0 -> CW turning right 
 
-	b32 TurningLeft = (Entity->dTheta > 0.0f);
-	b32 TurningRight = (Entity->dTheta < 0.0f);
+	b32 TurningLeft = (dTheta > 0.0f);
+	b32 TurningRight = (dTheta < 0.0f);
 	char *Turning = "";
 	if(TurningRight)
 	{
@@ -126,6 +189,11 @@ DebugDrawAnimationPlayer(char *Label, animation_player *AnimationPlayer)
 	if(!Ui.DebugAnimationPlayerView)
 	{
 		DebugDrawString("+AnimationPlayer");
+		return;
+	}
+
+	if(!AnimationPlayer)
+	{
 		return;
 	}
 
@@ -174,11 +242,11 @@ DebugDrawHandAndFoot(char *Label, entity *Entity, model *Sphere)
 {
 	if(!Ui.DebugDrawHandAndFoot)
 	{
-		DebugDrawString("+HandAndFoot");
+		DebugDrawString("HandAndFoot");
 		return;
 	}
 
-	DebugDrawString("-HandAndFoot", Ui.HoverColor);
+	DebugDrawString("HandAndFoot", Ui.HoverColor);
 
 	mat4 T = EntityTransform(Entity, Entity->VisualScale);
 	mat4 R = Mat4Identity();
@@ -248,4 +316,5 @@ DebugDrawTexture(char *Label, game_state *GameState)
 
 	PushRenderToTexture(Ui.RenderBuffer, (f32 *)Vertices);
 }
+
 
