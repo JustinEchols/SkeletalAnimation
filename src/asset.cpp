@@ -361,20 +361,17 @@ AnimationLoad(memory_arena *Arena, char *FileName)
 }
 
 
-char *TexturesDirectory				= "textures";
-char *TexturesDirectoryAndWildCard	= "textures\\*";
+char *TexturesDirectory				= "data\\textures";
+char *TexturesDirectoryAndWildCard	= "data\\textures\\*";
 
-char *ModelsDirectory				= "models";
-char *ModelsDirectoryAndWildCard	= "models\\*";
+char *ModelsDirectory				= "data\\models";
+char *ModelsDirectoryAndWildCard	= "data\\models\\*";
 
-char *AnimationDirectory			= "animations/XBot";
-char *AnimationDirectoryAndWildCard = "animations\\XBot\\*";
+char *AnimationDirectory			= "data/animations/XBot";
+char *AnimationDirectoryAndWildCard = "data\\animations\\XBot\\*";
 
-char *NinjaAnimationsDirectory		= "animations/Ninja";
-char *NinjaAnimationsDirectoryAndWildCard = "animations\\Ninja\\*";
-
-char *YBotAnimationsDirectory		= "animations/YBot";
-char *YBotAnimationsDirectoryAndWildCard = "animations\\YBot\\*";
+char *YBotAnimationsDirectory		= "data/animations/YBot";
+char *YBotAnimationsDirectoryAndWildCard = "data\\animations\\YBot\\*";
 
 char *GraphFiles[] =
 {
