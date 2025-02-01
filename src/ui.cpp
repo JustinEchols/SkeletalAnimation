@@ -15,7 +15,7 @@ UiBegin(render_buffer *RenderBuffer, memory_arena *TempArena, game_input *GameIn
 	Ui.TempArena = TempArena;
 	Ui.HoverColor = V3(1.0f, 1.0f, 0.0f);
 	Ui.DefaultColor = V3(1.0f);
-	Ui.ButtonCount = 0;
+	Ui.ToggleButtonCount = 0;
 }
 
 internal b32
@@ -63,5 +63,20 @@ UiButton(char *Label, void *ID)
 	rect Rect = RectMinDim(Ui.P, TextDim(Ui.Font, Ui.Font->Scale, Label));
 	b32 Over = InRect(Rect, Ui.MouseP);
 	b32 Result = UiWidgetUpdate(ID, Over);
+	return(Result);
+}
+
+internal b32
+ToggleButton(char *Label, void *ID)
+{
+	b32 Update = UiButton(Label, ID);
+	b32 Current = Ui.ToggleButtonStates[Ui.ToggleButtonCount];
+
+	Ui.ToggleButtonStates[Ui.ToggleButtonCount] = Update ? !Current : Current;
+	b32 Result = Ui.ToggleButtonStates[Ui.ToggleButtonCount++];
+
+	v3 Color = Result ? Ui.HoverColor : Ui.DefaultColor;
+	DebugDrawString(Label, Color);
+
 	return(Result);
 }

@@ -1,9 +1,7 @@
 @echo off
 
-REM
-REM NOTE(Justin): Remove comment to enable developer CMD env during build.
-REM If already enabled, keep it commented out.
-REM
+REM NOTE(Justin): Remove the comment below to enable the developer environment during the build. This makes the compile time alot slower,
+REM so if you want to enable it once call shell.bat from the command line.
 
 REM setlocal enabledelayedexpansion
 REM where /Q cl.exe || (
@@ -15,7 +13,6 @@ REM     exit /b 1
 REM   )  
 REM   call "!VS!\VC\Auxiliary\Build\vcvarsall.bat" amd64 || exit /b 1
 REM )
-
 REM if "%VSCMD_ARG_TGT_ARCH%" neq "x64" (
 REM   echo ERROR: please run this from MSVC x64 native tools command prompt, 32-bit target is not supported!
 REM   exit /b 1
@@ -33,16 +30,16 @@ pushd ..\build
 
 del *.pdb > NUL 2> NUL
 
-REM Debug
-REM echo WAITING FOR PDB > lock.tmp
-REM cl -Od %CommonCompilerFlags% ..\src\%GameFile% -Fmgame.map %IncludeDirectories% /LD /link %LibDirectories% freetype.lib -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender
-REM del lock.tmp
-REM cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map  /link %CommonLinkerFlags%
-REM popd
-
-REM Release
+REM DEBUG 
 echo WAITING FOR PDB > lock.tmp
-cl -O2 %CommonCompilerFlags% -DRELEASE=1 ..\src\%GameFile% -Fmgame.map /LD /link -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender 
+cl -Od %CommonCompilerFlags% ..\src\%GameFile% -Fmgame.map %IncludeDirectories% /LD /link %LibDirectories% freetype.lib -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender
 del lock.tmp
 cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map  /link %CommonLinkerFlags%
 popd
+
+REM RELEASE 
+REM echo WAITING FOR PDB > lock.tmp
+REM cl -O2 %CommonCompilerFlags% -DRELEASE=1 ..\src\%GameFile% -Fmgame.map /LD /link -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender 
+REM del lock.tmp
+REM cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map  /link %CommonLinkerFlags%
+REM popd

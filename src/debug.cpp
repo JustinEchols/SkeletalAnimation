@@ -80,14 +80,6 @@ DebugDrawOBB(render_buffer *RenderBuffer, model *DebugCube, obb OBB, v3 P, v3 Of
 internal void
 DebugDrawCollisionVolume(entity *Entity)
 {
-	if(!Ui.DebugCollisionVolume)
-	{
-		DebugDrawString("CollisionVolume");
-		return;
-	}
-
-	DebugDrawString("CollisionVolume", Ui.HoverColor);
-
 	capsule Capsule = Entity->Capsule;
 	mat4 T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
 	mat4 R = QuaternionToMat4(Entity->Orientation);
@@ -98,20 +90,6 @@ DebugDrawCollisionVolume(entity *Entity)
 internal void
 DebugDrawGroundArrow(entity *Entity, quad Quad)
 {
-	if(!Ui.DebugGroundArrow)
-	{
-		DebugDrawString("GroundArrow");
-		return;
-	}
-
-	if(!Entity->AnimationPlayer)
-	{
-		DebugDrawString("GroundArrow");
-		return;
-	}
-
-	DebugDrawString("GroundArrow", Ui.HoverColor);
-
 	v3 P = Entity->P;
 	P.y += 0.01f;
 	mat4 T = Mat4Translate(P);
@@ -126,14 +104,6 @@ DebugDrawGroundArrow(entity *Entity, quad Quad)
 internal void
 DebugDrawEntity(char *Label, entity *Entity)
 {
-	if(!Ui.DebugEntityView)
-	{
-		DebugDrawString("+Player");
-		return;
-	}
-
-	DebugDrawString("-Player", Ui.HoverColor);
-
 	Ui.P.x += 20.0f;
 
 	DebugDrawVector3("p: ", Entity->P);
@@ -185,18 +155,10 @@ DebugDrawEntity(char *Label, entity *Entity)
 internal void
 DebugDrawAnimationPlayer(char *Label, animation_player *AnimationPlayer)
 {
-	if(!Ui.DebugAnimationPlayerView)
-	{
-		DebugDrawString("+AnimationPlayer");
-		return;
-	}
-
 	if(!AnimationPlayer)
 	{
 		return;
 	}
-
-	DebugDrawString("-AnimationPlayer", Ui.HoverColor);
 
 	Ui.P.x += 20.0f;
 
@@ -236,6 +198,7 @@ DebugDrawAnimationPlayer(char *Label, animation_player *AnimationPlayer)
 	Ui.P.x -= 20.0f;
 }
 
+#if 0
 internal void
 DebugDrawHandAndFoot(char *Label, entity *Entity, model *Sphere)
 {
@@ -263,18 +226,31 @@ DebugDrawHandAndFoot(char *Label, entity *Entity, model *Sphere)
 	T = Mat4Translate(Entity->RightHandP);
 	PushAABB(Ui.RenderBuffer, Sphere, T*R*S, V3(1.0f));
 }
+#else
+internal void
+DebugDrawHandAndFoot(entity *Entity, model *Sphere)
+{
+	mat4 T = EntityTransform(Entity, Entity->VisualScale);
+	mat4 R = Mat4Identity();
+	mat4 S = Mat4Scale(0.2f);
+
+	T = Mat4Translate(Entity->LeftFootP);
+	PushAABB(Ui.RenderBuffer, Sphere, T*R*S, V3(1.0f));
+
+	T = Mat4Translate(Entity->RightFootP);
+	PushAABB(Ui.RenderBuffer, Sphere, T*R*S, V3(1.0f));
+
+	T = Mat4Translate(Entity->LeftHandP);
+	PushAABB(Ui.RenderBuffer, Sphere, T*R*S, V3(1.0f));
+
+	T = Mat4Translate(Entity->RightHandP);
+	PushAABB(Ui.RenderBuffer, Sphere, T*R*S, V3(1.0f));
+}
+#endif
 
 internal void
 DebugDrawTexture(char *Label, game_state *GameState)
 {
-	if(!Ui.DebugDrawTexture)
-	{
-		DebugDrawString("+Texture");
-		return;
-	}
-
-	DebugDrawString("-Texture", Ui.HoverColor);
-
 	//
 	// NOTE(Justin): Render to texture
 	//

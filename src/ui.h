@@ -39,6 +39,9 @@ struct ui
 	b32 DebugDrawTexture;
 	b32 DebugDrawAnimation;
 
+	u32 ToggleButtonCount;
+	b32 ToggleButtonStates[16];
+
 	f32 AtY;
 	f32 LeftEdge;
 	f32 LineGap;

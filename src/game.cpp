@@ -7,8 +7,8 @@
 #include "animation.cpp"
 #include "asset.cpp"
 #include "render.cpp"
-#include "ui.cpp"
 #include "debug.cpp"
+#include "ui.cpp"
 
 internal void
 CollisionRuleAdd(game_state *GameState, u32 A, u32 B, b32 ShouldCollide, collision_type CollisionType)
@@ -116,7 +116,7 @@ PlayerAdd(game_state *GameState, v3 P)
 }
 
 internal entity * 
-XBotInitialize(game_state *GameState, v3 P)
+XBotAdd(game_state *GameState, v3 P)
 {
 	entity *Player = PlayerAdd(GameState, P);
 
@@ -138,7 +138,7 @@ XBotInitialize(game_state *GameState, v3 P)
 }
 
 internal entity *
-YBotInitialize(game_state *GameState, v3 P)
+YBotAdd(game_state *GameState, v3 P)
 {
 	entity *Player = PlayerAdd(GameState, P);
 
@@ -237,7 +237,6 @@ WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->OBB.Dim = 0.99f*Dim;
 
 	Entity->VisualScale = 0.5f*Dim;
-
 }
 
 internal void
@@ -796,7 +795,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		Dim = V3(2.0f, 0.5f, 2.0f);
 		v3 ElevatorP = StartP + V3(0.0f, 1.0f, 2.0f);
-		//ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
+		ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
 
 		Dim = V3(1.f, 1.0f, 5.0f);
 		StartP += V3(3.0f, 0.0f, -5.0f);
@@ -895,12 +894,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			entity *Player = 0;
 			if(ControllerIndex == 0 && Controller->Space.EndedDown)
 			{
-				Player = XBotInitialize(GameState, V3(0.0f, 0.01f, -5.0f));
+				Player = XBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 			}
 
 			if(ControllerIndex == 1 && Controller->Start.EndedDown)
 			{
-				Player = YBotInitialize(GameState, V3(0.0f, 0.01f, -10.0f));
+				Player = YBotAdd(GameState, V3(0.0f, 0.01f, -10.0f));
 			}
 
 			if(Player)
@@ -1311,29 +1310,39 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	}
 
 	entity *Entity = GameState->Entities + GameState->PlayerEntityIndex;
-
-	//UiBegin(RenderBuffer, &TempState->Arena, GameInput, Assets);
-
 	DebugDrawFloat("fps: ", GameInput->FPS);
 	DebugDrawFloat("time scale: ", GameState->TimeScale);
 
-	if(UiButton("HandAndFoot", DebugDrawHandAndFoot)) Ui.DebugDrawHandAndFoot = !Ui.DebugDrawHandAndFoot;
-	DebugDrawHandAndFoot("-HandAndFoot", Entity, GameState->Sphere);
+	if(ToggleButton("HandAndFoot", DebugDrawHandAndFoot))
+	{
+		DebugDrawHandAndFoot(Entity, GameState->Sphere);
+	}
 
-	if(UiButton("CollisionVolume", DebugDrawCollisionVolume)) Ui.DebugCollisionVolume = !Ui.DebugCollisionVolume;
-	DebugDrawCollisionVolume(Entity);
+	if(ToggleButton("CollisionVolume", DebugDrawCollisionVolume))
+	{
+		DebugDrawCollisionVolume(Entity);
+	}
 
-	if(UiButton("GroundArrow", DebugDrawGroundArrow)) Ui.DebugGroundArrow = !Ui.DebugGroundArrow;
-	DebugDrawGroundArrow(Entity, GameState->Quad);
+	if(ToggleButton("GroundArrow", DebugDrawGroundArrow))
+	{
+		DebugDrawGroundArrow(Entity, GameState->Quad);
+	}
 
-	if(UiButton("+Player", DebugDrawEntity)) Ui.DebugEntityView = !Ui.DebugEntityView;
-	DebugDrawEntity("-Player", Entity);
+	if(ToggleButton("+Player", DebugDrawEntity))
+	{
+		DebugDrawEntity("-Player", Entity);
+	}
 
-	if(UiButton("+AnimationPlayer", DebugDrawAnimationPlayer)) Ui.DebugAnimationPlayerView = !Ui.DebugAnimationPlayerView;
-	DebugDrawAnimationPlayer("-AnimationPlayer", Entity->AnimationPlayer);
+	if(ToggleButton("+AnimationPlayer", DebugDrawAnimationPlayer))
+	{
+		DebugDrawAnimationPlayer("-AnimationPlayer", Entity->AnimationPlayer);
+	}
 
-	if(UiButton("+Texture", DebugDrawTexture)) Ui.DebugDrawTexture = !Ui.DebugDrawTexture;
-	DebugDrawTexture("+Texture", GameState);
+	if(ToggleButton("+Texture", DebugDrawTexture))
+	{
+		DebugDrawTexture("+Texture", GameState);
+	}
+
 
 	Platform.RenderToOpenGL(RenderBuffer, (u32)GameInput->BackBufferWidth, (u32)GameInput->BackBufferHeight);
 

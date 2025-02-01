@@ -13,6 +13,7 @@
  *
 */
 
+// TODO(Justin): Clean this up by processing the font data into an asset file
 #if !RELEASE
 #include <ft2build.h>
 #include FT_FREETYPE_H
