@@ -98,7 +98,6 @@ InterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 JointIndex)
 	v3 Scale2 = Next->Scales[JointIndex];
 
 	v3 P = Lerp(P1, t, P2);
-
 	quaternion Q = LerpShortest(Q1, t, Q2);
 	v3 Scale = Lerp(Scale1, t, Scale2);
 
@@ -132,7 +131,7 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 	AnimationPlayer->CurrentTime = 0.0f;
 	AnimationPlayer->dt = 0.0f;
 	AnimationPlayer->RootMotionAccumulator = {};
-	AnimationPlayer->RootTurningAccumulator = {};
+	AnimationPlayer->RootTurningAccumulator = 0;
 
 	AnimationPlayer->FinalPose = PushArray(AnimationPlayer->Arena, Model->MeshCount, key_frame);
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
@@ -473,6 +472,11 @@ Animate(entity *Entity, asset_manager *AssetManager)
 			}
 			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
+		case MovementState_InAir:
+		{
+		} break;
+
+		InvalidDefaultCase;
 	}
 }
 

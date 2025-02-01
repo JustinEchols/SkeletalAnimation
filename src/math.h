@@ -1046,6 +1046,29 @@ Mat4Perspective(f32 FOV, f32 AspectRatio, f32 ZNear, f32 ZFar)
 }
 
 inline mat4
+Mat4InversePerspective(f32 FOV, f32 AspectRatio, f32 ZNear, f32 ZFar)
+{
+	Assert(AspectRatio != 0);
+	Assert(ZNear != ZFar);
+
+	f32 t = tanf(FOV/2.0f);
+	f32 x = 1.0f / (AspectRatio * t);
+	f32 y = 1.0f / t;
+	f32 z = -(ZNear + ZFar) / (ZNear - ZFar);
+	f32 e = -(2.0f * ZNear * ZFar) / (ZNear - ZFar);
+
+	mat4 R =
+	{
+		{{1.0f/x, 0.0f, 0.0f, 0.0f},
+		 {0.0f, 1.0f/y, 0.0f, 0.0f},
+		 {0.0f, 0.0f, 0.0f, -1.0f},
+		 {0.0f, 0.0f, 1.0f/e, z/e}}
+	};
+
+	return(R);
+}
+
+inline mat4
 Mat4OrthographicProjection(f32 Left, f32 Right, f32 Bottom, f32 Top, f32 Near, f32 Far)
 {
 	mat4 Result = {};

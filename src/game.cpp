@@ -5,9 +5,9 @@
 #include "mesh.cpp"
 #include "entity.cpp"
 #include "animation.cpp"
-#include "ui.cpp"
 #include "asset.cpp"
 #include "render.cpp"
+#include "ui.cpp"
 #include "debug.cpp"
 
 internal void
@@ -1136,7 +1136,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				f32 TurnFactor = AngleBetween(AnimationPlayer->OrientationLockedAt, Entity->Orientation);
 
-				DebugDrawFloat("TurnFactor: ", TurnFactor);
 				if(!AnimationPlayer->ControlsTurning && (AnimationPlayer->RootTurningAccumulator == 0.0f))
 				{
 					// Record gameplay orientation until animation player controls turning 
@@ -1277,7 +1276,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->CameraIsLocked = !GameState->CameraIsLocked;
 	}
 
-
 	if(GameState->CameraIsFree && !GameState->CameraIsLocked)
 	{
 		v3 CameraddP = {};
@@ -1306,7 +1304,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		v3 P = Camera->P + GameState->CameraSpeed*dt*CameraddP;
 		Camera->P = P;
 
-		// TODO(justin) FPS camera 
 		if(IsDown(GameInput->MouseButtons[MouseButton_Left]))
 		{
 			CameraDirectionUpdate(Camera, GameInput->dXMouse, GameInput->dYMouse, dt);

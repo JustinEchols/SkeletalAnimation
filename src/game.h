@@ -13,8 +13,10 @@
  *
 */
 
+#if !RELEASE
 #include <ft2build.h>
 #include FT_FREETYPE_H
+#endif
 
 #include "platform.h"
 #include "memory.h"
@@ -219,6 +221,7 @@ struct game_state
 	f32 ZFar;
 	f32 Gravity;
 
+	u32 CurrentCharacter;
 	u32 PlayerIDForController[ArrayCount(((game_input *)0)->Controllers)];
 
 	asset_manager AssetManager;

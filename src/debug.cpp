@@ -123,7 +123,6 @@ DebugDrawGroundArrow(entity *Entity, quad Quad)
 	PushQuad3D(Ui.RenderBuffer, Quad.Vertices, T*R*S, Entry.Index);
 }
 
-
 internal void
 DebugDrawEntity(char *Label, entity *Entity)
 {
@@ -316,5 +315,3 @@ DebugDrawTexture(char *Label, game_state *GameState)
 
 	PushRenderToTexture(Ui.RenderBuffer, (f32 *)Vertices);
 }
-
-

@@ -1,3 +1,5 @@
+
+#if !RELEASE
 internal s32 
 FontInitialize(memory_arena *Arena, font *Font, char *FileName)
 {
@@ -55,6 +57,7 @@ FontInitialize(memory_arena *Arena, font *Font, char *FileName)
 
 	return(Result);
 }
+#endif
 
 internal v2 
 TextDim(font *Font, f32 Scale, char *String)

@@ -15,6 +15,7 @@ UiBegin(render_buffer *RenderBuffer, memory_arena *TempArena, game_input *GameIn
 	Ui.TempArena = TempArena;
 	Ui.HoverColor = V3(1.0f, 1.0f, 0.0f);
 	Ui.DefaultColor = V3(1.0f);
+	Ui.ButtonCount = 0;
 }
 
 internal b32

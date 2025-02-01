@@ -569,9 +569,8 @@ AssetManagerInitialize(asset_manager *Manager)
 	// Animations
 	//
 
-	file_group_info XBotFileGroup	= Platform.DebugFileGroupLoad(AnimationDirectoryAndWildCard);
+	file_group_info XBotFileGroup = Platform.DebugFileGroupLoad(AnimationDirectoryAndWildCard);
 	file_group_info YBotFileGroup = Platform.DebugFileGroupLoad(YBotAnimationsDirectoryAndWildCard);
-
 	u32 TotalCount = XBotFileGroup.Count + YBotFileGroup.Count;
 
 	ArenaSubset(&Manager->Arena, &Manager->AnimationNames.Arena, Kilobyte(8));
@@ -646,15 +645,15 @@ AssetManagerInitialize(asset_manager *Manager)
 		animation_graph *G = Manager->Graphs + Index;
 		ArenaSubset(&Manager->Arena, &G->Arena, Kilobyte(4));
 		AnimationGraphInitialize(G, FullPath);
-
-		int breakhere = 0;
 	}
 
 	//
 	// Font
 	//
 
+#if !RELEASE
 	FontInitialize(&Manager->Arena, &Manager->Font, FontFiles[0]);
+#endif
 
 	//
 	// Debug
