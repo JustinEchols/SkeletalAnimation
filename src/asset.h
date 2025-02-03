@@ -86,6 +86,7 @@ struct asset_manager
 
 	platform_file_info XBotGraphFileInfo;
 	platform_file_info YBotGraphFileInfo;
+	platform_file_info PaladinGraphFileInfo;
 
 	model Capsule;
 };

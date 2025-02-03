@@ -367,17 +367,26 @@ char *TexturesDirectoryAndWildCard	= "..\\data\\textures\\*";
 char *ModelsDirectory				= "..\\data\\models";
 char *ModelsDirectoryAndWildCard	= "..\\data\\models\\*";
 
+#if 0
 char *AnimationDirectory			= "../data/animations/XBot";
 char *AnimationDirectoryAndWildCard = "..\\data\\animations\\XBot\\*";
 
 char *YBotAnimationsDirectory		= "../data/animations/YBot";
 char *YBotAnimationsDirectoryAndWildCard = "..\\data\\animations\\YBot\\*";
 
+char *VampireAnimationsDirectory		= "../data/animations/Vampire";
+char *VampireAnimationsDirectoryAndWildCard = "..\\data\\animations\\Vampire\\*";
+#else
+char *AnimationDirectory			= "../data/animations/";
+char *AnimationDirectoryAndWildCard = "..\\data\\animations\\*";
+#endif
+
 char *GraphFiles[] =
 {
 	"../src/XBot_AnimationGraph.animation_graph",
 	"../src/YBot_AnimationGraph.animation_graph",
-	"../src/Ninja_AnimationGraph.animation_graph",
+	"../src/Vampire_AnimationGraph.animation_graph",
+	"../src/Paladin_AnimationGraph.animation_graph",
 };
 
 char *FontFiles[] =
@@ -530,6 +539,38 @@ AssetManagerInitialize(asset_manager *Manager)
 				Model->Meshes[0].DiffuseTexture = Entry.Index;
 				Model->Meshes[0].MaterialFlags |= MaterialFlag_Diffuse;
 			}
+
+			if(StringsAreSame(AssetName, "PaladinWithProp"))
+			{
+				asset_entry Diffuse = LookupTexture(Manager, "Paladin_diffuse");
+				asset_entry Specular = LookupTexture(Manager, "Paladin_specular");
+				Assert(Diffuse.Texture);
+				Assert(Specular.Texture);
+
+				for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+				{
+					mesh *Mesh = Model->Meshes + MeshIndex;
+					Mesh->DiffuseTexture = Diffuse.Index;
+					Mesh->SpecularTexture = Specular.Index;
+					Model->Meshes[0].MaterialFlags |= (MaterialFlag_Diffuse | MaterialFlag_Specular);
+				}
+			}
+
+			if(StringsAreSame(AssetName, "VampireALusth"))
+			{
+				asset_entry Diffuse = LookupTexture(Manager, "Vampire_diffuse");
+				asset_entry Specular = LookupTexture(Manager, "Vampire_specular");
+				Assert(Diffuse.Texture);
+				Assert(Specular.Texture);
+
+				for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+				{
+					mesh *Mesh = Model->Meshes + MeshIndex;
+					Mesh->DiffuseTexture = Diffuse.Index;
+					Mesh->SpecularTexture = Specular.Index;
+					Model->Meshes[0].MaterialFlags |= (MaterialFlag_Diffuse | MaterialFlag_Specular);
+				}
+			}
 		}
 		else
 		{
@@ -566,17 +607,17 @@ AssetManagerInitialize(asset_manager *Manager)
 	// Animations
 	//
 
-	file_group_info XBotFileGroup = Platform.DebugFileGroupLoad(AnimationDirectoryAndWildCard);
-	file_group_info YBotFileGroup = Platform.DebugFileGroupLoad(YBotAnimationsDirectoryAndWildCard);
-	u32 TotalCount = XBotFileGroup.Count + YBotFileGroup.Count;
-
+	file_group_info AnimationFileGroup = Platform.DebugFileGroupLoad(AnimationDirectoryAndWildCard);
 	ArenaSubset(&Manager->Arena, &Manager->AnimationNames.Arena, Kilobyte(8));
 	StringHashInit(&Manager->AnimationNames);
-	Manager->SampledAnimations = PushArray(&Manager->Arena, TotalCount, animation_info);
-	for(u32 FileIndex = 0; FileIndex < XBotFileGroup.Count; ++FileIndex)
+	Manager->SampledAnimations = PushArray(&Manager->Arena, AnimationFileGroup.Count, animation_info);
+	for(u32 FileIndex = 0; FileIndex < AnimationFileGroup.Count; ++FileIndex)
 	{
-		char *FileName = XBotFileGroup.FileNames[FileIndex];
+		char *FileName = AnimationFileGroup.FileNames[FileIndex];
 		if(FileName[0] == '.') continue;
+
+		ExtFromFullPath(FileName, ExtBuffer);
+		if(!StringsAreSame("animation", ExtBuffer)) continue;
 
 		FileNameFromFullPath(FileName, AssetName);
 		StringHashAdd(&Manager->AnimationNames, AssetName, FileIndex);
@@ -591,32 +632,6 @@ AssetManagerInitialize(asset_manager *Manager)
 		animation_info *SampledAnimation = Manager->SampledAnimations + Index;
 		*SampledAnimation = AnimationLoad(&Manager->Arena, Buffer);
 		Assert(SampledAnimation);
-		if(SampledAnimation)
-		{
-			SampledAnimation->Name = StringCopy(&Manager->Arena, AssetName);
-			SampledAnimation->ReservedForChannel = PushStruct(&Manager->Arena, key_frame);
-			key_frame *ReservedForChannel = SampledAnimation->ReservedForChannel;
-			AllocateJointXforms(&Manager->Arena, ReservedForChannel, SampledAnimation->JointCount);
-		}
-	}
-
-	for(u32 FileIndex = 0; FileIndex < YBotFileGroup.Count; ++FileIndex)
-	{
-		char *FileName = YBotFileGroup.FileNames[FileIndex];
-		if(FileName[0] == '.') continue;
-
-		FileNameFromFullPath(FileName, AssetName);
-		StringHashAdd(&Manager->AnimationNames, AssetName, (XBotFileGroup.Count  + FileIndex));
-		s32 Index = StringHashLookup(&Manager->AnimationNames, AssetName);
-		Assert(Index != -1);
-
-		MemoryZero(Buffer, sizeof(Buffer));
-		strcat(Buffer, YBotAnimationsDirectory);
-		strcat(Buffer, "/");
-		strcat(Buffer, FileName);
-
-		animation_info *SampledAnimation = Manager->SampledAnimations + Index;
-		*SampledAnimation = AnimationLoad(&Manager->Arena, Buffer);
 		if(SampledAnimation)
 		{
 			SampledAnimation->Name = StringCopy(&Manager->Arena, AssetName);
@@ -656,6 +671,7 @@ AssetManagerInitialize(asset_manager *Manager)
 	// Debug
 	//
 
+	// For hot reloading animation graph files
 	Manager->XBotGraphFileInfo = {};
 	Manager->XBotGraphFileInfo.Path = "../src/XBot_AnimationGraph.animation_graph";
 	Platform.DebugFileIsDirty(Manager->XBotGraphFileInfo.Path, &Manager->XBotGraphFileInfo.FileDate);
@@ -664,6 +680,11 @@ AssetManagerInitialize(asset_manager *Manager)
 	Manager->YBotGraphFileInfo.Path = "../src/YBot_AnimationGraph.animation_graph";
 	Platform.DebugFileIsDirty(Manager->YBotGraphFileInfo.Path, &Manager->YBotGraphFileInfo.FileDate);
 
+	Manager->PaladinGraphFileInfo = {};
+	Manager->PaladinGraphFileInfo.Path = "../src/Paladin_AnimationGraph.animation_graph";
+	Platform.DebugFileIsDirty(Manager->PaladinGraphFileInfo.Path, &Manager->PaladinGraphFileInfo.FileDate);
+
+	// For debug diagrams
 	capsule Cap = CapsuleMinMaxRadius(V3(0.0f, 0.4f, 0.0f), V3(0.0f, 1.8f - 0.4f, 0.0f), 0.4f);
 	Manager->Capsule	= DebugModelCapsuleInitialize(&Manager->Arena, Cap.Min, Cap.Max, Cap.Radius);
 	Platform.UploadModelToGPU(&Manager->Capsule);

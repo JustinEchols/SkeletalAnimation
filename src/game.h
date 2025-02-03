@@ -193,6 +193,9 @@ struct game_state
 	memory_arena Arena;
 
 	u32 PlayerEntityIndex;
+	u32 XBotEntityIndex;
+	u32 YBotEntityIndex;
+	u32 VampireEntityIndex;
 	u32 EntityCount;
 	entity Entities[4096];
 

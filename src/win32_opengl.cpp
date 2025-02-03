@@ -14,7 +14,7 @@ uniform mat4 Projection;
 uniform mat4 LightTransform;
 uniform bool UsingRig;
 
-#define MAX_JOINT_COUNT 70
+#define MAX_JOINT_COUNT 100
 uniform mat4 Transforms[MAX_JOINT_COUNT];
 
 out vec3 SurfaceP;
@@ -142,7 +142,7 @@ void main()
 	vec3 ReflectedDirection = reflect(Normal, SurfaceToCameraNormalized);
 
 	float D = max(dot(SurfaceToLightNormalized, Normal), 0.0);
-	float S = pow(max(dot(ReflectedDirection, Normal), 0.0), Shininess);
+	float S = pow(max(dot(ReflectedDirection, Normal), 0.0), 32);
 	float A = 1.0f;
 
 	vec3 Diff = vec3(0.0);

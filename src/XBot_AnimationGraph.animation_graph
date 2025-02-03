@@ -1,6 +1,17 @@
 [1]
 # Hello, sailor! This is a comment
 
+# 2025.02.02 1829
+# Added new behavior when the time offset specified is -1. When
+# a time offset of -1 is specified then the next animation that
+# is played will use the current time of the current animation
+# as the start time. An example of this can be found in the Paladin
+# animation graph. The idea is that we are using the same animation
+# for running and sprinting but the sprinting state just scales
+# the time so the animation plays faster. Since we are using the same
+# animation then when we go from run to sprint we can start playing
+# the animation at the same time that the run animation is at.
+
 # Format
 # This format follows Johnathan Blow's animation graph file format.
 # An animtion state is defined by : AnimationStateName
@@ -10,7 +21,7 @@
 # State transitions, or arcs between nodes, start with "message"
 # then the message e.g. "go_state_idle" then the name of the new state and finally additional parameters.
 # The additional parameters control how the transition happens from the current
-# state to the next state. Parameters such as start time (t_start), a time
+# state to the next state. Parameters such as start time (t_start), time
 # interval (t_interval), and blend duration (t_blend).
 
 #
@@ -21,7 +32,6 @@
 animation XBot_IdleRight
 looping
 message go_state_run StateRunning t_start 0.4
-#message go_state_run StateIdleToSprintMirror
 message go_state_sprint StateSprintMirror
 message go_state_crouch StateCrouchingIdleRight
 message go_state_jump StateJumpForwardMirror t_start 0.6
@@ -31,7 +41,6 @@ message go_state_turn_90_right_to_run StateIdleRightTurn90RightToRun t_start 0.4
 animation XBot_IdleLeft
 looping
 message go_state_run StateRunningMirror t_start 0.4
-#message go_state_run StateIdleToSprint
 message go_state_sprint StateSprint
 message go_state_crouch StateCrouchingIdleLeft
 message go_state_jump StateJumpForward t_start 0.6
@@ -60,7 +69,7 @@ remove_locomotion
 t_scale 2.0
 message go_state_idle StateIdleRight t_interval 0.0 0.8 t_blend 0.5
 message go_state_run StateRunning t_interval 0.8 0.9 t_blend 0.4 t_start 0.45
-message go_state_run StateSprint t_interval 0.8 0.9 t_blend 0.4 t_start 0.45
+message go_state_sprint StateSprint t_interval 0.8 0.9 t_blend 0.4 t_start 0.3
 
 : StateIdleLeftTurn90LeftToRun
 animation XBot_IdleTurn90LeftToRun
@@ -69,7 +78,7 @@ remove_locomotion
 t_scale 2.0 
 message go_state_idle StateIdleLeft t_interval 0.0 0.8 t_blend 0.5
 message go_state_run StateRunningMirror t_interval 0.8 0.9 t_blend 0.4 t_start 0.45
-message go_state_sprint StateSprintMirror t_interval 0.8 0.9 t_blend 0.4 t_start 0.45
+message go_state_sprint StateSprintMirror t_interval 0.8 0.9 t_blend 0.4 t_start 0.3
 
 #
 # Walking

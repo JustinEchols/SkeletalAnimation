@@ -146,6 +146,63 @@ YBotAdd(game_state *GameState, v3 P)
 	animation_graph *G  = LookupGraph(&GameState->AssetManager, "YBot_AnimationGraph");
 	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "YBot_FightIdleRight");
 
+	Assert(Model);
+	Assert(G);
+	Assert(Entry.SampledAnimation);
+
+	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
+	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
+	Player->Acceleration = 50.0f;
+	Player->Drag = 10.0f;
+	Player->AngularSpeed = 15.0f;
+
+
+	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
+	Player->AnimationGraph = G;
+	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
+
+	return(Player);
+}
+
+internal entity * 
+VampireAdd(game_state *GameState, v3 P)
+{
+	entity *Player = PlayerAdd(GameState, P);
+
+	model *Model = LookupModel(&GameState->AssetManager, "VampireALusth").Model;
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Vampire_AnimationGraph");
+	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Vampire_IdleLeft");
+
+	Assert(Model);
+	Assert(G);
+	Assert(Entry.SampledAnimation);
+
+	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
+	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
+	Player->Acceleration = 50.0f;
+	Player->Drag = 10.0f;
+	Player->AngularSpeed = 15.0f;
+
+	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
+	Player->AnimationGraph = G;
+	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
+
+	return(Player);
+}
+
+internal entity * 
+KnightAdd(game_state *GameState, v3 P)
+{
+	entity *Player = PlayerAdd(GameState, P);
+
+	model *Model = LookupModel(&GameState->AssetManager, "PaladinWithProp").Model;
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Paladin_AnimationGraph");
+	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Paladin_SwordAndShieldIdle_00");
+
+	Assert(Model);
+	Assert(G);
+	Assert(Entry.SampledAnimation);
+
 	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
 	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
 	Player->Acceleration = 50.0f;
@@ -716,6 +773,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			break;
 		}
 
+
 		Entity->P += tMin * DeltaP; 
 		GroundP = Entity->P;
 		GroundP += tGround * GroundDelta;
@@ -732,6 +790,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		}
 	}
 
+#if 1
 	Assert(EntityBelow);
 	f32 YThreshold = 0.01f;
 	f32 dY = Entity->P.y - GroundP.y;
@@ -746,6 +805,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	{
 		FlagAdd(Entity, EntityFlag_YSupported);
 	}
+#endif
 }
 
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
@@ -795,7 +855,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 		Dim = V3(2.0f, 0.5f, 2.0f);
 		v3 ElevatorP = StartP + V3(0.0f, 1.0f, 2.0f);
-		ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
+		//ElevatorAdd(GameState, ElevatorP, Dim, CubeOrientation);
 
 		Dim = V3(1.f, 1.0f, 5.0f);
 		StartP += V3(3.0f, 0.0f, -5.0f);
@@ -883,6 +943,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		AnimationGraphInitialize(G, "../src/YBot_AnimationGraph.animation_graph");
 		Entity->AnimationGraph = G;
 	}
+
+	if(!GameInput->ReloadingGame && Platform.DebugFileIsDirty(GameState->AssetManager.PaladinGraphFileInfo.Path, &GameState->AssetManager.PaladinGraphFileInfo.FileDate))
+	{
+		entity *Entity = GameState->Entities + GameState->PlayerIDForController[1];
+		animation_graph *G = LookupGraph(&GameState->AssetManager, "Paladin_AnimationGraph");
+		ArenaClear(&G->Arena);
+		G->NodeCount = 0;
+		G->Index = 0;
+		G->CurrentNode = {};
+		MemoryZero(&G->Nodes, sizeof(G->Nodes));
+		AnimationGraphInitialize(G, "../src/Paladin_AnimationGraph.animation_graph");
+		Entity->AnimationGraph = G;
+	}
 #endif
 
 	for(u32 ControllerIndex = 0; ControllerIndex < ArrayCount(GameInput->Controllers); ++ControllerIndex)
@@ -892,15 +965,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		if(ID == 0)
 		{
 			entity *Player = 0;
+
 			if(ControllerIndex == 0 && Controller->Space.EndedDown)
 			{
-				Player = XBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+				Player = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 			}
 
 			if(ControllerIndex == 1 && Controller->Start.EndedDown)
 			{
-				Player = YBotAdd(GameState, V3(0.0f, 0.01f, -10.0f));
+				Player = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 			}
+
 
 			if(Player)
 			{
@@ -913,11 +988,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			move_info *MoveInfo = &Entity->MoveInfo;
 			*MoveInfo = {};
 			f32 AccelerationSq = 0.0f;
+			b32 Sprinting = false;
 
 			// NOTE(Justin): For debug camera
-			if(GameState->CameraIsFree && !GameState->CameraIsLocked)continue;
+			if(GameState->CameraIsFree && !GameState->CameraIsLocked) continue;
 
-			b32 Sprinting = false;
 			if(Controller->IsAnalog)
 			{
 				MoveInfo->ddP = V3(Controller->StickAverageX, 0.0f, -1.0f*Controller->StickAverageY);
@@ -1156,13 +1231,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 					if(AnimationPlayer->RootTurningAccumulator != 0.0f)
 					{
-						AnimationPlayer->OrientationLockedAt = RotateTowards(AnimationPlayer->OrientationLockedAt, Entity->Orientation, dt, 4.5f);
+						f32 TurnSpeed = 4.5f;
+
+						AnimationPlayer->OrientationLockedAt = RotateTowards(AnimationPlayer->OrientationLockedAt, Entity->Orientation, dt, TurnSpeed);
 						R = QuaternionToMat4(AnimationPlayer->OrientationLockedAt);
 						AnimationPlayer->RootTurningAccumulator = 0.0f;
 					}
 				}
 
 				PushModel(RenderBuffer, CString(AnimationPlayer->Model->Name), T*R*S);
+				//PushModel(RenderBuffer, "VampireALusth", T*R*S);
+
 			} break;
 			case EntityType_Cube:
 			{
@@ -1172,12 +1251,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(Entity->VisualScale);
 				PushModel(RenderBuffer, "Cube", T*R*S);
-
-				//
-				// OBB
-				//
-
-				DebugDrawOBB(RenderBuffer, GameState->Cube, Entity->OBB, Entity->P, Entity->VolumeOffset, V3(1.0f));
 
 				//
 				// Axes.
@@ -1310,17 +1383,17 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	}
 
 	entity *Entity = GameState->Entities + GameState->PlayerEntityIndex;
+
 	DebugDrawFloat("fps: ", GameInput->FPS);
 	DebugDrawFloat("time scale: ", GameState->TimeScale);
-
 	if(ToggleButton("HandAndFoot", DebugDrawHandAndFoot))
 	{
 		DebugDrawHandAndFoot(Entity, GameState->Sphere);
 	}
 
-	if(ToggleButton("CollisionVolume", DebugDrawCollisionVolume))
+	if(ToggleButton("CollisionVolume", DebugDrawCapsule))
 	{
-		DebugDrawCollisionVolume(Entity);
+		DebugDrawCapsule(Entity);
 	}
 
 	if(ToggleButton("GroundArrow", DebugDrawGroundArrow))
@@ -1330,19 +1403,18 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	if(ToggleButton("+Player", DebugDrawEntity))
 	{
-		DebugDrawEntity("-Player", Entity);
+		DebugDrawEntity(Entity);
 	}
 
 	if(ToggleButton("+AnimationPlayer", DebugDrawAnimationPlayer))
 	{
-		DebugDrawAnimationPlayer("-AnimationPlayer", Entity->AnimationPlayer);
+		DebugDrawAnimationPlayer(Entity->AnimationPlayer);
 	}
 
 	if(ToggleButton("+Texture", DebugDrawTexture))
 	{
-		DebugDrawTexture("+Texture", GameState);
+		DebugDrawTexture(GameState);
 	}
-
 
 	Platform.RenderToOpenGL(RenderBuffer, (u32)GameInput->BackBufferWidth, (u32)GameInput->BackBufferHeight);
 

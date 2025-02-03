@@ -1,0 +1,47 @@
+[1]
+
+: StateIdleRight
+animation Paladin_SwordAndShieldIdle_00
+looping
+message go_state_run StateRunning
+message go_state_sprint StateSprinting
+
+: StateIdleLeft
+animation Paladin_SwordAndShieldIdle_01
+looping
+message go_state_run StateRunningMirror
+message go_state_sprint StateSprintingMirror
+
+: StateRunning
+animation Paladin_SwordAndShieldRun_00
+looping
+message go_state_idle StateIdleRight t_interval 0.0 0.3
+message go_state_idle StateIdleLeft t_interval 0.3 0.6
+message go_state_idle StateIdleRight t_interval 0.6 0.7
+message go_state_sprint StateSprinting t_start -1.0
+
+: StateRunningMirror
+animation Paladin_SwordAndShieldRun_01
+looping
+message go_state_idle StateIdleLeft t_interval 0.0 0.3
+message go_state_idle StateIdleRight t_interval 0.3 0.6
+message go_state_idle StateIdleLeft t_interval 0.6 0.7
+message go_state_sprint StateSprintingMirror t_start -1.0
+
+: StateSprinting
+animation Paladin_SwordAndShieldSprint_00
+looping
+t_scale 1.5
+message go_state_idle StateIdleRight t_interval 0.0 0.3
+message go_state_idle StateIdleLeft t_interval 0.3 0.6
+message go_state_idle StateIdleRight t_interval 0.6 0.7
+message go_state_run StateRunning t_start -1.0
+
+: StateSprintingMirror
+animation Paladin_SwordAndShieldSprint_01
+looping
+t_scale 1.5
+message go_state_idle StateIdleLeft t_interval 0.0 0.3
+message go_state_idle StateIdleRight t_interval 0.3 0.6
+message go_state_idle StateIdleLeft t_interval 0.6 0.7
+message go_state_run StateRunningMirror t_start -1.0

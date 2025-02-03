@@ -48,14 +48,18 @@ messgae go_state_run StateRunning
 # Duration 0.67
 : StateNeutralAttackLeft
 animation YBot_JabLeft
+looping
 t_scale 1.34
-when_done go_state_idle StateIdleLeft t_remaining 0.3
+#when_done go_state_idle StateIdleLeft t_remaining 0.3
+message go_state_idle StateIdleLeft t_interval 0.37 0.67
 
 # Duration 0.67
 : StateNeutralAttackRight
 animation YBot_JabRight
+looping
 t_scale 1.34
-when_done go_state_idle StateIdleRight t_remaining 0.3
+#when_done go_state_idle StateIdleRight t_remaining 0.3
+message go_state_idle StateIdleRight t_interval 0.37 0.67
 
 # Duration 1.0
 : StateForwardAttack

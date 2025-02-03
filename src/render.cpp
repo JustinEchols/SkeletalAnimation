@@ -145,7 +145,7 @@ PushText(render_buffer *RenderBuffer, string Text, font *Font, v2 P, f32 Scale, 
 	render_entry_text *Entry = (render_entry_text *)PushRenderElement(RenderBuffer, render_entry_text);
 	if(Entry)
 	{
-		Entry->Text = (char *)Text.Data;
+		Entry->Text = CString(Text);
 		Entry->Font = Font;
 		Entry->P = P;
 		Entry->Scale = Scale;

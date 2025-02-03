@@ -28,7 +28,6 @@ struct vertex
 	v3 P;
 	v3 N;
 	v2 UV;
-
 	joint_info JointInfo;
 };
 
@@ -64,7 +63,7 @@ struct mesh
 	u32 SpecularTexture;
 	u32 NormalTexture;
 
-	// Data modified by renderer. Remove this!
+	// Data modified by renderer. Remove this?
 	u32 VA;
 	u32 VB;
 	u32 IBO;

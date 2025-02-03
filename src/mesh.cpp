@@ -247,3 +247,8 @@ DebugModelSphereInitialize(memory_arena *Arena, f32 Radius)
 
 	return(Model);
 }
+
+internal model
+ModelCopy(memory_arena *Arena, model *Source)
+{
+}

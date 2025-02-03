@@ -28,17 +28,6 @@ struct ui
 	font *Font;
 	struct asset_manager *Assets;
 
-	u32 ButtonCount;
-	b32 ButtonState[16];
-
-	b32 DebugEntityView;
-	b32 DebugCollisionVolume;
-	b32 DebugGroundArrow;
-	b32 DebugAnimationPlayerView;
-	b32 DebugDrawHandAndFoot;
-	b32 DebugDrawTexture;
-	b32 DebugDrawAnimation;
-
 	u32 ToggleButtonCount;
 	b32 ToggleButtonStates[16];
 

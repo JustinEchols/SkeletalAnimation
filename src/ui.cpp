@@ -67,12 +67,20 @@ UiButton(char *Label, void *ID)
 }
 
 internal b32
+Button(char *Label, void *ID)
+{
+	b32 Result = UiButton(Label, ID);
+	DebugDrawString(Label, Ui.DefaultColor);
+	return(Result);
+}
+
+internal b32
 ToggleButton(char *Label, void *ID)
 {
 	b32 Update = UiButton(Label, ID);
 	b32 Current = Ui.ToggleButtonStates[Ui.ToggleButtonCount];
-
 	Ui.ToggleButtonStates[Ui.ToggleButtonCount] = Update ? !Current : Current;
+
 	b32 Result = Ui.ToggleButtonStates[Ui.ToggleButtonCount++];
 
 	v3 Color = Result ? Ui.HoverColor : Ui.DefaultColor;

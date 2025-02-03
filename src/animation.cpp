@@ -387,6 +387,12 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 			{
 				Dest = Arc->Destination;
 				DefaultTimeOffset = Arc->StartTime;
+
+				if(Arc->StartTime == -1.0f)
+				{
+					DefaultTimeOffset = AnimationPlayer->Channels->CurrentTime;
+				}
+
 				if(Arc->BlendDurationSet)
 				{
 					DefaultBlendDuration = Arc->BlendDuration;
