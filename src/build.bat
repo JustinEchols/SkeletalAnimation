@@ -31,15 +31,15 @@ pushd ..\build
 del *.pdb > NUL 2> NUL
 
 REM DEBUG 
-echo WAITING FOR PDB > lock.tmp
-cl -Od %CommonCompilerFlags% ..\src\%GameFile% -Fmgame.map %IncludeDirectories% /LD /link %LibDirectories% freetype.lib -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender
-del lock.tmp
-cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map  /link %CommonLinkerFlags%
-popd
-
-REM RELEASE 
 REM echo WAITING FOR PDB > lock.tmp
-REM cl -O2 %CommonCompilerFlags% -DRELEASE=1 ..\src\%GameFile% -Fmgame.map /LD /link -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender 
+REM cl -Od %CommonCompilerFlags% ..\src\%GameFile% -Fmgame.map %IncludeDirectories% /LD /link %LibDirectories% freetype.lib -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender
 REM del lock.tmp
 REM cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map  /link %CommonLinkerFlags%
 REM popd
+
+REM RELEASE 
+echo WAITING FOR PDB > lock.tmp
+cl -O2 %CommonCompilerFlags% -DRELEASE=1 ..\src\%GameFile% -Fmgame.map /LD /link -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender 
+del lock.tmp
+cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map  /link %CommonLinkerFlags%
+popd
