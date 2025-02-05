@@ -159,9 +159,6 @@ EvaluateIdle(entity *Entity, move_info MoveInfo)
 	{
 		Entity->MovementState = MovementState_Attack;
 		Entity->AttackType = AttackType_Neutral;
-		//Entity->Attack.Type = AttackType_Neutral;
-		//Entity->Attack.CurrentTime = 0.0f;
-		//Entity->Attack.Duration = 0.2f;
 		return;
 	}
 
@@ -242,9 +239,6 @@ EvaluateSprint(entity *Entity, move_info MoveInfo)
 	{
 		Entity->MovementState = MovementState_Attack;
 		Entity->AttackType = AttackType_Dash;
-		//Entity->Attack.Type = AttackType_Dash;
-		//Entity->Attack.CurrentTime = 0.0f;
-		//Entity->Attack.Duration = 0.2f;
 		return;
 	}
 
@@ -306,10 +300,6 @@ EvaluateInAir(entity *Entity, move_info MoveInfo)
 	{
 		Entity->MovementState = MovementState_Attack;
 		Entity->AttackType = AttackType_Air;
-
-		//Entity->Attack.Type = AttackType_Air;
-		//Entity->Attack.CurrentTime = 0.0f;
-		//Entity->Attack.Duration = 0.2f;
 	}
 }
 
