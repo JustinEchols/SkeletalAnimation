@@ -110,7 +110,7 @@ EvaluatePlayerMove(entity *Entity, move_info MoveInfo, v3 *ddP)
 		a *= 5.0f;
 	}
 
-	if((Entity->Flags & EntityFlag_Moving ) && MoveInfo.CanSprint)
+	if((Entity->Flags & EntityFlag_Moving) && MoveInfo.CanSprint)
 	{
 		a *= 1.5f;
 	}
@@ -158,9 +158,10 @@ EvaluateIdle(entity *Entity, move_info MoveInfo)
 	if(MoveInfo.Attacking)
 	{
 		Entity->MovementState = MovementState_Attack;
-		Entity->Attack.Type = AttackType_Neutral;
-		Entity->Attack.CurrentTime = 0.0f;
-		Entity->Attack.Duration = 0.2f;
+		Entity->AttackType = AttackType_Neutral;
+		//Entity->Attack.Type = AttackType_Neutral;
+		//Entity->Attack.CurrentTime = 0.0f;
+		//Entity->Attack.Duration = 0.2f;
 		return;
 	}
 
@@ -205,9 +206,7 @@ EvaluateRun(entity *Entity, move_info MoveInfo)
 	if(MoveInfo.Attacking)
 	{
 		Entity->MovementState = MovementState_Attack;
-		Entity->Attack.Type = AttackType_Forward;
-		Entity->Attack.CurrentTime = 0.0f;
-		Entity->Attack.Duration = 0.2f;
+		Entity->AttackType = AttackType_Forward;
 		return;
 	}
 
@@ -242,9 +241,10 @@ EvaluateSprint(entity *Entity, move_info MoveInfo)
 	if(MoveInfo.Attacking)
 	{
 		Entity->MovementState = MovementState_Attack;
-		Entity->Attack.Type = AttackType_Dash;
-		Entity->Attack.CurrentTime = 0.0f;
-		Entity->Attack.Duration = 0.2f;
+		Entity->AttackType = AttackType_Dash;
+		//Entity->Attack.Type = AttackType_Dash;
+		//Entity->Attack.CurrentTime = 0.0f;
+		//Entity->Attack.Duration = 0.2f;
 		return;
 	}
 
@@ -305,9 +305,11 @@ EvaluateInAir(entity *Entity, move_info MoveInfo)
 	if(MoveInfo.Attacking)
 	{
 		Entity->MovementState = MovementState_Attack;
-		Entity->Attack.Type = AttackType_Air;
-		Entity->Attack.CurrentTime = 0.0f;
-		Entity->Attack.Duration = 0.2f;
+		Entity->AttackType = AttackType_Air;
+
+		//Entity->Attack.Type = AttackType_Air;
+		//Entity->Attack.CurrentTime = 0.0f;
+		//Entity->Attack.Duration = 0.2f;
 	}
 }
 
@@ -346,14 +348,15 @@ EvaluateAttack(entity *Entity, move_info MoveInfo, f32 dt)
 {
 	FlagAdd(Entity, EntityFlag_Attacking);
 
-	Entity->Attack.CurrentTime += dt;
-	if(Entity->Attack.CurrentTime >= Entity->Attack.Duration)
+	attack *Attack = &Entity->Attacks[Entity->AttackType];
+	Attack->CurrentTime += dt;
+	if(Attack->CurrentTime >= Attack->Duration)
 	{
-		Entity->Attack.Type = AttackType_None;
-		Entity->Attack.CurrentTime = Entity->Attack.Duration;
+		Entity->AttackType = AttackType_None;
+		Attack->CurrentTime = 0.0f;
 	}
 
-	switch(Entity->Attack.Type)
+	switch(Entity->AttackType)
 	{
 		case AttackType_Neutral:
 		case AttackType_Forward:
@@ -393,10 +396,6 @@ EvaluateAttack(entity *Entity, move_info MoveInfo, f32 dt)
 				Entity->MovementState = MovementState_Run;
 				return;
 			}
-
-
-
 		}break;
 	};
-
 }

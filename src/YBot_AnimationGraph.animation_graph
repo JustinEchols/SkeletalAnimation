@@ -17,29 +17,37 @@ message go_state_neutral_attack StateNeutralAttackRight
 : StateRunning
 animation YBot_Running
 looping
-message go_state_idle StateIdleLeft t_interval 0.0 0.2
-message go_state_idle StateIdleRight t_interval 0.3 0.5
-message go_state_idle StateIdleRight t_interval 0.51 0.63
-message go_state_sprint StateSprint
+message go_state_idle StateIdleLeft t_interval 0.0 0.3
+message go_state_idle StateIdleRight t_interval 0.3 0.6
+message go_state_idle StateIdleLeft t_interval 0.6 0.73
+message go_state_sprint StateSprint t_start -1.0
 message go_state_forward_attack StateForwardAttack
 
 : StateRunningMirror
 animation YBot_RunningMirror
 looping
-message go_state_idle StateIdleRight t_interval 0.0 0.2
-message go_state_idle StateIdleLeft t_interval 0.3 0.5
-message go_state_idle StateIdleLeft t_interval 0.51 0.63
-message go_state_sprint StateSprintMirror
+message go_state_idle StateIdleRight t_interval 0.0 0.3
+message go_state_idle StateIdleLeft t_interval 0.3 0.6
+message go_state_idle StateIdleRight t_interval 0.6 0.73
+message go_state_sprint StateSprintMirror t_start -1.0
 message go_state_forward_attack StateForwardAttack 0.5 0.63
 message go_state_forward_attack StateForwardAttack 0.0 0.2
 
 : StateSprint
-animation YBot_Running
+animation YBot_Sprinting
 looping
 t_scale 1.5
 message go_state_idle StateIdleLeft t_interval 0.0 0.2
 message go_state_idle StateIdleRight t_interval 0.0 0.3 0.4
-messgae go_state_run StateRunning 
+messgae go_state_run StateRunning t_start -1.0
+
+: StateSprintMirror
+animation YBot_SprintingMirror
+looping
+t_scale 1.5
+message go_state_idle StateIdleLeft t_interval 0.0 0.2
+message go_state_idle StateIdleRight t_interval 0.0 0.3 0.4
+messgae go_state_run StateRunningMirror t_start -1.0 
 
 #
 # Combat

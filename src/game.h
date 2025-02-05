@@ -29,6 +29,8 @@ enum attack_type
 	AttackType_Forward,
 	AttackType_Dash,
 	AttackType_Air,
+
+	AttackType_Count
 };
 
 struct attack
@@ -83,7 +85,6 @@ enum entity_flag
 #include "ui.h"
 #include "asset.h"
 #include "render.h"
-
 
 struct move_info
 {
@@ -149,7 +150,11 @@ struct entity
 	f32 Drag;
 	f32 Acceleration;
 	f32 AngularSpeed;
-	attack Attack;
+
+	attack_type AttackType;
+	attack Attacks[AttackType_Count];
+
+	//attack Attack;
 
 	// Collision0
 	f32 Height;

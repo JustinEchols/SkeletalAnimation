@@ -512,7 +512,8 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 				if(XInputGetState(ControllerIndex, &ControllerState) == ERROR_SUCCESS)
 				{
 					NewController->IsConnected = true;
-					NewController->IsAnalog = OldController->IsAnalog;
+					//NewController->IsAnalog = OldController->IsAnalog;
+					NewController->IsAnalog = true;
 
 					// TODO(Justin): See if ControllerState.dwPacketNumber increments too rapidly
 					XINPUT_GAMEPAD *Pad = &ControllerState.Gamepad;

@@ -32,6 +32,10 @@ MovementStateToString(char *Buffer, movement_state State)
 		{
 			sprintf(Buffer, "%s", "MovementState: Attack");
 		} break;
+		case MovementState_InAir:
+		{
+			sprintf(Buffer, "%s", "MovementState: InAir");
+		} break;
 	}
 }
 

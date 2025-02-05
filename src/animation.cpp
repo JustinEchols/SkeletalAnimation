@@ -472,7 +472,7 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		case MovementState_Attack:
 		{
 			char *Message = "go_state_neutral_attack";
-			if(Entity->Attack.Type == AttackType_Forward)
+			if(Entity->AttackType == AttackType_Forward)
 			{
 				Message = "go_state_forward_attack";
 			}

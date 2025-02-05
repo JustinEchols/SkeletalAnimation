@@ -1,24 +1,27 @@
 [1]
 
-: StateIdleRight
+: StateIdleLeft
 animation Paladin_SwordAndShieldIdle_00
 looping
-message go_state_run StateRunning
-message go_state_sprint StateSprinting
+message go_state_run StateRunning t_blend 0.1
+message go_state_sprint StateSprinting t_blend 0.1
+message go_state_neutral_attack StateNeutralAttack
 
-: StateIdleLeft
+: StateIdleRight
 animation Paladin_SwordAndShieldIdle_01
 looping
-message go_state_run StateRunningMirror
+message go_state_run StateRunningMirror t_blend 0.1
 message go_state_sprint StateSprintingMirror
 
 : StateRunning
 animation Paladin_SwordAndShieldRun_00
 looping
-message go_state_idle StateIdleRight t_interval 0.0 0.3
-message go_state_idle StateIdleLeft t_interval 0.3 0.6
-message go_state_idle StateIdleRight t_interval 0.6 0.7
+#message go_state_idle StateIdleRight t_interval 0.0 0.3
+#message go_state_idle StateIdleLeft t_interval 0.3 0.6
+message go_state_idle StateIdleLeft
+#message go_state_idle StateIdleRight t_interval 0.6 0.7
 message go_state_sprint StateSprinting t_start -1.0
+message go_state_forward_attack StateForwardAttack
 
 : StateRunningMirror
 animation Paladin_SwordAndShieldRun_01
@@ -32,9 +35,10 @@ message go_state_sprint StateSprintingMirror t_start -1.0
 animation Paladin_SwordAndShieldSprint_00
 looping
 t_scale 1.5
-message go_state_idle StateIdleRight t_interval 0.0 0.3
-message go_state_idle StateIdleLeft t_interval 0.3 0.6
-message go_state_idle StateIdleRight t_interval 0.6 0.7
+#message go_state_idle StateIdleRight t_interval 0.0 0.3
+#message go_state_idle StateIdleLeft t_interval 0.3 0.6
+message go_state_idle StateIdleLeft
+#message go_state_idle StateIdleRight t_interval 0.6 0.7
 message go_state_run StateRunning t_start -1.0
 
 : StateSprintingMirror
@@ -45,3 +49,31 @@ message go_state_idle StateIdleLeft t_interval 0.0 0.3
 message go_state_idle StateIdleRight t_interval 0.3 0.6
 message go_state_idle StateIdleLeft t_interval 0.6 0.7
 message go_state_run StateRunningMirror t_start -1.0
+
+#
+# Combat
+#
+
+# NOTE(Justin): Animation player changes state whenever we start blending
+# in the new animation. Let ta be the animation duration tg the game duration
+# and I = (t0,t1) the interval we start blending. Then the scale factor to scale
+# the animation by is t0/tg.
+
+# Animation Duration 1.2
+# Game Duration 0.5
+: StateNeutralAttack
+animation Paladin_SwordAndShieldKick
+t_scale 2.0
+message go_state_idle StateIdleLeft t_interval 1.0 1.2
+message go_state_run StateRunning t_interval 1.0 1.2
+message go_state_sprint StateSprinting t_interval 1.0 1.2
+
+
+# Animation Duration 1.5
+# Game Duration 0.5
+: StateForwardAttack
+animation Paladin_SwordAndShieldSlash
+t_scale 2.0
+message go_state_idle StateIdleLeft t_interval 1.0 1.2
+message go_state_run StateRunning t_interval 1.0 1.2
+message go_state_sprint StateSprinting t_interval 1.0 1.2

@@ -213,6 +213,12 @@ KnightAdd(game_state *GameState, v3 P)
 	Player->AnimationGraph = G;
 	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
 
+	Player->Attacks[AttackType_Neutral].Duration = 0.5f;
+	Player->Attacks[AttackType_Neutral].Power = 0.07f;
+
+	Player->Attacks[AttackType_Forward].Duration = 0.5f;
+	Player->Attacks[AttackType_Forward].Power = 0.12f;
+
 	return(Player);
 }
 
@@ -933,7 +939,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	if(!GameInput->ReloadingGame && Platform.DebugFileIsDirty(GameState->AssetManager.YBotGraphFileInfo.Path, &GameState->AssetManager.YBotGraphFileInfo.FileDate))
 	{
-		entity *Entity = GameState->Entities + GameState->PlayerIDForController[1];
+		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
 		animation_graph *G = LookupGraph(&GameState->AssetManager, "YBot_AnimationGraph");
 		ArenaClear(&G->Arena);
 		G->NodeCount = 0;
@@ -946,7 +952,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	if(!GameInput->ReloadingGame && Platform.DebugFileIsDirty(GameState->AssetManager.PaladinGraphFileInfo.Path, &GameState->AssetManager.PaladinGraphFileInfo.FileDate))
 	{
-		entity *Entity = GameState->Entities + GameState->PlayerIDForController[1];
+		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
 		animation_graph *G = LookupGraph(&GameState->AssetManager, "Paladin_AnimationGraph");
 		ArenaClear(&G->Arena);
 		G->NodeCount = 0;
@@ -968,12 +974,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 			if(ControllerIndex == 0 && Controller->Space.EndedDown)
 			{
-				Player = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+				//Player = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 			}
 
 			if(ControllerIndex == 1 && Controller->Start.EndedDown)
 			{
 				Player = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+				//Player = YBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 			}
 
 
@@ -997,13 +1004,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			{
 				MoveInfo->ddP = V3(Controller->StickAverageX, 0.0f, -1.0f*Controller->StickAverageY);
 
-				if(IsDown(Controller->ActionDown) && IsGrounded(Entity))
+				if(IsDown(Controller->ActionRight) && IsGrounded(Entity))
 				{
 					MoveInfo->CanJump = true;
 					MoveInfo->AnyAction = true;
 				}
 
-				if(IsDown(Controller->ActionLeft))
+				if(IsDown(Controller->ActionDown))
 				{
 					MoveInfo->Attacking = true;
 					MoveInfo->AnyAction = true;
