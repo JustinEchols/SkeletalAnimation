@@ -24,3 +24,5 @@ SkeletalAnimation\src>build.bat
 
 ## Run
 SkeletalAnimation\src>..\build\win32_main.exe
+
+## Resources
