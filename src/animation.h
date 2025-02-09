@@ -39,6 +39,7 @@ enum animation_flags
 	AnimationFlags_JointMask = (1 << 5),
 	AnimationFlags_ControlsPosition = (1 << 6),
 	AnimationFlags_ControlsTurning = (1 << 7),
+	AnimationFlags_ShouldPause = (1 << 7),
 };
 
 // NOTE(Justin): Animation channel 
@@ -49,7 +50,6 @@ struct animation
 	u32 Flags;
 	f32 Duration;
 	f32 CurrentTime; 
-	f32 OldTime; 
 	f32 TimeScale; 
 	f32 StartTime; // Does this need to be stored?
 

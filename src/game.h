@@ -25,8 +25,11 @@
 enum attack_type
 {
 	AttackType_None,
-	AttackType_Neutral,
+	AttackType_Neutral1,
+	AttackType_Neutral2,
+	AttackType_Neutral3,
 	AttackType_Forward,
+	AttackType_Strong,
 	AttackType_Dash,
 	AttackType_Air,
 
@@ -36,10 +39,16 @@ enum attack_type
 struct attack
 {
 	attack_type Type;
-	f32 Timer;
 	f32 CurrentTime;
 	f32 Duration;
 	f32 Power;
+};
+
+struct attack_player
+{
+	memory_arena *Arena;
+	attack *Attacks;
+	attack *FreeAttacks;
 };
 
 enum movement_state
@@ -48,10 +57,12 @@ enum movement_state
 	MovementState_Run,
 	MovementState_Sprint,
 	MovementState_Jump,
+	MovementState_InAir,
+	MovementState_Land,
 	MovementState_Crouch,
 	MovementState_Sliding,
 	MovementState_Attack,
-	MovementState_InAir,
+
 };
 
 enum entity_type
@@ -72,6 +83,7 @@ enum entity_flag
 	EntityFlag_Collided = (1 << 4),
 	EntityFlag_Moving = (1 << 5),
 	EntityFlag_Attacking = (1 << 6),
+	EntityFlag_Attacked = (1 << 7),
 };
 
 
@@ -130,6 +142,36 @@ struct pairwise_collision_rule
 	pairwise_collision_rule *NextInHash;
 };
 
+enum collision_volume_type
+{
+	CollisionVolumeType_AABB,
+	CollisionVolumeType_OBB,
+	CollisionVolumeType_Sphere,
+	CollisionVolumeType_Capsule,
+};
+
+struct collision_volume
+{
+	f32 Radius;
+
+	// ABB 
+	v3 Offset;
+	v3 Dim;
+
+	// Cube/Region 
+	obb OBB;
+
+	// Player 
+	capsule Capsule;
+};
+
+struct collision_group
+{
+	collision_volume_type Type;
+	u32 VolumeCount;
+	collision_volume *Volumes;
+};
+
 struct entity
 {
 	entity_type Type;
@@ -147,28 +189,22 @@ struct entity
 	movement_state MovementState;
 	move_info MoveInfo;
 
+	f32 Height;
+	f32 DistanceFromGround;
 	f32 Drag;
 	f32 Acceleration;
 	f32 AngularSpeed;
 
+	collision_group MovementColliders;
+	collision_group CombatColliders;
+
+	v3 LeftFootP;
+	v3 RightFootP;
+	v3 LeftHandP;
+	v3 RightHandP;
+
 	attack_type AttackType;
 	attack Attacks[AttackType_Count];
-
-	//attack Attack;
-
-	// Collision0
-	f32 Height;
-	v3 AABBDim;
-	v3 VolumeOffset;
-
-	// Collision1
-	obb OBB;
-
-	// Collision2
-	f32 Radius;
-
-	// Collision3
-	capsule Capsule;
 
 	// Animation
 	animation_player *AnimationPlayer;
@@ -177,11 +213,6 @@ struct entity
 	// Rendering
 	// Should this be part of the game asset?
 	v3 VisualScale;
-
-	v3 LeftFootP;
-	v3 RightFootP;
-	v3 LeftHandP;
-	v3 RightHandP;
 };
 
 struct camera
@@ -190,7 +221,6 @@ struct camera
 	v3 Direction;
 	f32 Yaw;
 	f32 Pitch;
-	quaternion RotationAboutY;
 };
 
 struct game_state
@@ -198,9 +228,6 @@ struct game_state
 	memory_arena Arena;
 
 	u32 PlayerEntityIndex;
-	u32 XBotEntityIndex;
-	u32 YBotEntityIndex;
-	u32 VampireEntityIndex;
 	u32 EntityCount;
 	entity Entities[4096];
 
@@ -236,10 +263,6 @@ struct game_state
 	asset_manager AssetManager;
 
 	texture Texture;
-	model Cylinder;
-	model *Capsule;
-	model *Cube;
-	model *Sphere;
 };
 
 struct temp_state

@@ -44,12 +44,13 @@ struct mesh
 
 	// Vertex
 	u32 IndicesCount;
-	u32 VertexCount;
-	u32 JointCount;
 	u32 *Indices;
+
+	u32 VertexCount;
 	vertex *Vertices;
 
 	// Skeleton 
+	u32 JointCount;
 	joint *Joints;
 	mat4 BindTransform;
 	mat4 *InvBindTransforms;
@@ -68,6 +69,8 @@ struct mesh
 	u32 VB;
 	u32 IBO;
 	texture *Texture;
+
+	aabb BoundingBox;
 };
 
 struct model

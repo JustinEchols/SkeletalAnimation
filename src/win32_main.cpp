@@ -523,10 +523,20 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 					f32 StickAverageY = Win32XInputStickValueUpdate(
 							Pad->sThumbLY, XINPUT_GAMEPAD_LEFT_THUMB_DEADZONE);
 
+					f32 RightStickAverageX = Win32XInputStickValueUpdate(
+							Pad->sThumbLX, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+					f32 RightStickAverageY = Win32XInputStickValueUpdate(
+							Pad->sThumbLY, XINPUT_GAMEPAD_RIGHT_THUMB_DEADZONE);
+
 					NewController->StickAverageX = StickAverageX;
 					NewController->StickAverageY = StickAverageY;
 					NewController->StickdX = NewController->StickAverageX - OldController->StickAverageX;
 					NewController->StickdX = NewController->StickAverageY - OldController->StickAverageY;
+
+					NewController->RightStickAverageX = RightStickAverageX;
+					NewController->RightStickAverageY = RightStickAverageY;
+					NewController->RightStickdX = NewController->RightStickAverageX - OldController->RightStickAverageX;
+					NewController->RightStickdX = NewController->RightStickAverageY - OldController->RightStickAverageY;
 
 					if((NewController->StickAverageX != 0.0f) ||
 					   (NewController->StickAverageY != 0.0f))

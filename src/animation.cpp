@@ -68,6 +68,13 @@ ControlsTurning(animation *Animation)
 	return(Result);
 }
 
+inline b32
+ShouldPause(animation *Animation)
+{
+	b32 Result = FlagIsSet(Animation, AnimationFlags_ShouldPause);
+	return(Result);
+}
+
 inline mat4
 JointTransformFromSQT(sqt SQT)
 {
@@ -149,8 +156,6 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 // If the current animation is being blended in or out we probably dont want to 
 // want to start playing the same animation..
 
-// TODO(Justin): How do we blend if current is blending in?
-// TODO(Justin): How do we blend if current is blending out?
 
 internal void
 AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimation, u32 ID, u32 AnimationFlags,
@@ -194,7 +199,6 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	Animation->Flags = AnimationFlags | AnimationFlags_Playing;
 	Animation->Duration = SampledAnimation->Duration;
 	Animation->CurrentTime = StartTime;
-	Animation->OldTime = 0.0f;
 	Animation->TimeScale = TimeScale;
 	Animation->BlendFactor = 1.0f;
 	Animation->BlendDuration = BlendDuration;
@@ -228,11 +232,9 @@ AnimationUpdate(animation *Animation, f32 dt)
 	animation_info *Info = Animation->Info;
 	Assert(Info);
 
-	Animation->OldTime = Animation->CurrentTime;
 	Animation->CurrentTime += dt * Animation->TimeScale;
 
-	if((Animation->OldTime != Animation->CurrentTime) &&
-	   (Animation->CurrentTime >= Info->Duration))
+	if(Animation->CurrentTime >= Info->Duration)
 	{
 		if(!Looping(Animation))
 		{
@@ -246,12 +248,12 @@ AnimationUpdate(animation *Animation, f32 dt)
 	if(CrossFading(Animation))
 	{
 		Animation->BlendCurrentTime += dt * Animation->TimeScale;
-		if((Animation->BlendCurrentTime > Animation->BlendDuration) && Animation->BlendingOut)
+		if((Animation->BlendCurrentTime >= Animation->BlendDuration) && Animation->BlendingOut)
 		{
 			FlagAdd(Animation, AnimationFlags_Finished);
 		}
 
-		if((Animation->BlendCurrentTime > Animation->BlendDuration) && Animation->BlendingIn)
+		if((Animation->BlendCurrentTime >= Animation->BlendDuration) && Animation->BlendingIn)
 		{
 			Animation->BlendingIn = false;
 		}
@@ -264,6 +266,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 		f32 t01 = Animation->CurrentTime / Info->Duration;
 		u32 LastKeyFrameIndex = Info->KeyFrameCount - 1;
 		u32 KeyFrameIndex = F32TruncateToS32(t01 * (f32)LastKeyFrameIndex);
+		Assert(KeyFrameIndex != LastKeyFrameIndex);
 
 		f32 DtPerKeyFrame = Info->Duration / (f32)LastKeyFrameIndex;
 		f32 KeyFrameTime = KeyFrameIndex * DtPerKeyFrame;
@@ -463,8 +466,19 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		} break;
 		case MovementState_Jump:
 		{
-			//MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
+			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_jump");
 		} break;
+		case MovementState_InAir:
+		{
+			char *Message = "go_state_falling";
+			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
+		} break;
+		case MovementState_Land:
+		{
+			char *Message = "go_state_fall_to_land";
+			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
+		} break;
+
 		case MovementState_Sliding:
 		{
 			MessageSend(AssetManager, AnimationPlayer, Graph, "go_state_slide");
@@ -476,12 +490,12 @@ Animate(entity *Entity, asset_manager *AssetManager)
 			{
 				Message = "go_state_forward_attack";
 			}
+			if(Entity->AttackType == AttackType_Strong)
+			{
+				Message = "go_state_strong_attack";
+			}
 			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
-		case MovementState_InAir:
-		{
-		} break;
-
 		InvalidDefaultCase;
 	}
 }
@@ -902,7 +916,7 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 			case '[':
 			{
 				u32 Version = U32FromASCII(&Buffer[1]);
-				Assert(Version == 1);
+				//Assert(Version == 1);
 			} break;
 			case ':':
 			{
@@ -1023,11 +1037,16 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 			{
 				Node->AnimationFlags |= AnimationFlags_RemoveLocomotion;
 			}
+			else if(StringsAreSame(Word, "should_pause"))
+			{
+				Node->AnimationFlags |= AnimationFlags_ShouldPause;
+			}
 			else if(StringsAreSame(Word, "t_scale"))
 			{
 				char *Param = strtok(0, " ");
 				Node->TimeScale = F32FromASCII(Param);
 			}
+
 
 			else if(*Word == '#')
 			{

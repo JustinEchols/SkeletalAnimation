@@ -9,56 +9,7 @@
 #include "render.cpp"
 #include "debug.cpp"
 #include "ui.cpp"
-
-internal void
-CollisionRuleAdd(game_state *GameState, u32 A, u32 B, b32 ShouldCollide, collision_type CollisionType)
-{
-	if(A > B)
-	{
-		u32 Temp = A;
-		A = B;
-		B = Temp;
-	}
-
-	u32 HashIndex = A & (ArrayCount(GameState->CollisionRuleHash) - 1);
-	Assert((HashIndex >= 0) && (HashIndex < ArrayCount(GameState->CollisionRuleHash)));
-
-	pairwise_collision_rule *Found = 0;
-	for(pairwise_collision_rule *Rule = GameState->CollisionRuleHash[HashIndex];
-			Rule;
-			Rule = Rule->NextInHash)
-	{
-		if((Rule->IDA == A) && (Rule->IDB == B))
-		{
-			Found = Rule;
-			break;
-		}
-	}
-
-	if(!Found)
-	{
-		Found = GameState->CollisionRuleFirstFree;
-		if(Found)
-		{
-			GameState->CollisionRuleFirstFree = Found->NextInHash;
-		}
-		else
-		{
-			Found = PushStruct(&GameState->Arena, pairwise_collision_rule);
-		}
-
-		Found->NextInHash = GameState->CollisionRuleHash[HashIndex];
-		GameState->CollisionRuleHash[HashIndex] = Found;
-	}
-
-	if(Found)
-	{
-		Found->IDA = A;
-		Found->IDB = B;
-		Found->ShouldCollide = ShouldCollide;
-		Found->CollisionType = CollisionType;
-	}
-}
+#include "collision.cpp"
 
 internal entity * 
 PlayerAdd(game_state *GameState, v3 P)
@@ -80,8 +31,23 @@ PlayerAdd(game_state *GameState, v3 P)
 	Entity->Orientation = Quaternion(V3(0.0f, -1.0f, 0.0f), Radians);
 	Entity->MovementState = MovementState_Idle;
 
+	// TODO(Justin): These fields need to be set differently depending on
+	// the player type.
 	Entity->Height = 1.8f;
 
+	Entity->MovementColliders.Type = CollisionVolumeType_Capsule;
+	Entity->MovementColliders.VolumeCount = 1;
+	Entity->MovementColliders.Volumes = PushArray(&GameState->Arena, 1, collision_volume);
+
+	collision_group *MovementColliders = &Entity->MovementColliders;
+	collision_volume *Volume = MovementColliders->Volumes;
+
+	capsule C;
+	C.Radius = 0.4f;
+	C.Min = V3(0.0f, C.Radius, 0.0f);
+	C.Max = V3(0.0f, Entity->Height - C.Radius, 0.0f);
+	Volume->Capsule = C;
+#if 0
 	// AABB
 	Entity->AABBDim = V3(0.7f, Entity->Height, 0.7f);
 	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
@@ -103,9 +69,10 @@ PlayerAdd(game_state *GameState, v3 P)
 	C.Min = V3(0.0f, C.Radius, 0.0f);
 	C.Max = V3(0.0f, Entity->Height - C.Radius, 0.0f);
 	Entity->Capsule = C;
+#endif
 
 	// Visuals
-	Entity->VisualScale = V3(0.01f);
+	//Entity->VisualScale = V3(0.01f);
 
 	if(GameState->PlayerEntityIndex == 0)
 	{
@@ -119,16 +86,17 @@ internal entity *
 XBotAdd(game_state *GameState, v3 P)
 {
 	entity *Player = PlayerAdd(GameState, P);
-
-	model *Model = LookupModel(&GameState->AssetManager, "XBot").Model;
-	animation_graph *G  = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
-	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "XBot_IdleLeft");
-
-	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
-	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
 	Player->Acceleration = 50.0f;
 	Player->Drag = 10.0f;
 	Player->AngularSpeed = 15.0f;
+	Player->VisualScale = V3(0.01f);
+
+	model *Model		= LookupModel(&GameState->AssetManager, "XBot").Model;
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
+	asset_entry Entry	= LookupSampledAnimation(&GameState->AssetManager, "XBot_IdleLeft");
+
+	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
+	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
 
 	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
 	Player->AnimationGraph = G;
@@ -141,6 +109,29 @@ internal entity *
 YBotAdd(game_state *GameState, v3 P)
 {
 	entity *Player = PlayerAdd(GameState, P);
+	Player->Acceleration = 50.0f;
+	Player->Drag = 10.0f;
+	Player->AngularSpeed = 15.0f;
+	Player->VisualScale = V3(0.011f);
+
+	collision_group *Group = &Player->CombatColliders;
+	Group->VolumeCount = 4;
+	Group->Volumes = PushArray(&GameState->Arena, Group->VolumeCount, collision_volume);
+	for(u32 VolumeIndex = 0; VolumeIndex < Group->VolumeCount; ++VolumeIndex)
+	{
+		collision_volume *Volume = Group->Volumes + VolumeIndex;
+		Volume->Dim = V3(0.2f);
+	}
+
+#if 0
+	Player->Attacks[AttackType_Neutral].Type = AttackType_Neutral;
+	Player->Attacks[AttackType_Neutral].Duration = 0.2f;
+	Player->Attacks[AttackType_Neutral].Power = 0.07f;
+
+	Player->Attacks[AttackType_Forward].Type = AttackType_Forward;
+	Player->Attacks[AttackType_Forward].Duration = 0.5f;
+	Player->Attacks[AttackType_Forward].Power = 0.12f;
+#endif
 
 	model *Model = LookupModel(&GameState->AssetManager, "YBot").Model;
 	animation_graph *G  = LookupGraph(&GameState->AssetManager, "YBot_AnimationGraph");
@@ -152,36 +143,6 @@ YBotAdd(game_state *GameState, v3 P)
 
 	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
 	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
-	Player->Acceleration = 50.0f;
-	Player->Drag = 10.0f;
-	Player->AngularSpeed = 15.0f;
-
-
-	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
-	Player->AnimationGraph = G;
-	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
-
-	return(Player);
-}
-
-internal entity * 
-VampireAdd(game_state *GameState, v3 P)
-{
-	entity *Player = PlayerAdd(GameState, P);
-
-	model *Model = LookupModel(&GameState->AssetManager, "VampireALusth").Model;
-	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Vampire_AnimationGraph");
-	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Vampire_IdleLeft");
-
-	Assert(Model);
-	Assert(G);
-	Assert(Entry.SampledAnimation);
-
-	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
-	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
-	Player->Acceleration = 50.0f;
-	Player->Drag = 10.0f;
-	Player->AngularSpeed = 15.0f;
 
 	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
 	Player->AnimationGraph = G;
@@ -194,6 +155,39 @@ internal entity *
 KnightAdd(game_state *GameState, v3 P)
 {
 	entity *Player = PlayerAdd(GameState, P);
+	Player->Acceleration = 50.0f;
+	Player->Drag = 10.0f;
+	Player->AngularSpeed = 15.0f;
+	Player->VisualScale = V3(0.011f);
+
+	collision_group *Group = &Player->CombatColliders;
+	Group->VolumeCount = 4;
+	Group->Volumes = PushArray(&GameState->Arena, Group->VolumeCount, collision_volume);
+	for(u32 VolumeIndex = 0; VolumeIndex < Group->VolumeCount; ++VolumeIndex)
+	{
+		collision_volume *Volume = Group->Volumes + VolumeIndex;
+		Volume->Dim = V3(0.2f);
+	}
+
+	Player->Attacks[AttackType_Neutral1].Type = AttackType_Neutral1;
+	Player->Attacks[AttackType_Neutral1].Duration = 0.4f;
+	Player->Attacks[AttackType_Neutral1].Power = 3.0f;
+
+	Player->Attacks[AttackType_Neutral2].Type = AttackType_Neutral2;
+	Player->Attacks[AttackType_Neutral2].Duration = 0.5f;
+	Player->Attacks[AttackType_Neutral2].Power = 5.0f;
+
+	Player->Attacks[AttackType_Neutral3].Type = AttackType_Neutral3;
+	Player->Attacks[AttackType_Neutral3].Duration = 0.5f;
+	Player->Attacks[AttackType_Neutral3].Power = 7.0f;
+
+	Player->Attacks[AttackType_Forward].Type = AttackType_Forward;
+	Player->Attacks[AttackType_Forward].Duration = 0.7f;
+	Player->Attacks[AttackType_Forward].Power = 12.0f;
+
+	Player->Attacks[AttackType_Strong].Type = AttackType_Strong;
+	Player->Attacks[AttackType_Strong].Duration = 1.0f;
+	Player->Attacks[AttackType_Strong].Power = 0.18f;
 
 	model *Model = LookupModel(&GameState->AssetManager, "PaladinWithProp").Model;
 	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Paladin_AnimationGraph");
@@ -205,19 +199,36 @@ KnightAdd(game_state *GameState, v3 P)
 
 	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
 	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
-	Player->Acceleration = 50.0f;
-	Player->Drag = 10.0f;
-	Player->AngularSpeed = 15.0f;
 
 	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
 	Player->AnimationGraph = G;
 	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
 
-	Player->Attacks[AttackType_Neutral].Duration = 0.5f;
-	Player->Attacks[AttackType_Neutral].Power = 0.07f;
+	return(Player);
+}
 
-	Player->Attacks[AttackType_Forward].Duration = 0.5f;
-	Player->Attacks[AttackType_Forward].Power = 0.12f;
+internal entity * 
+VampireAdd(game_state *GameState, v3 P)
+{
+	entity *Player = PlayerAdd(GameState, P);
+	Player->Acceleration = 50.0f;
+	Player->Drag = 10.0f;
+	Player->AngularSpeed = 15.0f;
+
+	model *Model = LookupModel(&GameState->AssetManager, "VampireALusth").Model;
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Vampire_AnimationGraph");
+	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Vampire_IdleLeft");
+
+	Assert(Model);
+	Assert(G);
+	Assert(Entry.SampledAnimation);
+
+	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
+	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
+
+	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
+	Player->AnimationGraph = G;
+	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
 
 	return(Player);
 }
@@ -235,43 +246,21 @@ CubeAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->ddP = {};
 	Entity->Orientation = Orientation;
 
-	// NOTE(Justin): The cube mesh has dimensions 1x1x1. The AABBDim is used for collision
-	// detection and the visual scale used for rendering
-	//
-	// The volume offset depends on what convention is used as far as the entity's position. The convention
-	// used is that the position is where on the ground the entity is located. So we offset the volume in the
-	// +y direction.
+	collision_group *MovementColliders = &Entity->MovementColliders;
+	MovementColliders->Type = CollisionVolumeType_OBB;
+	MovementColliders->VolumeCount = 1;
+	MovementColliders->Volumes = PushArray(&GameState->Arena, 1, collision_volume);
 
-	// ABB
-	Entity->AABBDim = 0.99f*Dim;
-	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
-
-	// OBB
+	collision_volume *Volume = MovementColliders->Volumes;
 	quaternion Q = Conjugate(Entity->Orientation);
-	Entity->OBB.Center = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
-	Entity->OBB.X = Q * XAxis();
-	Entity->OBB.Y = Q * YAxis();
-	Entity->OBB.Z = Q * (-1.0f*ZAxis());
-	Entity->OBB.Dim = 0.99f*Dim;
+	Volume->OBB.Dim = 0.99f*Dim;
+	Volume->OBB.Center  = 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
+	Volume->Offset		= 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
+	Volume->OBB.X = Q * XAxis();
+	Volume->OBB.Y = Q * YAxis();
+	Volume->OBB.Z = Q * (-1.0f*ZAxis());
 
 	Entity->VisualScale = 0.5f*Dim;
-
-}
-
-internal void
-SphereAdd(game_state *GameState, v3 Center, f32 Radius)
-{
-	entity *Entity = EntityAdd(GameState, EntityType_Sphere);
-
-	FlagAdd(Entity, EntityFlag_YSupported);
-	FlagAdd(Entity, EntityFlag_Collides);
-
-	Entity->P = Center;
-	Entity->dP = {};
-	Entity->ddP = {};
-	Entity->Orientation = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
-
-	Entity->VisualScale = V3(1.0f);
 }
 
 internal void
@@ -287,17 +276,19 @@ WalkableRegionAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->ddP = {};
 	Entity->Orientation = Orientation;
 
-	// ABB
-	Entity->AABBDim = 0.99f*Dim;
-	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	collision_group *MovementColliders = &Entity->MovementColliders;
+	MovementColliders->Type = CollisionVolumeType_OBB;
+	MovementColliders->VolumeCount = 1;
+	MovementColliders->Volumes = PushArray(&GameState->Arena, 1, collision_volume);
 
-	// OBB
+	collision_volume *Volume = MovementColliders->Volumes;
 	quaternion Q = Conjugate(Entity->Orientation);
-	Entity->OBB.Center = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
-	Entity->OBB.X = Q * XAxis();
-	Entity->OBB.Y = Q * YAxis();
-	Entity->OBB.Z = Q * (-1.0f*ZAxis());
-	Entity->OBB.Dim = 0.99f*Dim;
+	Volume->OBB.Dim = 0.99f*Dim;
+	Volume->OBB.Center  = 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
+	Volume->Offset		= 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
+	Volume->OBB.X = Q * XAxis();
+	Volume->OBB.Y = Q * YAxis();
+	Volume->OBB.Z = Q * (-1.0f*ZAxis());
 
 	Entity->VisualScale = 0.5f*Dim;
 }
@@ -316,17 +307,19 @@ ElevatorAdd(game_state *GameState, v3 P, v3 Dim, quaternion Orientation)
 	Entity->ddP = V3(0.0f);
 	Entity->Orientation = Orientation;
 
-	// ABB
-	Entity->AABBDim = 0.99f*Dim;
-	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
+	collision_group *MovementColliders = &Entity->MovementColliders;
+	MovementColliders->Type = CollisionVolumeType_OBB;
+	MovementColliders->VolumeCount = 1;
+	MovementColliders->Volumes = PushArray(&GameState->Arena, 1, collision_volume);
 
-	// OBB
+	collision_volume *Volume = MovementColliders->Volumes;
+
 	quaternion Q = Conjugate(Entity->Orientation);
-	Entity->OBB.Center = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
-	Entity->OBB.X = Q * XAxis();
-	Entity->OBB.Y = Q * YAxis();
-	Entity->OBB.Z = Q * (-1.0f*ZAxis());
-	Entity->OBB.Dim = 0.99f*Dim;
+	Volume->OBB.Dim = 0.99f*Dim;
+	Volume->OBB.Center = 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
+	Volume->OBB.X = Q * XAxis();
+	Volume->OBB.Y = Q * YAxis();
+	Volume->OBB.Z = Q * (-1.0f*ZAxis());
 
 	Entity->VisualScale = 0.5f*Dim;
 }
@@ -432,246 +425,6 @@ PerspectiveTransformUpdate(game_state *GameState, f32 WindowWidth, f32 WindowHei
 	GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 }
 
-internal v3
-ClosestPointOnOBB(obb OBB, v3 WorldPosition, v3 P)
-{
-	v3 ClosestPoint;
-
-	v3 Center = WorldPosition + OBB.Center;
-	v3 CenterToP = P - Center;
-
-	f32 X = Dot(CenterToP, OBB.X);
-	f32 Y = Dot(CenterToP, OBB.Y);
-	f32 Z = Dot(CenterToP, OBB.Z);
-
-	f32 HalfDimX = 0.5f*OBB.Dim.E[0];
-	f32 HalfDimY = 0.5f*OBB.Dim.E[1];
-	f32 HalfDimZ = 0.5f*OBB.Dim.E[2];
-
-	X = Clamp(-HalfDimX, X, HalfDimX);
-	Y = Clamp(-HalfDimY, Y, HalfDimY);
-	Z = Clamp(-HalfDimZ, Z, HalfDimZ);
-
-	// NOTE(Justin): If P is already inside the OBB,
-	// then we have to adjust either X, Y, or Z. Otherwise
-	// the closest point returned will be the original point
-	// itself.
-
-	if(InAABB(AABBCenterDim(Center, OBB.Dim), P))
-	{
-		f32 DistanceX = HalfDimX - AbsVal(X);
-		f32 DistanceY = HalfDimY - AbsVal(Y);
-		f32 DistanceZ = HalfDimZ - AbsVal(Z);
-
-		f32 Min = Min3(DistanceX, DistanceY, DistanceZ);
-		if(Min == DistanceX)
-		{
-			X = (X >= 0.0f) ? HalfDimX : -HalfDimX;
-		}
-		else if(Min == DistanceY)
-		{
-			Y = (Y >= 0.0f) ? HalfDimY : -HalfDimY;
-		}
-		else
-		{
-			Z = (Z >= 0.0f) ? HalfDimZ : -HalfDimZ;
-		}
-	}
-
-	ClosestPoint = Center + X*OBB.X + Y*OBB.Y + Z*OBB.Z;
-
-	return(ClosestPoint);
-}
-
-internal v3
-ClosestPointOnLineSegment(v3 A, v3 B, v3 P)
-{
-	v3 ClosestPoint;
-
-	v3 Delta = B - A;
-	f32 t = Dot(P - A, Delta) / Dot(Delta, Delta);
-	t = Clamp01(t);
-
-	ClosestPoint = A + t*Delta;
-
-	return(ClosestPoint);
-}
-
-internal v3
-ClosestPointOnPlane(v3 PlaneNormal, v3 PointOnPlane, v3 P)
-{
-	v3 ClosestPoint;
-
-	ClosestPoint = P - Dot(PlaneNormal, P - PointOnPlane) * PlaneNormal;
-
-	return(ClosestPoint);
-}
-
-internal collision_result
-AABBCollisionInfo(aabb AABB)
-{
-	collision_result Result;
-
-	v3 ZeroVector = V3(0.0f);
-
-	// NOTE(Jusitn): Left face
-	Result.Info[0].PlaneNormal = {-1.0f, 0.0f, 0.0f};
-	Result.Info[0].PointOnPlane = AABB.Min;
-	Result.Info[0].PointOfIntersection = ZeroVector;
-	Result.Info[0].tResult = F32Max;
-
-	// NOTE(Jusitn): Right face
-	Result.Info[1].PlaneNormal = {1.0f, 0.0f, 0.0f};
-	Result.Info[1].PointOnPlane = AABB.Max;
-	Result.Info[1].PointOfIntersection = ZeroVector;
-	Result.Info[1].tResult = F32Max;
-
-	// NOTE(Jusitn): Back face
-	Result.Info[2].PlaneNormal = {0.0f, 0.0f, -1.0f};
-	Result.Info[2].PointOnPlane = AABB.Max;
-	Result.Info[2].PointOfIntersection = ZeroVector;
-	Result.Info[2].tResult = F32Max;
-
-	// NOTE(Jusitn): Front face
-	Result.Info[3].PlaneNormal = {0.0f, 0.0f, 1.0f};
-	Result.Info[3].PointOnPlane = AABB.Min;
-	Result.Info[3].PointOfIntersection = ZeroVector;
-	Result.Info[3].tResult = F32Max;
-
-	// NOTE(Jusitn): Top face
-	Result.Info[4].PlaneNormal = {0.0f, 1.0f, 0.0f};
-	Result.Info[4].PointOnPlane = AABB.Max;
-	Result.Info[4].PointOfIntersection = ZeroVector;
-	Result.Info[4].tResult = F32Max;
-
-	// NOTE(Jusitn): Bottom face
-	Result.Info[5].PlaneNormal = {0.0f, -1.0f, 0.0f};
-	Result.Info[5].PointOnPlane = AABB.Min;
-	Result.Info[5].PointOfIntersection = ZeroVector;
-	Result.Info[5].tResult = F32Max;
-
-	return(Result);
-}
-
-// TODO(Justin): Figure out an approach to epsilons.
-internal b32
-PointAndPlaneIntersect(v3 RelP, v3 DeltaP, v3 PlaneNormal, f32 D, aabb MKSumAABB, f32 *tMin, f32 tEpsilon = 0.001f)
-{
-	b32 Collided = false;
-	if(!Equal(DeltaP, V3(0.0f)))
-	{
-		f32 tResult = (D - Dot(PlaneNormal, RelP)) / Dot(PlaneNormal, DeltaP);
-		if((tResult >= 0.0f) && tResult < *tMin)
-		{
-			v3 PointOfIntersection = RelP + tResult * DeltaP;
-			if(InAABB(MKSumAABB, PointOfIntersection))
-			{
-				*tMin = Max(0.0f, tResult - tEpsilon);
-				Collided = true;
-			}
-		}
-	}
-
-	return(Collided);
-}
-
-// TODO(Justin): Correct this..
-inline v3 
-CapsuleSphereCenterVsOBB(v3 CapsuleP, capsule Capsule, v3 OBBP, obb OBB)
-{
-	v3 Result = {};
-
-	v3 A = CapsuleP + Capsule.Min;
-	v3 B = CapsuleP + Capsule.Max;
-
-	v3 OBBPointClosestToA = ClosestPointOnOBB(OBB, OBBP, A);
-	v3 OBBPointClosestToB = ClosestPointOnOBB(OBB, OBBP, B);
-
-	v3 DeltaA = OBBPointClosestToA - A;
-	v3 DeltaB = OBBPointClosestToB - B;
-
-	f32 dA = Dot(DeltaA, DeltaA);
-	f32 dB = Dot(DeltaB, DeltaB);
-
-	v3 Closest;
-	if(dA < dB)
-	{
-		Closest = OBBPointClosestToA;
-	}
-	else
-	{
-		Closest = OBBPointClosestToB;
-	}
-
-	Result = ClosestPointOnLineSegment(A, B, Closest);
-	
-	return(Result);
-}
-
-internal b32
-MovingSphereHitOBB(v3 RelP, f32 Radius, v3 DeltaP, obb OBB, v3 *DestNormal, f32 *tMin, f32 tEpsilon = 0.01f)
-{
-	b32 Collided = false;
-
-	// Write sphere center in OBB space. C = O + aX + bY + cZ. Note that the origin is 0.
-	v3 SphereCenter;
-	SphereCenter.x = Dot(RelP, OBB.X);
-	SphereCenter.y = Dot(RelP, OBB.Y);
-	SphereCenter.z = Dot(RelP, OBB.Z);
-
-	// Write delta vector in OBB space. D = aX + bY + cZ
-	v3 Delta;
-	Delta.x = Dot(DeltaP, OBB.X);
-	Delta.y = Dot(DeltaP, OBB.Y);
-	Delta.z = Dot(DeltaP, OBB.Z);
-
-	b32 StartedInside = false;
-
-	// Check whether or not we started inside and adjust the MK dimensions. Also
-	// flip the plane normal whenever there is a collision (see below).
-	v3 MKDim;
-	if(InAABB(AABBCenterDim(V3(0.0f), OBB.Dim), SphereCenter))
-	{
-		StartedInside = true;
-		MKDim = -2.0f*V3(Radius) + OBB.Dim;
-	}
-	else
-	{
-		MKDim = 2.0f*V3(Radius) + OBB.Dim;
-	}
-
-	// Construct the MK sum. It is an AABB with center 0 that is expanded by the radius r.
-	aabb MKSumAABB = AABBCenterDim(V3(0.0f), MKDim);
-	collision_result CollisionResult = AABBCollisionInfo(MKSumAABB);
-	for(u32 InfoIndex = 0; InfoIndex < ArrayCount(CollisionResult.Info); ++InfoIndex)
-	{
-		collision_info Info = CollisionResult.Info[InfoIndex];
-		v3 PlaneNormal = Info.PlaneNormal;
-		v3 PointOnPlane = Info.PointOnPlane;
-		f32 D = Dot(PlaneNormal, PointOnPlane);
-		if(PointAndPlaneIntersect(SphereCenter, Delta, PlaneNormal, D, MKSumAABB, tMin, tEpsilon))
-		{
-			// TODO(Justin): Voronoi region check for full sphere swept vs OBB collision detection.
-
-			if(PlaneNormal.x == 1.0f)	*DestNormal =	    OBB.X;
-			if(PlaneNormal.x == -1.0f)	*DestNormal = -1.0f*OBB.X; 
-			if(PlaneNormal.y == 1.0f)	*DestNormal =	    OBB.Y;
-			if(PlaneNormal.y == -1.0f)	*DestNormal = -1.0f*OBB.Y;
-			if(PlaneNormal.z == 1.0f)	*DestNormal =	    OBB.Z;
-			if(PlaneNormal.z == -1.0f)	*DestNormal = -1.0f*OBB.Z;
-
-			Collided = true;
-		}
-	}
-
-	if(StartedInside && Collided)
-	{
-		*DestNormal *= -1.0f;
-	}
-
-	return(Collided);
-}
-
 inline b32
 EntitiesCanCollide(game_state *GameState, entity *A, entity *B, collision_type *DestType)
 {
@@ -683,10 +436,75 @@ EntitiesCanCollide(game_state *GameState, entity *A, entity *B, collision_type *
 		{
 			Result = true;
 		}
+
+		if(A->Type == EntityType_Player && B->Type == EntityType_Player)
+		{
+			Result = false;
+		}
 	}
 
 	return(Result);
 }
+
+internal void
+CollisionGroupUpdate(entity *Entity)
+{
+	v3 P = Entity->P;
+
+	collision_group *Group = &Entity->CombatColliders;
+	Group->Volumes[0].Offset = Entity->LeftHandP - P;
+	Group->Volumes[1].Offset = Entity->RightHandP - P;
+	Group->Volumes[2].Offset = Entity->LeftFootP - P;
+	Group->Volumes[3].Offset = Entity->RightFootP - P;
+}
+
+#if 1
+internal void
+CheckForAttackCollision(game_state *GameState, entity *Entity)
+{
+	if(!IsAttacking(Entity) || Entity->Type != EntityType_Player)
+	{
+		return;
+	}
+
+	for(u32 TestEntityIndex = 0; TestEntityIndex < GameState->EntityCount; ++TestEntityIndex)
+	{
+		b32 AttackCollided = false;
+		entity *AttackedEntity = 0;
+
+		entity *TestEntity = GameState->Entities + TestEntityIndex;
+		if(Entity->ID != TestEntity->ID)
+		{
+			if(TestEntity->Type == EntityType_Player)
+			{
+				if(Entity->AttackType != AttackType_None)
+				{
+					CollisionGroupUpdate(Entity);
+					collision_group *Group = &Entity->CombatColliders;
+					for(u32 VolumeIndex = 0; VolumeIndex < Group->VolumeCount; ++VolumeIndex)
+					{
+						collision_volume *Volume = Group->Volumes + VolumeIndex;
+						v3 A = Entity->P + Volume->Offset;
+						v3 B = TestEntity->P;
+						if(SpheresIntersect(A, 0.5f, B, 0.5f))
+						{
+							AttackCollided = true;
+							AttackedEntity = TestEntity;
+						}
+					}
+				}
+			}
+		}
+
+		if(AttackCollided)
+		{
+			FlagAdd(AttackedEntity, EntityFlag_Attacked);
+			AttackedEntity->P += Normalize(Entity->dP);
+			break;
+		}
+	}
+}
+#endif
 
 internal void
 EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
@@ -724,6 +542,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	for(u32 Iteration = 0; Iteration < 4; ++Iteration)
 	{
 		b32 Collided = false;
+		b32 AttackCollided = false;
 
 		f32 tMin = 1.0f;
 		f32 tGround = 1.0f;
@@ -732,6 +551,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		v3 GroundNormal = {};
 
 		entity *HitEntity = 0;
+		entity *AttackedEntity = 0;
 		entity *Region = 0;
 
 		DesiredP = Entity->P + DeltaP;
@@ -739,31 +559,60 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		{
 			entity *TestEntity = GameState->Entities + TestEntityIndex;
 			collision_type CollisionType = CollisionType_None;
+
+			// TODO(Justin): Early out sphere intersection test.
 			if(EntitiesCanCollide(GameState, Entity, TestEntity, &CollisionType))
 			{
 				v3 TestP = TestEntity->P;
 				v3 CurrentP = Entity->P; 
 
+				collision_volume Volume		= Entity->MovementColliders.Volumes[0];
+				collision_volume TestVolume = TestEntity->MovementColliders.Volumes[0];
+
 				// TODO(Justin): Make sure the chosen sphere center is correct.
-				v3 SphereCenter = CapsuleSphereCenterVsOBB(CurrentP, Entity->Capsule, TestEntity->P, TestEntity->OBB);
-				v3 SphereRel = SphereCenter - (TestP + TestEntity->VolumeOffset);
-				if(MovingSphereHitOBB(SphereRel, Entity->Radius, DeltaP, TestEntity->OBB, &Normal, &tMin))
+				v3 SphereCenter = CapsuleSphereCenterVsOBB(CurrentP, Volume.Capsule, TestEntity->P, TestVolume.OBB);
+				v3 SphereRel = SphereCenter - (TestP + TestVolume.Offset);
+				if(MovingSphereHitOBB(SphereRel, Volume.Capsule.Radius, DeltaP, TestVolume.OBB, &Normal, &tMin))
 				{
 					Collided = true;
 					HitEntity = TestEntity;
 				}
 
 				// GroundCheck
-				v3 RelP		= (CurrentP + V3(0.0f, Entity->Radius, 0.0f)) - (TestP + TestEntity->VolumeOffset);
-				if(MovingSphereHitOBB(RelP, Entity->Radius, GroundDelta, TestEntity->OBB, &GroundNormal, &tGround))
+				v3 RelP		= (CurrentP + V3(0.0f, Volume.Capsule.Radius, 0.0f)) - (TestP + TestVolume.Offset);
+				if(MovingSphereHitOBB(RelP, Volume.Capsule.Radius, GroundDelta, TestVolume.OBB, &GroundNormal, &tGround))
 				{
 					EntityBelow = TestEntity;
 				}
 			}
 
+			// Combat collisions
+			if(Entity->ID != TestEntity->ID)
+			{
+				if(Entity->Type == EntityType_Player && TestEntity->Type == EntityType_Player)
+				{
+					if(Entity->AttackType != AttackType_None)
+					{
+						CollisionGroupUpdate(Entity);
+						collision_group *Group = &Entity->CombatColliders;
+						for(u32 VolumeIndex = 0; VolumeIndex < Group->VolumeCount; ++VolumeIndex)
+						{
+							collision_volume *Volume = Group->Volumes + VolumeIndex;
+							v3 A = Entity->P + Volume->Offset;
+							v3 B = TestEntity->P;
+							if(SpheresIntersect(A, 0.5f, B, 0.5f))
+							{
+								AttackCollided = true;
+								AttackedEntity = TestEntity;
+							}
+						}
+					}
+				}
+			}
+
 			if(TestEntity->Type == EntityType_WalkableRegion)
 			{
-				if(InAABB(AABBCenterDim(TestEntity->P, TestEntity->AABBDim), Entity->P))
+				if(InAABB(AABBCenterDim(TestEntity->P, TestEntity->MovementColliders.Volumes[0].OBB.Dim), Entity->P))
 				{
 					Region = TestEntity;
 				}
@@ -779,6 +628,11 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			break;
 		}
 
+		if(AttackCollided)
+		{
+			FlagAdd(AttackedEntity, EntityFlag_Attacked);
+			AttackedEntity->P += Normalize(Entity->dP);
+		}
 
 		Entity->P += tMin * DeltaP; 
 		GroundP = Entity->P;
@@ -796,10 +650,10 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		}
 	}
 
-#if 1
 	Assert(EntityBelow);
 	f32 YThreshold = 0.01f;
 	f32 dY = Entity->P.y - GroundP.y;
+	Entity->DistanceFromGround = dY;
 	if(dY > YThreshold)
 	{
 		if(Entity->Type != EntityType_Elevator)
@@ -811,7 +665,6 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 	{
 		FlagAdd(Entity, EntityFlag_YSupported);
 	}
-#endif
 }
 
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
@@ -881,7 +734,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->DefaultPitch = -10.0f;
 		GameState->CameraOffsetFromPlayer = V3(0.0f, 2.0f, 5.0f);
 		CameraSet(&GameState->Camera, V3(0.0f, 0.0f, -10.0f) + GameState->CameraOffsetFromPlayer, -90.0f, -10.0f);
-		GameState->Camera.RotationAboutY = Quaternion(V3(0.0f, 1.0f, 0.0f), 0.0f);
 		CameraTransformUpdate(GameState);
 
 		GameState->TimeScale = 1.0f;
@@ -891,21 +743,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->ZFar = 200.0f;
 		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 		GameState->Gravity = 80.0f;
-
-		// NOTE(Justin): Initialize a default capsule st it can be used for any entity.
-		capsule Cap = CapsuleMinMaxRadius(V3(0.0f, 0.4f, 0.0f), V3(0.0f, 1.8f - 0.4f, 0.0f), 0.4f);
-
-		GameState->Capsule = PushArray(Arena, 1, model);
-		model *Capsule = GameState->Capsule;
-		*Capsule	= DebugModelCapsuleInitialize(Arena, Cap.Min, Cap.Max, Cap.Radius);
-
-		GameState->Cube = PushArray(Arena, 1, model);
-		model *Cube = GameState->Cube;
-		*Cube = DebugModelCubeInitialize(Arena);
-
-		GameState->Sphere = PushArray(Arena, 1, model);
-		model *Sphere = GameState->Sphere;
-		*Sphere = DebugModelSphereInitialize(Arena, 0.5f);
 
 		GameMemory->IsInitialized = true;
 	}
@@ -974,7 +811,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 			if(ControllerIndex == 0 && Controller->Space.EndedDown)
 			{
-				//Player = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+				//Player = YBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+				Player = XBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 			}
 
 			if(ControllerIndex == 1 && Controller->Start.EndedDown)
@@ -1112,9 +950,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					case MovementState_Run:		EvaluateRun(Entity, MoveInfo); break;
 					case MovementState_Sprint:	EvaluateSprint(Entity, MoveInfo); break;
 					case MovementState_Jump:	EvaluateJump(Entity, MoveInfo); break;
+					case MovementState_InAir:	EvaluateInAir(Entity, MoveInfo); break;
+					case MovementState_Land:	EvaluateLand(Entity, MoveInfo); break;
 					case MovementState_Sliding:	EvaluateSliding(Entity, MoveInfo); break;
 					case MovementState_Attack:	EvaluateAttack(Entity, MoveInfo, dt); break;
-					case MovementState_InAir:	EvaluateInAir(Entity, MoveInfo); break;
 				};
 			} break;
 			case EntityType_Elevator:
@@ -1145,6 +984,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				EntityMove(GameState, Entity, ddP, dt);
 				EntityOrientationUpdate(Entity, dt, Entity->AngularSpeed);
 			}
+		}
+		else
+		{
+			CheckForAttackCollision(GameState, Entity);
 		}
 	}
 
@@ -1247,7 +1090,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				}
 
 				PushModel(RenderBuffer, CString(AnimationPlayer->Model->Name), T*R*S);
-				//PushModel(RenderBuffer, "VampireALusth", T*R*S);
 
 			} break;
 			case EntityType_Cube:
@@ -1283,7 +1125,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				Entry = LookupTexture(Assets, "texture_01");
 
 				v3 P = Entity->P;
-				v3 Dim = Entity->AABBDim;
+				v3 Dim = Entity->MovementColliders.Volumes[0].OBB.Dim;
 				T = Mat4Translate(P);
 				R = Mat4Identity();
 				S = Mat4Scale(Dim.x);
@@ -1296,24 +1138,9 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
 				PushQuad3D(RenderBuffer, GroundQuad.Vertices, T*R*S, Entry.Index);
 
-				T = Mat4Translate(Entity->P + Entity->VolumeOffset);
-				S = Mat4Scale(Entity->AABBDim);
-				PushAABB(RenderBuffer, GameState->Cube, T*S, V3(1.0f));
-			} break;
-			case EntityType_Sphere:
-			{
-				v3 EntityP = Entity->P;
-				EntityP.y += Entity->Radius;
-				T = Mat4Translate(EntityP);
-				S = Mat4Scale(0.5f);
-
-				model *Sphere = LookupModel(Assets, "Sphere").Model;
-				PushTexture(RenderBuffer, Sphere->Meshes[0].Texture, StringHashLookup(&Assets->TextureNames, (char *)Sphere->Meshes[0].Texture->Name.Data));
-				//PushModel(RenderBuffer, Sphere, T*S);
-
-				T = Mat4Translate(EntityP);
-				S = Mat4Scale(1.0f);
-				PushAABB(RenderBuffer, GameState->Sphere, T*S, V3(1.0f));
+				T = Mat4Translate(Entity->P + Entity->MovementColliders.Volumes[0].OBB.Center);
+				S = Mat4Scale(Dim);
+				PushDebugVolume(RenderBuffer, &Assets->Cube, T*S, V3(1.0f));
 			} break;
 			case EntityType_Elevator:
 			{
@@ -1392,20 +1219,30 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	entity *Entity = GameState->Entities + GameState->PlayerEntityIndex;
 
 	DebugDrawFloat("fps: ", GameInput->FPS);
-	DebugDrawFloat("time scale: ", GameState->TimeScale);
+	DebugDrawFloat("TimeScale: ", GameState->TimeScale);
 	if(ToggleButton("HandAndFoot", DebugDrawHandAndFoot))
 	{
-		DebugDrawHandAndFoot(Entity, GameState->Sphere);
+		DebugDrawHandAndFoot(Entity);
 	}
 
-	if(ToggleButton("CollisionVolume", DebugDrawCapsule))
+	if(ToggleButton("DrawGroundArrow", DebugDrawGroundArrow))
+	{
+		DebugDrawGroundArrow(Entity, GameState->Quad);
+	}
+
+	if(ToggleButton("DrawMovementCollider", DebugDrawCapsule))
 	{
 		DebugDrawCapsule(Entity);
 	}
 
-	if(ToggleButton("GroundArrow", DebugDrawGroundArrow))
+	if(ToggleButton("DrawCombatCollider", DebugDrawCollisionVolumes))
 	{
-		DebugDrawGroundArrow(Entity, GameState->Quad);
+		DebugDrawCollisionVolumes(Entity);
+	}
+
+	if(ToggleButton("DrawJoints", DebugDrawJoints))
+	{
+		DebugDrawJoints(Entity);
 	}
 
 	if(ToggleButton("+Player", DebugDrawEntity))

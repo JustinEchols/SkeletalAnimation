@@ -223,6 +223,11 @@ struct game_controller_input
 	f32 StickdX;
 	f32 StickdY;
 
+	f32 RightStickAverageX;
+	f32 RightStickAverageY;
+	f32 RightStickdX;
+	f32 RightStickdY;
+
 	union
 	{
 		game_button Buttons[Key_Count];

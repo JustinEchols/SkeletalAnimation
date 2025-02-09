@@ -39,10 +39,54 @@ MovementStateToString(char *Buffer, movement_state State)
 	}
 }
 
+inline void 
+AttackTypeToString(char *Buffer, attack_type Type)
+{
+	switch(Type)
+	{
+		case AttackType_Neutral1:
+		case AttackType_Neutral2:
+		case AttackType_Neutral3:
+		{
+			sprintf(Buffer, "%s", "Neutral");
+		} break;
+		case AttackType_Forward:
+		{
+			sprintf(Buffer, "%s", "Forward");
+		} break;
+		case AttackType_Strong:
+		{
+			sprintf(Buffer, "%s", "Strong");
+		} break;
+		case AttackType_Dash:
+		{
+			sprintf(Buffer, "%s", "Dash");
+		} break;
+		case AttackType_Air:
+		{
+			sprintf(Buffer, "%s", "Air");
+		} break;
+		case AttackType_None:
+		{
+			sprintf(Buffer, "%s", "None");
+		} break;
+	}
+}
+
 internal void
 DebugDrawString(char *String, v3 Color = V3(1.0f))
 {
 	string Text = StringCopy(Ui.TempArena, String);
+	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
+	Ui.P.y -= Ui.LineGap;
+}
+
+internal void
+DebugDrawString(char *Label, char *String, v3 Color = V3(1.0f))
+{
+	char Buff[256];
+	sprintf(Buff, "%s %s", Label, String);
+	string Text = StringCopy(Ui.TempArena, Buff);
 	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
 	Ui.P.y -= Ui.LineGap;
 }
@@ -78,17 +122,17 @@ DebugDrawOBB(render_buffer *RenderBuffer, model *DebugCube, obb OBB, v3 P, v3 Of
 	mat4 R = Mat4(X, Y, Z);
 	mat4 S = Mat4Scale(OBB.Dim);
 
-	PushAABB(RenderBuffer, DebugCube, T*R*S, Color);
+	PushDebugVolume(RenderBuffer, DebugCube, T*R*S, Color);
 }
 
 internal void
 DebugDrawCapsule(entity *Entity)
 {
-	capsule Capsule = Entity->Capsule;
+	capsule Capsule = Entity->MovementColliders.Volumes[0].Capsule;
 	mat4 T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
 	mat4 R = QuaternionToMat4(Entity->Orientation);
 	mat4 S = Mat4Scale(1.0f);
-	PushCapsule(Ui.RenderBuffer, &Ui.Assets->Capsule, T*R*S, V3(1.0f));
+	PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Capsule, T*R*S, V3(1.0f));
 }
 
 internal void
@@ -103,6 +147,45 @@ DebugDrawGroundArrow(entity *Entity, quad Quad)
 	asset_entry Entry = LookupTexture(Ui.Assets, "left_arrow");
 	PushTexture(Ui.RenderBuffer, Entry.Texture, Entry.Index);
 	PushQuad3D(Ui.RenderBuffer, Quad.Vertices, T*R*S, Entry.Index);
+}
+
+internal void
+DebugDrawCollisionVolumes(entity *Entity)
+{
+	collision_group *Colliders = &Entity->CombatColliders;
+	mat4 T = Mat4Identity();
+	mat4 R = Mat4Identity();
+	mat4 S = Mat4Scale(Colliders->Volumes[0].Dim.x);
+
+	for(u32 VolumeIndex = 0; VolumeIndex < Colliders->VolumeCount; ++VolumeIndex)
+	{
+		collision_volume *Volume = Colliders->Volumes + VolumeIndex;
+		v3 P = Entity->P + Volume->Offset;
+		T = Mat4Translate(P);
+		PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Sphere, T*R*S, V3(1.0f));
+	}
+}
+
+internal void
+DebugDrawJoints(entity *Entity)
+{
+	if(!Entity->AnimationPlayer)
+	{
+		return;
+	}
+
+	model *Model = Entity->AnimationPlayer->Model;
+	mat4 Transform	= EntityTransform(Entity, Entity->VisualScale);
+	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+	{
+		mesh *Mesh = Model->Meshes + MeshIndex;
+		for(u32 JointIndex = 0; JointIndex < Mesh->JointCount; ++JointIndex)
+		{
+			mat4 JointTransform = Mesh->JointTransforms[JointIndex];
+			JointTransform = Transform * JointTransform;
+			PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Sphere, JointTransform, V3(1.0f));
+		}
+	}
 }
 
 internal void
@@ -152,6 +235,11 @@ DebugDrawEntity(entity *Entity)
 	}
 
 	DebugDrawString(YSupported);
+
+	char Buffer[256];
+	AttackTypeToString(Buffer, Entity->AttackType);
+	DebugDrawString("AttackType: ", Buffer);
+	DebugDrawFloat("t: ", Entity->Attacks[Entity->AttackType].CurrentTime);
 
 	Ui.P.x -= 20.0f;
 }
@@ -204,23 +292,23 @@ DebugDrawAnimationPlayer(animation_player *AnimationPlayer)
 }
 
 internal void
-DebugDrawHandAndFoot(entity *Entity, model *Sphere)
+DebugDrawHandAndFoot(entity *Entity)
 {
 	mat4 T = EntityTransform(Entity, Entity->VisualScale);
 	mat4 R = Mat4Identity();
 	mat4 S = Mat4Scale(0.2f);
 
 	T = Mat4Translate(Entity->LeftFootP);
-	PushAABB(Ui.RenderBuffer, Sphere, T*R*S, V3(1.0f));
+	PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Sphere, T*R*S, V3(1.0f));
 
 	T = Mat4Translate(Entity->RightFootP);
-	PushAABB(Ui.RenderBuffer, Sphere, T*R*S, V3(1.0f));
+	PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Sphere, T*R*S, V3(1.0f));
 
 	T = Mat4Translate(Entity->LeftHandP);
-	PushAABB(Ui.RenderBuffer, Sphere, T*R*S, V3(1.0f));
+	PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Sphere, T*R*S, V3(1.0f));
 
 	T = Mat4Translate(Entity->RightHandP);
-	PushAABB(Ui.RenderBuffer, Sphere, T*R*S, V3(1.0f));
+	PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Sphere, T*R*S, V3(1.0f));
 }
 
 internal void

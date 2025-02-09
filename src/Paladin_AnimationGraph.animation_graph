@@ -5,50 +5,47 @@ animation Paladin_SwordAndShieldIdle_00
 looping
 message go_state_run StateRunning t_blend 0.1
 message go_state_sprint StateSprinting t_blend 0.1
-message go_state_neutral_attack StateNeutralAttack
-
-: StateIdleRight
-animation Paladin_SwordAndShieldIdle_01
-looping
-message go_state_run StateRunningMirror t_blend 0.1
-message go_state_sprint StateSprintingMirror
+message go_state_neutral_attack StateNeutralAttack1
+message go_state_strong_attack StateStrongAttack t_start 1.4
+message go_state_jump StateJump t_start 0.35 t_blend 0.0
+message go_state_falling StateFalling t_blend 0.1
 
 : StateRunning
 animation Paladin_SwordAndShieldRun_00
 looping
-#message go_state_idle StateIdleRight t_interval 0.0 0.3
-#message go_state_idle StateIdleLeft t_interval 0.3 0.6
 message go_state_idle StateIdleLeft
-#message go_state_idle StateIdleRight t_interval 0.6 0.7
 message go_state_sprint StateSprinting t_start -1.0
 message go_state_forward_attack StateForwardAttack
-
-: StateRunningMirror
-animation Paladin_SwordAndShieldRun_01
-looping
-message go_state_idle StateIdleLeft t_interval 0.0 0.3
-message go_state_idle StateIdleRight t_interval 0.3 0.6
-message go_state_idle StateIdleLeft t_interval 0.6 0.7
-message go_state_sprint StateSprintingMirror t_start -1.0
+message go_state_jump StateJump t_start 0.35 t_blend 0.0
+message go_state_falling StateFalling t_blend 0.1
 
 : StateSprinting
 animation Paladin_SwordAndShieldSprint_00
 looping
 t_scale 1.5
-#message go_state_idle StateIdleRight t_interval 0.0 0.3
-#message go_state_idle StateIdleLeft t_interval 0.3 0.6
 message go_state_idle StateIdleLeft
-#message go_state_idle StateIdleRight t_interval 0.6 0.7
 message go_state_run StateRunning t_start -1.0
+message go_state_jump StateJump t_start 0.35 t_blend 0.0
+message go_state_falling StateFalling t_blend 0.1
 
-: StateSprintingMirror
-animation Paladin_SwordAndShieldSprint_01
+#
+# Jump
+#
+
+: StateJump
+animation Paladin_StartJump
+message go_state_falling StateFalling t_interval 0.3 0.77 t_blend 0.4
+
+: StateFalling
+animation Paladin_FallLoop
 looping
-t_scale 1.5
-message go_state_idle StateIdleLeft t_interval 0.0 0.3
-message go_state_idle StateIdleRight t_interval 0.3 0.6
-message go_state_idle StateIdleLeft t_interval 0.6 0.7
-message go_state_run StateRunningMirror t_start -1.0
+message go_state_fall_to_land StateFallToLand t_start 0.4 t_blend 0.1
+
+: StateFallToLand
+animation Paladin_EndJump
+message go_state_idle StateIdleLeft t_interval 0.6 0.7 t_blend 0.4
+message go_state_run StateRunning t_interval 0.6 0.7
+message go_state_sprint StateSprinting t_interval 0.6 0.7
 
 #
 # Combat
@@ -59,21 +56,48 @@ message go_state_run StateRunningMirror t_start -1.0
 # and I = (t0,t1) the interval we start blending. Then the scale factor to scale
 # the animation by is t0/tg.
 
-# Animation Duration 1.2
-# Game Duration 0.5
-: StateNeutralAttack
-animation Paladin_SwordAndShieldKick
-t_scale 2.0
-message go_state_idle StateIdleLeft t_interval 1.0 1.2
-message go_state_run StateRunning t_interval 1.0 1.2
-message go_state_sprint StateSprinting t_interval 1.0 1.2
+# However if the start time of the attack is not 0 then the constant is
+# (t0 - t_start) / tg
 
+# Animation Duration 1.0
+: StateNeutralAttack1
+animation Paladin_SwordAndShieldHiltAttack
+t_scale 2.6
+message go_state_neutral_attack StateNeutralAttack2 t_interval 0.8 1.0
+message go_state_sprint StateSprinting t_interval 0.8 1.0
+message go_state_run StateRunning t_interval 0.8 1.0
+message go_state_jump StateJump t_interval 0.8 1.0
+message go_state_idle StateIdleLeft t_interval 0.8 1.0
 
 # Animation Duration 1.5
-# Game Duration 0.5
-: StateForwardAttack
+: StateNeutralAttack2
 animation Paladin_SwordAndShieldSlash
 t_scale 2.0
+message go_state_neutral_attack StateNeutralAttack3 t_interval 1.0 1.2
+message go_state_idle StateIdleLeft t_interval 1.3 1.5
+message go_state_run StateRunning t_interval 1.3 1.5
+message go_state_sprint StateSprinting t_interval 1.3 1.5
+message go_state_jump StateJump t_interval 1.3 1.5
+
+# Animation Duration 1.2
+: StateNeutralAttack3
+animation Paladin_SwordAndShieldKick
+t_scale 1.9
 message go_state_idle StateIdleLeft t_interval 1.0 1.2
 message go_state_run StateRunning t_interval 1.0 1.2
 message go_state_sprint StateSprinting t_interval 1.0 1.2
+message go_state_jump StateJump t_interval 1.0 1.2
+message go_state_neutral_attack StateNeutralAttack1 t_interval 1.0 1.2
+
+
+
+# Animation Duration 2.97
+# Game duration 1.0
+# C = 2.2/1.2
+: StateStrongAttack
+animation Paladin_SwordAndShieldCasting
+#t_scale 1.8
+t_scale 0.8
+message go_state_idle StateIdleLeft t_interval 2.2 2.4
+message go_state_run StateRunning t_interval 2.2 2.4
+message go_state_sprint StateSprinting t_interval 2.2 2.4

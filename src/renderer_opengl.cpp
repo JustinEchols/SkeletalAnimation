@@ -651,7 +651,6 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 	{
 		render_buffer_entry_header *Header = (render_buffer_entry_header *)(RenderBuffer->Base + BaseOffset);
 		BaseOffset += sizeof(*Header);
-
 		void *Data = (u8 *)Header + sizeof(*Header);
 		switch(Header->Type)
 		{
@@ -806,11 +805,6 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				render_entry_debug_volume *Entry = (render_entry_debug_volume *)Data;
 				model *Model = Entry->Model;
 				Assert(Model);
-				if(!Model->UploadedToGPU)
-				{
-					OpenGLAllocateModel(Entry->Model, DebugBBoxShader);
-					Model->UploadedToGPU = true;
-				}
 
 				OpenGL.glUseProgram(DebugBBoxShader);
 				glDisable(GL_CULL_FACE);
@@ -821,20 +815,12 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				UniformV3Set(DebugBBoxShader, "Ambient", Ambient);
 				UniformV4Set(DebugBBoxShader, "Diffuse", V4(Entry->Color, 1.0f));
 
-				switch(Entry->VolumeType)
+				for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 				{
-					case DebugVolumeType_AABB:
-					case DebugVolumeType_Circle:
-					case DebugVolumeType_Capsule:
-					{
-						for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
-						{
-							mesh *Mesh = Model->Meshes + MeshIndex;
-							OpenGL.glBindVertexArray(Mesh->VA);
-							glDrawElements(GL_LINES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
-						}
-					} break;
-				};
+					mesh *Mesh = Model->Meshes + MeshIndex;
+					OpenGL.glBindVertexArray(Mesh->VA);
+					glDrawElements(GL_LINES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
+				}
 
 				glEnable(GL_CULL_FACE);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);

@@ -89,6 +89,8 @@ struct asset_manager
 	platform_file_info PaladinGraphFileInfo;
 
 	model Capsule;
+	model Cube;
+	model Sphere;
 };
 
 struct asset_entry

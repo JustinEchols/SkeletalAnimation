@@ -85,12 +85,10 @@ SimplePCFShadowMapValue(vec4 SurfaceLightP)
 	vec3 LightProjectedP = SurfaceLightP.xyz / SurfaceLightP.w;
 	LightProjectedP = 0.5 * LightProjectedP + 0.5;
 
-
 	vec2 TexelSize = 1.0f / textureSize(ShadowMapTexture, 0);
 	vec2 TexelUV = LightProjectedP.xy;
 
 	float U, V;
-	float Sum = 0.0;
 	float TestDepth = 0.0;
 	float ShadowBias = 0.0001;
 	float CurrentDepth = LightProjectedP.z;
@@ -100,30 +98,11 @@ SimplePCFShadowMapValue(vec4 SurfaceLightP)
 		{
 			vec2 SampleUV = TexelUV + vec2(U, V) * TexelSize;
 			TestDepth = texture(ShadowMapTexture, SampleUV).r;
-			Sum += ((CurrentDepth - ShadowBias) > TestDepth ? TestDepth : 1.0);
+			Result += ((CurrentDepth - ShadowBias) > TestDepth ? TestDepth : 1.0);
 		}
 	}
 
-	Sum /= 16.0f;
-	Result = Sum;
-
-	return(Result);
-}
-
-float
-SimpleShadowMapValue(vec4 SurfaceLightP)
-{
-	float Result = 0.0;
-
-	vec3 LightProjectedP = SurfaceLightP.xyz / SurfaceLightP.w;
-	LightProjectedP = 0.5 * LightProjectedP + 0.5;
-
-	float ShadowMapDepth = texture(ShadowMapTexture, LightProjectedP.xy).r;
-	float CurrentDepth = LightProjectedP.z;
-	float ShadowBias = 0.0001;
-
-	Result = (CurrentDepth - ShadowBias) > ShadowMapDepth ? 0.0 : 1.0;
-
+	Result /= 16.0f;
 	return(Result);
 }
 
@@ -170,9 +149,7 @@ void main()
 		Spec = S * LightColor * SpecularTexel.xyz;
 	}
 
-	//float ShadowValue = SimpleShadowMapValue(SurfaceLightP);
 	float ShadowValue = SimplePCFShadowMapValue(SurfaceLightP);
-
 	Result = vec4(Amb + ShadowValue*(Diff + Spec), A);
 })";
 
