@@ -28,7 +28,7 @@ void main()
 	vec4 Norm = vec4(0.0);
 	if(UsingRig)
 	{
-		for(uint i = 0; i < 3; ++i)
+		for(uint i = 0; i < 4; ++i)
 		{
 			if(i < JointCount)
 			{

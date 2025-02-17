@@ -122,6 +122,7 @@ EvaluatePlayerMove(entity *Entity, move_info MoveInfo, v3 *ddP)
 		a *= 1.5f;
 	}
 
+#if 1
 	if(MoveInfo.CanJump)
 	{
 		f32 X = AbsVal(Entity->dP.x);
@@ -140,6 +141,36 @@ EvaluatePlayerMove(entity *Entity, move_info MoveInfo, v3 *ddP)
 
 		Entity->dP.y = 30.0f;
 	}
+#else
+	if((Entity->Flags & EntityFlag_ShouldJump))
+	{
+		f32 X = AbsVal(Entity->dP.x);
+		f32 Z = AbsVal(Entity->dP.z);
+		f32 MaxComponent = Max(X, Z);
+
+		// TODO(Justin): Handle diagonal
+		if(MaxComponent == X)
+		{
+			//Entity->dP.x += SignOf(Entity->dP.x)*10.0f;
+		}
+		else
+		{
+			//Entity->dP.z += SignOf(Entity->dP.z)*10.0f;
+		}
+
+		Entity->dP.y = 30.0f;
+
+		FlagClear(Entity, EntityFlag_ShouldJump);
+	}
+
+
+	if(MoveInfo.CanJump)
+	{
+		FlagAdd(Entity, EntityFlag_ShouldJump);
+	}
+
+
+#endif
 
 	Entity->ddP = MoveInfo.ddP;
 
@@ -270,7 +301,7 @@ EvaluateSprint(entity *Entity, move_info MoveInfo)
 	{
 		FlagAdd(Entity, EntityFlag_Attacking);
 		Entity->MovementState = MovementState_Attack;
-		Entity->AttackType = AttackType_Dash;
+		Entity->AttackType = AttackType_Sprint;
 		return;
 	}
 
@@ -312,6 +343,7 @@ EvaluateInAir(entity *Entity, move_info MoveInfo)
 	if(IsGrounded(Entity))
 	{
 		Entity->MovementState = MovementState_Land;
+		return;
 	}
 }
 
@@ -417,7 +449,10 @@ EvaluateAttack(entity *Entity, move_info MoveInfo, f32 dt)
 			Entity->dP = {};
 			FlagClear(Entity, EntityFlag_Moving);
 		} break;
-		case AttackType_Dash:
+		case AttackType_Sprint:
+		{
+			Entity->dP = 0.5f*Entity->dP;
+		} break;
 		case AttackType_Air:
 		{
 		} break;

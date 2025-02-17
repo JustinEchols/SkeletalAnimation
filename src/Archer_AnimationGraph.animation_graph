@@ -1,0 +1,43 @@
+[1]
+
+: StateIdle
+animation Archer_Idle
+looping
+message go_state_run StateRunning 
+message go_state_sprint StateSprinting
+message go_state_jump StateJump t_start 0.3 t_blend 0.1
+message go_state_falling StateFalling
+
+: StateRunning
+animation Archer_Run
+looping
+message go_state_idle StateIdle
+message go_state_sprint StateSprinting t_start -1.0
+message go_state_jump StateJump t_start 0.3 t_blend 0.1
+message go_state_falling StateFalling
+
+: StateSprinting
+animation Archer_Sprint
+looping
+t_scale 1.5
+message go_state_idle StateIdle
+message go_state_run StateRunning t_start -1.0
+message go_state_jump StateJump t_start 0.3 t_blend 0.1
+message go_state_falling StateFalling
+
+: StateJump
+animation Archer_StandingJump
+message go_state_falling StateFalling t_interval 0.3 0.6
+
+: StateFalling
+animation FallBLoop
+looping
+message go_state_fall_to_land StateLand t_start 0.4 t_blend 0.1
+
+#Duration 1.57
+: StateLand
+animation FallBLand
+remove_locomotion
+message go_state_idle StateIdle t_interval 0.5 0.6 t_blend 0.4
+message go_state_run StateRunning t_interval 0.5 0.6
+message go_state_sprint StateSprinting t_interval 0.5 0.6

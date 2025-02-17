@@ -14,7 +14,7 @@ message go_state_falling StateFalling t_blend 0.1
 animation Paladin_SwordAndShieldRun_00
 looping
 message go_state_idle StateIdleLeft
-message go_state_sprint StateSprinting t_start -1.0
+message go_state_sprint StateSprinting t_start -1.0 t_blend 0.1
 message go_state_forward_attack StateForwardAttack
 message go_state_jump StateJump t_start 0.35 t_blend 0.0
 message go_state_falling StateFalling t_blend 0.1
@@ -24,9 +24,10 @@ animation Paladin_SwordAndShieldSprint_00
 looping
 t_scale 1.5
 message go_state_idle StateIdleLeft
-message go_state_run StateRunning t_start -1.0
+message go_state_run StateRunning t_start -1.0 t_blend 0.1
 message go_state_jump StateJump t_start 0.35 t_blend 0.0
 message go_state_falling StateFalling t_blend 0.1
+message go_state_sprint_attack StateSprintAttack t_blend 0.1
 
 #
 # Jump
@@ -41,11 +42,13 @@ animation Paladin_FallLoop
 looping
 message go_state_fall_to_land StateFallToLand t_start 0.4 t_blend 0.1
 
+# Duration 1.13
 : StateFallToLand
 animation Paladin_EndJump
 message go_state_idle StateIdleLeft t_interval 0.6 0.7 t_blend 0.4
-message go_state_run StateRunning t_interval 0.6 0.7
-message go_state_sprint StateSprinting t_interval 0.6 0.7
+message go_state_run StateRunning t_interval 0.4 0.7 t_start 0.1
+message go_state_sprint StateSprinting t_interval 0.4 0.7 t_start 0.1
+message go_state_jump StateJump t_interval 0.6 0.7
 
 #
 # Combat
@@ -89,8 +92,6 @@ message go_state_sprint StateSprinting t_interval 1.0 1.2
 message go_state_jump StateJump t_interval 1.0 1.2
 message go_state_neutral_attack StateNeutralAttack1 t_interval 1.0 1.2
 
-
-
 # Animation Duration 2.97
 # Game duration 1.0
 # C = 2.2/1.2
@@ -101,3 +102,13 @@ t_scale 0.8
 message go_state_idle StateIdleLeft t_interval 2.2 2.4
 message go_state_run StateRunning t_interval 2.2 2.4
 message go_state_sprint StateSprinting t_interval 2.2 2.4
+
+#Duration 1.73
+: StateSprintAttack
+animation Paladin_SwordAndShieldSprintAttack
+remove_locomotion
+#t_scale 1.42
+t_scale 2.0
+message go_state_idle StateIdleLeft t_interval 1.0 1.73
+message go_state_run StateRunning t_interval 1.0 1.73
+message go_state_sprint StateSprinting t_interval 1.0 1.73

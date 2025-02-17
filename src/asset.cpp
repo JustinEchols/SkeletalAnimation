@@ -373,6 +373,8 @@ char *GraphFiles[] =
 	"../src/YBot_AnimationGraph.animation_graph",
 	"../src/Vampire_AnimationGraph.animation_graph",
 	"../src/Paladin_AnimationGraph.animation_graph",
+	"../src/Archer_AnimationGraph.animation_graph",
+	"../src/Brute_AnimationGraph.animation_graph",
 };
 
 char *FontFiles[] =
@@ -482,7 +484,7 @@ AssetManagerInitialize(asset_manager *Manager)
 
 		MemoryZero(Buffer, sizeof(Buffer));
 		strcat(Buffer, TexturesDirectory);
-		strcat(Buffer, "/");
+		strcat(Buffer, "\\");
 		strcat(Buffer, FileName);
 
 		*Texture = TextureLoad(Buffer);
@@ -556,6 +558,112 @@ AssetManagerInitialize(asset_manager *Manager)
 					Mesh->SpecularTexture = Specular.Index;
 					Model->Meshes[0].MaterialFlags |= (MaterialFlag_Diffuse | MaterialFlag_Specular);
 				}
+			}
+
+
+			if(StringsAreSame(AssetName, "Erika_ArcherWithBowArrow"))
+			{
+				/*
+				//0
+				FemaleFitA_eyelash_diffuse.png
+
+				//1
+				FemaleFitA_Body_diffuse.png
+				FemaleFitA_normal.png
+
+				//2
+				FemaleFitA_Body_diffuse.png
+				Erika_Archer_Clothes_normal.png
+
+				//3
+				Bow_diffuse.jpg
+				Bow_normal.jpg
+
+				//4
+				Arrow_diffuse.png
+				Arrow_normal.jpg
+
+				//5
+				Erika_Archer_Clothes_diffuse.png
+				Erika_Archer_Clothes_normal.png
+				*/
+
+
+				//0
+				asset_entry Diffuse = LookupTexture(Manager, "FemaleFitA_eyelash_diffuse");
+				Model->Meshes[0].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[0].MaterialFlags = (MaterialFlag_Diffuse);
+
+				//1
+				Diffuse = LookupTexture(Manager, "FemaleFitA_Body_diffuse");
+				Model->Meshes[1].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[1].MaterialFlags = (MaterialFlag_Diffuse);
+
+				//2
+				Model->Meshes[2].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[2].MaterialFlags = (MaterialFlag_Diffuse);
+
+				//3
+				Diffuse = LookupTexture(Manager, "Bow_diffuse");
+				Model->Meshes[3].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[3].MaterialFlags = (MaterialFlag_Diffuse);
+				
+				//4
+				Diffuse = LookupTexture(Manager, "Arrow_diffuse");
+				Model->Meshes[4].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[4].MaterialFlags = (MaterialFlag_Diffuse);
+				Model->Meshes[4].Flags |= MeshFlag_DontDraw;
+				
+				//5
+				Diffuse = LookupTexture(Manager, "Erika_Archer_Clothes_diffuse");
+				Model->Meshes[5].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[5].MaterialFlags = (MaterialFlag_Diffuse);
+			}
+
+			if(StringsAreSame(AssetName, "Brute"))
+			{
+
+				asset_entry Diffuse = LookupTexture(Manager, "axe_diffuse");
+				asset_entry Specular = LookupTexture(Manager, "axe_specular");
+				Model->Meshes[0].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[0].SpecularTexture = Specular.Index;
+				Model->Meshes[0].MaterialFlags = (MaterialFlag_Diffuse | MaterialFlag_Specular);
+
+				Diffuse = LookupTexture(Manager, "MaleBruteA_Hair_diffuse");
+				Specular = LookupTexture(Manager, "MaleBruteA_Hair_specular");
+				Model->Meshes[1].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[1].SpecularTexture = Specular.Index;
+				Model->Meshes[1].MaterialFlags = (MaterialFlag_Diffuse | MaterialFlag_Specular);
+
+				Diffuse = LookupTexture(Manager, "MaleBruteA_Bottom_diffuse1");
+				Specular = LookupTexture(Manager, "MaleBruteA_Bottom_specular");
+				Model->Meshes[2].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[2].SpecularTexture = Specular.Index;
+				Model->Meshes[2].MaterialFlags = (MaterialFlag_Diffuse | MaterialFlag_Specular);
+
+				Diffuse = LookupTexture(Manager, "MaleBruteA_Shoes_diffuse1");
+				Specular = LookupTexture(Manager, "MaleBruteA_Shoes_specular");
+				Model->Meshes[3].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[3].SpecularTexture = Specular.Index;
+				Model->Meshes[3].MaterialFlags = (MaterialFlag_Diffuse | MaterialFlag_Specular);
+
+				Diffuse = LookupTexture(Manager, "MaleBruteA_Moustache_diffuse");
+				Specular = LookupTexture(Manager, "MaleBruteA_Moustache_specular");
+				Model->Meshes[4].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[4].SpecularTexture = Specular.Index;
+				Model->Meshes[4].MaterialFlags = (MaterialFlag_Diffuse | MaterialFlag_Specular);
+
+				Diffuse = LookupTexture(Manager, "MaleBruteA_Body_diffuse1");
+				Model->Meshes[5].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[5].MaterialFlags = (MaterialFlag_Diffuse);
+
+				Diffuse = LookupTexture(Manager, "MaleBruteA_Body_diffuse");
+				Model->Meshes[6].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[6].MaterialFlags = (MaterialFlag_Diffuse);
+
+				Diffuse = LookupTexture(Manager, "MaleBruteA_Body_diffuse1");
+				Model->Meshes[7].DiffuseTexture = Diffuse.Index;
+				Model->Meshes[7].MaterialFlags = (MaterialFlag_Diffuse);
 			}
 		}
 		else
@@ -669,6 +777,10 @@ AssetManagerInitialize(asset_manager *Manager)
 	Manager->PaladinGraphFileInfo = {};
 	Manager->PaladinGraphFileInfo.Path = "../src/Paladin_AnimationGraph.animation_graph";
 	Platform.DebugFileIsDirty(Manager->PaladinGraphFileInfo.Path, &Manager->PaladinGraphFileInfo.FileDate);
+
+	Manager->ArcherGraphFileInfo = {};
+	Manager->ArcherGraphFileInfo.Path = "../src/Archer_AnimationGraph.animation_graph";
+	Platform.DebugFileIsDirty(Manager->ArcherGraphFileInfo.Path, &Manager->ArcherGraphFileInfo.FileDate);
 
 	// For debug diagrams
 

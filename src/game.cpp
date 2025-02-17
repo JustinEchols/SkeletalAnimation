@@ -38,41 +38,14 @@ PlayerAdd(game_state *GameState, v3 P)
 	Entity->MovementColliders.Type = CollisionVolumeType_Capsule;
 	Entity->MovementColliders.VolumeCount = 1;
 	Entity->MovementColliders.Volumes = PushArray(&GameState->Arena, 1, collision_volume);
-
 	collision_group *MovementColliders = &Entity->MovementColliders;
-	collision_volume *Volume = MovementColliders->Volumes;
 
+	collision_volume *Volume = MovementColliders->Volumes;
 	capsule C;
 	C.Radius = 0.4f;
 	C.Min = V3(0.0f, C.Radius, 0.0f);
 	C.Max = V3(0.0f, Entity->Height - C.Radius, 0.0f);
 	Volume->Capsule = C;
-#if 0
-	// AABB
-	Entity->AABBDim = V3(0.7f, Entity->Height, 0.7f);
-	Entity->VolumeOffset = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
-
-	// OBB
-	quaternion Q = Conjugate(Entity->Orientation);
-	Entity->OBB.Center = 0.5f*V3(0.0f, Entity->AABBDim.y, 0.0f);
-	Entity->OBB.X = Q * XAxis();
-	Entity->OBB.Y = Q * YAxis();
-	Entity->OBB.Z = Q * (-1.0f*ZAxis());
-	Entity->OBB.Dim = Entity->AABBDim;
-
-	// Sphere
-	Entity->Radius = 0.4f;
-
-	// Capsule
-	capsule C;
-	C.Radius = Entity->Radius;
-	C.Min = V3(0.0f, C.Radius, 0.0f);
-	C.Max = V3(0.0f, Entity->Height - C.Radius, 0.0f);
-	Entity->Capsule = C;
-#endif
-
-	// Visuals
-	//Entity->VisualScale = V3(0.01f);
 
 	if(GameState->PlayerEntityIndex == 0)
 	{
@@ -185,6 +158,10 @@ KnightAdd(game_state *GameState, v3 P)
 	Player->Attacks[AttackType_Forward].Duration = 0.7f;
 	Player->Attacks[AttackType_Forward].Power = 12.0f;
 
+	Player->Attacks[AttackType_Sprint].Type = AttackType_Sprint;
+	Player->Attacks[AttackType_Sprint].Duration = 0.7f;
+	Player->Attacks[AttackType_Sprint].Power = 12.0f;
+
 	Player->Attacks[AttackType_Strong].Type = AttackType_Strong;
 	Player->Attacks[AttackType_Strong].Duration = 1.0f;
 	Player->Attacks[AttackType_Strong].Power = 0.18f;
@@ -192,6 +169,78 @@ KnightAdd(game_state *GameState, v3 P)
 	model *Model = LookupModel(&GameState->AssetManager, "PaladinWithProp").Model;
 	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Paladin_AnimationGraph");
 	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Paladin_SwordAndShieldIdle_00");
+
+	Assert(Model);
+	Assert(G);
+	Assert(Entry.SampledAnimation);
+
+	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
+	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
+
+	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
+	Player->AnimationGraph = G;
+	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
+
+	return(Player);
+}
+
+internal entity * 
+ArcherAdd(game_state *GameState, v3 P)
+{
+	entity *Player = PlayerAdd(GameState, P);
+	Player->Acceleration = 50.0f;
+	Player->Drag = 10.0f;
+	Player->AngularSpeed = 15.0f;
+	Player->VisualScale = V3(0.011f);
+
+	collision_group *Group = &Player->CombatColliders;
+	Group->VolumeCount = 4;
+	Group->Volumes = PushArray(&GameState->Arena, Group->VolumeCount, collision_volume);
+	for(u32 VolumeIndex = 0; VolumeIndex < Group->VolumeCount; ++VolumeIndex)
+	{
+		collision_volume *Volume = Group->Volumes + VolumeIndex;
+		Volume->Dim = V3(0.2f);
+	}
+
+	model *Model = LookupModel(&GameState->AssetManager, "Erika_ArcherWithBowArrow").Model;
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Archer_AnimationGraph");
+	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Archer_Idle");
+
+	Assert(Model);
+	Assert(G);
+	Assert(Entry.SampledAnimation);
+
+	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
+	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
+
+	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
+	Player->AnimationGraph = G;
+	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
+
+	return(Player);
+}
+
+internal entity * 
+BruteAdd(game_state *GameState, v3 P)
+{
+	entity *Player = PlayerAdd(GameState, P);
+	Player->Acceleration = 50.0f;
+	Player->Drag = 10.0f;
+	Player->AngularSpeed = 15.0f;
+	Player->VisualScale = V3(0.011f);
+
+	collision_group *Group = &Player->CombatColliders;
+	Group->VolumeCount = 4;
+	Group->Volumes = PushArray(&GameState->Arena, Group->VolumeCount, collision_volume);
+	for(u32 VolumeIndex = 0; VolumeIndex < Group->VolumeCount; ++VolumeIndex)
+	{
+		collision_volume *Volume = Group->Volumes + VolumeIndex;
+		Volume->Dim = V3(0.2f);
+	}
+
+	model *Model = LookupModel(&GameState->AssetManager, "Brute").Model;
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Brute_AnimationGraph");
+	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Brute_Idle");
 
 	Assert(Model);
 	Assert(G);
@@ -799,6 +848,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		AnimationGraphInitialize(G, "../src/Paladin_AnimationGraph.animation_graph");
 		Entity->AnimationGraph = G;
 	}
+
+	if(!GameInput->ReloadingGame && Platform.DebugFileIsDirty(GameState->AssetManager.ArcherGraphFileInfo.Path, &GameState->AssetManager.ArcherGraphFileInfo.FileDate))
+	{
+		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
+		animation_graph *G = LookupGraph(&GameState->AssetManager, "Archer_AnimationGraph");
+		ArenaClear(&G->Arena);
+		G->NodeCount = 0;
+		G->Index = 0;
+		G->CurrentNode = {};
+		MemoryZero(&G->Nodes, sizeof(G->Nodes));
+		AnimationGraphInitialize(G, "../src/Archer_AnimationGraph.animation_graph");
+		Entity->AnimationGraph = G;
+	}
 #endif
 
 	for(u32 ControllerIndex = 0; ControllerIndex < ArrayCount(GameInput->Controllers); ++ControllerIndex)
@@ -817,10 +879,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 			if(ControllerIndex == 1 && Controller->Start.EndedDown)
 			{
-				Player = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 				//Player = YBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+				//Player = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+				//Player = ArcherAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+				Player = BruteAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 			}
-
 
 			if(Player)
 			{
@@ -847,6 +910,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					MoveInfo->CanJump = true;
 					MoveInfo->AnyAction = true;
 				}
+
 
 				if(IsDown(Controller->ActionDown))
 				{

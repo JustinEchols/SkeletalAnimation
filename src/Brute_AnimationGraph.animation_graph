@@ -1,0 +1,11 @@
+[1]
+
+: StateIdle
+animation Brute_Idle
+looping
+message go_state_run StateRunning
+
+: StateRunning
+animation Brute_Run
+looping
+message go_state_idle StateIdle

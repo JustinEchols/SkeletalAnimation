@@ -76,7 +76,7 @@ struct asset_manager
 	string_hash AnimationNames;
 	string_hash GraphNames;
 
-	texture Textures[32];
+	texture Textures[64];
 	model Models[16];
 	animation_graph Graphs[8];
 	font Font;
@@ -87,6 +87,7 @@ struct asset_manager
 	platform_file_info XBotGraphFileInfo;
 	platform_file_info YBotGraphFileInfo;
 	platform_file_info PaladinGraphFileInfo;
+	platform_file_info ArcherGraphFileInfo;
 
 	model Capsule;
 	model Cube;

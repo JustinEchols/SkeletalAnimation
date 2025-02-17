@@ -3,8 +3,8 @@
 struct joint_info
 {
 	u32 Count;
-	u32 JointIndex[3];
-	f32 Weights[3];
+	u32 JointIndex[4];
+	f32 Weights[4];
 };
 
 struct joint
@@ -38,9 +38,16 @@ enum material_flags
 	MaterialFlag_Normal = (1 << 3),
 };
 
+enum mesh_flags
+{
+	MeshFlag_DontDraw = (1 << 1),
+};
+
 struct mesh
 {
 	string Name;
+
+	u32 Flags;
 
 	// Vertex
 	u32 IndicesCount;

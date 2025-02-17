@@ -29,6 +29,7 @@ enum attack_type
 	AttackType_Neutral2,
 	AttackType_Neutral3,
 	AttackType_Forward,
+	AttackType_Sprint,
 	AttackType_Strong,
 	AttackType_Dash,
 	AttackType_Air,
@@ -104,6 +105,7 @@ struct move_info
 	b32 StandingStill;
 	b32 CanSprint;
 	b32 CanJump;
+	b32 JumpPressed;
 	b32 Crouching;
 	b32 Attacking;
 	b32 NoVelocity;

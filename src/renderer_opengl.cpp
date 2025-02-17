@@ -89,11 +89,8 @@ OpenGLAllocateTexture(texture *Texture)
 
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-		//glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
 
 		f32 maxAniso = 0.0f;
@@ -152,8 +149,8 @@ OpenGLAllocateAnimatedMesh(mesh *Mesh, u32 ShaderProgram)
 	OpenGL.glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE,	sizeof(vertex), (void *)OffsetOf(vertex, N));
 	OpenGL.glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE,	sizeof(vertex), (void *)OffsetOf(vertex, UV));
 	OpenGL.glVertexAttribIPointer(3, 1,GL_UNSIGNED_INT,		sizeof(vertex), (void *)OffsetOf(vertex, JointInfo));
-	OpenGL.glVertexAttribIPointer(4, 3,GL_UNSIGNED_INT,		sizeof(vertex), (void *)(OffsetOf(vertex, JointInfo) + OffsetOf(joint_info, JointIndex)));
-	OpenGL.glVertexAttribPointer(5, 3, GL_FLOAT, GL_FALSE,	sizeof(vertex), (void *)(OffsetOf(vertex, JointInfo) + OffsetOf(joint_info, Weights)));
+	OpenGL.glVertexAttribIPointer(4, 4,GL_UNSIGNED_INT,		sizeof(vertex), (void *)(OffsetOf(vertex, JointInfo) + OffsetOf(joint_info, JointIndex)));
+	OpenGL.glVertexAttribPointer(5, 4, GL_FLOAT, GL_FALSE,	sizeof(vertex), (void *)(OffsetOf(vertex, JointInfo) + OffsetOf(joint_info, Weights)));
 
 	OpenGL.glEnableVertexAttribArray(0);
 	OpenGL.glEnableVertexAttribArray(1);
@@ -399,6 +396,8 @@ OpenGLDrawModel(render_buffer *RenderBuffer, model *Model, u32 ShaderProgram)
 	{
 		mesh *Mesh = Model->Meshes + MeshIndex;
 
+		if(Mesh->Flags & MeshFlag_DontDraw) continue;
+
 		if(!(Mesh->MaterialFlags & MaterialFlag_Diffuse))
 		{
 			UniformBoolSet(ShaderProgram, "OverRideTexture", true);
@@ -431,6 +430,7 @@ OpenGLDrawModel(render_buffer *RenderBuffer, model *Model, u32 ShaderProgram)
 
 		OpenGL.glBindVertexArray(Mesh->VA);
 		glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
+		//glDrawElements(GL_LINES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
 		OpenGL.glBindVertexArray(0);
 	}
 }
@@ -665,9 +665,13 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 			{
 				render_entry_texture *Entry = (render_entry_texture *)Data;
 				texture *Texture = RenderBuffer->Textures[Entry->Index];
-				if(Texture->Handle == 0)
+
+				if(RenderBuffer->TextureCount)
 				{
-					OpenGLAllocateTexture(Texture);
+					if(Texture->Handle == 0)
+					{
+						OpenGLAllocateTexture(Texture);
+					}
 				}
 				BaseOffset += sizeof(*Entry);
 			} break;

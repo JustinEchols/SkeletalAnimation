@@ -1,4 +1,25 @@
 
+inline void
+FlagAdd(mesh *Mesh, u32 Flag)
+{
+	Mesh->Flags |= Flag;
+}
+
+inline void
+FlagClear(mesh *Mesh, u32 Flag)
+{
+	Mesh->Flags &= ~Flag;
+}
+
+inline b32 
+FlagIsSet(mesh *Mesh, u32 Flag)
+{
+	b32 Result = (Mesh->Flags & Flag);
+	return(Result);
+}
+
+
+// TODO(Justin): String hash
 internal s32
 JointIndexGet(string *JointNames, u32 JointCount, string JointName)
 {

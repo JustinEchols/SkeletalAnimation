@@ -43,6 +43,7 @@ PushTexture(render_buffer *RenderBuffer, texture *Texture, s32 Index)
 		texture **Tex = RenderBuffer->Textures + Index;
 		*Tex = Texture;
 		Entry->Index = Index;
+		RenderBuffer->TextureCount++;
 	}
 }
 #else

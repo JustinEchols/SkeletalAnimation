@@ -494,6 +494,11 @@ Animate(entity *Entity, asset_manager *AssetManager)
 			{
 				Message = "go_state_strong_attack";
 			}
+			if(Entity->AttackType == AttackType_Sprint)
+			{
+				Message = "go_state_sprint_attack";
+			}
+
 			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
 		InvalidDefaultCase;

@@ -31,7 +31,7 @@ pushd ..\build
 del *.pdb > NUL 2> NUL
 
 REM DEBUG 
-echo WAITING FOR PDB > lock.tmp
+REM echo WAITING FOR PDB > lock.tmp
 REM cl -Od %CommonCompilerFlags% ..\src\%GameFile% -Fmgame.map %IncludeDirectories% /LD /link %LibDirectories% freetype.lib -incremental:no -opt:ref -PDB:game_%random%.pdb -EXPORT:GameUpdateAndRender
 REM del lock.tmp
 REM cl %CommonCompilerFlags% ..\src\%MainFile% -Fmwin32_main.map  /link %CommonLinkerFlags%
