@@ -21,8 +21,8 @@ struct animation_info
 	f32 FrameRate;
 
 	string *JointNames; // Names of all the joints that this sampled animation affects
-	key_frame *KeyFrames;
-	key_frame *ReservedForChannel; // Memory reserved for blended pose of animation channel
+	key_frame *KeyFrames; // Actual samples of the animation
+	key_frame *ReservedForChannel; // Memory reserved for blended pose (output) of animation channel 
 };
 
 struct animation_id
@@ -39,7 +39,7 @@ enum animation_flags
 	AnimationFlags_JointMask = (1 << 5),
 	AnimationFlags_ControlsPosition = (1 << 6),
 	AnimationFlags_ControlsTurning = (1 << 7),
-	AnimationFlags_ShouldPause = (1 << 7),
+	AnimationFlags_CompletedCycle = (1 << 8),
 };
 
 // NOTE(Justin): Animation channel 
@@ -51,7 +51,6 @@ struct animation
 	f32 Duration;
 	f32 CurrentTime; 
 	f32 TimeScale; 
-	f32 StartTime; // Does this need to be stored?
 
 	f32 BlendFactor;
 	f32 BlendDuration;
@@ -65,9 +64,8 @@ struct animation
 
 	key_frame *BlendedPose;
 
-	quaternion OrientationLockedAt;
-	v3 MotionDeltaPerFrame;
-	f32 TurningDeltaPerFrame;
+	v3 RootMotionDeltaPerFrame;
+	v3 RootVelocityDeltaPerFrame;
 };
 
 enum arc_type 
@@ -124,20 +122,19 @@ struct animation_player
 
 	b32 ControlsPosition;
 	b32 ControlsTurning;
+	b32 UpdateLockedP;
 	u32 PlayingCount;
 	u32 RetiredCount;
 
 	f32 CurrentTime;
 	f32 dt;
 
-	v3 RootMotionAccumulator;
-	v3 RootPLocked;
-
-	f32 RootTurningAccumulator;
-	quaternion OrientationLockedAt;
-
 	key_frame *FinalPose;
 	model *Model; 
+
+	v3 EntityPLockedAt;
+	v3 RootMotionAccumulator;
+	v3 RootVelocityAccumulator;
 };
 
 #define ANIMATION_H

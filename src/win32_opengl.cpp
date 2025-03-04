@@ -201,12 +201,22 @@ char *Quad2dFS = R"(
 #version 430 core
 in vec2 UV;
 
+uniform bool UsingTexture;
 uniform sampler2D Texture;
+uniform vec4 Color;
 
 out vec4 Result;
 void main()
 {
-	Result = vec4(texture(Texture, UV).rgb, 1.0);
+	if(UsingTexture)
+	{
+		Result = vec4(texture(Texture, UV).rgb, 1.0);
+	}
+	else
+	{
+		Result = Color;
+	}
+
 })";
 
 char *DebugShadowMapVS = R"(
@@ -237,7 +247,6 @@ void main()
 	Result = vec4(Depth, Depth, Depth, 1.0f);
 })";
 
-
 char *ShadowMapVS = R"(
 #version 430 core
 layout (location = 0) in vec3 P;
@@ -251,7 +260,7 @@ uniform mat4 Model;
 uniform mat4 LightTransform;
 uniform bool UsingRig;
 
-#define MAX_JOINT_COUNT 70
+#define MAX_JOINT_COUNT 100 
 uniform mat4 Transforms[MAX_JOINT_COUNT];
 
 void main()
@@ -259,7 +268,7 @@ void main()
 	vec4 Pos = vec4(0.0);
 	if(UsingRig)
 	{
-		for(uint i = 0; i < 3; ++i)
+		for(uint i = 0; i < 4; ++i)
 		{
 			if(i < JointCount)
 			{

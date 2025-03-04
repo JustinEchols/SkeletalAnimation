@@ -11,6 +11,7 @@ UiBegin(render_buffer *RenderBuffer, memory_arena *TempArena, game_input *GameIn
 	Ui.P = V2(0.0f, (f32)GameInput->BackBufferHeight - Ui.Font->LineGap);
 	Ui.AtY = Ui.P.y;
 	Ui.LineGap = Ui.Font->LineGap + 5.0f;
+	Ui.DefaultIndent = 20.0f;
 	Ui.RenderBuffer = RenderBuffer;
 	Ui.TempArena = TempArena;
 	Ui.HoverColor = V3(1.0f, 1.0f, 0.0f);
@@ -79,8 +80,8 @@ ToggleButton(char *Label, void *ID)
 {
 	b32 Update = UiButton(Label, ID);
 	b32 Current = Ui.ToggleButtonStates[Ui.ToggleButtonCount];
-	Ui.ToggleButtonStates[Ui.ToggleButtonCount] = Update ? !Current : Current;
 
+	Ui.ToggleButtonStates[Ui.ToggleButtonCount] = Update ? !Current : Current;
 	b32 Result = Ui.ToggleButtonStates[Ui.ToggleButtonCount++];
 
 	v3 Color = Result ? Ui.HoverColor : Ui.DefaultColor;
@@ -88,3 +89,5 @@ ToggleButton(char *Label, void *ID)
 
 	return(Result);
 }
+
+

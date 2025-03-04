@@ -52,34 +52,17 @@ typedef uintptr_t	umm;
 #define SmallNumber				(1.e-8f)
 #define KindaSmallNumber		(1.e-4f)
 #define F32Max					3.40282e+38
-#define OffsetOf(type, Member) (umm)&(((type *)0)->Member)
-
+#define OffsetOf(type, Member)  (umm)&(((type *)0)->Member)
 #define CString(String)			(char *)String.Data
 
 #define FILE_AND_LINE__(A, B) A "|" #B
 #define FILE_AND_LINE_(A, B) FILE_AND_LINE__(A, B)
 #define FILE_AND_LINE FILE_AND_LINE_(__FILE__, __LINE__)
 
-//////////////////////////////////////////
-// NOTE(Justin): Linked List Macros
-
-#define SLLQueuePush_N(First,Last,Node,Next) (((First)==0?\
-(First)=(Last)=(Node):\
-((Last)->Next=(Node),(Last)=(Node))),\
-(Node)->Next=0)
-#define SLLQueuePush(First,Last,Node) SLLQueuePush_N(First,Last,Node,Next)
-
-struct platform_file_handle
-{
-	b32 NoErrors;
-	void *Platform;
-};
-
 struct platform_file_info
 {
 	u64 FileDate;
 	u64 FileSize;
-	//char *BaseName;
 	char *Path;
 	void *Platform;
 };
@@ -286,8 +269,6 @@ struct game_memory
 
 	platform_api PlatformAPI;
 };
-
-
 
 #define GAME_UPDATE_AND_RENDER(FunctionName) void FunctionName(game_memory *GameMemory, game_input *GameInput)
 typedef GAME_UPDATE_AND_RENDER(game_update_and_render);

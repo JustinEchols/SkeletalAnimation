@@ -6,6 +6,7 @@
  *	- Landing
  *	- Combat
  *	- Multiple controls turning animations
+ *	- How to relate an attack state duration to an animations duration/time scale?
  *
  * Physics
  *	- Moving Capsule vs Moving OBB
@@ -29,9 +30,8 @@ enum attack_type
 	AttackType_Neutral2,
 	AttackType_Neutral3,
 	AttackType_Forward,
-	AttackType_Sprint,
 	AttackType_Strong,
-	AttackType_Dash,
+	AttackType_Sprint,
 	AttackType_Air,
 
 	AttackType_Count
@@ -45,13 +45,6 @@ struct attack
 	f32 Power;
 };
 
-struct attack_player
-{
-	memory_arena *Arena;
-	attack *Attacks;
-	attack *FreeAttacks;
-};
-
 enum movement_state
 {
 	MovementState_Idle,
@@ -63,7 +56,6 @@ enum movement_state
 	MovementState_Crouch,
 	MovementState_Sliding,
 	MovementState_Attack,
-
 };
 
 enum entity_type
@@ -83,10 +75,13 @@ enum entity_flag
 	EntityFlag_Moveable = (1 << 3),
 	EntityFlag_Collided = (1 << 4),
 	EntityFlag_Moving = (1 << 5),
-	EntityFlag_Attacking = (1 << 6),
-	EntityFlag_Attacked = (1 << 7),
+	EntityFlag_ShouldAttack = (1 << 6), // Anytime an attack key is pressed this is set
+	EntityFlag_Attacking = (1 << 7),
+	EntityFlag_Visible = (1 << 8),
+	EntityFlag_ShouldJump = (1 << 9),
+	EntityFlag_Jumping = (1 << 10),
+	EntityFlag_AnimationControlling = (1 << 11),
 };
-
 
 #include "intrinsics.h"
 #include "math.h"
@@ -108,11 +103,13 @@ struct move_info
 	b32 JumpPressed;
 	b32 Crouching;
 	b32 Attacking;
+	b32 CanStrongAttack;
 	b32 NoVelocity;
 	b32 Accelerating;
 	f32 Speed;
 
 	v3 ddP;
+	v2 StickDelta;
 };
 
 struct collision_info
@@ -196,6 +193,7 @@ struct entity
 	f32 Drag;
 	f32 Acceleration;
 	f32 AngularSpeed;
+	f32 JumpDelay;
 
 	collision_group MovementColliders;
 	collision_group CombatColliders;
@@ -219,10 +217,16 @@ struct entity
 
 struct camera
 {
-	v3 P;
-	v3 Direction;
+	b32 IsFree;
+	b32 IsLocked;
+	f32 Speed;
+	f32 DefaultYaw;
+	f32 DefaultPitch;
 	f32 Yaw;
 	f32 Pitch;
+
+	v3 P;
+	v3 Direction;
 };
 
 struct game_state
@@ -238,12 +242,6 @@ struct game_state
 
 	quad Quad;
 
-	b32 CameraIsFree;
-	b32 CameraIsLocked;
-	f32 CameraSpeed;
-	f32 DefaultYaw;
-	f32 DefaultPitch;
-
 	camera Camera;
 	v3 CameraddP;
 	v3 CameraOffsetFromPlayer;
@@ -251,7 +249,6 @@ struct game_state
 	mat4 CameraTransform;
 	mat4 Perspective;
 
-	f32 Angle;
 	f32 TimeScale;
 	f32 FOV;
 	f32 Aspect;
@@ -260,10 +257,10 @@ struct game_state
 	f32 Gravity;
 
 	u32 CurrentCharacter;
+	u32 CharacterIDs[6];
 	u32 PlayerIDForController[ArrayCount(((game_input *)0)->Controllers)];
 
 	asset_manager AssetManager;
-
 	texture Texture;
 };
 
@@ -275,6 +272,32 @@ struct temp_state
 
 global_variable platform_api Platform;
 global_variable ui Ui;
+
+inline void
+UiAdvanceLine(f32 Amount = 0.0f)
+{
+	if(Amount != 0.0f)
+	{
+		Ui.P.y += Amount;
+	}
+	else
+	{
+		Ui.P.y -= Ui.LineGap;
+	}
+}
+
+inline void
+UiIndentAdd(f32 Amount = 0.0f)
+{
+	if(Amount != 0.0f)
+	{
+		Ui.P.x += Amount;
+	}
+	else
+	{
+		Ui.P.x += Ui.DefaultIndent;
+	}
+}
 
 #define GAME_H
 #endif

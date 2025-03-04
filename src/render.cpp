@@ -33,7 +33,6 @@ PushClear(render_buffer *RenderBuffer, v4 Color)
 	}
 }
 
-#if 1
 inline void
 PushTexture(render_buffer *RenderBuffer, texture *Texture, s32 Index)
 {
@@ -46,24 +45,6 @@ PushTexture(render_buffer *RenderBuffer, texture *Texture, s32 Index)
 		RenderBuffer->TextureCount++;
 	}
 }
-#else
-inline void
-PushTexture(render_buffer *RenderBuffer, char *TextureName)
-{
-	asset_entry Texture = LookupTexture(RenderBuffer->Assets, TextureName);
-	if(Texture.Texture)
-	{
-		render_entry_texture *Entry = PushRenderElement(RenderBuffer, render_entry_texture);
-		if(Entry)
-		{
-			texture **Tex = RenderBuffer->Textures + Texture.Index;
-			*Tex = Texture.Texture;
-			Entry->Index = Texture.Index;
-		}
-	}
-}
-
-#endif
 
 inline void
 PushQuad3D(render_buffer *RenderBuffer, quad_vertex *Vertices, mat4 Transform, u32 TextureIndex)
@@ -86,6 +67,19 @@ PushQuad2D(render_buffer *RenderBuffer, f32 *Vertices, u32 TextureIndex)
 		// TODO(justin): Should we use a pointer instead of f32 A[6][4]?
 		MemoryCopy(sizeof(Entry->Vertices), Vertices, Entry->Vertices);
 		Entry->TextureIndex = TextureIndex;
+	}
+}
+
+inline void
+PushQuad2D(render_buffer *RenderBuffer, f32 *Vertices, v4 Color)
+{
+	render_entry_quad_2d *Entry = PushRenderElement(RenderBuffer, render_entry_quad_2d);
+	if(Entry)
+	{
+		// TODO(justin): Should we use a pointer instead of f32 A[6][4]?
+		MemoryCopy(sizeof(Entry->Vertices), Vertices, Entry->Vertices);
+		Entry->TextureIndex = 0;
+		Entry->Color = Color;
 	}
 }
 

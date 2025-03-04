@@ -29,11 +29,12 @@ struct ui
 	struct asset_manager *Assets;
 
 	u32 ToggleButtonCount;
-	b32 ToggleButtonStates[16];
+	b32 ToggleButtonStates[32];
 
 	f32 AtY;
 	f32 LeftEdge;
 	f32 LineGap;
+	f32 DefaultIndent;
 
 	render_buffer *RenderBuffer;
 	memory_arena *TempArena;

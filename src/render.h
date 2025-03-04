@@ -61,6 +61,7 @@ struct render_entry_quad_2d
 {
 	f32 Vertices[6][4];
 	u32 TextureIndex;
+	v4 Color;
 };
 
 struct render_entry_model

@@ -1,9 +1,0 @@
-[1]
-
-: StateIdleRight
-animation Vampire_IdleRight
-looping
-
-: StateIdleLeft
-animation Vampire_IdleLeft
-looping

@@ -3,20 +3,20 @@
 : StateIdleLeft
 animation Paladin_SwordAndShieldIdle_00
 looping
-message go_state_run StateRunning t_blend 0.1
-message go_state_sprint StateSprinting t_blend 0.1
+message go_state_run StateRunning
+message go_state_sprint StateSprinting
 message go_state_neutral_attack StateNeutralAttack1
 message go_state_strong_attack StateStrongAttack t_start 1.4
-message go_state_jump StateJump t_start 0.35 t_blend 0.0
+message go_state_jump StateJump t_start 0.2 t_blend 0.1
 message go_state_falling StateFalling t_blend 0.1
 
 : StateRunning
 animation Paladin_SwordAndShieldRun_00
 looping
 message go_state_idle StateIdleLeft
-message go_state_sprint StateSprinting t_start -1.0 t_blend 0.1
+message go_state_sprint StateSprinting t_start -1.0
 message go_state_forward_attack StateForwardAttack
-message go_state_jump StateJump t_start 0.35 t_blend 0.0
+#message go_state_jump StateJump t_start 0.2 t_blend 0.1
 message go_state_falling StateFalling t_blend 0.1
 
 : StateSprinting
@@ -24,8 +24,8 @@ animation Paladin_SwordAndShieldSprint_00
 looping
 t_scale 1.5
 message go_state_idle StateIdleLeft
-message go_state_run StateRunning t_start -1.0 t_blend 0.1
-message go_state_jump StateJump t_start 0.35 t_blend 0.0
+message go_state_run StateRunning t_start -1.0
+#message go_state_jump StateJump t_start 0.2 t_blend 0.1
 message go_state_falling StateFalling t_blend 0.1
 message go_state_sprint_attack StateSprintAttack t_blend 0.1
 
@@ -35,7 +35,8 @@ message go_state_sprint_attack StateSprintAttack t_blend 0.1
 
 : StateJump
 animation Paladin_StartJump
-message go_state_falling StateFalling t_interval 0.3 0.77 t_blend 0.4
+remove_locomotion
+message go_state_falling StateFalling t_interval 0.2 0.77 t_blend 0.4
 
 : StateFalling
 animation Paladin_FallLoop
@@ -48,7 +49,7 @@ animation Paladin_EndJump
 message go_state_idle StateIdleLeft t_interval 0.6 0.7 t_blend 0.4
 message go_state_run StateRunning t_interval 0.4 0.7 t_start 0.1
 message go_state_sprint StateSprinting t_interval 0.4 0.7 t_start 0.1
-message go_state_jump StateJump t_interval 0.6 0.7
+message go_state_jump StateJump t_start 0.2 t_interval 0.5 1.1 t_blend 0.1
 
 #
 # Combat

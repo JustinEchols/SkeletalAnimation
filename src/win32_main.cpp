@@ -531,12 +531,12 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 					NewController->StickAverageX = StickAverageX;
 					NewController->StickAverageY = StickAverageY;
 					NewController->StickdX = NewController->StickAverageX - OldController->StickAverageX;
-					NewController->StickdX = NewController->StickAverageY - OldController->StickAverageY;
+					NewController->StickdY = NewController->StickAverageY - OldController->StickAverageY;
 
 					NewController->RightStickAverageX = RightStickAverageX;
 					NewController->RightStickAverageY = RightStickAverageY;
 					NewController->RightStickdX = NewController->RightStickAverageX - OldController->RightStickAverageX;
-					NewController->RightStickdX = NewController->RightStickAverageY - OldController->RightStickAverageY;
+					NewController->RightStickdY = NewController->RightStickAverageY - OldController->RightStickAverageY;
 
 					if((NewController->StickAverageX != 0.0f) ||
 					   (NewController->StickAverageY != 0.0f))

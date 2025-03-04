@@ -84,10 +84,14 @@ struct asset_manager
 	// TODO(Justin): Clean this up
 	animation_info *SampledAnimations;
 
+	// File infos for hot reloading changes when they occur
+
 	platform_file_info XBotGraphFileInfo;
 	platform_file_info YBotGraphFileInfo;
 	platform_file_info PaladinGraphFileInfo;
 	platform_file_info ArcherGraphFileInfo;
+	platform_file_info BruteGraphFileInfo;
+	platform_file_info LevelFileInfo;
 
 	model Capsule;
 	model Cube;
@@ -113,4 +117,3 @@ internal animation_graph *	LookupGraph(asset_manager *AssetManager, char *GraphN
 
 #define ASSET_H
 #endif
-

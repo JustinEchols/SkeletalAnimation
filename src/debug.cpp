@@ -58,9 +58,9 @@ AttackTypeToString(char *Buffer, attack_type Type)
 		{
 			sprintf(Buffer, "%s", "Strong");
 		} break;
-		case AttackType_Dash:
+		case AttackType_Sprint:
 		{
-			sprintf(Buffer, "%s", "Dash");
+			sprintf(Buffer, "%s", "Sprint");
 		} break;
 		case AttackType_Air:
 		{
@@ -78,7 +78,7 @@ DebugDrawString(char *String, v3 Color = V3(1.0f))
 {
 	string Text = StringCopy(Ui.TempArena, String);
 	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
-	Ui.P.y -= Ui.LineGap;
+	UiAdvanceLine();
 }
 
 internal void
@@ -88,7 +88,7 @@ DebugDrawString(char *Label, char *String, v3 Color = V3(1.0f))
 	sprintf(Buff, "%s %s", Label, String);
 	string Text = StringCopy(Ui.TempArena, Buff);
 	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
-	Ui.P.y -= Ui.LineGap;
+	UiAdvanceLine();
 }
 
 internal void
@@ -98,7 +98,17 @@ DebugDrawFloat(char *String, f32 F32, v3 Color = V3(1.0f))
 	sprintf(Buff, "%s %.2f", String, F32);
 	string Text = StringCopy(Ui.TempArena, Buff);
 	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
-	Ui.P.y -= Ui.LineGap;
+	UiAdvanceLine();
+}
+
+internal void
+DebugDrawVector2(char *String, v2 Vector2, v3 Color = V3(1.0f))
+{
+	char Buff[256];
+	sprintf(Buff, "%s %.1f %.1f", String, Vector2.x, Vector2.y);
+	string Text = StringCopy(Ui.TempArena, Buff);
+	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
+	UiAdvanceLine();
 }
 
 internal void
@@ -108,7 +118,31 @@ DebugDrawVector3(char *String, v3 Vector3, v3 Color = V3(1.0f))
 	sprintf(Buff, "%s %.1f %.1f %.1f", String, Vector3.x, Vector3.y, Vector3.z);
 	string Text = StringCopy(Ui.TempArena, Buff);
 	PushText(Ui.RenderBuffer, Text, Ui.Font, Ui.P, Ui.Font->Scale, Color);
-	Ui.P.y -= Ui.LineGap;
+	UiAdvanceLine();
+}
+
+internal void
+DebugDrawAxes(entity *Entity)
+{
+	mat4 T = Mat4Identity();
+	mat4 R = QuaternionToMat4(Entity->Orientation);
+	mat4 S = Mat4Scale(0.5f);
+
+	model *ZArrow = LookupModel(Ui.Assets, "Arrow").Model;
+	model *XArrow = LookupModel(Ui.Assets, "XArrow").Model;
+	model *YArrow = LookupModel(Ui.Assets, "YArrow").Model;
+
+	obb OBB = Entity->MovementColliders.Volumes[0].OBB;
+	v3 Offset = Entity->MovementColliders.Volumes[0].Offset;
+
+	T = Mat4Translate(Entity->P + Offset + 0.5f*OBB.X);
+	PushDebugVolume(Ui.RenderBuffer, XArrow, T*R*S, V3(1.0f, 0.0f, 0.0f));
+
+	T = Mat4Translate(Entity->P + Offset + 0.5f*OBB.Y);
+	PushDebugVolume(Ui.RenderBuffer, YArrow, T*R*S, V3(0.0f, 1.0f, 0.0f));
+
+	T = Mat4Translate(Entity->P + Offset + 0.5f*OBB.Z);
+	PushDebugVolume(Ui.RenderBuffer, ZArrow, T*R*S, V3(0.0f, 0.0f, 1.0f));
 }
 
 internal void
@@ -141,7 +175,7 @@ DebugDrawGroundArrow(entity *Entity, quad Quad)
 	v3 P = Entity->P;
 	P.y += 0.01f;
 	mat4 T = Mat4Translate(P);
-	mat4 R = QuaternionToMat4(Entity->AnimationPlayer->OrientationLockedAt);
+	mat4 R = QuaternionToMat4(Entity->Orientation);
 	mat4 S = Mat4Scale(V3(0.5f));
 
 	asset_entry Entry = LookupTexture(Ui.Assets, "left_arrow");
@@ -191,7 +225,7 @@ DebugDrawJoints(entity *Entity)
 internal void
 DebugDrawEntity(entity *Entity)
 {
-	Ui.P.x += 20.0f;
+	UiIndentAdd();
 
 	DebugDrawVector3("p: ", Entity->P);
 	DebugDrawVector3("dP: ", Entity->dP);
@@ -237,11 +271,15 @@ DebugDrawEntity(entity *Entity)
 	DebugDrawString(YSupported);
 
 	char Buffer[256];
+	MovementStateToString(Buffer, Entity->MovementState);
+	DebugDrawString("", Buffer);
+
+	MemoryZero(Buffer, sizeof(Buffer));
 	AttackTypeToString(Buffer, Entity->AttackType);
 	DebugDrawString("AttackType: ", Buffer);
 	DebugDrawFloat("t: ", Entity->Attacks[Entity->AttackType].CurrentTime);
 
-	Ui.P.x -= 20.0f;
+	UiIndentAdd(-Ui.DefaultIndent);
 }
 
 internal void
@@ -252,25 +290,7 @@ DebugDrawAnimationPlayer(animation_player *AnimationPlayer)
 		return;
 	}
 
-	Ui.P.x += 20.0f;
-
-	if(AnimationPlayer->ControlsPosition)
-	{
-		DebugDrawVector3("RootMotionAccumulator: ", AnimationPlayer->RootMotionAccumulator, Ui.HoverColor);
-	}
-	else
-	{
-		DebugDrawVector3("RootMotionAccumulator: ", AnimationPlayer->RootMotionAccumulator);
-	}
-
-	if(AnimationPlayer->ControlsTurning)
-	{
-		DebugDrawFloat("RootTurningAccumulator: ", AnimationPlayer->RootTurningAccumulator, Ui.HoverColor);
-	}
-	else
-	{
-		DebugDrawFloat("RootTurningAccumulator: ", AnimationPlayer->RootTurningAccumulator);
-	}
+	UiIndentAdd();
 
 	char Buff[256];
 	MovementStateToString(Buff, AnimationPlayer->MovementState);
@@ -280,15 +300,25 @@ DebugDrawAnimationPlayer(animation_player *AnimationPlayer)
 	{
 		DebugDrawString(CString(Animation->Name));
 		DebugDrawFloat("Duration: ", Animation->Duration);
+		DebugDrawFloat("BlendDuration: ", Animation->BlendDuration);
 		DebugDrawFloat("t: ", Animation->CurrentTime);
-		DebugDrawFloat("blend duration: ", Animation->BlendDuration);
 		DebugDrawFloat("t_blend: ", Animation->BlendCurrentTime);
 		DebugDrawFloat("t_scale: ", Animation->TimeScale);
-		DebugDrawFloat("factor: ", Animation->BlendFactor);
+		DebugDrawFloat("weight: ", Animation->BlendFactor);
+		DebugDrawVector3("LockedP: ", AnimationPlayer->EntityPLockedAt);
 
-		Ui.P.y -= Ui.LineGap;
+		v3 Color = V3(1.0f);
+		if(AnimationPlayer->ControlsPosition)
+		{
+			Color = V3(0.0f, 1.0f, 1.0f);
+		}
+
+		DebugDrawVector3("RootMotion: ", AnimationPlayer->RootMotionAccumulator, Color);
+
+		UiAdvanceLine();
 	}
-	Ui.P.x -= 20.0f;
+
+	UiIndentAdd(-Ui.DefaultIndent);
 }
 
 internal void
@@ -312,7 +342,7 @@ DebugDrawHandAndFoot(entity *Entity)
 }
 
 internal void
-DebugDrawTexture(game_state *GameState)
+DebugRenderToTexture(game_state *GameState)
 {
 	//
 	// NOTE(Justin): Render to texture
@@ -328,6 +358,7 @@ DebugDrawTexture(game_state *GameState)
 			GameState->Camera.P,
 			V3(0.0f),
 			2);
+
 
 	PushClear(RenderToTextureBuffer, V4(1.0f));
 	Platform.RenderToOpenGL(RenderToTextureBuffer, GameState->Texture.Width, GameState->Texture.Height);
@@ -354,3 +385,30 @@ DebugDrawTexture(game_state *GameState)
 
 	PushRenderToTexture(Ui.RenderBuffer, (f32 *)Vertices);
 }
+
+internal void
+DebugDrawTexture(char *TextureName, f32 Width = 128.0f, f32 Height = 128.0f)
+{
+	asset_entry Entry = LookupTexture(Ui.Assets, TextureName);
+	if(!Entry.Texture)
+	{
+		return;
+	}
+
+	v2 P = V2(0.0f, Ui.P.y - Height);
+	rect Rect = RectMinDim(P, V2(Width, Height));
+	f32 Vertices[6][4] =
+	{
+		{Rect.Min.x, Rect.Min.y, 0.0f, 0.0f},
+		{Rect.Max.x, Rect.Min.y, 1.0f, 0.0f},
+		{Rect.Max.x, Rect.Max.y, 1.0f, 1.0f},
+
+		{Rect.Max.x, Rect.Max.y, 1.0f, 1.0f},
+		{Rect.Min.x, Rect.Max.y, 0.0f, 1.0f},
+		{Rect.Min.x, Rect.Min.y, 0.0f, 0.0f},
+	};
+
+	PushTexture(Ui.RenderBuffer, Entry.Texture, Entry.Index);
+	PushQuad2D(Ui.RenderBuffer, (f32 *)Vertices, Entry.Index);
+}
+

@@ -52,7 +52,7 @@ CollisionRuleAdd(game_state *GameState, u32 A, u32 B, b32 ShouldCollide, collisi
 internal v3
 ClosestPointOnOBB(obb OBB, v3 WorldPosition, v3 P)
 {
-	v3 ClosestPoint;
+	v3 ClosestPoint = {};
 
 	v3 Center = WorldPosition + OBB.Center;
 	v3 CenterToP = P - Center;

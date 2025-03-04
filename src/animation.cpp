@@ -5,6 +5,12 @@ FlagAdd(animation *Animation, u32 Flag)
 	Animation->Flags |= Flag;
 }
 
+inline void
+FlagClear(animation *Animation, u32 Flag)
+{
+	Animation->Flags &= ~Flag;
+}
+
 inline b32 
 FlagIsSet(animation *Animation, u32 Flag)
 {
@@ -48,13 +54,6 @@ RemoveLocomotion(animation *Animation)
 }
 
 inline b32
-MaskingJoints(animation *Animation)
-{
-	b32 Result = FlagIsSet(Animation, AnimationFlags_JointMask);
-	return(Result);
-}
-
-inline b32
 ControlsPosition(animation *Animation)
 {
 	b32 Result = FlagIsSet(Animation, AnimationFlags_ControlsPosition);
@@ -65,13 +64,6 @@ inline b32
 ControlsTurning(animation *Animation)
 {
 	b32 Result = FlagIsSet(Animation, AnimationFlags_ControlsTurning);
-	return(Result);
-}
-
-inline b32
-ShouldPause(animation *Animation)
-{
-	b32 Result = FlagIsSet(Animation, AnimationFlags_ShouldPause);
 	return(Result);
 }
 
@@ -137,8 +129,6 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 	AnimationPlayer->FreeChannels = 0;
 	AnimationPlayer->CurrentTime = 0.0f;
 	AnimationPlayer->dt = 0.0f;
-	AnimationPlayer->RootMotionAccumulator = {};
-	AnimationPlayer->RootTurningAccumulator = 0;
 
 	AnimationPlayer->FinalPose = PushArray(AnimationPlayer->Arena, Model->MeshCount, key_frame);
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
@@ -165,6 +155,10 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 {
 	Assert(AnimationPlayer->IsInitialized);
 
+	//
+	// NOTE(Justin): Do not repeatedly play the same animation
+	//
+
 	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
 	{
 		if(Current->ID.Value == ID)
@@ -172,6 +166,10 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 			return;
 		}
 	}
+
+	//
+	// NOTE(Justin): Allocate a new channel 
+	//
 
 	if(!AnimationPlayer->FreeChannels)
 	{
@@ -182,9 +180,12 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	animation *Animation = AnimationPlayer->FreeChannels;
 	AnimationPlayer->FreeChannels = Animation->Next;
 
+	//
+	// NOTE(Justin): Blend out all current channels
+	//
+
 	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
 	{
-
 		if(!Current->BlendingOut)
 		{
 			Current->BlendDuration = BlendDuration;
@@ -196,7 +197,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	}
 
 	Animation->Name = SampledAnimation->Name;
-	Animation->Flags = AnimationFlags | AnimationFlags_Playing;
+	Animation->Flags = (AnimationFlags | AnimationFlags_Playing);
 	Animation->Duration = SampledAnimation->Duration;
 	Animation->CurrentTime = StartTime;
 	Animation->TimeScale = TimeScale;
@@ -209,11 +210,8 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	Animation->ID.Value = ID;
 	Animation->Info = SampledAnimation;
 	Animation->BlendedPose = SampledAnimation->ReservedForChannel;
+
 	Animation->Next = AnimationPlayer->Channels;
-
-	Animation->MotionDeltaPerFrame = {};
-	Animation->TurningDeltaPerFrame = {};
-
 	AnimationPlayer->Channels = Animation;
 	AnimationPlayer->PlayingCount++;
 }
@@ -242,20 +240,30 @@ AnimationUpdate(animation *Animation, f32 dt)
 			Animation->CurrentTime = Info->Duration;
 		}
 
+		if(ControlsPosition(Animation))
+		{
+			FlagAdd(Animation, AnimationFlags_CompletedCycle);
+		}
+
 		Animation->CurrentTime -= Info->Duration;
 	}
 
 	if(CrossFading(Animation))
 	{
 		Animation->BlendCurrentTime += dt * Animation->TimeScale;
-		if((Animation->BlendCurrentTime >= Animation->BlendDuration) && Animation->BlendingOut)
-		{
-			FlagAdd(Animation, AnimationFlags_Finished);
-		}
 
-		if((Animation->BlendCurrentTime >= Animation->BlendDuration) && Animation->BlendingIn)
+		if((Animation->BlendCurrentTime >= Animation->BlendDuration))
 		{
-			Animation->BlendingIn = false;
+			if(Animation->BlendingOut)
+			{
+				FlagAdd(Animation, AnimationFlags_Finished);
+				Animation->BlendingOut = false;
+			}
+
+			if(Animation->BlendingIn)
+			{
+				Animation->BlendingIn = false;
+			}
 		}
 	}
 
@@ -275,8 +283,8 @@ AnimationUpdate(animation *Animation, f32 dt)
 
 		key_frame *KeyFrame		= Info->KeyFrames + KeyFrameIndex;
 		key_frame *NextKeyFrame = Info->KeyFrames + (KeyFrameIndex + 1);
-
 		sqt RootTransform = InterpolatedSQT(KeyFrame, t, NextKeyFrame, 0);
+
 		if(RemoveLocomotion(Animation))
 		{
 			v3 RootStartP = Info->KeyFrames[0].Positions[0];
@@ -327,22 +335,35 @@ AnimationUpdate(animation *Animation, f32 dt)
 internal void
 SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer, animation_graph *Graph, string Dest, f32 ArcBlendDuration, f32 ArcTimeOffset)
 {
+	animation_graph_node DestNode = {};
+	u32 DestIndex = 0;
 	for(u32 Index = 0; Index < Graph->NodeCount; ++Index)
 	{
 		animation_graph_node *Node = Graph->Nodes + Index;
 		if(StringsAreSame(Node->Name, Dest))
 		{
-			Graph->CurrentNode = *Node;
-			Graph->Index = Index;
+			DestNode = *Node;
+			DestIndex = Index;
 			break;
 		}
 	}
 
-	animation_graph_node *Node = &Graph->CurrentNode;
-	asset_entry Entry = LookupSampledAnimation(AssetManager, CString(Node->Tag));
+	asset_entry Entry = LookupSampledAnimation(AssetManager, CString(DestNode.Tag));
 	if(Entry.SampledAnimation)
 	{
-		AnimationPlay(AnimationPlayer, Entry.SampledAnimation, Entry.Index, Node->AnimationFlags, ArcBlendDuration, ArcTimeOffset, Node->TimeScale);
+		AnimationPlay(AnimationPlayer, Entry.SampledAnimation, Entry.Index, DestNode.AnimationFlags, ArcBlendDuration, ArcTimeOffset, DestNode.TimeScale);
+	}
+
+	//
+	// NOTE(Justin): Update the current node of the graph iff the animation was successfully played.
+	//
+
+	animation *JustAdded = AnimationPlayer->Channels;
+	if(StringsAreSame(JustAdded->Name, DestNode.Tag))
+	{
+		Graph->CurrentNode = DestNode;
+		Graph->Index = DestIndex;
+		AnimationPlayer->MovementState = AnimationPlayer->NewState;
 	}
 }
 
@@ -370,6 +391,12 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 			if(Arc->Type == ArcType_TimeInterval)
 			{
 				animation *Animation = AnimationPlayer->Channels;
+				if(!Animation)
+				{
+					SwitchToNode(AssetManager, AnimationPlayer, Graph, Graph->Nodes[0].Name, DefaultBlendDuration, DefaultTimeOffset);
+					return;
+				}
+
 				f32 t = Animation->CurrentTime;
 				if((t < Arc->t0) || (t > Arc->t1))
 				{
@@ -407,7 +434,6 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 
 	if(Dest.Size != 0)
 	{
-		AnimationPlayer->MovementState = AnimationPlayer->NewState;
 		SwitchToNode(AssetManager, AnimationPlayer, Graph, Dest, DefaultBlendDuration, DefaultTimeOffset);
 	}
 }
@@ -423,10 +449,11 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		return;
 	}
 
-	// Right now the animation player lags behind the gameplay state. Meaning if the gameplay
-	// state says sprint and the player was running. The animation state stays in running
-	// for some time until it can transition to the sprint state. Only when the animation
-	// state has switched do we acceps the new state. Not sure if this is a good idea or not.
+	if(!AnimationPlayer->ControlsPosition || AnimationPlayer->UpdateLockedP)
+	{
+		AnimationPlayer->EntityPLockedAt = Entity->P;
+		AnimationPlayer->UpdateLockedP = false;
+	}
 
 	AnimationPlayer->NewState = Entity->MovementState;
 	movement_state OldState = AnimationPlayer->MovementState;
@@ -435,7 +462,6 @@ Animate(entity *Entity, asset_manager *AssetManager)
 	{
 		case MovementState_Idle:
 		{
-			// TODO(Justin): Transition to idle!
 			char *Message = "go_state_idle";
 			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
@@ -446,17 +472,6 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		case MovementState_Run:
 		{
 			char *Message = "go_state_run";
-
-			f32 dTheta = Entity->ThetaTarget - Entity->Theta;
-			if(dTheta < -30.0f)
-			{
-				Message = "go_state_turn_90_right_to_run";
-			}
-			if(dTheta > 30.0f)
-			{
-				Message = "go_state_turn_90_left_to_run";
-			}
-
 			MessageSend(AssetManager, AnimationPlayer, Graph, Message);
 		} break;
 		case MovementState_Sprint:
@@ -486,13 +501,11 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		case MovementState_Attack:
 		{
 			char *Message = "go_state_neutral_attack";
-			if(Entity->AttackType == AttackType_Forward)
+			if((Entity->AttackType == AttackType_Neutral1) ||
+			   (Entity->AttackType == AttackType_Neutral2) ||
+			   (Entity->AttackType == AttackType_Neutral3))
 			{
-				Message = "go_state_forward_attack";
-			}
-			if(Entity->AttackType == AttackType_Strong)
-			{
-				Message = "go_state_strong_attack";
+				Message = "go_state_neutral_attack";
 			}
 			if(Entity->AttackType == AttackType_Sprint)
 			{
@@ -526,33 +539,25 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	{
 		animation *Animation = *AnimationPtr;
 
-		if(ControlsTurning(Animation))
+		if(ControlsPosition(Animation))
 		{
-			if(!Animation->BlendingOut)
+			if(!Animation->BlendingIn || !Animation->BlendingOut)
 			{
-				AnimationPlayer->ControlsTurning = true;
+				AnimationPlayer->ControlsPosition = true;
 			}
 		}
 
-		if(ControlsPosition(Animation))
-		{
-			AnimationPlayer->ControlsPosition = true;
-		}
-
-
-		Animation->MotionDeltaPerFrame = {};
-		Animation->TurningDeltaPerFrame = 0.0f;
-
 		v3 OldP = Animation->BlendedPose->Positions[0];
-		quaternion OldQ = Animation->BlendedPose->Orientations[0];
-
 		AnimationUpdate(Animation, AnimationPlayer->dt);
-
 		v3 NewP = Animation->BlendedPose->Positions[0];
-		quaternion NewQ = Animation->BlendedPose->Orientations[0];
 
-		Animation->MotionDeltaPerFrame += NewP - OldP;
-		Animation->TurningDeltaPerFrame = AngleBetween(NewQ, OldQ);
+		Animation->RootMotionDeltaPerFrame = NewP - OldP;
+
+		if(ControlsPosition(Animation) && (Animation->Flags & AnimationFlags_CompletedCycle))
+		{
+			AnimationPlayer->UpdateLockedP = true;
+			FlagClear(Animation, AnimationFlags_CompletedCycle);
+		}
 
 		// TODO(Justin): Is this the correct location to remove finished 
 		if(Finished(Animation))
@@ -593,7 +598,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 
 		key_frame *BlendedPose = Animation->BlendedPose;
 		animation_info *Info = Animation->Info;
-		Assert(Info);
 
 		f32 Factor = Animation->BlendFactor;
 		FactorSum += Factor;
@@ -624,12 +628,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 
 		if(AnimationPlayer->ControlsPosition)
 		{
-			AnimationPlayer->RootMotionAccumulator += Factor * Animation->MotionDeltaPerFrame;
-		}
-
-		if(ControlsTurning(Animation))
-		{
-			AnimationPlayer->RootTurningAccumulator += Factor * Animation->TurningDeltaPerFrame;
+			AnimationPlayer->RootMotionAccumulator += Animation->RootMotionDeltaPerFrame;
 		}
 	}
 
@@ -642,11 +641,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	if(AnimationPlayer->ControlsPosition)
 	{
 		AnimationPlayer->RootMotionAccumulator *= Scale;
-	}
-
-	if(AnimationPlayer->ControlsTurning)
-	{
-		AnimationPlayer->RootTurningAccumulator *= Scale;
 	}
 
 	//
@@ -670,6 +664,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			DestPose->Scales[JointIndex]		= SrcPose->Scales[JointIndex];
 		}
 	}
+
 }
 
 internal void
@@ -721,19 +716,6 @@ ModelJointsUpdate(entity *Entity)
 			Xform.Position		= FinalPose->Positions[0];
 			Xform.Orientation	= FinalPose->Orientations[0];
 			Xform.Scale			= FinalPose->Scales[0];
-
-			// The final set of transforms are in model space. All these positions
-			// get converted to world space in the shader. These means the root is converted to
-			// world space and is at the gameplay position. Therfore if doing gameplay driven animation
-			// all we need to do is remove the xz translation, since the root position is going to be translated there,
-			// and keep the up and down motion by using the y value of the root of the mixed pose
-
-			if(AnimationPlayer->ControlsPosition)
-			{
-				// NOTE(Justin): This has the affect of removing xz translation while
-				// keeping up and down motion.
-				//Xform.Position = V3(0.0f, FinalPose->Positions[0].y,  0.0f);
-			}
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
 			   !Equal(Xform.Scale, V3(0.0f)))
@@ -857,29 +839,6 @@ NodeEnd(animation_graph *Graph)
 	Graph->CurrentNode = Graph->Nodes[0];
 }
 
-// TODO(Justin): This is dangerous as if the arguements get passed in the incorrect order
-// then bad things can happen... Also there is no size checking on the buffer
-internal void
-BufferLine(u8 **Content, u8 *Buffer)
-{
-	u32 At = 0;
-	while(!IsNewLine(**Content))
-	{
-		Buffer[At++] = **Content;
-		(*Content)++;
-	}
-	Buffer[At] = '\0';
-}
-
-internal void
-AdvanceLine(u8 **Content)
-{
-	while(IsNewLine(**Content))
-	{
-		(*Content)++;
-	}
-}
-
 // TODO(Jusitn): Need to validate that the animations specified in the
 // graph are correct.
 
@@ -887,6 +846,8 @@ AdvanceLine(u8 **Content)
 // does not parse correctly.
 
 // TODO(Jusitn): Error handling
+// TODO(Jusitn): Robustness
+
 internal void 
 AnimationGraphInitialize(animation_graph *G, char *FileName)
 {
@@ -898,17 +859,23 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 	}
 
 	u8 *Content = (u8 *)File.Content;
-	u8 Buffer_[4096];
-	u8 *Buffer = &Buffer_[0];
-	MemoryZero(Buffer, sizeof(Buffer));
-	u32 At = 0;
+
+	u8 LineBuffer_[4096];
+	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
+	u8 *LineBuffer = &LineBuffer_[0];
+
+	u8 Word_[4096];
+	MemoryZero(Word_, sizeof(Word_));
+	u8 *Word = &Word_[0];
+
 	b32 ProcessingNode = false;
 	while(*Content)
 	{
-		BufferLine(&Content, Buffer);
-		AdvanceLine(&Content);
+		BufferLine(&Content, LineBuffer);
+		u8 *Line = LineBuffer;
+		BufferNextWord(&Line, Word);
 
-		switch(Buffer[0])
+		switch(Word[0])
 		{
 			case ' ':
 			case '\r':
@@ -920,8 +887,7 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 			} break;
 			case '[':
 			{
-				u32 Version = U32FromASCII(&Buffer[1]);
-				//Assert(Version == 1);
+				u32 Version = U32FromASCII(&Word[1]);
 			} break;
 			case ':':
 			{
@@ -931,100 +897,110 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 					ProcessingNode = false;
 				}
 
-				EatUntilSpace(&Buffer);
-				EatSpaces(&Buffer);
-				NodeBegin(G, (char *)Buffer);
+				EatUntilSpace(&Line);
+				EatSpaces(&Line);
+				NodeBegin(G, (char *)Line);
 				ProcessingNode = true;
-				BufferLine(&Content, Buffer);
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
 			} break;
 		}
 
 		if(ProcessingNode)
 		{
-			char *Word = strtok((char *)Buffer, " ");
-
 			animation_graph_node *Node = &G->Nodes[G->Index];
 			if(StringsAreSame(Word, "message"))
 			{
 				Assert(Node->ArcCount < ArrayCount(Node->Arcs));
 				animation_graph_arc *Arc = Node->Arcs + Node->ArcCount++;
 
-				char *InBoundMessage = strtok(0, " ");
-				char *DestNodeName = strtok(0, " ");
-				char *Param = strtok(0, " ");
+				EatSpaces(&Line);
+				BufferNextWord(&Line, Word);
+				Arc->Message = StringCopy(&G->Arena, Word);
 
-				Arc->Destination = StringCopy(&G->Arena, DestNodeName);
-				Arc->Message	 = StringCopy(&G->Arena, InBoundMessage);
-				Arc->Type		 = ArcType_None;
+				EatSpaces(&Line);
+				BufferNextWord(&Line, Word);
+				Arc->Destination = StringCopy(&G->Arena, Word);
 
-				f32 t0 = 0.0f;
-				f32 t1 = 0.0f;
-				f32 StartTime = 0.0f;
-				f32 BlendDuration = 0.0f;
+				Arc->Type = ArcType_None;
 
-				while(Param)
+				while(*Line)
 				{
-					if(StringsAreSame("t_start", Param))
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+
+					if(StringsAreSame("t_start", Word))
 					{
-						Param = strtok(0, " ");
-						StartTime = F32FromASCII(Param);
-						Arc->StartTime = StartTime;
+						EatSpaces(&Line);
+						BufferNextWord(&Line, Word);
+						Arc->StartTime = F32FromASCII(Word);
 					}
-					else if(StringsAreSame("t_blend", Param))
+					else if(StringsAreSame("t_blend", Word))
 					{
-						Param = strtok(0, " ");
-						BlendDuration = F32FromASCII(Param);
-						Arc->BlendDuration = BlendDuration;
+						EatSpaces(&Line);
+						BufferNextWord(&Line, Word);
+						Arc->BlendDuration = F32FromASCII(Word);
 						Arc->BlendDurationSet = true;
 					}
-					else if(StringsAreSame("t_interval", Param))
+					else if(StringsAreSame("t_interval", Word))
 					{
-						Param = strtok(0, " ");
-						t0 = F32FromASCII(Param);
-						Param = strtok(0, " ");
-						t1 = F32FromASCII(Param);
+						EatSpaces(&Line);
+						BufferNextWord(&Line, Word);
+						Arc->t0 = F32FromASCII(Word);
+
+						EatSpaces(&Line);
+						BufferNextWord(&Line, Word);
+						Arc->t1 = F32FromASCII(Word);
 
 						Arc->Type = ArcType_TimeInterval;
-						Arc->t0 = t0;
-						Arc->t1 = t1;
 					}
-
-					Param = strtok(0, " ");
 				}
 			}
 			else if(StringsAreSame(Word, "when_done"))
 			{
 				animation_graph_arc *Arc = &Node->WhenDone;
 
-				char *InBoundMessage = strtok(0, " ");
-				char *DestNodeName = strtok(0, " ");
-				char *Param = strtok(0, " ");
+				EatSpaces(&Line);
+				BufferNextWord(&Line, Word);
+				Arc->Message = StringCopy(&G->Arena, Word);
 
-				Arc->Destination = StringCopy(&G->Arena, DestNodeName);
-				Arc->Message	 = StringCopy(&G->Arena, InBoundMessage);
-				Arc->Type		 = ArcType_WhenDone;
+				EatSpaces(&Line);
+				BufferNextWord(&Line, Word);
+				Arc->Destination = StringCopy(&G->Arena, Word);
 
-				while(Param)
+				Arc->Type = ArcType_WhenDone;
+
+				while(*Line)
 				{
-					if(StringsAreSame("t_remaining", Param))
-					{
-						Param = strtok(0, " ");
-						Arc->RemainingTimeBeforeCrossFade = F32FromASCII(Param);
-					}
-					if(StringsAreSame("t_start", Param))
-					{
-						Param = strtok(0, " ");
-						Arc->StartTime = F32FromASCII(Param);
-					}
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
 
-					Param = strtok(0, " ");
+					if(StringsAreSame("t_remaining", Word))
+					{
+						EatSpaces(&Line);
+						BufferNextWord(&Line, Word);
+						Arc->RemainingTimeBeforeCrossFade = F32FromASCII(Word);
+					}
+					if(StringsAreSame("t_start", Word))
+					{
+						EatSpaces(&Line);
+						BufferNextWord(&Line, Word);
+						Arc->StartTime = F32FromASCII(Word);
+					}
 				}
 			}
+			// TODO(Justin): This should be a tag. E.g. idle not the actual name of the animaation?
 			else if(StringsAreSame(Word, "animation"))
 			{
-				// TODO(Justin): This should be a tag. E.g. idle not the actual name of the animaation?
-				char *Param = strtok(0, " ");
-				Node->Tag = StringCopy(&G->Arena, Param);
+				EatSpaces(&Line);
+				BufferNextWord(&Line, Word);
+				Node->Tag = StringCopy(&G->Arena, Word);
+			}
+			else if(StringsAreSame(Word, "t_scale"))
+			{
+				EatSpaces(&Line);
+				BufferNextWord(&Line, Word);
+				Node->TimeScale = F32FromASCII(Word);
 			}
 			else if(StringsAreSame(Word, "controls_position"))
 			{
@@ -1042,24 +1018,14 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 			{
 				Node->AnimationFlags |= AnimationFlags_RemoveLocomotion;
 			}
-			else if(StringsAreSame(Word, "should_pause"))
-			{
-				Node->AnimationFlags |= AnimationFlags_ShouldPause;
-			}
-			else if(StringsAreSame(Word, "t_scale"))
-			{
-				char *Param = strtok(0, " ");
-				Node->TimeScale = F32FromASCII(Param);
-			}
-
-
 			else if(*Word == '#')
 			{
 				// Comment, do nothing.
 			}
-
-			AdvanceLine(&Content);
 		}
+
+		AdvanceLine(&Content);
 	}
+
 	NodeEnd(G);
 }

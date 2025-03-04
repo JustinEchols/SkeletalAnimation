@@ -714,15 +714,27 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 			case RenderBuffer_render_entry_quad_2d:
 			{
 				render_entry_quad_2d *Entry = (render_entry_quad_2d *)Data;
-				texture *Texture = RenderBuffer->Textures[Entry->TextureIndex];
-				Assert(Texture->Handle);
 
 				OpenGL.glUseProgram(ScreenShader);
-				OpenGL.glActiveTexture(GL_TEXTURE0);
-				UniformBoolSet(ScreenShader, "Texture", 0);
+				UniformBoolSet(ScreenShader, "UsingTexture", false);
+
+				if(Entry->TextureIndex)
+				{
+					UniformBoolSet(ScreenShader, "UsingTexture", true);
+					texture *Texture = RenderBuffer->Textures[Entry->TextureIndex];
+					Assert(Texture->Handle);
+					OpenGL.glActiveTexture(GL_TEXTURE0);
+					UniformBoolSet(ScreenShader, "Texture", 0);
+					glBindTexture(GL_TEXTURE_2D, Texture->Handle);
+				}
+				else
+				{
+					UniformV4Set(ScreenShader, "Color", Entry->Color);
+				}
+
 				UniformF32Set(ScreenShader, "WindowWidth", (f32)WindowWidth);
 				UniformF32Set(ScreenShader, "WindowHeight", (f32)WindowHeight);
-				glBindTexture(GL_TEXTURE_2D, Texture->Handle);
+
 				OpenGL.glBindVertexArray(OpenGL.Quad2dVA);
 				OpenGL.glBindBuffer(GL_ARRAY_BUFFER, OpenGL.Quad2dVB);
 				OpenGL.glBufferSubData(GL_ARRAY_BUFFER, 0, sizeof(Entry->Vertices), Entry->Vertices);

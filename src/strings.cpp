@@ -1,3 +1,23 @@
+inline b32
+IsNull(char C)
+{
+	b32 Result = (C == '\0');
+	return(Result);
+}
+
+inline b32
+IsNull(u8 C)
+{
+	b32 Result = (C == '\0');
+	return(Result);
+}
+
+inline b32
+IsNull(u8 *C)
+{
+	b32 Result = IsNull(*C);
+	return(Result);
+}
 
 inline b32 
 IsNewLine(char C)
@@ -65,13 +85,36 @@ inline void
 BufferNextWord(u8 **C, u8 *Buff)
 {
 	u32 Index = 0;
-	while(!IsNewLine(*C) && !IsSpace(*C))
+	while(!IsNewLine(*C) && !IsSpace(*C) && !IsNull(*C))
 	{
 		Buff[Index++] = **C;
 		(*C)++;
 
 	}
 	Buff[Index] = 0;
+}
+
+// TODO(Justin): This is dangerous as if the arguements get passed in the incorrect order
+// then bad things can happen... Also there is no size checking on the buffer
+internal void
+BufferLine(u8 **Content, u8 *Buffer)
+{
+	u32 At = 0;
+	while(!IsNewLine(**Content))
+	{
+		Buffer[At++] = **Content;
+		(*Content)++;
+	}
+	Buffer[At] = '\0';
+}
+
+internal void
+AdvanceLine(u8 **Content)
+{
+	while(IsNewLine(**Content))
+	{
+		(*Content)++;
+	}
 }
 
 
@@ -221,62 +264,6 @@ StringSearchFor(string S, char C)
 
 }
 
-internal void
-StringListPushExplicit(string_list *List, string String, string_node *Node)
-{
-	Node->String = String;
-	SLLQueuePush(List->First, List->Last, Node);
-	List->Count += 1;
-	List->Size += String.Size;
-}
-
-internal void
-StringListPush(memory_arena *Arena, string_list *List, string String)
-{
-	string_node *Node = PushArray(Arena, 1, string_node);
-	StringListPushExplicit(List, String, Node);
-}
-
-internal string_list
-StringSplit(memory_arena *Arena, string String, u8 *Splits, u32 Count)
-{
-	string_list Result = {};
-
-	u8 *At = String.Data;
-	u8 *FirstWord = String.Data;
-	u8 *OnePastLast = String.Data + String.Size;
-	for(; At < OnePastLast; ++At)
-	{
-		u8 Byte = *At;
-		b32 ShouldSplit = false;
-		for(u32 Index = 0; Index < Count; ++Index)
-		{
-			if(Byte == Splits[Index])
-			{
-				ShouldSplit = true;
-				break;
-			}
-		}
-
-		if(ShouldSplit)
-		{
-			if(FirstWord < At)
-			{
-				StringListPush(Arena, &Result, StringFromRange(FirstWord, At));
-			}
-
-			FirstWord = At + 1;
-		}
-	}
-
-	if(FirstWord < At)
-	{
-		StringListPush(Arena, &Result, StringFromRange(FirstWord, At));
-	}
-
-	return(Result);
-}
-
 inline s32
 S32FromASCII(u8 *S)
 {
@@ -330,71 +317,6 @@ inline void
 F32ToString(char *Dest, char *Format, f32 F32)
 {
 	sprintf(Dest, Format, F32);
-}
-
-internal void
-ParseU32Array(u32 *Dest, u32 DestCount, string Str)
-{
-	if(DestCount != 0)
-	{
-		Assert(Dest);
-
-		char *Context;
-		char *Tok = strtok_s((char *)Str.Data, " ", &Context);
-		Dest[0] = U32FromASCII((u8 *)Tok);
-		for(u32 Index = 1; Index < DestCount; ++Index)
-		{
-			Tok = strtok_s(0, " ", &Context);
-			if(Tok)
-			{
-				Dest[Index] = U32FromASCII((u8 *)Tok);
-			}
-		}
-	}
-}
-
-internal void
-ParseF32Array(f32 *Dest, u32 DestCount, string Str)
-{
-	if(DestCount != 0)
-	{
-		Assert(Dest);
-
-		char *Context;
-		char *Tok = strtok_s((char *)Str.Data, " \n\r", &Context);
-		Dest[0] = F32FromASCII((u8 *)Tok);
-		for(u32 Index = 1; Index < DestCount; ++Index)
-		{
-			Tok = strtok_s(0, " \n\r", &Context);
-			if(Tok)
-			{
-				Dest[Index] = F32FromASCII((u8 *)Tok);
-			}
-		}
-	}
-}
-
-internal void
-ParseF32Array(memory_arena *Arena, f32 *Dest, u32 DestCount, string Str)
-{
-	if(DestCount != 0)
-	{
-		Assert(Dest);
-
-		char Delim[] = " \n\r";
-		string_list List = StringSplit(Arena, Str, (u8 *)Delim, 3);
-		Assert(List.Count == DestCount);
-		string_node *Token = List.First;
-		Dest[0] = F32FromASCII((u8 *)Token->String.Data);
-		for(u32 Index = 1; Index < List.Count; ++Index)
-		{
-			Token = Token->Next;
-			if(Token)
-			{
-				Dest[Index] = F32FromASCII((u8 *)Token->String.Data);
-			}
-		}
-	}
 }
 
 internal string
@@ -451,28 +373,6 @@ ParseStringArray(memory_arena *Arena, string *Dest, u32 DestCount, string Str)
 			}
 		}
 	}
-}
-
-internal string_array
-StringSplitIntoArray(memory_arena *Arena, string Str, u8 *Delimeters, u32 DelimCount)
-{
-	string_array Result = {};
-
-	string_list List = StringSplit(Arena, Str, Delimeters, DelimCount);
-
-	Result.Count = (u32)List.Count;
-	Result.Strings = PushArray(Arena, Result.Count, string);
-
-	string_node *StrNode = List.First;
-	for(u32 Index = 0; Index < List.Count; ++Index)
-	{
-		string S = StringCopy(Arena, StrNode->String);
-		S.Data[S.Size] = 0;
-		Result.Strings[Index] = S;
-		StrNode = StrNode->Next;
-	}
-
-	return(Result);
 }
 
 internal u32

@@ -18,7 +18,6 @@ FlagIsSet(mesh *Mesh, u32 Flag)
 	return(Result);
 }
 
-
 // TODO(Justin): String hash
 internal s32
 JointIndexGet(string *JointNames, u32 JointCount, string JointName)
