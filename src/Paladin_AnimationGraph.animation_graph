@@ -113,6 +113,6 @@ t_scale 2.0
 controls_position
 #ignore_y_motion
 message go_state_falling StateFalling t_blend 0.2
-message go_state_idle StateIdleLeft t_interval 1.6 1.8 t_blend 0.4
+message go_state_idle StateIdleLeft t_interval 1.6 1.8 t_blend 0.8
 message go_state_run StateRunning t_interval 1.53 1.73
 message go_state_sprint StateSprinting t_interval 1.53 1.73

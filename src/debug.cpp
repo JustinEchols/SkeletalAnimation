@@ -322,6 +322,7 @@ DebugDrawAnimationPlayer(animation_player *AnimationPlayer)
 		}
 
 		DebugDrawVector3("RootMotion: ", AnimationPlayer->RootMotionAccumulator, Color);
+		DebugDrawVector3("RootVelocity: ", AnimationPlayer->RootVelocityAccumulator, Color);
 
 		UiAdvanceLine();
 	}

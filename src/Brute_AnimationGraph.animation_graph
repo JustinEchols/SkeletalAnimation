@@ -70,8 +70,8 @@ message go_state_neutral_attack StateNeutralAttack1 t_start 0.3 t_interval 3.4 4
 animation Brute_AxeRunJumpAttack
 controls_position
 #t_scale 2.0
-t_scale 1.8
-message go_state_idle StateIdle t_interval 3.0 3.2
+t_scale 1.5
+message go_state_idle StateIdle t_interval 3.0 3.67
 message go_state_run StateRunning t_interval 3.0 3.2
 message go_state_sprint StateSprinting t_interval 3.0 3.2
 message go_state_neutral_attack StateNeutralAttack1 t_interval 2.5 3.17 t_start 0.3

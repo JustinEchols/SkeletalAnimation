@@ -634,12 +634,18 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 				s32 JointIndex = JointIndexGet(Info->JointNames, Info->JointCount, Joint->Name);
 				if(JointIndex != -1)
 				{
-					// NOTE(Justin): If the animation contains root motion and we are blending with another animation
+					// NOTE(Justin): If the animation contains root motion and we are blending out with another animation
 					// that does not have root motion the result is that the characters's root position is changed overtime
 					// away from the animation blending out and towards the other animation. To not to do this we only
 					// blend in the vertical motion of the root and remove the lateral motion. The problem with this
 					// is that if the root positions are far apart the character's position will end up snapping once the blend is complete 
-					// So, the root positions need to be almost if not the same.
+					// So, the root positions need to be almost if not the same. Also when the blend starts happening between two particular
+					// animations will need to be carefully considered. When we start blending can impact the result dramatically
+					// because the root motion differs between frames. Depending on where the blend starts happening will impact the
+					// final position of the character.
+					
+					// NOTE(Justin): Blending in should work fine. We just start blending in the root motion when the root motion animation
+					// starts playing
 
 					v3 P = Factor * BlendedPose->Positions[JointIndex];
 					if(ControlsPosition(Animation) && Animation->BlendingOut && (JointIndex == 0))
