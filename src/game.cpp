@@ -11,6 +11,19 @@
 #include "ui.cpp"
 #include "collision.cpp"
 
+internal void
+AudioInitialize(audio_state *AudioState, memory_arena *Arena)
+{
+	AudioState->Arena = Arena;
+	AudioState->Channels = 0;
+	AudioState->FreeChannels = 0;
+}
+
+internal void
+SoundToOutput(audio_state *AudioState, game_sound_buffer *SoundBuffer, asset_manager *Assets, memory_arena *TempArena)
+{
+}
+
 internal entity * 
 PlayerAdd(game_state *GameState, v3 P)
 {
@@ -206,7 +219,7 @@ BruteAdd(game_state *GameState, v3 P)
 	Player->Attacks[AttackType_Neutral2].Power = 5.0f;
 
 	Player->Attacks[AttackType_Neutral3].Type = AttackType_Neutral3;
-	Player->Attacks[AttackType_Neutral3].Duration = 0.3f;
+	Player->Attacks[AttackType_Neutral3].Duration = 0.4f;
 	Player->Attacks[AttackType_Neutral3].Power = 7.0f;
 
 	Player->Attacks[AttackType_Strong].Type = AttackType_Strong;
@@ -214,7 +227,7 @@ BruteAdd(game_state *GameState, v3 P)
 	Player->Attacks[AttackType_Strong].Power = 18.0f;
 
 	Player->Attacks[AttackType_Sprint].Type = AttackType_Sprint;
-	Player->Attacks[AttackType_Sprint].Duration = 1.0f;
+	Player->Attacks[AttackType_Sprint].Duration = 2.0f;
 	Player->Attacks[AttackType_Sprint].Power = 3.0f;
 
 	model *Model = LookupModel(&GameState->AssetManager, "Brute").Model;
@@ -394,6 +407,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		//ddP = Normalize(DeltaP);
 
 		AnimationPlayer->RootMotionAccumulator = {};
+		AnimationPlayer->RootVelocityAccumulator = {};
 
 		Entity->ddP = ddP;
 	}
@@ -485,6 +499,8 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
 			DeltaP = DesiredP - Entity->P;
 			DeltaP = DeltaP - Dot(Normal, DeltaP) * Normal;
+
+			FlagAdd(Entity, EntityFlag_Collided);
 		}
 		else
 		{
@@ -800,19 +816,22 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 #if DEVELOPER
 	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.LevelFileInfo))
 	{
-#if 1
+#if 0
 		GameState->EntityCount = 0;
 		EntityAdd(GameState, EntityType_Null);
 		LevelLoad(GameState, "../src/test.level");
 		GameState->EntityCount += 4;
 #else
+		v3 PlayerP = GameState->Entities[GameState->PlayerEntityIndex].P;
+
 		GameState->EntityCount = 0;
 		GameState->PlayerEntityIndex = 0;
 		MemoryZero(GameState->Entities, ArrayCount(GameState->Entities) * sizeof(entity));
 		EntityAdd(GameState, EntityType_Null);
 		LevelLoad(GameState, "../src/test.level");
 
-		entity *Player = XBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+		//entity *Player = XBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+		entity *Player = XBotAdd(GameState, PlayerP);
 		GameState->PlayerIDForController[1] = Player->ID;
 
 		entity *YBot = YBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
@@ -899,10 +918,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				entity *Knight = KnightAdd(GameState, V3(-5.0f, 0.01f, -2.0f));
 				entity *Brute = BruteAdd(GameState, V3(5.0f, 0.01f, -2.0f));
 
-				//FlagClear(YBot, EntityFlag_Visible);
-				//FlagClear(Knight, EntityFlag_Visible);
-				//FlagClear(Brute, EntityFlag_Visible);
-
 				GameState->CurrentCharacter = 0;
 				GameState->CharacterIDs[GameState->CurrentCharacter] = Player->ID;
 				GameState->CharacterIDs[GameState->CurrentCharacter + 1] = YBot->ID;
@@ -914,7 +929,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			// Debug swap character by pressing start
 
-#if 0
+#if 1
 			if((ControllerIndex == 1) && WasPressed(Controller->Start))
 			{
 
@@ -933,7 +948,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				GameState->PlayerEntityIndex = CurrentID;
 				Current = GameState->Entities + GameState->PlayerEntityIndex;
 				FlagAdd(Current, EntityFlag_Visible);
-				Swapped = true;
 
 			}
 #else
@@ -1088,7 +1102,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			if(Entity->AnimationPlayer && Entity->AnimationPlayer->ControlsPosition)
 			{
 				EntityMove(GameState, Entity, Entity->MoveInfo.ddP, dt);
-				EntityOrientationUpdate(Entity, dt, Entity->AngularSpeed);
+				//EntityOrientationUpdate(Entity, dt, Entity->AngularSpeed);
 			}
 		}
 	}
@@ -1163,14 +1177,15 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				R = QuaternionToMat4(Entity->Orientation);
 				S = Mat4Scale(Entity->VisualScale);
 
+				if(AnimationPlayer->UpdateLockedP)
+				{
+					AnimationPlayer->EntityPLockedAt = Entity->P;
+					AnimationPlayer->UpdateLockedP = false;
+				}
+
 				if(AnimationPlayer->ControlsPosition)
 				{
 					T = Mat4Translate(AnimationPlayer->EntityPLockedAt);
-					FlagAdd(Entity, EntityFlag_AnimationControlling);
-				}
-				else
-				{
-					FlagClear(Entity, EntityFlag_AnimationControlling);
 				}
 
 				PushModel(RenderBuffer, CString(AnimationPlayer->Model->Name), T*R*S);
@@ -1323,3 +1338,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	TemporaryMemoryEnd(RenderMemory);
 	TemporaryMemoryEnd(AnimationMemory);
 }
+
+extern "C" GAME_AUDIO_UPDATE(GameAudioUpdate)
+{
+	game_state *GameState = (game_state *)GameMemory->PermanentStorage;
+	temp_state *TempState = (temp_state *)GameMemory->TemporaryStorage;
+	SoundToOutput(&GameState->AudioState, SoundBuffer, &GameState->AssetManager, &TempState->Arena);
+}
+

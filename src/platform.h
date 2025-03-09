@@ -130,28 +130,35 @@ U64TruncateToU32(u64 U64)
 	return(Result);
 }
 
-struct game_button
+struct game_sound_buffer
+{
+	s32 SamplesPerSecond;
+	s32 SampleCount;
+	s16 *Samples;
+};
+
+struct game_button_state
 {
 	b32 EndedDown;
 	u32 HalfTransitionCount;
 };
 
 inline b32
-IsDown(game_button Button)
+IsDown(game_button_state Button)
 {
 	b32 Result = Button.EndedDown;
 	return(Result);
 }
 
 inline b32
-WasDown(game_button Button)
+WasDown(game_button_state Button)
 {
 	b32 Result = ((Button.HalfTransitionCount == 1) && (!Button.EndedDown));
 	return(Result);
 }
 
 inline b32
-WasPressed(game_button Button)
+WasPressed(game_button_state Button)
 {
 	b32 Result = (Button.HalfTransitionCount > 1) ||
 				((Button.HalfTransitionCount == 1) && Button.EndedDown);
@@ -213,33 +220,33 @@ struct game_controller_input
 
 	union
 	{
-		game_button Buttons[Key_Count];
+		game_button_state Buttons[Key_Count];
 		struct
 		{
-			game_button MoveForward;
-			game_button MoveLeft;
-			game_button MoveRight;
-			game_button MoveBack;
+			game_button_state MoveForward;
+			game_button_state MoveLeft;
+			game_button_state MoveRight;
+			game_button_state MoveBack;
 
-			game_button ActionUp;
-			game_button ActionLeft;
-			game_button ActionRight;
-			game_button ActionDown;
+			game_button_state ActionUp;
+			game_button_state ActionLeft;
+			game_button_state ActionRight;
+			game_button_state ActionDown;
 
-			game_button LeftShoulder;
-			game_button RightShoulder;
+			game_button_state LeftShoulder;
+			game_button_state RightShoulder;
 
-			game_button Start;
-			game_button Back;
+			game_button_state Start;
+			game_button_state Back;
 
-			game_button E;
-			game_button Shift;
-			game_button Space;
-			game_button Add;
-			game_button Subtract;
-			game_button Ctrl;
-			game_button F9;
-			game_button F10;
+			game_button_state E;
+			game_button_state Shift;
+			game_button_state Space;
+			game_button_state Add;
+			game_button_state Subtract;
+			game_button_state Ctrl;
+			game_button_state F9;
+			game_button_state F10;
 		};
 	};
 };
@@ -254,7 +261,7 @@ struct game_input
 	s32 BackBufferWidth, BackBufferHeight;
 
 	game_controller_input Controllers[5];
-	game_button MouseButtons[5];
+	game_button_state MouseButtons[5];
 };
 
 struct game_memory
@@ -279,6 +286,10 @@ inline game_controller_input *ControllerGet(game_input *Input, int unsigned Cont
 	game_controller_input *Result = &Input->Controllers[ControllerIndex];
 	return(Result);
 }
+
+#define GAME_AUDIO_UPDATE(FunctionName) void FunctionName(game_memory *GameMemory, game_sound_buffer *SoundBuffer)
+typedef GAME_AUDIO_UPDATE(game_audio_update);
+
 
 #ifdef __cplusplus
 }

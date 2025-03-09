@@ -296,9 +296,17 @@ DebugDrawAnimationPlayer(animation_player *AnimationPlayer)
 	MovementStateToString(Buff, AnimationPlayer->MovementState);
 	DebugDrawString(Buff);
 
+	mat4 T = Mat4Translate(AnimationPlayer->EntityPLockedAt);
+	mat4 R = Mat4Identity();
+	mat4 S = Mat4Scale(0.5f);
+	PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Sphere, T*R*S, V3(1.0f, 0.0f, 0.0f));
+
+
+
 	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)
 	{
 		DebugDrawString(CString(Animation->Name));
+		DebugDrawFloat("FrameRate: ", Animation->Info->FrameRate);
 		DebugDrawFloat("Duration: ", Animation->Duration);
 		DebugDrawFloat("BlendDuration: ", Animation->BlendDuration);
 		DebugDrawFloat("t: ", Animation->CurrentTime);
@@ -310,7 +318,7 @@ DebugDrawAnimationPlayer(animation_player *AnimationPlayer)
 		v3 Color = V3(1.0f);
 		if(AnimationPlayer->ControlsPosition)
 		{
-			Color = V3(0.0f, 1.0f, 1.0f);
+			Color = V3(1.0f, 1.0f, 0.0f);
 		}
 
 		DebugDrawVector3("RootMotion: ", AnimationPlayer->RootMotionAccumulator, Color);

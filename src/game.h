@@ -11,7 +11,8 @@
  * Physics
  *	- Moving Capsule vs Moving OBB
  *	- Moving Capsule vs Moving Capsule
- *
+ * Entity
+ *	- Define/determine what entity flags last only during the frame and clear them as a group
 */
 
 // TODO(Justin): Clean this up by processing the font data into an asset file
@@ -45,6 +46,32 @@ struct attack
 	f32 Power;
 };
 
+#if 0
+enum move_flags
+{
+	Move_InputControlled = (1 << 0),
+	Move_AnimationControlled = (1 << 1),
+};
+
+enum move_type
+{
+	MovementState_Idle,
+	MovementState_Run,
+	MovementState_Sprint,
+	MovementState_Jump,
+	MovementState_InAir,
+	MovementState_Land,
+	MovementState_Crouch,
+	MovementState_Sliding,
+	MovementState_Attack,
+};
+
+struct movement_state
+{
+	move_type Type;
+	move_flags Flags;
+};
+#else
 enum movement_state
 {
 	MovementState_Idle,
@@ -57,6 +84,7 @@ enum movement_state
 	MovementState_Sliding,
 	MovementState_Attack,
 };
+#endif
 
 enum entity_type
 {
@@ -106,6 +134,7 @@ struct move_info
 	b32 CanStrongAttack;
 	b32 NoVelocity;
 	b32 Accelerating;
+
 	f32 Speed;
 
 	v3 ddP;
@@ -229,6 +258,30 @@ struct camera
 	v3 Direction;
 };
 
+struct sound_id
+{
+	u32 Value;
+};
+
+struct sound
+{
+	v2 Volume;
+	v2 VolumeTarget;
+	v2 VolumeSpeed;
+	f32 SamplesPlayed;
+	f32 dSample;
+	sound_id ID;
+	sound *Next;
+
+};
+
+struct audio_state
+{
+	memory_arena *Arena;
+	sound *Channels;
+	sound *FreeChannels;
+};
+
 struct game_state
 {
 	memory_arena Arena;
@@ -262,6 +315,8 @@ struct game_state
 
 	asset_manager AssetManager;
 	texture Texture;
+
+	audio_state AudioState;
 };
 
 struct temp_state

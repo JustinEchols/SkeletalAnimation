@@ -49,10 +49,10 @@ message go_state_crouch StateCrouchingIdleLeft
 #
 
 : StateRunning
-animation XBot_Running
-#animation XBot_RunningRootMotion
+#animation XBot_Running
+animation XBot_RunningRootMotion
 looping
-#controls_position
+controls_position
 message go_state_idle StateIdleLeft t_interval 0.0 0.4
 message go_state_idle StateIdleLeft t_interval 0.61 0.7
 message go_state_sprint StateSprint t_interval 0.0 0.1
@@ -60,10 +60,10 @@ message go_state_sprint StateSprint t_interval 0.65 0.7
 message go_state_sprint StateSprintMirror t_interval 0.3 0.4
 
 : StateRunningMirror
-animation XBot_RunningMirror
-#animation XBot_RunningRootMotionMirror
+#animation XBot_RunningMirror
+animation XBot_RunningRootMotionMirror
 looping
-#controls_position
+controls_position
 message go_state_idle StateIdleRight t_interval 0.0 0.4
 message go_state_idle StateIdleRight t_interval 0.61 0.7
 message go_state_sprint StateSprintMirror t_interval 0.0 0.1

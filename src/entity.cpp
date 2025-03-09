@@ -267,6 +267,15 @@ EvaluateSprint(entity *Entity, move_info MoveInfo)
 		return;
 	}
 
+	if(MoveInfo.Attacking)
+	{
+		Entity->MovementState = MovementState_Attack;
+		FlagAdd(Entity, EntityFlag_ShouldAttack);
+		FlagAdd(Entity, EntityFlag_Attacking);
+		Entity->AttackType = AttackType_Sprint;
+		return;
+	}
+
 	// Sprinted off something
 	if(!IsGrounded(Entity) && (Entity->DistanceFromGround >= 3.0f))
 	{

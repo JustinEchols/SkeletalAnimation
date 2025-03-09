@@ -40,7 +40,7 @@ Looping(animation *Animation)
 }
 
 inline b32
-CrossFading(animation *Animation)
+BlendingInOrOut(animation *Animation)
 {
 	b32 Result = (Animation->BlendingIn || Animation->BlendingOut);
 	return(Result);
@@ -64,6 +64,13 @@ inline b32
 ControlsTurning(animation *Animation)
 {
 	b32 Result = FlagIsSet(Animation, AnimationFlags_ControlsTurning);
+	return(Result);
+}
+
+inline b32
+CompletedPlayback(animation *Animation)
+{
+	b32 Result = FlagIsSet(Animation, AnimationFlags_CompletedCycle);
 	return(Result);
 }
 
@@ -142,11 +149,6 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 	AnimationPlayer->IsInitialized = true;
 }
 
-// TODO(Justin): Really think through the correct way to handle trying to play the same animation multiple times
-// If the current animation is being blended in or out we probably dont want to 
-// want to start playing the same animation..
-
-
 internal void
 AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimation, u32 ID, u32 AnimationFlags,
 		f32 BlendDuration = 0.0f,
@@ -181,7 +183,20 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	AnimationPlayer->FreeChannels = Animation->Next;
 
 	//
-	// NOTE(Justin): Blend out all current channels
+	// NOTE(Justin): Clear previous blended pose. This is required for root motion to work properly
+	//
+
+	// TODO(Justin): Should we use temporary memory to allocate the blended pose that is the output
+	// of a channel? Or keep it pre-allocated when a sample animation is loaded and then once the animation
+	// is finished playing, clear the blended pose?
+
+	key_frame *BlendedPoseOutput = SampledAnimation->ReservedForChannel;
+	MemoryZero(BlendedPoseOutput->Positions, SampledAnimation->JointCount * sizeof(v3));
+	MemoryZero(BlendedPoseOutput->Orientations, SampledAnimation->JointCount * sizeof(quaternion));
+	MemoryZero(BlendedPoseOutput->Scales, SampledAnimation->JointCount * sizeof(v3));
+
+	//
+	// NOTE(Justin): Set all current channels to start blending out
 	//
 
 	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
@@ -206,10 +221,10 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	Animation->BlendCurrentTime = 0.0f;
 	Animation->BlendingIn = true;
 	Animation->BlendingOut = false;
-
 	Animation->ID.Value = ID;
 	Animation->Info = SampledAnimation;
 	Animation->BlendedPose = SampledAnimation->ReservedForChannel;
+
 
 	Animation->Next = AnimationPlayer->Channels;
 	AnimationPlayer->Channels = Animation;
@@ -240,15 +255,10 @@ AnimationUpdate(animation *Animation, f32 dt)
 			Animation->CurrentTime = Info->Duration;
 		}
 
-		if(ControlsPosition(Animation))
-		{
-			FlagAdd(Animation, AnimationFlags_CompletedCycle);
-		}
-
 		Animation->CurrentTime -= Info->Duration;
 	}
 
-	if(CrossFading(Animation))
+	if(BlendingInOrOut(Animation))
 	{
 		Animation->BlendCurrentTime += dt * Animation->TimeScale;
 
@@ -449,7 +459,12 @@ Animate(entity *Entity, asset_manager *AssetManager)
 		return;
 	}
 
-	if(!AnimationPlayer->ControlsPosition || AnimationPlayer->UpdateLockedP)
+	if(!AnimationPlayer->ControlsPosition)
+	{
+		AnimationPlayer->EntityPLockedAt = Entity->P;
+	}
+
+	if(AnimationPlayer->ControlsPosition && AnimationPlayer->UpdateLockedP)
 	{
 		AnimationPlayer->EntityPLockedAt = Entity->P;
 		AnimationPlayer->UpdateLockedP = false;
@@ -541,7 +556,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 
 		if(ControlsPosition(Animation))
 		{
-			if(!Animation->BlendingIn || !Animation->BlendingOut)
+			if(!Animation->BlendingOut)
 			{
 				AnimationPlayer->ControlsPosition = true;
 			}
@@ -550,23 +565,31 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		v3 OldP = Animation->BlendedPose->Positions[0];
 		AnimationUpdate(Animation, AnimationPlayer->dt);
 		v3 NewP = Animation->BlendedPose->Positions[0];
-
 		Animation->RootMotionDeltaPerFrame = NewP - OldP;
+		Animation->RootVelocityDeltaPerFrame = dt * Animation->RootMotionDeltaPerFrame;
 
-		if(ControlsPosition(Animation) && (Animation->Flags & AnimationFlags_CompletedCycle))
+		if(Equal(OldP, V3(0.0f)))
 		{
-			AnimationPlayer->UpdateLockedP = true;
-			FlagClear(Animation, AnimationFlags_CompletedCycle);
+			Animation->RootMotionDeltaPerFrame = NewP - Animation->Info->KeyFrames[0].Positions[0];
+			Animation->RootVelocityDeltaPerFrame = dt * Animation->RootMotionDeltaPerFrame;
+		}
+
+		if(Animation->Flags & AnimationFlags_IgnoreYMotion)
+		{
+			Animation->RootMotionDeltaPerFrame.y = 0.0f;
+			Animation->RootVelocityDeltaPerFrame.y = 0.0f;
 		}
 
 		// TODO(Justin): Is this the correct location to remove finished 
 		if(Finished(Animation))
 		{
+
 			*AnimationPtr = Animation->Next;
 			Animation->Next = AnimationPlayer->FreeChannels;
 			AnimationPlayer->FreeChannels = Animation;
 			AnimationPlayer->RetiredCount++;
 			AnimationPlayer->PlayingCount--;
+
 		}
 		else
 		{
@@ -611,7 +634,20 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 				s32 JointIndex = JointIndexGet(Info->JointNames, Info->JointCount, Joint->Name);
 				if(JointIndex != -1)
 				{
-					FinalPose->Positions[Index]	+= Factor * BlendedPose->Positions[JointIndex];
+					// NOTE(Justin): If the animation contains root motion and we are blending with another animation
+					// that does not have root motion the result is that the characters's root position is changed overtime
+					// away from the animation blending out and towards the other animation. To not to do this we only
+					// blend in the vertical motion of the root and remove the lateral motion. The problem with this
+					// is that if the root positions are far apart the character's position will end up snapping once the blend is complete 
+					// So, the root positions need to be almost if not the same.
+
+					v3 P = Factor * BlendedPose->Positions[JointIndex];
+					if(ControlsPosition(Animation) && Animation->BlendingOut && (JointIndex == 0))
+					{
+						P = Factor*V3(0.0f, BlendedPose->Positions[JointIndex].y, 0.0f);
+					}
+
+					FinalPose->Positions[Index]	+= P;
 					FinalPose->Scales[Index]	+= Factor * BlendedPose->Scales[JointIndex];
 
 					// TODO(Justin): Pre-process the animations so that the orientations are in the known correct neighborhood.
@@ -629,6 +665,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		if(AnimationPlayer->ControlsPosition)
 		{
 			AnimationPlayer->RootMotionAccumulator += Animation->RootMotionDeltaPerFrame;
+			AnimationPlayer->RootVelocityAccumulator += Animation->RootVelocityDeltaPerFrame;
 		}
 	}
 
@@ -641,6 +678,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	if(AnimationPlayer->ControlsPosition)
 	{
 		AnimationPlayer->RootMotionAccumulator *= Scale;
+		AnimationPlayer->RootVelocityAccumulator *= Scale;
 	}
 
 	//
@@ -729,7 +767,7 @@ ModelJointsUpdate(entity *Entity)
 			for(u32 JointIndex = 1; JointIndex < Mesh->JointCount; ++JointIndex)
 			{
 				joint *Joint = Mesh->Joints + JointIndex;
-				mat4 JointTransform = Joint->Transform;
+			mat4 JointTransform = Joint->Transform;
 
 				Xform.Position		= FinalPose->Positions[JointIndex];
 				Xform.Orientation	= FinalPose->Orientations[JointIndex];
@@ -1018,6 +1056,10 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 			{
 				Node->AnimationFlags |= AnimationFlags_RemoveLocomotion;
 			}
+			else if(StringsAreSame(Word, "ignore_y_motion"))
+			{
+				Node->AnimationFlags |= AnimationFlags_IgnoreYMotion;
+			}
 			else if(*Word == '#')
 			{
 				// Comment, do nothing.
@@ -1028,4 +1070,6 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 	}
 
 	NodeEnd(G);
+
+	Platform.DebugFileFree(File.Content);
 }

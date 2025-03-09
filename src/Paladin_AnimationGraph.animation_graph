@@ -8,7 +8,7 @@ message go_state_sprint StateSprinting
 message go_state_neutral_attack StateNeutralAttack1
 message go_state_strong_attack StateStrongAttack t_start 1.4
 message go_state_jump StateJump t_start 0.2 t_blend 0.1
-message go_state_falling StateFalling t_blend 0.1
+message go_state_falling StateFalling t_blend 0.2
 
 : StateRunning
 animation Paladin_SwordAndShieldRun_00
@@ -27,7 +27,7 @@ message go_state_idle StateIdleLeft
 message go_state_run StateRunning t_start -1.0
 #message go_state_jump StateJump t_start 0.2 t_blend 0.1
 message go_state_falling StateFalling t_blend 0.1
-message go_state_sprint_attack StateSprintAttack t_blend 0.1
+message go_state_sprint_attack StateSprintAttack t_blend 0.2
 
 #
 # Jump
@@ -66,7 +66,7 @@ message go_state_jump StateJump t_start 0.2 t_interval 0.5 1.1 t_blend 0.1
 # Animation Duration 1.0
 : StateNeutralAttack1
 animation Paladin_SwordAndShieldHiltAttack
-t_scale 2.6
+t_scale 1.4
 message go_state_neutral_attack StateNeutralAttack2 t_interval 0.8 1.0
 message go_state_sprint StateSprinting t_interval 0.8 1.0
 message go_state_run StateRunning t_interval 0.8 1.0
@@ -106,10 +106,13 @@ message go_state_sprint StateSprinting t_interval 2.2 2.4
 
 #Duration 1.73
 : StateSprintAttack
-animation Paladin_SwordAndShieldSprintAttack
-remove_locomotion
+#animation Paladin_SwordAndShieldSprintAttack
+animation Paladin_RunJumpAttack
 #t_scale 1.42
 t_scale 2.0
-message go_state_idle StateIdleLeft t_interval 1.0 1.73
-message go_state_run StateRunning t_interval 1.0 1.73
-message go_state_sprint StateSprinting t_interval 1.0 1.73
+controls_position
+#ignore_y_motion
+message go_state_falling StateFalling t_blend 0.2
+message go_state_idle StateIdleLeft t_interval 1.6 1.8 t_blend 0.4
+message go_state_run StateRunning t_interval 1.53 1.73
+message go_state_sprint StateSprinting t_interval 1.53 1.73

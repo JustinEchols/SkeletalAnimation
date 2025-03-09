@@ -17,6 +17,7 @@ message go_state_sprint StateSprint t_start -1.0
 message go_state_forward_attack StateForwardAttack
 message go_state_falling StateFalling t_blend 0.2 
 
+
 : StateSprint
 animation YBot_Sprinting
 looping
@@ -24,6 +25,7 @@ t_scale 1.5
 message go_state_idle StateIdleLeft t_interval 0.1 0.73
 messgae go_state_run StateRunning t_start -1.0
 message go_state_falling StateFalling t_blend 0.2 
+
 
 #
 # Jump 
