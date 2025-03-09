@@ -186,6 +186,7 @@ enum
 	Key_E,
 	Key_Shift,
 	Key_Space,
+	Key_Enter,
 	Key_Add,
 	Key_Subtract,
 	Key_Ctrl,
@@ -242,6 +243,7 @@ struct game_controller_input
 			game_button_state E;
 			game_button_state Shift;
 			game_button_state Space;
+			game_button_state Enter;
 			game_button_state Add;
 			game_button_state Subtract;
 			game_button_state Ctrl;

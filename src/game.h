@@ -272,7 +272,6 @@ struct sound
 	f32 dSample;
 	sound_id ID;
 	sound *Next;
-
 };
 
 struct audio_state
@@ -313,6 +312,7 @@ struct game_state
 	u32 CharacterIDs[6];
 	u32 PlayerIDForController[ArrayCount(((game_input *)0)->Controllers)];
 
+	// TODO(Justin): Move this out of the game state!
 	asset_manager AssetManager;
 	texture Texture;
 

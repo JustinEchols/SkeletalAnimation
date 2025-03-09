@@ -79,7 +79,7 @@ XBotAdd(game_state *GameState, v3 P)
 	Player->VisualScale = V3(0.01f);
 
 	model *Model		= LookupModel(&GameState->AssetManager, "XBot").Model;
-	animation_graph *G  = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph").Graph;
 	asset_entry Entry	= LookupSampledAnimation(&GameState->AssetManager, "XBot_IdleLeft");
 
 	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
@@ -119,7 +119,7 @@ YBotAdd(game_state *GameState, v3 P)
 	Player->Attacks[AttackType_Neutral2].Power = 0.07f;
 
 	model *Model = LookupModel(&GameState->AssetManager, "YBot").Model;
-	animation_graph *G  = LookupGraph(&GameState->AssetManager, "YBot_AnimationGraph");
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "YBot_AnimationGraph").Graph;
 	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "YBot_FightIdleLeft");
 
 	Assert(Model);
@@ -175,7 +175,7 @@ KnightAdd(game_state *GameState, v3 P)
 	Player->Attacks[AttackType_Sprint].Power = 12.0f;
 
 	model *Model = LookupModel(&GameState->AssetManager, "PaladinWithProp").Model;
-	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Paladin_AnimationGraph");
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Paladin_AnimationGraph").Graph;
 	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Paladin_SwordAndShieldIdle_00");
 
 	Assert(Model);
@@ -231,7 +231,7 @@ BruteAdd(game_state *GameState, v3 P)
 	Player->Attacks[AttackType_Sprint].Power = 3.0f;
 
 	model *Model = LookupModel(&GameState->AssetManager, "Brute").Model;
-	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Brute_AnimationGraph");
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Brute_AnimationGraph").Graph;
 	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Brute_Idle");
 
 	Assert(Model);
@@ -397,19 +397,25 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		// TODO(Justin): Robustness
 		// TODO(Justin): Update velocity 
 		v3 AnimationDelta = AnimationPlayer->RootMotionAccumulator;
+		v3 AnimationVelocity = AnimationPlayer->RootVelocityAccumulator;
 
 		v3 GameDelta = V3(Entity->VisualScale.x * AnimationDelta.x,
 						  Entity->VisualScale.y * AnimationDelta.y,
 						  Entity->VisualScale.z * AnimationDelta.z);
+		v3 GameVelocity = V3(Entity->VisualScale.x * AnimationVelocity.x,
+						  Entity->VisualScale.y * AnimationVelocity.y,
+						  Entity->VisualScale.z * AnimationVelocity.z);
 
 		DeltaP = Conjugate(Entity->Orientation)*GameDelta;
-
+		v3 dPForFrame = Conjugate(Entity->Orientation)*GameVelocity;
+		
 		//ddP = Normalize(DeltaP);
 
 		AnimationPlayer->RootMotionAccumulator = {};
 		AnimationPlayer->RootVelocityAccumulator = {};
 
 		Entity->ddP = ddP;
+		Entity->dP += dPForFrame;
 	}
 	else
 	{
@@ -809,8 +815,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					  GameMemory->TemporaryStorageSize - sizeof(temp_state));
 
 		TempState->IsInitialized = true;
-
-
 	}
 
 #if DEVELOPER
@@ -853,52 +857,32 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.XBotGraphFileInfo))
 	{
 		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		animation_graph *G = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph");
-		ArenaClear(&G->Arena);
-		G->NodeCount = 0;
-		G->Index = 0;
-		G->CurrentNode = {};
-		MemoryZero(&G->Nodes, sizeof(G->Nodes));
-		AnimationGraphInitialize(G, "../src/XBot_AnimationGraph.animation_graph");
+		AnimationGraphReload(&GameState->AssetManager, "XBot_AnimationGraph");
+		animation_graph *G = LookupGraph(&GameState->AssetManager, "XBot_AnimationGraph").Graph;
 		Entity->AnimationGraph = G;
 	}
 
 	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.YBotGraphFileInfo))
 	{
 		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		animation_graph *G = LookupGraph(&GameState->AssetManager, "YBot_AnimationGraph");
-		ArenaClear(&G->Arena);
-		G->NodeCount = 0;
-		G->Index = 0;
-		G->CurrentNode = {};
-		MemoryZero(&G->Nodes, sizeof(G->Nodes));
-		AnimationGraphInitialize(G, "../src/YBot_AnimationGraph.animation_graph");
+		AnimationGraphReload(&GameState->AssetManager, "YBot_AnimationGraph");
+		animation_graph *G = LookupGraph(&GameState->AssetManager, "YBot_AnimationGraph").Graph;
 		Entity->AnimationGraph = G;
 	}
 
 	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.PaladinGraphFileInfo))
 	{
 		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		animation_graph *G = LookupGraph(&GameState->AssetManager, "Paladin_AnimationGraph");
-		ArenaClear(&G->Arena);
-		G->NodeCount = 0;
-		G->Index = 0;
-		G->CurrentNode = {};
-		MemoryZero(&G->Nodes, sizeof(G->Nodes));
-		AnimationGraphInitialize(G, "../src/Paladin_AnimationGraph.animation_graph");
+		AnimationGraphReload(&GameState->AssetManager, "Paladin_AnimationGraph");
+		animation_graph *G = LookupGraph(&GameState->AssetManager, "Paladin_AnimationGraph").Graph;
 		Entity->AnimationGraph = G;
 	}
 
 	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.BruteGraphFileInfo))
 	{
 		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		animation_graph *G = LookupGraph(&GameState->AssetManager, "Brute_AnimationGraph");
-		ArenaClear(&G->Arena);
-		G->NodeCount = 0;
-		G->Index = 0;
-		G->CurrentNode = {};
-		MemoryZero(&G->Nodes, sizeof(G->Nodes));
-		AnimationGraphInitialize(G, "../src/Brute_AnimationGraph.animation_graph");
+		AnimationGraphReload(&GameState->AssetManager, "Brute_AnimationGraph");
+		animation_graph *G = LookupGraph(&GameState->AssetManager, "Brute_AnimationGraph").Graph;
 		Entity->AnimationGraph = G;
 	}
 #endif
@@ -909,7 +893,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		u32 ID = GameState->PlayerIDForController[ControllerIndex];
 		if(ID == 0)
 		{
-			if((ControllerIndex == 1) && Controller->Start.EndedDown)
+			//if((ControllerIndex == 1) && Controller->Start.EndedDown)
+			if(Controller->Space.EndedDown || Controller->Start.EndedDown)
 			{
 				entity *Player = XBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 				GameState->PlayerIDForController[ControllerIndex] = Player->ID;
@@ -930,7 +915,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			// Debug swap character by pressing start
 
 #if 1
-			if((ControllerIndex == 1) && WasPressed(Controller->Start))
+			if((WasPressed(Controller->Start) || WasPressed(Controller->Enter)))
 			{
 
 				u32 CurrentID = GameState->PlayerEntityIndex;
@@ -948,7 +933,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				GameState->PlayerEntityIndex = CurrentID;
 				Current = GameState->Entities + GameState->PlayerEntityIndex;
 				FlagAdd(Current, EntityFlag_Visible);
-
 			}
 #else
 #endif

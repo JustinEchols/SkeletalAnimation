@@ -225,7 +225,6 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	Animation->Info = SampledAnimation;
 	Animation->BlendedPose = SampledAnimation->ReservedForChannel;
 
-
 	Animation->Next = AnimationPlayer->Channels;
 	AnimationPlayer->Channels = Animation;
 	AnimationPlayer->PlayingCount++;
@@ -242,20 +241,20 @@ SmoothStep(f32 CurrentTime, f32 Duration)
 internal void
 AnimationUpdate(animation *Animation, f32 dt)
 {
-	animation_info *Info = Animation->Info;
-	Assert(Info);
+	animation_info *Samples = Animation->Info;
+	Assert(Samples);
 
 	Animation->CurrentTime += dt * Animation->TimeScale;
 
-	if(Animation->CurrentTime >= Info->Duration)
+	if(Animation->CurrentTime >= Samples->Duration)
 	{
 		if(!Looping(Animation))
 		{
 			FlagAdd(Animation, AnimationFlags_Finished);
-			Animation->CurrentTime = Info->Duration;
+			Animation->CurrentTime = Samples->Duration;
 		}
 
-		Animation->CurrentTime -= Info->Duration;
+		Animation->CurrentTime -= Samples->Duration;
 	}
 
 	if(BlendingInOrOut(Animation))
@@ -281,23 +280,23 @@ AnimationUpdate(animation *Animation, f32 dt)
 	{
 		key_frame *BlendedPose = Animation->BlendedPose;
 
-		f32 t01 = Animation->CurrentTime / Info->Duration;
-		u32 LastKeyFrameIndex = Info->KeyFrameCount - 1;
+		f32 t01 = Animation->CurrentTime / Samples->Duration;
+		u32 LastKeyFrameIndex = Samples->KeyFrameCount - 1;
 		u32 KeyFrameIndex = F32TruncateToS32(t01 * (f32)LastKeyFrameIndex);
 		Assert(KeyFrameIndex != LastKeyFrameIndex);
 
-		f32 DtPerKeyFrame = Info->Duration / (f32)LastKeyFrameIndex;
+		f32 DtPerKeyFrame = Samples->Duration / (f32)LastKeyFrameIndex;
 		f32 KeyFrameTime = KeyFrameIndex * DtPerKeyFrame;
 		f32 t = (Animation->CurrentTime - KeyFrameTime) / DtPerKeyFrame;
 		t = Clamp01(t);
 
-		key_frame *KeyFrame		= Info->KeyFrames + KeyFrameIndex;
-		key_frame *NextKeyFrame = Info->KeyFrames + (KeyFrameIndex + 1);
+		key_frame *KeyFrame		= Samples->KeyFrames + KeyFrameIndex;
+		key_frame *NextKeyFrame = Samples->KeyFrames + (KeyFrameIndex + 1);
 		sqt RootTransform = InterpolatedSQT(KeyFrame, t, NextKeyFrame, 0);
 
 		if(RemoveLocomotion(Animation))
 		{
-			v3 RootStartP = Info->KeyFrames[0].Positions[0];
+			v3 RootStartP = Samples->KeyFrames[0].Positions[0];
 			RootTransform.Position.x = RootStartP.x;
 			RootTransform.Position.z = RootStartP.z;
 		}
@@ -306,7 +305,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 		BlendedPose->Orientations[0] = RootTransform.Orientation;
 		BlendedPose->Scales[0]		 = RootTransform.Scale;
 
-		for(u32 JointIndex = 1; JointIndex < Info->JointCount; ++JointIndex)
+		for(u32 JointIndex = 1; JointIndex < Samples->JointCount; ++JointIndex)
 		{
 			sqt Transform = InterpolatedSQT(KeyFrame, t, NextKeyFrame, JointIndex);
 			BlendedPose->Positions[JointIndex]	  = Transform.Position;
@@ -563,16 +562,15 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		}
 
 		v3 OldP = Animation->BlendedPose->Positions[0];
+		if(Equal(OldP, V3(0.0f)))
+		{
+			OldP = Animation->Info->KeyFrames[0].Positions[0];
+		}
+
 		AnimationUpdate(Animation, AnimationPlayer->dt);
 		v3 NewP = Animation->BlendedPose->Positions[0];
 		Animation->RootMotionDeltaPerFrame = NewP - OldP;
 		Animation->RootVelocityDeltaPerFrame = dt * Animation->RootMotionDeltaPerFrame;
-
-		if(Equal(OldP, V3(0.0f)))
-		{
-			Animation->RootMotionDeltaPerFrame = NewP - Animation->Info->KeyFrames[0].Positions[0];
-			Animation->RootVelocityDeltaPerFrame = dt * Animation->RootMotionDeltaPerFrame;
-		}
 
 		if(Animation->Flags & AnimationFlags_IgnoreYMotion)
 		{
@@ -580,10 +578,8 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			Animation->RootVelocityDeltaPerFrame.y = 0.0f;
 		}
 
-		// TODO(Justin): Is this the correct location to remove finished 
 		if(Finished(Animation))
 		{
-
 			*AnimationPtr = Animation->Next;
 			Animation->Next = AnimationPlayer->FreeChannels;
 			AnimationPlayer->FreeChannels = Animation;
@@ -620,7 +616,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		Assert(!Finished(Animation));
 
 		key_frame *BlendedPose = Animation->BlendedPose;
-		animation_info *Info = Animation->Info;
+		animation_info *Samples = Animation->Info;
 
 		f32 Factor = Animation->BlendFactor;
 		FactorSum += Factor;
@@ -631,7 +627,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			for(u32 Index = 0; Index < Mesh->JointCount; ++Index)
 			{
 				joint *Joint = Mesh->Joints + Index;
-				s32 JointIndex = JointIndexGet(Info->JointNames, Info->JointCount, Joint->Name);
+				s32 JointIndex = JointIndexGet(Samples->JointNames, Samples->JointCount, Joint->Name);
 				if(JointIndex != -1)
 				{
 					// NOTE(Justin): If the animation contains root motion and we are blending out with another animation
@@ -708,7 +704,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			DestPose->Scales[JointIndex]		= SrcPose->Scales[JointIndex];
 		}
 	}
-
 }
 
 internal void
@@ -762,7 +757,7 @@ ModelJointsUpdate(entity *Entity)
 			Xform.Scale			= FinalPose->Scales[0];
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
-			   !Equal(Xform.Scale, V3(0.0f)))
+					!Equal(Xform.Scale, V3(0.0f)))
 			{
 				RootJointT = JointTransformFromSQT(Xform);
 			}
@@ -773,14 +768,14 @@ ModelJointsUpdate(entity *Entity)
 			for(u32 JointIndex = 1; JointIndex < Mesh->JointCount; ++JointIndex)
 			{
 				joint *Joint = Mesh->Joints + JointIndex;
-			mat4 JointTransform = Joint->Transform;
+				mat4 JointTransform = Joint->Transform;
 
 				Xform.Position		= FinalPose->Positions[JointIndex];
 				Xform.Orientation	= FinalPose->Orientations[JointIndex];
 				Xform.Scale			= FinalPose->Scales[JointIndex];
 
 				if(!Equal(Xform.Position, V3(0.0f)) &&
-				   !Equal(Xform.Scale, V3(0.0f)))
+						!Equal(Xform.Scale, V3(0.0f)))
 				{
 					JointTransform = JointTransformFromSQT(Xform);
 				}
@@ -825,13 +820,7 @@ AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *Anim
 	{
 		return;
 	}
-	// NOTE(Justin): This does not work 100% in the current system. The oldest is not necessarily the same
-	// as the current node. The oldest may be another animation that is currently being blended out
-	// whild the current node is blending in. So any work that is done is invalid.
-	//Find the channel playing the currently active animation.
-	//animation *Oldest = AnimationOldestGet(AnimationPlayer);
 
-	// Should this just be the current node?
 	animation *MostRecent = AnimationPlayer->Channels;
 	if(!MostRecent)
 	{
@@ -845,8 +834,6 @@ AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *Anim
 	animation_graph_arc Arc = Node->WhenDone;
 	if((Arc.Destination.Size != 0) && (RemainingTime <= Arc.RemainingTimeBeforeCrossFade))
 	{
-		AnimationPlayer->MovementState = AnimationPlayer->NewState;
-
 		f32 BlendDuration = Clamp01(RemainingTime);
 		DefaultTimeOffset = Arc.StartTime;
 		SwitchToNode(AssetManager, AnimationPlayer, Graph, Arc.Destination, BlendDuration, DefaultTimeOffset);
@@ -911,6 +898,8 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 	u8 Word_[4096];
 	MemoryZero(Word_, sizeof(Word_));
 	u8 *Word = &Word_[0];
+
+	G->Path = StringCopy(&G->Arena, FileName);
 
 	b32 ProcessingNode = false;
 	while(*Content)
@@ -1078,4 +1067,17 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 	NodeEnd(G);
 
 	Platform.DebugFileFree(File.Content);
+}
+
+internal void
+AnimationGraphReload(asset_manager *AssetManager, char *GraphName)
+{
+	animation_graph *G = LookupGraph(AssetManager, GraphName).Graph;
+	string Path = G->Path;
+	ArenaClear(&G->Arena);
+	G->NodeCount = 0;
+	G->Index = 0;
+	G->CurrentNode = {};
+	MemoryZero(&G->Nodes, sizeof(G->Nodes));
+	AnimationGraphInitialize(G, CString(Path));
 }

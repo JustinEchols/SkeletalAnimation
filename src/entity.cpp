@@ -485,12 +485,10 @@ EvaluateAttack(entity *Entity, move_info MoveInfo, f32 dt)
 		case AttackType_Neutral3:
 		case AttackType_Forward:
 		case AttackType_Strong:
+		case AttackType_Sprint:
 		{
 			Entity->dP = {};
 			FlagClear(Entity, EntityFlag_Moving);
-		} break;
-		case AttackType_Sprint:
-		{
 		} break;
 		case AttackType_Air:
 		{

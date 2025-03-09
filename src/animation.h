@@ -132,6 +132,7 @@ struct animation_graph_node
 
 struct animation_graph
 {
+	string Path;
 	memory_arena Arena;
 	u32 NodeCount;
 	u32 Index;

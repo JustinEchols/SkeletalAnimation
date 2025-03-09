@@ -113,7 +113,8 @@ struct asset_entry
 internal asset_entry		LookupTexture(asset_manager *AssetManager, char *TextureName);
 internal asset_entry		LookupModel(asset_manager *AssetManager, char *ModelName);
 internal asset_entry		LookupSampledAnimation(asset_manager *AssetManager, char *AnimationName);
-internal animation_graph *	LookupGraph(asset_manager *AssetManager, char *GraphName);
+internal asset_entry		LookupGraph(asset_manager *AssetManager, char *AnimationGraphName);
+//internal animation_graph *	LookupGraph(asset_manager *AssetManager, char *GraphName);
 
 #define ASSET_H
 #endif

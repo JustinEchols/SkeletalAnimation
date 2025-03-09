@@ -664,6 +664,10 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 							{
 								Win32KeyStateUpdate(&NewKeyboard->Space, IsDown);
 							}
+							else if(KeyCode == VK_RETURN)
+							{
+								Win32KeyStateUpdate(&NewKeyboard->Enter, IsDown);
+							}
 							else if(KeyCode == VK_ADD)
 							{
 								Win32KeyStateUpdate(&NewKeyboard->Add, IsDown);

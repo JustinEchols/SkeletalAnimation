@@ -710,6 +710,7 @@ LookupSampledAnimation(asset_manager *AssetManager, char *AnimationName)
 	return(Result);
 }
 
+#if 0
 internal animation_graph *
 LookupGraph(asset_manager *AssetManager, char *AnimationGraphName)
 {
@@ -723,6 +724,26 @@ LookupGraph(asset_manager *AssetManager, char *AnimationGraphName)
 
 	return(Result);
 }
+#else
+internal asset_entry 
+LookupGraph(asset_manager *AssetManager, char *AnimationGraphName)
+{
+	asset_entry Result = {};
+
+	animation_graph *Graph = 0;
+	s32 Index = StringHashLookup(&AssetManager->GraphNames, AnimationGraphName);
+	if(Index != -1)
+	{
+		Assert(Index >= 0 && Index < ArrayCount(AssetManager->Graphs));
+		Graph = AssetManager->Graphs + Index;
+	}
+
+	Result.Index = Index;
+	Result.Graph = Graph;
+
+	return(Result);
+}
+#endif
 
 internal b32
 ShouldReload(platform_file_info *FileInfo)
