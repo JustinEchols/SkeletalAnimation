@@ -1,12 +1,6 @@
-camera_speed 10.0
-camera_yaw -90.0
-camera_pitch -10.0
-camera_position 0.0 0.0 -10.0
-camera_offset_from_player 0.0 2.0 5.0
-fov 45.0
-z_near 0.2
-z_far 200.0
-gravity 80.0
+entity
+type null
+next
 
 entity
 type walkable_region
@@ -17,6 +11,7 @@ movement_collider_count 1
 movement_collider_type obb
 dim 40.0 40.0 40.0
 visual_scale 0.5
+next
 
 entity
 type cube 
@@ -27,6 +22,7 @@ movement_collider_count 1
 movement_collider_type obb
 dim 2.0 1.0 10.0
 visual_scale 0.5
+next
 
 entity
 type cube 
@@ -37,6 +33,7 @@ movement_collider_count 1
 movement_collider_type obb
 dim 2.0 10.0 2.0
 visual_scale 0.5
+next
 
 entity
 type cube 
@@ -47,6 +44,7 @@ movement_collider_count 1
 movement_collider_type obb
 dim 1.0 1.0 5.0
 visual_scale 0.5
+next
 
 entity
 type cube 
@@ -57,6 +55,7 @@ movement_collider_count 1
 movement_collider_type obb
 dim 2.0 1.0 15.0
 visual_scale 0.5
+next
 
 entity
 type cube 
@@ -67,5 +66,6 @@ movement_collider_count 1
 movement_collider_type obb
 dim 5.0 5.0 4.0
 visual_scale 0.5
+next
 
 entity

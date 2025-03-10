@@ -420,4 +420,3 @@ DebugDrawTexture(char *TextureName, f32 Width = 128.0f, f32 Height = 128.0f)
 	PushTexture(Ui.RenderBuffer, Entry.Texture, Entry.Index);
 	PushQuad2D(Ui.RenderBuffer, (f32 *)Vertices, Entry.Index);
 }
-

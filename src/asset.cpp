@@ -529,11 +529,16 @@ ModelLoad(memory_arena *Arena, char *FileName)
 			}
 		}
 
-		f32 Xmin, Ymin, Zmin;
-		f32 Xmax, Ymax, Zmax;
-		Xmin = Ymin = Zmin = F32Max;
-		Xmax = Ymax = Zmax = -1.0f*F32Max;
+		MeshSource++;
+	}
 
+	f32 Xmin, Ymin, Zmin;
+	f32 Xmax, Ymax, Zmax;
+	Xmin = Ymin = Zmin = F32Max;
+	Xmax = Ymax = Zmax = -1.0f*F32Max;
+	for(u32 MeshIndex = 0; MeshIndex < Model.MeshCount; ++MeshIndex)
+	{
+		mesh *Mesh = Model.Meshes + MeshIndex;
 		for(u32 VertexIndex = 0; VertexIndex < Mesh->VertexCount; ++VertexIndex)
 		{
 			vertex *V = Mesh->Vertices + VertexIndex;
@@ -565,14 +570,11 @@ ModelLoad(memory_arena *Arena, char *FileName)
 				Zmin = V->P.z;
 			}
 		}
-
-		v3 Min = V3(Xmin, Ymin, Zmin);
-		v3 Max = V3(Xmax, Ymax, Zmax);
-
-		Mesh->BoundingBox = AABBMinMax(Min, Max);
-
-		MeshSource++;
 	}
+
+	v3 Min = V3(Xmin, Ymin, Zmin);
+	v3 Max = V3(Xmax, Ymax, Zmax);
+	Model.BoundingBox = AABBMinMax(Min, Max);
 
 	return(Model);
 }
@@ -710,21 +712,6 @@ LookupSampledAnimation(asset_manager *AssetManager, char *AnimationName)
 	return(Result);
 }
 
-#if 0
-internal animation_graph *
-LookupGraph(asset_manager *AssetManager, char *AnimationGraphName)
-{
-	animation_graph *Result = 0;
-	s32 Index = StringHashLookup(&AssetManager->GraphNames, AnimationGraphName);
-	if(Index != -1)
-	{
-		Assert(Index >= 0 && Index < ArrayCount(AssetManager->Graphs));
-		Result = AssetManager->Graphs + Index;
-	}
-
-	return(Result);
-}
-#else
 internal asset_entry 
 LookupGraph(asset_manager *AssetManager, char *AnimationGraphName)
 {
@@ -743,7 +730,6 @@ LookupGraph(asset_manager *AssetManager, char *AnimationGraphName)
 
 	return(Result);
 }
-#endif
 
 internal b32
 ShouldReload(platform_file_info *FileInfo)
@@ -752,6 +738,7 @@ ShouldReload(platform_file_info *FileInfo)
 	return(Result);
 }
 
+#if 1
 internal void
 AssetManagerInitialize(asset_manager *Manager)
 {
@@ -960,15 +947,6 @@ AssetManagerInitialize(asset_manager *Manager)
 
 		Model->Name = StringCopy(&Manager->Arena, AssetName);
 
-		if(StringsAreSame(Buffer, "Ninja"))
-		{
-			asset_entry Diffuse = LookupTexture(Manager, "Ninja_diffuse");
-			asset_entry Specular = LookupTexture(Manager, "Ninja_specular");
-			Model->Meshes[0].MaterialFlags |= (MaterialFlag_Diffuse | MaterialFlag_Specular);
-			Model->Meshes[0].DiffuseTexture = Diffuse.Index;
-			Model->Meshes[0].SpecularTexture = Specular.Index;
-		}
-
 		if(Model->HasSkeleton)
 		{
 			Platform.UploadAnimatedModelToGPU(Model);
@@ -1082,3 +1060,5 @@ AssetManagerInitialize(asset_manager *Manager)
 	Platform.UploadModelToGPU(&Manager->Cube);
 	Platform.UploadModelToGPU(&Manager->Sphere);
 }
+#else
+#endif

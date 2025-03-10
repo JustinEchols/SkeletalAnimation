@@ -67,22 +67,36 @@ struct asset_animation_header
 };
 #pragma pack(pop)
 
+struct asset_entry
+{
+	s32 Index;
+	union
+	{
+		texture *Texture;
+		model *Model;
+		animation_graph *Graph;
+		animation_info *SampledAnimation;
+	};
+};
+
 struct asset_manager
 {
 	memory_arena Arena;
 
 	string_hash TextureNames;
-	string_hash ModelNames;
-	string_hash AnimationNames;
-	string_hash GraphNames;
-
 	texture Textures[64];
+
+	string_hash ModelNames;
 	model Models[16];
-	animation_graph Graphs[8];
-	font Font;
 
 	// TODO(Justin): Clean this up
+	string_hash AnimationNames;
 	animation_info *SampledAnimations;
+
+	string_hash GraphNames;
+	animation_graph Graphs[8];
+
+	font Font;
 
 	// File infos for hot reloading changes when they occur
 
@@ -98,23 +112,10 @@ struct asset_manager
 	model Sphere;
 };
 
-struct asset_entry
-{
-	s32 Index;
-	union
-	{
-		texture *Texture;
-		model *Model;
-		animation_graph *Graph;
-		animation_info *SampledAnimation;
-	};
-};
-
-internal asset_entry		LookupTexture(asset_manager *AssetManager, char *TextureName);
-internal asset_entry		LookupModel(asset_manager *AssetManager, char *ModelName);
-internal asset_entry		LookupSampledAnimation(asset_manager *AssetManager, char *AnimationName);
-internal asset_entry		LookupGraph(asset_manager *AssetManager, char *AnimationGraphName);
-//internal animation_graph *	LookupGraph(asset_manager *AssetManager, char *GraphName);
+internal asset_entry LookupTexture(asset_manager *AssetManager, char *TextureName);
+internal asset_entry LookupModel(asset_manager *AssetManager, char *ModelName);
+internal asset_entry LookupSampledAnimation(asset_manager *AssetManager, char *AnimationName);
+internal asset_entry LookupGraph(asset_manager *AssetManager, char *AnimationGraphName);
 
 #define ASSET_H
 #endif

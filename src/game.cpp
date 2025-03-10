@@ -35,8 +35,8 @@ PlayerAdd(game_state *GameState, v3 P)
 	FlagAdd(Entity, EntityFlag_Visible);
 
 	Entity->P = P;
-	Entity->dP = V3(0.0f);
-	Entity->ddP = V3(0.0f);
+	Entity->dP = {};
+	Entity->ddP = {};
 
 	f32 Radians = DirectionToEuler(V3(0.0f, 0.0f, -1.0f)).yaw;
 	Entity->Theta = RadToDegrees(Radians);
@@ -534,6 +534,115 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 }
 
 internal void
+GameStateVariablesLoad(game_state *GameState, char *FileName)
+{
+	debug_file File = Platform.DebugFileReadEntire(FileName);
+	if(File.Size == 0)
+	{
+		Assert(0);
+	}
+
+	u8 *Content = (u8 *)File.Content;
+
+	u8 LineBuffer_[4096];
+	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
+	u8 *LineBuffer = &LineBuffer_[0];
+
+	u8 Word_[4096];
+	MemoryZero(Word_, sizeof(Word_));
+	u8 *Word = &Word_[0];
+
+	while(*Content)
+	{
+		BufferLine(&Content, LineBuffer);
+		u8 *Line = LineBuffer;
+		BufferNextWord(&Line, Word);
+
+		if(StringsAreSame(Word, "camera_speed"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->Camera.Speed = F32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "camera_yaw"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->Camera.DefaultYaw = F32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "camera_pitch"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->Camera.DefaultPitch = F32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "camera_position"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->Camera.P.x = F32FromASCII(Word);
+
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->Camera.P.y = F32FromASCII(Word);
+
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->Camera.P.z = F32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "camera_offset_from_player"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->CameraOffsetFromPlayer.x = F32FromASCII(Word);
+
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->CameraOffsetFromPlayer.y = F32FromASCII(Word);
+
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->CameraOffsetFromPlayer.z = F32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "camera_yaw"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->FOV = F32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "fov"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->FOV = F32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "z_near"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->ZNear = F32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "z_far"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->ZFar = F32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "gravity"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->Gravity = F32FromASCII(Word);
+		}
+
+		AdvanceLine(&Content);
+
+	}
+
+	Platform.DebugFileFree(File.Content);
+}
+
+internal void
 LevelLoad(game_state *GameState, char *FileName)
 {
 	debug_file File = Platform.DebugFileReadEntire(FileName);
@@ -562,202 +671,119 @@ LevelLoad(game_state *GameState, char *FileName)
 
 		if(StringsAreSame(Word, "entity"))
 		{
-			if(ParsingEntity)
+		}
+		else if(StringsAreSame(Word, "type"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+
+			if(StringsAreSame(Word, "null"))
 			{
-				Current->ID = GameState->EntityCount;
-				GameState->EntityCount++;
-				Current = GameState->Entities + GameState->EntityCount;
+				Current->Type = EntityType_Null;
 			}
-			else
+			else if(StringsAreSame(Word, "walkable_region"))
 			{
-				ParsingEntity = true;
+				Current->Type = EntityType_WalkableRegion;
+			}
+			else if(StringsAreSame(Word, "cube"))
+			{
+				Current->Type = EntityType_Cube;
 			}
 		}
-
-		if(!ParsingEntity)
+		else if(StringsAreSame(Word, "flags"))
 		{
-			if(StringsAreSame(Word, "camera_speed"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->Camera.Speed = F32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "camera_yaw"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->Camera.DefaultYaw = F32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "camera_pitch"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->Camera.DefaultPitch = F32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "camera_position"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->Camera.P.x = F32FromASCII(Word);
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			Current->Flags = U32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "position"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			Current->P.x = F32FromASCII(Word);
 
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->Camera.P.y = F32FromASCII(Word);
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			Current->P.y = F32FromASCII(Word);
 
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->Camera.P.z = F32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "camera_offset_from_player"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->CameraOffsetFromPlayer.x = F32FromASCII(Word);
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			Current->P.z = F32FromASCII(Word);
+		}
+		else if(StringsAreSame(Word, "axis_angle"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			f32 X = F32FromASCII(Word);
 
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->CameraOffsetFromPlayer.y = F32FromASCII(Word);
-				
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->CameraOffsetFromPlayer.z = F32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "camera_yaw"))
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			f32 Y = F32FromASCII(Word);
+
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			f32 Z = F32FromASCII(Word);
+
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			f32 Angle = F32FromASCII(Word);
+
+			Current->Orientation = Quaternion(V3(X, Y , Z), DegreeToRad(Angle));
+		}
+		else if(StringsAreSame(Word, "movement_collider_count"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			Current->MovementColliders.VolumeCount = U32FromASCII(Word);
+			Current->MovementColliders.Volumes = PushArray(&GameState->Arena, Current->MovementColliders.VolumeCount, collision_volume);
+		}
+		else if(StringsAreSame(Word, "movement_collider_type"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+
+			if(StringsAreSame(Word, "obb"))
 			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->FOV = F32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "fov"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->FOV = F32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "z_near"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->ZNear = F32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "z_far"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->ZFar = F32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "gravity"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				GameState->Gravity = F32FromASCII(Word);
+				Current->MovementColliders.Type = CollisionVolumeType_OBB; 
 			}
 		}
-		else
+		else if(StringsAreSame(Word, "dim"))
 		{
-			if(StringsAreSame(Word, "type"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
+			v3 Dim = {};
 
-				if(StringsAreSame(Word, "walkable_region"))
-				{
-					Current->Type = EntityType_WalkableRegion;
-				}
-				else if(StringsAreSame(Word, "cube"))
-				{
-					Current->Type = EntityType_Cube;
-				}
-			}
-			else if(StringsAreSame(Word, "flags"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Current->Flags = U32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "position"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Current->P.x = F32FromASCII(Word);
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			Dim.x = F32FromASCII(Word); 
 
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Current->P.y = F32FromASCII(Word);
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			Dim.y = F32FromASCII(Word); 
 
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Current->P.z = F32FromASCII(Word);
-			}
-			else if(StringsAreSame(Word, "axis_angle"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				f32 X = F32FromASCII(Word);
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			Dim.z = F32FromASCII(Word); 
 
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				f32 Y = F32FromASCII(Word);
-
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				f32 Z = F32FromASCII(Word);
-
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				f32 Angle = F32FromASCII(Word);
-
-				Current->Orientation = Quaternion(V3(X, Y , Z), DegreeToRad(Angle));
-			}
-			else if(StringsAreSame(Word, "movement_collider_count"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Current->MovementColliders.VolumeCount = U32FromASCII(Word);
-				Current->MovementColliders.Volumes = PushArray(&GameState->Arena, Current->MovementColliders.VolumeCount, collision_volume);
-			}
-			else if(StringsAreSame(Word, "movement_collider_type"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-
-				if(StringsAreSame(Word, "obb"))
-				{
-					Current->MovementColliders.Type = CollisionVolumeType_OBB; 
-				}
-			}
-			else if(StringsAreSame(Word, "dim"))
-			{
-				v3 Dim = {};
-
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Dim.x = F32FromASCII(Word); 
-
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Dim.y = F32FromASCII(Word); 
-
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Dim.z = F32FromASCII(Word); 
-
-				collision_volume *Volume = Current->MovementColliders.Volumes;
-				quaternion Q = Conjugate(Current->Orientation);
-				Volume->OBB.Dim = 0.99f*Dim;
-				Volume->OBB.Center  = 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
-				Volume->Offset		= 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
-				Volume->OBB.X = Q * XAxis();
-				Volume->OBB.Y = Q * YAxis();
-				Volume->OBB.Z = Q * (-1.0f*ZAxis());
-			}
-			else if(StringsAreSame(Word, "visual_scale"))
-			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				f32 Scale = F32FromASCII(Word); 
-				Current->VisualScale = Scale * Current->MovementColliders.Volumes[0].OBB.Dim;
-			}
+			collision_volume *Volume = Current->MovementColliders.Volumes;
+			quaternion Q = Conjugate(Current->Orientation);
+			Volume->OBB.Dim = 0.99f*Dim;
+			Volume->OBB.Center  = 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
+			Volume->Offset		= 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
+			Volume->OBB.X = Q * XAxis();
+			Volume->OBB.Y = Q * YAxis();
+			Volume->OBB.Z = Q * (-1.0f*ZAxis());
+		}
+		else if(StringsAreSame(Word, "visual_scale"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			f32 Scale = F32FromASCII(Word); 
+			Current->VisualScale = Scale * Current->MovementColliders.Volumes[0].OBB.Dim;
+		}
+		else if(StringsAreSame(Word, "next"))
+		{
+			Current->ID = GameState->EntityCount;
+			GameState->EntityCount++;
+			Current = GameState->Entities + GameState->EntityCount;
 		}
 
 		AdvanceLine(&Content);
@@ -794,7 +820,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Texture.Width = 256;
 		GameState->Texture.Height = 256;
 
-		EntityAdd(GameState, EntityType_Null);
+		GameStateVariablesLoad(GameState, "../src/all.variables");
 		LevelLoad(GameState, "../src/test.level");
 
 		CameraSet(&GameState->Camera, GameState->Camera.P + GameState->CameraOffsetFromPlayer, GameState->Camera.DefaultYaw, GameState->Camera.DefaultPitch);
@@ -834,7 +860,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		EntityAdd(GameState, EntityType_Null);
 		LevelLoad(GameState, "../src/test.level");
 
-		//entity *Player = XBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 		entity *Player = XBotAdd(GameState, PlayerP);
 		GameState->PlayerIDForController[1] = Player->ID;
 
@@ -842,15 +867,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		entity *Knight = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 		entity *Brute = BruteAdd(GameState, V3(0.0f, 0.01f, -5.0f));
 
-		FlagClear(YBot, EntityFlag_Visible);
-		FlagClear(Knight, EntityFlag_Visible);
-		FlagClear(Brute, EntityFlag_Visible);
-
 		GameState->CharacterIDs[GameState->CurrentCharacter] = Player->ID;
 		GameState->CharacterIDs[GameState->CurrentCharacter + 1] = YBot->ID;
 		GameState->CharacterIDs[GameState->CurrentCharacter + 2] = Knight->ID;
 		GameState->CharacterIDs[GameState->CurrentCharacter + 3] = Brute->ID;
-
 #endif
 	}
 
@@ -893,7 +913,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		u32 ID = GameState->PlayerIDForController[ControllerIndex];
 		if(ID == 0)
 		{
-			//if((ControllerIndex == 1) && Controller->Start.EndedDown)
 			if(Controller->Space.EndedDown || Controller->Start.EndedDown)
 			{
 				entity *Player = XBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
@@ -920,7 +939,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 				u32 CurrentID = GameState->PlayerEntityIndex;
 				entity *Current = GameState->Entities + CurrentID;
-				FlagClear(Current, EntityFlag_Visible);
 
 				GameState->CurrentCharacter++;
 				if(GameState->CurrentCharacter > 3)
@@ -932,7 +950,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				GameState->PlayerIDForController[ControllerIndex] = CurrentID;
 				GameState->PlayerEntityIndex = CurrentID;
 				Current = GameState->Entities + GameState->PlayerEntityIndex;
-				FlagAdd(Current, EntityFlag_Visible);
 			}
 #else
 #endif

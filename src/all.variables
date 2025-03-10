@@ -1,0 +1,9 @@
+camera_speed 10.0
+camera_yaw -90.0
+camera_pitch -10.0
+camera_position 0.0 0.0 -10.0
+camera_offset_from_player 0.0 2.0 5.0
+fov 45.0
+z_near 0.2
+z_far 200.0
+gravity 80.0

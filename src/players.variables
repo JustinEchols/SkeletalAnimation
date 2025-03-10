@@ -1,0 +1,12 @@
+player XBot
+height 1.8
+acceleration 50.0
+drag 10.0
+angular_speed 15.0
+visual_scale 0.01
+capsule_radius 0.4
+model XBot
+graph XBot_AnimationGraph
+animation XBot_IdleLeft
+
+player

@@ -7,12 +7,15 @@
  *	- Combat
  *	- Multiple controls turning animations
  *	- How to relate an attack state duration to an animations duration/time scale?
+ *	- Fix stutter when root motion animation is blending out
  *
  * Physics
  *	- Moving Capsule vs Moving OBB
  *	- Moving Capsule vs Moving Capsule
  * Entity
  *	- Define/determine what entity flags last only during the frame and clear them as a group
+ * UI
+ *	- Generate IDs without having to refer to a function pointer
 */
 
 // TODO(Justin): Clean this up by processing the font data into an asset file
@@ -55,18 +58,18 @@ enum move_flags
 
 enum move_type
 {
-	MovementState_Idle,
-	MovementState_Run,
-	MovementState_Sprint,
-	MovementState_Jump,
-	MovementState_InAir,
-	MovementState_Land,
-	MovementState_Crouch,
-	MovementState_Sliding,
-	MovementState_Attack,
+	MoveType_Idle,
+	MoveType_Run,
+	MoveType_Sprint,
+	MoveType_Jump,
+	MoveType_InAir,
+	MoveType_Land,
+	MoveType_Crouch,
+	MoveType_Sliding,
+	MoveType_Attack,
 };
 
-struct movement_state
+struct move_state 
 {
 	move_type Type;
 	move_flags Flags;

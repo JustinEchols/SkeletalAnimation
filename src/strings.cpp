@@ -446,6 +446,7 @@ internal s32
 StringHashLookup(string_hash *Hash, char *String)
 {
 	s32 Result = -1;
+
 	u32 HashIndex = StringHashIndex(String, ArrayCount(Hash->Entries));
 	Assert(HashIndex < ArrayCount(Hash->Entries));
 	string_hash_entry *Entry = Hash->Entries + HashIndex;

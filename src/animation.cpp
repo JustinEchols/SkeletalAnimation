@@ -151,9 +151,9 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 
 internal void
 AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimation, u32 ID, u32 AnimationFlags,
-		f32 BlendDuration = 0.0f,
-		f32 StartTime = 0.0f,
-		f32 TimeScale = 1.0f)
+																						f32 BlendDuration = 0.0f,
+																						f32 StartTime = 0.0f,
+																						f32 TimeScale = 1.0f)
 {
 	Assert(AnimationPlayer->IsInitialized);
 
@@ -376,12 +376,7 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer, ani
 	}
 }
 
-// NOTE(Justin): We send a message and do work to determine what animation should be played
-// and how to start playiang it. Therefore at this step the new animation has not been
-// determined and is not playing. This means that we should look at the most recent animation
-// to determine what the next animation should be. This animation is
-// the animation at the top of the linked list.
-
+// NOTE(Justin): Determine the next animation and when/how to start playing it
 internal void
 MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, animation_graph *Graph, char *Message)
 {
@@ -402,6 +397,7 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 				animation *Animation = AnimationPlayer->Channels;
 				if(!Animation)
 				{
+					// TODO(Justin): This should never happen in production
 					SwitchToNode(AssetManager, AnimationPlayer, Graph, Graph->Nodes[0].Name, DefaultBlendDuration, DefaultTimeOffset);
 					return;
 				}
@@ -630,19 +626,6 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 				s32 JointIndex = JointIndexGet(Samples->JointNames, Samples->JointCount, Joint->Name);
 				if(JointIndex != -1)
 				{
-					// NOTE(Justin): If the animation contains root motion and we are blending out with another animation
-					// that does not have root motion the result is that the characters's root position is changed overtime
-					// away from the animation blending out and towards the other animation. To not to do this we only
-					// blend in the vertical motion of the root and remove the lateral motion. The problem with this
-					// is that if the root positions are far apart the character's position will end up snapping once the blend is complete 
-					// So, the root positions need to be almost if not the same. Also when the blend starts happening between two particular
-					// animations will need to be carefully considered. When we start blending can impact the result dramatically
-					// because the root motion differs between frames. Depending on where the blend starts happening will impact the
-					// final position of the character.
-					
-					// NOTE(Justin): Blending in should work fine. We just start blending in the root motion when the root motion animation
-					// starts playing
-
 					v3 P = Factor * BlendedPose->Positions[JointIndex];
 					if(ControlsPosition(Animation) && Animation->BlendingOut && (JointIndex == 0))
 					{
@@ -757,7 +740,7 @@ ModelJointsUpdate(entity *Entity)
 			Xform.Scale			= FinalPose->Scales[0];
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
-					!Equal(Xform.Scale, V3(0.0f)))
+			   !Equal(Xform.Scale, V3(0.0f)))
 			{
 				RootJointT = JointTransformFromSQT(Xform);
 			}
@@ -775,7 +758,7 @@ ModelJointsUpdate(entity *Entity)
 				Xform.Scale			= FinalPose->Scales[JointIndex];
 
 				if(!Equal(Xform.Position, V3(0.0f)) &&
-						!Equal(Xform.Scale, V3(0.0f)))
+				   !Equal(Xform.Scale, V3(0.0f)))
 				{
 					JointTransform = JointTransformFromSQT(Xform);
 				}
@@ -790,6 +773,7 @@ ModelJointsUpdate(entity *Entity)
 		}
 
 		// TODO(Justin): Store transform.
+		// TODO(Justin): Handle root motion case.
 		mat4 Transform	= EntityTransform(Entity, Entity->VisualScale);
 
 		mat4 LeftFootT	= Model->Meshes[0].JointTransforms[Model->LeftFootJointIndex];

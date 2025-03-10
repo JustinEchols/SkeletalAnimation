@@ -97,6 +97,8 @@ struct model
 
 	// Data modified by renderer.
 	b32 UploadedToGPU;
+
+	aabb BoundingBox;
 };
 
 #define MESH_H
