@@ -89,5 +89,3 @@ ToggleButton(char *Label, void *ID)
 
 	return(Result);
 }
-
-

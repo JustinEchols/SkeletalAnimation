@@ -343,9 +343,9 @@ struct open_gl
 
 	u32 Quad2dVA;
 	u32 Quad2dVB;
-
 	u32 Quad3dVA;
 	u32 Quad3dVB;
+	b32 DebugVolumeAllocated;
 
 	u32 FBO;
 	u32 RBO;
@@ -405,6 +405,8 @@ struct open_gl
 	OpenGLFunctionDeclare(glFramebufferRenderbuffer, GLFRAMEBUFFERRENDERBUFFER);
 	OpenGLFunctionDeclare(glRenderbufferStorage, GLRENDERBUFFERSTORAGE);
 	OpenGLFunctionDeclare(glCheckFramebufferStatus, GLCHECKFRAMEBUFFERSTATUS);
+	OpenGLFunctionDeclare(glDeleteBuffers, GLDELETEBUFFERS);
+	OpenGLFunctionDeclare(glDeleteVertexArrays, GLDELETEVERTEXARRAYS);
 };
 #undef OpenGLFunctionDeclare
 
@@ -490,6 +492,8 @@ OpenGLFunction(glBindRenderbuffer, GLBINDRENDERBUFFER)
 OpenGLFunction(glFramebufferRenderbuffer, GLFRAMEBUFFERRENDERBUFFER)
 OpenGLFunction(glRenderbufferStorage, GLRENDERBUFFERSTORAGE)
 OpenGLFunction(glCheckFramebufferStatus, GLCHECKFRAMEBUFFERSTATUS)
+OpenGLFunction(glDeleteBuffers, GLDELETEBUFFERS)
+OpenGLFunction(glDeleteVertexArrays, GLDELETEVERTEXARRAYS)
 }
 
 internal void

@@ -2,9 +2,7 @@
 
 /*
  * Animation
- *	- Jumping
- *	- Landing
- *	- Combat
+ *	- Remove duplicated joints in multiple meshes 
  *	- Multiple controls turning animations
  *	- How to relate an attack state duration to an animations duration/time scale?
  *	- Fix stutter when root motion animation is blending out
@@ -16,6 +14,23 @@
  *	- Define/determine what entity flags last only during the frame and clear them as a group
  * UI
  *	- Generate IDs without having to refer to a function pointer
+ *
+// Weapons
+//	- Weapons are often times part of a skeleton. The position of the collision 
+//	  geometry can have its position at the weapon joint and then apply an 
+//	  offset. The orientation of the weapon joint is also used as the orientation
+//	  of the collision geometry
+//
+//	- Do we need to compute an obb instead of an abb for the mesh?
+//  [] Need to introduce weapon concepts/data structures into mesh
+//	[] data structure containing
+//		- joint index
+//			- will be the joint that the collision volume is relative to
+//		- axis system or quaternion
+//			- use the joint?
+//	[x] aabb of mesh
+//		- this is done in model space tpose
+//			- should be able to construct a capsule from the aabb
 */
 
 // TODO(Justin): Clean this up by processing the font data into an asset file
@@ -99,6 +114,10 @@ enum entity_type
 	EntityType_Elevator,
 };
 
+// NOTE(Justin) Determine a convention for when/where certain flags get updated. For example the animation system
+// will spawn an attack collider at a certain time during an an attack animation and when that happens we know
+// we need to check for an attack collision the animation system is responsible for the notification and then
+// we turn on the attack collision check flag.
 enum entity_flag
 {
 	EntityFlag_Collides = (1 << 1),
@@ -112,6 +131,8 @@ enum entity_flag
 	EntityFlag_ShouldJump = (1 << 9),
 	EntityFlag_Jumping = (1 << 10),
 	EntityFlag_AnimationControlling = (1 << 11),
+	EntityFlag_AttackCollisionCheck = (1 << 12),
+	EntityFlag_Attacked = (1 << 13),
 };
 
 #include "intrinsics.h"
@@ -144,6 +165,21 @@ struct move_info
 	v2 StickDelta;
 };
 
+enum collision_type
+{
+	CollisionType_None,
+	CollisionType_MovingCapsuleOBB,
+	CollisionType_MovingCapsuleMovingCapsule,
+};
+
+enum collision_volume_type
+{
+	CollisionVolumeType_AABB,
+	CollisionVolumeType_OBB,
+	CollisionVolumeType_Sphere,
+	CollisionVolumeType_Capsule,
+};
+
 struct collision_info
 {
 	v3 PlaneNormal;
@@ -157,13 +193,6 @@ struct collision_result
 	collision_info Info[6];
 };
 
-enum collision_type
-{
-	CollisionType_None,
-	CollisionType_MovingCapsuleOBB,
-	CollisionType_MovingCapsuleMovingCapsule,
-};
-
 struct pairwise_collision_rule
 {
 	u32 IDA;
@@ -173,32 +202,22 @@ struct pairwise_collision_rule
 	pairwise_collision_rule *NextInHash;
 };
 
-enum collision_volume_type
-{
-	CollisionVolumeType_AABB,
-	CollisionVolumeType_OBB,
-	CollisionVolumeType_Sphere,
-	CollisionVolumeType_Capsule,
-};
-
 struct collision_volume
 {
-	f32 Radius;
-
-	// ABB 
+	collision_volume_type Type;
 	v3 Offset;
+	v3 Center;
 	v3 Dim;
-
-	// Cube/Region 
-	obb OBB;
-
-	// Player 
-	capsule Capsule;
+	v3 X;
+	v3 Y;
+	v3 Z;
+	v3 Min;
+	v3 Max;
+	f32 Radius;
 };
 
 struct collision_group
 {
-	collision_volume_type Type;
 	u32 VolumeCount;
 	collision_volume *Volumes;
 };
@@ -354,6 +373,19 @@ UiIndentAdd(f32 Amount = 0.0f)
 	else
 	{
 		Ui.P.x += Ui.DefaultIndent;
+	}
+}
+
+inline void
+UiIndentRemove(f32 Amount = 0.0f)
+{
+	if(Amount != 0.0f)
+	{
+		Ui.P.x -= Amount;
+	}
+	else
+	{
+		Ui.P.x -= Ui.DefaultIndent;
 	}
 }
 

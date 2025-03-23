@@ -121,6 +121,7 @@ DebugDrawVector3(char *String, v3 Vector3, v3 Color = V3(1.0f))
 	UiAdvanceLine();
 }
 
+#if 0
 internal void
 DebugDrawAxes(entity *Entity)
 {
@@ -144,29 +145,33 @@ DebugDrawAxes(entity *Entity)
 	T = Mat4Translate(Entity->P + Offset + 0.5f*OBB.Z);
 	PushDebugVolume(Ui.RenderBuffer, ZArrow, T*R*S, V3(0.0f, 0.0f, 1.0f));
 }
+#endif
 
 internal void
 DebugDrawOBB(render_buffer *RenderBuffer, model *DebugCube, obb OBB, v3 P, v3 Offset, v3 Color)
 {
-	v3 X = OBB.X;
-	v3 Y = OBB.Y;
-	v3 Z = OBB.Z;
-
 	mat4 T = Mat4Translate(P + Offset);
-	mat4 R = Mat4(X, Y, Z);
+	mat4 R = Mat4(OBB.X, OBB.Y, OBB.Z);
 	mat4 S = Mat4Scale(OBB.Dim);
-
 	PushDebugVolume(RenderBuffer, DebugCube, T*R*S, Color);
 }
 
 internal void
-DebugDrawCapsule(entity *Entity)
+DebugDrawCapsule(v3 P, v3 Offset, mat4 R, mat4 S, capsule Capsule)
 {
-	capsule Capsule = Entity->MovementColliders.Volumes[0].Capsule;
-	mat4 T = Mat4Translate(Entity->P + CapsuleCenter(Capsule));
-	mat4 R = QuaternionToMat4(Entity->Orientation);
-	mat4 S = Mat4Scale(1.0f);
-	PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Capsule, T*R*S, V3(1.0f));
+	mat4 T = Mat4Translate(P + Offset);
+
+	model *DebugCapsule = DebugModelCapsuleInitialize2(Ui.TempArena, Capsule.Min, Capsule.Max, Capsule.Radius);
+	for(u32 MeshIndex = 0; MeshIndex < DebugCapsule->MeshCount; ++MeshIndex)
+	{
+		mesh *Mesh = DebugCapsule->Meshes + MeshIndex;
+		PushImmediateDebugVolume(Ui.RenderBuffer, Mesh->Vertices,
+												  Mesh->VertexCount,
+												  Mesh->Indices,
+												  Mesh->IndicesCount,
+												  T*R*S,
+												  V3(1.0f));
+	}
 }
 
 internal void
@@ -283,6 +288,67 @@ DebugDrawEntity(entity *Entity)
 }
 
 internal void
+DebugDrawWeaponCollider(entity *Entity)
+{
+	model *Model = Entity->AnimationPlayer->Model;
+
+	mat4 T = Mat4Translate(Entity->P);
+	mat4 R = QuaternionToMat4(Entity->Orientation);
+	mat4 S = Mat4Scale(Entity->VisualScale);
+	mat4 ModelToWorld = T*R*S;
+	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+	{
+		mesh *Mesh = Model->Meshes + MeshIndex;
+		if(Mesh->Flags & MeshFlag_Weapon)
+		{
+			// NOTE(Justin): Get the length and radius of the capsule in world space.
+			v3 Dim = AABBDim(Mesh->BoundingBox);
+			f32 Length = Max3(Dim);
+			f32 Radius = 0.0f;
+			if(Length == Dim.x)
+			{
+				Radius = 0.5f*Max(Dim.y, Dim.z);
+			}
+			else if(Length == Dim.y)
+			{
+				Radius = 0.5f*Max(Dim.x, Dim.z);
+			}
+			else
+			{
+				Radius = 0.5f*Max(Dim.x, Dim.y);
+			}
+
+			Length = Entity->VisualScale.x * Length;
+			Radius = Entity->VisualScale.x * Radius;
+
+			// NOTE(Justin): The collider's position starts at the world position of the weapon joint. We need to offset this position by some amount
+			// in the z direction because the joint position is not the same position as the collider's position. In order to do this, get the Z basis
+			// vector of the _capsule_ in the world and do the linear combination P + cZ where P is the weapon joint position in the world
+			mat4 WeaponTransform = Mesh->JointTransforms[Model->WeaponJointIndex];
+			v3 JointP = Mat4ColumnGet(WeaponTransform, 3);
+			v3 JointWorldP = ModelToWorld*(JointP);
+			
+			// TODO(Justin): Compute z coordinate
+			affine_decomposition D = Mat4AffineDecomposition(WeaponTransform);
+			R = R*D.R;
+			v3 Z = Mat4ColumnGet(R, 2);
+			v3 CapsuleCenter = JointWorldP + 0.4f*Z;
+
+			v3 Min = V3(0.0f, Radius, 0.0f);
+			v3 Max = V3(0.0f, Length - Radius, 0.0f);
+			capsule Capsule = CapsuleMinMaxRadius(Min, Max, Radius);
+
+			// NOTE(Justin): The debug capsule is an upright capsule. The orientation of the capsule of a weapon in tpose is lying flat. So
+			// the first rotation applied is a 90 degree CCW turn about the x-axis so that the capsule is lying flat. From there the joint rotation 
+			// is applied and the final rotation rotates the capsule so that it is orientated towrds the entities facing direction.
+			R = QuaternionToMat4(Entity->Orientation)*D.R*Mat4XRotation(DegreeToRad(-90.0f));
+
+			DebugDrawCapsule(CapsuleCenter, V3(0.0f), R, Mat4Scale(1.0f), Capsule);
+		}
+	}
+}
+
+internal void
 DebugDrawAnimationPlayer(animation_player *AnimationPlayer)
 {
 	if(!AnimationPlayer)
@@ -300,8 +366,6 @@ DebugDrawAnimationPlayer(animation_player *AnimationPlayer)
 	mat4 R = Mat4Identity();
 	mat4 S = Mat4Scale(0.5f);
 	PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Sphere, T*R*S, V3(1.0f, 0.0f, 0.0f));
-
-
 
 	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)
 	{
@@ -420,3 +484,33 @@ DebugDrawTexture(char *TextureName, f32 Width = 128.0f, f32 Height = 128.0f)
 	PushTexture(Ui.RenderBuffer, Entry.Texture, Entry.Index);
 	PushQuad2D(Ui.RenderBuffer, (f32 *)Vertices, Entry.Index);
 }
+
+internal void
+DebugDrawMeshTPoseAABB(entity *Entity)
+{
+	model *Model = Entity->AnimationPlayer->Model;
+	ModelTPose(Model);
+
+	f32 C = Entity->VisualScale.x;
+	mat4 T = Mat4Translate(Entity->P);
+	mat4 R = QuaternionToMat4(Entity->Orientation);
+	mat4 S = Mat4Scale(Entity->VisualScale);
+	mat4 ModelToWorld = T*R*S;
+
+	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+	{
+		mesh *Mesh = Model->Meshes + MeshIndex;
+		aabb BoundingBox = Mesh->BoundingBox;
+		v3 Center = AABBCenter(BoundingBox);
+		Center = ModelToWorld*Center;
+		T = Mat4Translate(Center);
+
+		v3 Dim = AABBDim(BoundingBox);
+		v3 Scale = C * Dim;
+		S = Mat4Scale(Scale);
+
+		PushDebugVolume(Ui.RenderBuffer, &Ui.Assets->Cube, T*R*S, V3(1.0f));
+	}
+}
+
+

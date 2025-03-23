@@ -14,6 +14,14 @@ struct joint
 	mat4 Transform;
 };
 
+struct vertex 
+{
+	v3 P;
+	v3 N;
+	v2 UV;
+	joint_info JointInfo;
+};
+
 struct material_spec
 {
 	v4 Ambient;
@@ -21,14 +29,6 @@ struct material_spec
 	v4 Specular;
 
 	f32 Shininess;
-};
-
-struct vertex 
-{
-	v3 P;
-	v3 N;
-	v2 UV;
-	joint_info JointInfo;
 };
 
 enum material_flags
@@ -41,6 +41,13 @@ enum material_flags
 enum mesh_flags
 {
 	MeshFlag_DontDraw = (1 << 1),
+	MeshFlag_Weapon = (1 << 2),
+};
+
+struct mesh_weapon_info
+{
+	u32 MeshIndex;
+	s32 JointIndex;
 };
 
 struct mesh
@@ -71,7 +78,7 @@ struct mesh
 	u32 SpecularTexture;
 	u32 NormalTexture;
 
-	// Data modified by renderer. Remove this?
+	// Data modified by renderer. Let the renderer keep track of this?!?
 	u32 VA;
 	u32 VB;
 	u32 IBO;
@@ -84,21 +91,23 @@ struct model
 {
 	string Name;
 
-	b32 HasSkeleton;
 	u32 MeshCount;
 	mesh *Meshes;
 
+	b32 HasSkeleton;
 	u32 LeftFootJointIndex;
 	u32 RightFootJointIndex;
 	u32 LeftHandJointIndex;
 	u32 RightHandJointIndex;
-
+	u32 WeaponJointIndex;
 	f32 Height;
 
-	// Data modified by renderer.
-	b32 UploadedToGPU;
-
+	// TODO(Justin): Compute this using union of mesh aabbs;
 	aabb BoundingBox;
+
+	// TODO(Justin): Mesh contains material index into array of textures
+	u32 MaterialCount;
+	texture *Materials;
 };
 
 #define MESH_H

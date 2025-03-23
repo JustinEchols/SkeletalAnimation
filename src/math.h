@@ -592,6 +592,13 @@ IsZeroVector(v3 A)
 	return(Result);
 }
 
+inline f32
+Max3(v3 V)
+{
+	f32 Result = Max3(V.x, V.y, V.z);
+	return(Result);
+}
+
 //
 // NOTE(Justin): v4 operations
 //
@@ -720,12 +727,28 @@ Transpose(mat3 T)
 	return(R);
 }
 
+inline v3
+Mat3ColumnGet(mat3 M, u32 ColIndex)
+{
+	v3 Result = {};
+
+	if((ColIndex >= 0) && (ColIndex < 3))
+	{
+		Result.x = M.E[0][ColIndex];
+		Result.y = M.E[1][ColIndex];
+		Result.z = M.E[2][ColIndex];
+	}
+
+	return(Result);
+}
+
 inline f32
 Trace(mat3 M)
 {
 	f32 Result = M.E[0][0] + M.E[1][1] + M.E[2][2];
 	return(Result);
 }
+
 
 inline mat4
 Mat4Identity()
@@ -954,6 +977,20 @@ operator*(mat4 A, mat4 B)
 }
 
 inline mat4
+Mat4XRotation(f32 Angle)
+{
+	mat4 R = 
+	{
+		{{1.0f, 0.0f,		 0.0f,		   0.0f},
+		 {0.0f, cosf(Angle), sinf(Angle),  0.0f},
+		 {0.0f, sinf(Angle), -cosf(Angle), 0.0f},
+		 {0.0f, 0.0f,		 0.0f,		   1.0f}}
+	};
+
+	return(R);
+}
+
+inline mat4
 Mat4YRotation(f32 Angle)
 {
 	mat4 R = 
@@ -967,35 +1004,19 @@ Mat4YRotation(f32 Angle)
 	return(R);
 }
 
-#if 1
 inline mat4
-Mat4XRotation(f32 Angle)
+Mat4ZRotation(f32 Angle)
 {
 	mat4 R = 
 	{
-		{{1.0f, 0.0f, 0.0f, 0.0f},
-		 {0.0f, cosf(Angle), sinf(Angle), 0.0f},
-		 {0.0f, sinf(Angle), -cosf(Angle), 0.0f},
-		 {0.0f, 0.0f, 0.0f, 1.0f}}
+		{{cosf(Angle),	-sinf(Angle), 0.0f, 0.0f},
+		 {sinf(Angle),	cosf(Angle),  0.0f, 0.0f},
+		 {0.0f,			0.0f,		  1.0f, 0.0f},
+		 {0.0f,			0.0f,		  0.0f, 1.0f}}
 	};
 
 	return(R);
 }
-#else
-inline mat4
-Mat4XRotation(f32 Angle)
-{
-	mat4 R = 
-	{
-		{{1.0f, 0.0f, 0.0f, 0.0f},
-		 {0.0f, -sinf(Angle), cosf(Angle), 0.0f},
-		 {0.0f, cosf(Angle), sinf(Angle), 0.0f},
-		 {0.0f, 0.0f, 0.0f, 1.0f}}
-	};
-
-	return(R);
-}
-#endif
 
 inline mat4
 ModelTransformFromBasis(basis *B)
@@ -1632,6 +1653,7 @@ OBBCenterDimOrientation(v3 Center, v3 Dim, quaternion Q)
 	return(Result);
 }
 
+
 inline b32
 InOBB(obb OBB, v3 P)
 {
@@ -1664,6 +1686,7 @@ SphereCenterRadius(v3 Center, f32 Radius)
 
 	return(Result);
 }
+
 
 #define MATH_H
 #endif

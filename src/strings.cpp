@@ -54,6 +54,20 @@ IsSpace(u8 *S)
 	return(Result);
 }
 
+inline b32
+IsNumber(char *S)
+{
+	b32 Result = (((*S) >= '0') && ((*S) <= '9'));
+	return(Result);
+}
+
+inline b32
+IsNumber(u8 *S)
+{
+	b32 Result = (((*S) >= '0') && ((*S) <= '9'));
+	return(Result);
+}
+
 inline void
 EatSpaces(u8 **Buff)
 {
@@ -86,6 +100,19 @@ BufferNextWord(u8 **C, u8 *Buff)
 {
 	u32 Index = 0;
 	while(!IsNewLine(*C) && !IsSpace(*C) && !IsNull(*C))
+	{
+		Buff[Index++] = **C;
+		(*C)++;
+
+	}
+	Buff[Index] = 0;
+}
+
+inline void
+BufferNumber(u8 **C, u8 *Buff)
+{
+	u32 Index = 0;
+	while(IsNumber(*C))
 	{
 		Buff[Index++] = **C;
 		(*C)++;
@@ -155,6 +182,13 @@ StringLen(char *S)
 		Result++;
 	}
 
+	return(Result);
+}
+
+internal u32
+StringLen(u8 *S)
+{
+	u32 Result = StringLen((char *)S);
 	return(Result);
 }
 
@@ -240,7 +274,7 @@ SubStringExists(char *HayStack, char *Needle)
 internal b32
 SubStringExists(string HayStack, char *Needle)
 {
-	b32 Result = SubStringExists((char *)HayStack.Data, Needle);
+	b32 Result = SubStringExists(CString(HayStack), Needle);
 	return(Result);
 }
 
@@ -265,9 +299,16 @@ StringSearchFor(string S, char C)
 }
 
 inline s32
+S32FromASCII(char *S)
+{
+	s32 Result = atoi(S);
+	return(Result);
+}
+
+inline s32
 S32FromASCII(u8 *S)
 {
-	s32 Result = atoi((char *)S);
+	s32 Result = S32FromASCII((char *)S);
 	return(Result);
 }
 
@@ -277,6 +318,7 @@ U32FromASCII(char *S)
 	u32 Result = (u32)atoi(S);
 	return(Result);
 }
+
 
 inline u32
 U32FromASCII(u8 *S)

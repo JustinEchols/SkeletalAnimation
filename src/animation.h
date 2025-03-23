@@ -17,7 +17,6 @@ struct animation_info
 
 	u32 JointCount;
 	u32 KeyFrameCount;
-
 	f32 CurrentTime;
 	f32 Duration;
 	f32 FrameRate;
@@ -83,6 +82,7 @@ struct animation_player
 	f32 CurrentTime;
 	f32 dt;
 
+	b32 SpawnAttackCollider;
 	b32 ControlsPosition;
 	b32 ControlsTurning;
 	b32 UpdateLockedP;
@@ -117,6 +117,7 @@ struct animation_graph_arc
 };
 
 // TODO(Justin): Node type? Additive, nblend, composite...
+// TODO(Justin): Spawn/Do mesh collider for attack? Spawnt0 Spawnt1. Performed once per frame.
 // TODO(Justin): Right now Tag is the actual name of the animation...
 struct animation_graph_node
 {
@@ -124,6 +125,8 @@ struct animation_graph_node
 	string Tag; 
 	u32 AnimationFlags;
 	f32 TimeScale;
+	f32 Collidert0;
+	f32 Collidert1;
 	u32 Index;
 	u32 ArcCount;
 	animation_graph_arc Arcs[16];
@@ -133,6 +136,7 @@ struct animation_graph_node
 struct animation_graph
 {
 	string Path;
+	string Name;
 	memory_arena Arena;
 	u32 NodeCount;
 	u32 Index;

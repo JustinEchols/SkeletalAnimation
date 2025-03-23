@@ -24,8 +24,20 @@ SoundToOutput(audio_state *AudioState, game_sound_buffer *SoundBuffer, asset_man
 {
 }
 
+inline void
+DefaultOrientationSet(entity *Entity)
+{
+	// Facing away
+
+	f32 Radians = DirectionToEuler(V3(0.0f, 0.0f, -1.0f)).yaw;
+	Entity->Theta = RadToDegrees(Radians);
+	Entity->ThetaTarget = Entity->Theta; 
+	Entity->dTheta = 0.0f;
+	Entity->Orientation = Quaternion(V3(0.0f, -1.0f, 0.0f), Radians);
+}
+
 internal entity * 
-PlayerAdd(game_state *GameState, v3 P)
+PlayerAdd(game_state *GameState, v3 P, f32 Height, f32 Radius)
 {
 	entity *Entity = EntityAdd(GameState, EntityType_Player);
 
@@ -38,28 +50,18 @@ PlayerAdd(game_state *GameState, v3 P)
 	Entity->dP = {};
 	Entity->ddP = {};
 
-	f32 Radians = DirectionToEuler(V3(0.0f, 0.0f, -1.0f)).yaw;
-	Entity->Theta = RadToDegrees(Radians);
-	Entity->ThetaTarget = Entity->Theta; 
-	Entity->dTheta = 0.0f;
-	Entity->Orientation = Quaternion(V3(0.0f, -1.0f, 0.0f), Radians);
+	DefaultOrientationSet(Entity);
+
 	Entity->MovementState = MovementState_Idle;
-
-	// TODO(Justin): These fields need to be set differently depending on
-	// the player type.
-	Entity->Height = 1.8f;
-
-	Entity->MovementColliders.Type = CollisionVolumeType_Capsule;
+	Entity->Height = Height;
 	Entity->MovementColliders.VolumeCount = 1;
 	Entity->MovementColliders.Volumes = PushArray(&GameState->Arena, 1, collision_volume);
-	collision_group *MovementColliders = &Entity->MovementColliders;
 
-	collision_volume *Volume = MovementColliders->Volumes;
-	capsule C;
-	C.Radius = 0.4f;
-	C.Min = V3(0.0f, C.Radius, 0.0f);
-	C.Max = V3(0.0f, Entity->Height - C.Radius, 0.0f);
-	Volume->Capsule = C;
+	collision_volume *Volume = Entity->MovementColliders.Volumes;
+	Volume->Type = CollisionVolumeType_Capsule;
+	Volume->Min = V3(0.0f, Radius, 0.0f);
+	Volume->Max = V3(0.0f, Entity->Height - Radius, 0.0f);
+	Volume->Radius = Radius;
 
 	if(GameState->PlayerEntityIndex == 0)
 	{
@@ -72,7 +74,7 @@ PlayerAdd(game_state *GameState, v3 P)
 internal entity * 
 XBotAdd(game_state *GameState, v3 P)
 {
-	entity *Player = PlayerAdd(GameState, P);
+	entity *Player = PlayerAdd(GameState, P, 1.8f, 0.4f);
 	Player->Acceleration = 50.0f;
 	Player->Drag = 10.0f;
 	Player->AngularSpeed = 15.0f;
@@ -95,7 +97,7 @@ XBotAdd(game_state *GameState, v3 P)
 internal entity *
 YBotAdd(game_state *GameState, v3 P)
 {
-	entity *Player = PlayerAdd(GameState, P);
+	entity *Player = PlayerAdd(GameState, P, 1.8f, 0.4f);
 	Player->Acceleration = 50.0f;
 	Player->Drag = 10.0f;
 	Player->AngularSpeed = 15.0f;
@@ -139,7 +141,7 @@ YBotAdd(game_state *GameState, v3 P)
 internal entity * 
 KnightAdd(game_state *GameState, v3 P)
 {
-	entity *Player = PlayerAdd(GameState, P);
+	entity *Player = PlayerAdd(GameState, P, 1.8f, 0.4f);
 	Player->Acceleration = 50.0f;
 	Player->Drag = 10.0f;
 	Player->AngularSpeed = 15.0f;
@@ -195,20 +197,31 @@ KnightAdd(game_state *GameState, v3 P)
 internal entity * 
 BruteAdd(game_state *GameState, v3 P)
 {
-	entity *Player = PlayerAdd(GameState, P);
+	entity *Player = PlayerAdd(GameState, P, 2.3f, 0.5f);
 	Player->Acceleration = 40.0f;
 	Player->Drag = 10.0f;
 	Player->AngularSpeed = 10.0f;
 	Player->VisualScale = V3(0.01f);
 
+	model *Model = LookupModel(&GameState->AssetManager, "Brute").Model;
+	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Brute_AnimationGraph").Graph;
+	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Brute_Idle");
+
+	Assert(Model);
+	Assert(G);
+	Assert(Entry.SampledAnimation);
+
+	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
+	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
+
+	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
+	Player->AnimationGraph = G;
+	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
+
 	collision_group *Group = &Player->CombatColliders;
-	Group->VolumeCount = 4;
+	Group->VolumeCount = 1;
 	Group->Volumes = PushArray(&GameState->Arena, Group->VolumeCount, collision_volume);
-	for(u32 VolumeIndex = 0; VolumeIndex < Group->VolumeCount; ++VolumeIndex)
-	{
-		collision_volume *Volume = Group->Volumes + VolumeIndex;
-		Volume->Dim = V3(0.2f);
-	}
+	collision_volume *Volume = Group->Volumes;
 
 	Player->Attacks[AttackType_Neutral1].Type = AttackType_Neutral1;
 	Player->Attacks[AttackType_Neutral1].Duration = 0.4f;
@@ -229,21 +242,6 @@ BruteAdd(game_state *GameState, v3 P)
 	Player->Attacks[AttackType_Sprint].Type = AttackType_Sprint;
 	Player->Attacks[AttackType_Sprint].Duration = 2.0f;
 	Player->Attacks[AttackType_Sprint].Power = 3.0f;
-
-	model *Model = LookupModel(&GameState->AssetManager, "Brute").Model;
-	animation_graph *G  = LookupGraph(&GameState->AssetManager, "Brute_AnimationGraph").Graph;
-	asset_entry Entry = LookupSampledAnimation(&GameState->AssetManager, "Brute_Idle");
-
-	Assert(Model);
-	Assert(G);
-	Assert(Entry.SampledAnimation);
-
-	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
-	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
-
-	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
-	Player->AnimationGraph = G;
-	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlags_Looping, 0.2f);
 
 	return(Player);
 }
@@ -337,8 +335,8 @@ CameraDirectionUpdate(camera *Camera, f32 dXMouse, f32 dYMouse, f32 dt)
 internal void
 CameraTransformUpdate(game_state *GameState)
 {
-	GameState->CameraTransform = Mat4Camera(GameState->Camera.P,
-											GameState->Camera.P + GameState->Camera.Direction);
+	GameState->CameraTransform =
+		Mat4Camera(GameState->Camera.P, GameState->Camera.P + GameState->Camera.Direction);
 }
 
 internal void
@@ -370,16 +368,63 @@ EntitiesCanCollide(game_state *GameState, entity *A, entity *B, collision_type *
 	return(Result);
 }
 
-internal void
-CollisionGroupUpdate(entity *Entity)
+internal capsule
+WeaponCapsule(entity *Entity)
 {
-	v3 P = Entity->P;
+	capsule Result;
 
-	collision_group *Group = &Entity->CombatColliders;
-	Group->Volumes[0].Offset = Entity->LeftHandP - P;
-	Group->Volumes[1].Offset = Entity->RightHandP - P;
-	Group->Volumes[2].Offset = Entity->LeftFootP - P;
-	Group->Volumes[3].Offset = Entity->RightFootP - P;
+	model *Model = Entity->AnimationPlayer->Model;
+	mat4 T = Mat4Translate(Entity->P);
+	mat4 R = QuaternionToMat4(Entity->Orientation);
+	mat4 S = Mat4Scale(Entity->VisualScale);
+	mat4 ModelToWorld = T*R*S;
+
+	v3 CapsuleCenter = {};
+	f32 Radius = 0.0f;
+	f32 Length = 0.0f;
+	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+	{
+		mesh *Mesh = Model->Meshes + MeshIndex;
+		if(Mesh->Flags & MeshFlag_Weapon)
+		{
+			v3 Dim = AABBDim(Mesh->BoundingBox);
+			Length = Max3(Dim);
+			if(Length == Dim.x)
+			{
+				Radius = 0.5f*Max(Dim.y, Dim.z);
+			}
+			else if(Length == Dim.y)
+			{
+				Radius = 0.5f*Max(Dim.x, Dim.z);
+			}
+			else
+			{
+				Radius = 0.5f*Max(Dim.x, Dim.y);
+			}
+
+			Length = Entity->VisualScale.x * Length;
+			Radius = Entity->VisualScale.x * Radius;
+
+			mat4 WeaponTransform = Mesh->JointTransforms[Model->WeaponJointIndex];
+			v3 JointP = Mat4ColumnGet(WeaponTransform, 3);
+			v3 JointWorldP = ModelToWorld*(JointP);
+
+			affine_decomposition D = Mat4AffineDecomposition(WeaponTransform);
+			R = R*D.R;
+			v3 Z = Mat4ColumnGet(R, 2);
+			CapsuleCenter = JointWorldP + 0.4f*Z;
+
+			R = QuaternionToMat4(Entity->Orientation)*D.R*Mat4XRotation(DegreeToRad(-90.0f));
+			break;
+		}
+	}
+
+	mat4 Transform = Mat4Translate(CapsuleCenter)*R*Mat4Scale(1.0f);
+	v3 Min = Transform*V3(0.0f, Radius, 0.0f);
+	v3 Max = Transform*V3(0.0f, Length - Radius, 0.0f);
+
+	Result = CapsuleMinMaxRadius(Min, Max, Radius);
+	return(Result);
 }
 
 internal void
@@ -453,32 +498,50 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 			// TODO(Justin): Early out sphere intersection test.
 			if(EntitiesCanCollide(GameState, Entity, TestEntity, &CollisionType))
 			{
-				v3 TestP = TestEntity->P;
 				v3 CurrentP = Entity->P; 
+				v3 TestP = TestEntity->P;
 
-				collision_volume Volume		= Entity->MovementColliders.Volumes[0];
-				collision_volume TestVolume = TestEntity->MovementColliders.Volumes[0];
+				capsule Capsule = CapsuleGet(&Entity->MovementColliders);
+				obb TestOBB = OrientedBoundingBoxGet(&TestEntity->MovementColliders);
 
 				// TODO(Justin): Make sure the chosen sphere center is correct.
-				v3 SphereCenter = CapsuleSphereCenterVsOBB(CurrentP, Volume.Capsule, TestEntity->P, TestVolume.OBB);
-				v3 SphereRel = SphereCenter - (TestP + TestVolume.Offset);
-				if(MovingSphereHitOBB(SphereRel, Volume.Capsule.Radius, DeltaP, TestVolume.OBB, &Normal, &tMin))
+				v3 SphereCenter = CapsuleSphereCenterVsOBB(CurrentP, Capsule, TestEntity->P, TestOBB);
+				v3 SphereRel = SphereCenter - (TestP + TestOBB.Center);
+				if(MovingSphereHitOBB(SphereRel, Capsule.Radius, DeltaP, TestOBB, &Normal, &tMin))
 				{
 					Collided = true;
 					HitEntity = TestEntity;
 				}
 
 				// GroundCheck
-				v3 RelP		= (CurrentP + V3(0.0f, Volume.Capsule.Radius, 0.0f)) - (TestP + TestVolume.Offset);
-				if(MovingSphereHitOBB(RelP, Volume.Capsule.Radius, GroundDelta, TestVolume.OBB, &GroundNormal, &tGround))
+				v3 RelP		= (CurrentP + V3(0.0f, Capsule.Radius, 0.0f)) - (TestP + TestOBB.Center);
+				if(MovingSphereHitOBB(RelP, Capsule.Radius, GroundDelta, TestOBB, &GroundNormal, &tGround))
 				{
 					EntityBelow = TestEntity;
+				}
+
+				// Attack check
+				if(Entity->Flags & EntityFlag_AttackCollisionCheck)
+				{
+					if(TestEntity->Type == EntityType_Player)
+					{
+						capsule A = WeaponCapsule(Entity);
+						capsule B = CapsuleGet(&TestEntity->MovementColliders);
+						v3 CenterA = CapsuleCenter(A);
+						v3 CenterB = TestEntity->P + CapsuleCenter(B);
+
+						if(SpheresIntersect(CenterA, A.Radius, CenterB, B.Radius))
+						{
+							FlagAdd(TestEntity, EntityFlag_Attacked);
+						}
+					}
 				}
 			}
 
 			if(TestEntity->Type == EntityType_WalkableRegion)
 			{
-				if(InAABB(AABBCenterDim(TestEntity->P, TestEntity->MovementColliders.Volumes[0].OBB.Dim), Entity->P))
+				obb TestOBB = OrientedBoundingBoxGet(&TestEntity->MovementColliders);
+				if(InAABB(AABBCenterDim(TestEntity->P, TestOBB.Dim), Entity->P))
 				{
 					Region = TestEntity;
 				}
@@ -634,10 +697,21 @@ GameStateVariablesLoad(game_state *GameState, char *FileName)
 			BufferNextWord(&Line, Word);
 			GameState->Gravity = F32FromASCII(Word);
 		}
+		else if(StringsAreSame(Word, "texture_dim"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->Texture.Width = U32FromASCII(Word);
+
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			GameState->Texture.Height = U32FromASCII(Word);
+		}
 
 		AdvanceLine(&Content);
-
 	}
+
+	GameState->Quad = QuadDefault();
 
 	Platform.DebugFileFree(File.Content);
 }
@@ -646,12 +720,14 @@ internal void
 LevelLoad(game_state *GameState, char *FileName)
 {
 	debug_file File = Platform.DebugFileReadEntire(FileName);
-	if(File.Size == 0)
+	debug_file PlayerFile = Platform.DebugFileReadEntire("../src/players.variables");
+	if(File.Size == 0 || PlayerFile.Size == 0)
 	{
 		Assert(0);
 	}
 
 	u8 *Content = (u8 *)File.Content;
+	u8 *PlayerContent = (u8 *)PlayerFile.Content;
 
 	u8 LineBuffer_[4096];
 	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
@@ -688,6 +764,10 @@ LevelLoad(game_state *GameState, char *FileName)
 			else if(StringsAreSame(Word, "cube"))
 			{
 				Current->Type = EntityType_Cube;
+			}
+			else if(StringsAreSame(Word, "player"))
+			{
+				Current->Type = EntityType_Player;
 			}
 		}
 		else if(StringsAreSame(Word, "flags"))
@@ -744,7 +824,7 @@ LevelLoad(game_state *GameState, char *FileName)
 
 			if(StringsAreSame(Word, "obb"))
 			{
-				Current->MovementColliders.Type = CollisionVolumeType_OBB; 
+				Current->MovementColliders.Volumes[0].Type = CollisionVolumeType_OBB; 
 			}
 		}
 		else if(StringsAreSame(Word, "dim"))
@@ -765,19 +845,19 @@ LevelLoad(game_state *GameState, char *FileName)
 
 			collision_volume *Volume = Current->MovementColliders.Volumes;
 			quaternion Q = Conjugate(Current->Orientation);
-			Volume->OBB.Dim = 0.99f*Dim;
-			Volume->OBB.Center  = 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
-			Volume->Offset		= 0.5f*V3(0.0f, Volume->OBB.Dim.y, 0.0f);
-			Volume->OBB.X = Q * XAxis();
-			Volume->OBB.Y = Q * YAxis();
-			Volume->OBB.Z = Q * (-1.0f*ZAxis());
+			Volume->Dim = 0.99f*Dim;
+			Volume->Center = 0.5f*V3(0.0f, Volume->Dim.y, 0.0f);
+			Volume->Offset = 0.5f*V3(0.0f, Volume->Dim.y, 0.0f);
+			Volume->X = Q * XAxis();
+			Volume->Y = Q * YAxis();
+			Volume->Z = Q * (-1.0f*ZAxis());
 		}
 		else if(StringsAreSame(Word, "visual_scale"))
 		{
 			EatSpaces(&Line);
 			BufferNextWord(&Line, Word);
 			f32 Scale = F32FromASCII(Word); 
-			Current->VisualScale = Scale * Current->MovementColliders.Volumes[0].OBB.Dim;
+			Current->VisualScale = Scale * Current->MovementColliders.Volumes[0].Dim;
 		}
 		else if(StringsAreSame(Word, "next"))
 		{
@@ -790,6 +870,29 @@ LevelLoad(game_state *GameState, char *FileName)
 	}
 
 	Platform.DebugFileFree(File.Content);
+	Platform.DebugFileFree(PlayerFile.Content);
+}
+
+internal void
+LevelReload(game_state *GameState)
+{
+	v3 PlayerP = GameState->Entities[GameState->PlayerEntityIndex].P;
+
+	GameState->EntityCount = 0;
+	GameState->PlayerEntityIndex = 0;
+	MemoryZero(GameState->Entities, ArrayCount(GameState->Entities) * sizeof(entity));
+	LevelLoad(GameState, "../src/test.level");
+
+	entity *Player = XBotAdd(GameState, PlayerP);
+	entity *YBot = YBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+	entity *Knight = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+	entity *Brute = BruteAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+	GameState->PlayerIDForController[1] = Player->ID;
+
+	GameState->CharacterIDs[GameState->CurrentCharacter] = Player->ID;
+	GameState->CharacterIDs[GameState->CurrentCharacter + 1] = YBot->ID;
+	GameState->CharacterIDs[GameState->CurrentCharacter + 2] = Knight->ID;
+	GameState->CharacterIDs[GameState->CurrentCharacter + 3] = Brute->ID;
 }
 
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
@@ -806,19 +909,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		ArenaInitialize(&GameState->Arena, (u8 *)GameMemory->PermanentStorage + sizeof(game_state),
 												 GameMemory->PermanentStorageSize - sizeof(game_state)); 
 
-		memory_arena *Arena = &GameState->Arena;
-
 		//
 		// NOTE(Justin): Assets.
 		//
 
-		ArenaSubset(&GameState->Arena, &GameState->AssetManager.Arena, Kilobyte(1024));
+		ArenaSubset(&GameState->Arena, &GameState->AssetManager.Arena, Kilobyte(4096));
 		AssetManagerInitialize(&GameState->AssetManager);
 		asset_manager *Assets = &GameState->AssetManager;
-
-		GameState->Quad = QuadDefault();
-		GameState->Texture.Width = 256;
-		GameState->Texture.Height = 256;
 
 		GameStateVariablesLoad(GameState, "../src/all.variables");
 		LevelLoad(GameState, "../src/test.level");
@@ -841,37 +938,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					  GameMemory->TemporaryStorageSize - sizeof(temp_state));
 
 		TempState->IsInitialized = true;
+
 	}
 
-#if DEVELOPER
 	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.LevelFileInfo))
 	{
-#if 0
-		GameState->EntityCount = 0;
-		EntityAdd(GameState, EntityType_Null);
-		LevelLoad(GameState, "../src/test.level");
-		GameState->EntityCount += 4;
-#else
-		v3 PlayerP = GameState->Entities[GameState->PlayerEntityIndex].P;
-
-		GameState->EntityCount = 0;
-		GameState->PlayerEntityIndex = 0;
-		MemoryZero(GameState->Entities, ArrayCount(GameState->Entities) * sizeof(entity));
-		EntityAdd(GameState, EntityType_Null);
-		LevelLoad(GameState, "../src/test.level");
-
-		entity *Player = XBotAdd(GameState, PlayerP);
-		GameState->PlayerIDForController[1] = Player->ID;
-
-		entity *YBot = YBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
-		entity *Knight = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
-		entity *Brute = BruteAdd(GameState, V3(0.0f, 0.01f, -5.0f));
-
-		GameState->CharacterIDs[GameState->CurrentCharacter] = Player->ID;
-		GameState->CharacterIDs[GameState->CurrentCharacter + 1] = YBot->ID;
-		GameState->CharacterIDs[GameState->CurrentCharacter + 2] = Knight->ID;
-		GameState->CharacterIDs[GameState->CurrentCharacter + 3] = Brute->ID;
-#endif
+		LevelReload(GameState);
 	}
 
 	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.XBotGraphFileInfo))
@@ -905,7 +977,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		animation_graph *G = LookupGraph(&GameState->AssetManager, "Brute_AnimationGraph").Graph;
 		Entity->AnimationGraph = G;
 	}
-#endif
 
 	for(u32 ControllerIndex = 0; ControllerIndex < ArrayCount(GameInput->Controllers); ++ControllerIndex)
 	{
@@ -1089,12 +1160,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			} break;
 		}
 
+		b32 Moved = false;
 		if(!Equal(Entity->MoveInfo.ddP, V3(0.0f)) && CanMove(Entity))
 		{
 			if(IsMoving(Entity))
 			{
 				EntityMove(GameState, Entity, Entity->MoveInfo.ddP, dt);
 				EntityOrientationUpdate(Entity, dt, Entity->AngularSpeed);
+				Moved = true;
 			}
 		}
 
@@ -1103,8 +1176,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			if(Entity->AnimationPlayer && Entity->AnimationPlayer->ControlsPosition)
 			{
 				EntityMove(GameState, Entity, Entity->MoveInfo.ddP, dt);
-				//EntityOrientationUpdate(Entity, dt, Entity->AngularSpeed);
+				Moved = true;
 			}
+		}
+
+		if(!Moved && Entity->Flags & EntityFlag_AttackCollisionCheck)
+		{
+			EntityMove(GameState, Entity, Entity->MoveInfo.ddP, dt);
+			Moved = true;
 		}
 	}
 
@@ -1149,8 +1228,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 														Camera->P,
 														LightDir);
 
-	UiBegin(RenderBuffer, &TempState->Arena, GameInput, Assets);
-
 	PushClear(RenderBuffer, V4(0.3f, 0.4f, 0.4f, 1.0f));
 
 	mat4 T;
@@ -1189,6 +1266,18 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					T = Mat4Translate(AnimationPlayer->EntityPLockedAt);
 				}
 
+				if(Entity->Flags & EntityFlag_Attacking)
+				{
+					if(AnimationPlayer->SpawnAttackCollider)
+					{
+						FlagAdd(Entity, EntityFlag_AttackCollisionCheck);
+					}
+				}
+				else
+				{
+					FlagClear(Entity, EntityFlag_AttackCollisionCheck);
+				}
+
 				PushModel(RenderBuffer, CString(AnimationPlayer->Model->Name), T*R*S);
 			} break;
 			case EntityType_Cube:
@@ -1202,24 +1291,23 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			} break;
 			case EntityType_WalkableRegion:
 			{
-				quad GroundQuad = GameState->Quad;
-				Entry = LookupTexture(Assets, "texture_01");
-
 				v3 P = Entity->P;
-				v3 Dim = Entity->MovementColliders.Volumes[0].OBB.Dim;
+				v3 Dim = Entity->MovementColliders.Volumes[0].Dim;
 				T = Mat4Translate(P);
 				R = Mat4Identity();
 				S = Mat4Scale(Dim.x);
 
+				quad GroundQuad = GameState->Quad;
 				for(u32 Index = 0; Index < ArrayCount(GroundQuad.Vertices); ++Index)
 				{
 					GroundQuad.Vertices[Index].UV *= 0.5f*Dim.x;
 				}
 
+				Entry = LookupTexture(Assets, "texture_01");
 				PushTexture(RenderBuffer, Entry.Texture, Entry.Index);
 				PushQuad3D(RenderBuffer, GroundQuad.Vertices, T*R*S, Entry.Index);
 
-				T = Mat4Translate(Entity->P + Entity->MovementColliders.Volumes[0].OBB.Center);
+				T = Mat4Translate(Entity->P + Entity->MovementColliders.Volumes[0].Center);
 				S = Mat4Scale(Dim);
 				PushDebugVolume(RenderBuffer, &Assets->Cube, T*S, V3(1.0f));
 			} break;
@@ -1229,6 +1317,10 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	//
 	// NOTE(Justin): Debug ui.
 	//
+
+	temporary_memory UiMemory = TemporaryMemoryBegin(&TempState->Arena);
+	UiBegin(RenderBuffer, UiMemory.Arena, GameInput, Assets);
+	//UiBegin(RenderBuffer, &TempState->Arena, GameInput, Assets);
 
 	game_controller_input *Keyboard = ControllerGet(GameInput, 0);
 	if(IsDown(Keyboard->Add))
@@ -1301,7 +1393,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	if(ToggleButton("DrawMovementCollider", DebugDrawCapsule))
 	{
-		DebugDrawCapsule(Entity);
+		capsule Capsule = CapsuleGet(&Entity->MovementColliders);
+		DebugDrawCapsule(Entity->P, CapsuleCenter(Capsule), QuaternionToMat4(Entity->Orientation), Mat4Scale(1.0f), Capsule);
 	}
 
 	if(ToggleButton("DrawCombatCollider", DebugDrawCollisionVolumes))
@@ -1314,6 +1407,23 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		DebugDrawJoints(Entity);
 	}
 
+	if(ToggleButton("DrawMeshTPoseAABB", DebugDrawMeshTPoseAABB))
+	{
+		DebugDrawMeshTPoseAABB(Entity);
+	}
+
+	if(ToggleButton("DrawWeaponCollider", DebugDrawWeaponCollider))
+	{
+		UiIndentAdd();
+		if(ToggleButton("TPose", ModelTPose))
+		{
+			ModelTPose(Entity->AnimationPlayer->Model);
+		}
+		UiIndentRemove();
+
+		DebugDrawWeaponCollider(Entity);
+	}
+
 	if(ToggleButton("+Player", DebugDrawEntity))
 	{
 		DebugDrawEntity(Entity);
@@ -1322,6 +1432,13 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	if(ToggleButton("+AnimationPlayer", DebugDrawAnimationPlayer))
 	{
 		DebugDrawAnimationPlayer(Entity->AnimationPlayer);
+		if(Entity->AnimationPlayer)
+		{
+			if(Entity->AnimationPlayer->SpawnAttackCollider)
+			{
+				DebugDrawWeaponCollider(Entity);
+			}
+		}
 	}
 
 	if(ToggleButton("+ShadowMap", DebugRenderToTexture))
@@ -1336,6 +1453,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 
 	Platform.RenderToOpenGL(RenderBuffer, (u32)GameInput->BackBufferWidth, (u32)GameInput->BackBufferHeight);
 
+	TemporaryMemoryEnd(UiMemory);
 	TemporaryMemoryEnd(RenderMemory);
 	TemporaryMemoryEnd(AnimationMemory);
 }

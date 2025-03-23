@@ -548,16 +548,20 @@ WinMain(HINSTANCE Instance, HINSTANCE PrevInstance, LPSTR CmdLine, int CmdShow)
 
 		OpenGL.TextureWidth = 256;
 		OpenGL.TextureHeight = 256;
-		OpenGLFrameBufferInit(&OpenGL.FBO,
-							  &OpenGL.TextureHandle,
-							  &OpenGL.RBO,
-							  OpenGL.TextureWidth, OpenGL.TextureHeight);
+		OpenGLFrameBufferInitialize(&OpenGL.FBO,
+								    &OpenGL.TextureHandle,
+								    &OpenGL.RBO,
+								    OpenGL.TextureWidth, 
+									OpenGL.TextureHeight);
 
 		OpenGL.ShadowMapWidth = 2048;
 		OpenGL.ShadowMapHeight = 2048;
+		//OpenGL.ShadowMapWidth = 4096;
+		//OpenGL.ShadowMapHeight = 4096;
 		OpenGLShadowMapInitialize(&OpenGL.ShadowMapFBO,
-							  &OpenGL.ShadowMapHandle,
-							  OpenGL.ShadowMapWidth, OpenGL.ShadowMapHeight);
+							      &OpenGL.ShadowMapHandle,
+							      OpenGL.ShadowMapWidth,
+								  OpenGL.ShadowMapHeight);
 
 		game_memory GameMemory = {};
 		GameMemory.IsInitialized = false;

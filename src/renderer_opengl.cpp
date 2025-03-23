@@ -239,6 +239,21 @@ OpenGLAllocateModel(model *Model, u32 ShaderProgram)
 }
 
 internal void
+OpenGLAllocateQuad2d(u32 *VA, u32 *VB, u32 ShaderProgram)
+{
+	OpenGL.glGenVertexArrays(1, VA);
+	OpenGL.glBindVertexArray(*VA);
+	OpenGL.glGenBuffers(1, VB);
+	OpenGL.glBindBuffer(GL_ARRAY_BUFFER, *VB);
+	OpenGL.glBufferData(GL_ARRAY_BUFFER, 6 * (4 * sizeof(f32)), 0, GL_DYNAMIC_DRAW);
+	OpenGL.glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(f32), 0);
+	OpenGL.glEnableVertexAttribArray(0);
+	//s32 ExpectedAttributeCount = 1;
+	//AttributesCheck(ShaderProgram, ExpectedAttributeCount);
+	OpenGL.glBindVertexArray(0);
+}
+
+internal void
 OpenGLAllocateQuad3d(u32 *VA, u32 *VB, u32 ShaderProgram)
 {
 	OpenGL.glGenVertexArrays(1, VA);
@@ -252,28 +267,13 @@ OpenGLAllocateQuad3d(u32 *VA, u32 *VB, u32 ShaderProgram)
 	OpenGL.glEnableVertexAttribArray(0);
 	OpenGL.glEnableVertexAttribArray(1);
 	OpenGL.glEnableVertexAttribArray(2);
-	s32 ExpectedAttributeCount = 3;
+	//s32 ExpectedAttributeCount = 3;
 	//AttributesCheck(ShaderProgram, ExpectedAttributeCount);
 	OpenGL.glBindVertexArray(0);
 }
 
-internal void
-OpenGLAllocateQuad2d(u32 *VA, u32 *VB, u32 ShaderProgram)
-{
-	OpenGL.glGenVertexArrays(1, VA);
-	OpenGL.glBindVertexArray(*VA);
-	OpenGL.glGenBuffers(1, VB);
-	OpenGL.glBindBuffer(GL_ARRAY_BUFFER, *VB);
-	OpenGL.glBufferData(GL_ARRAY_BUFFER, 6 * (4 * sizeof(f32)), 0, GL_DYNAMIC_DRAW);
-	OpenGL.glVertexAttribPointer(0, 4, GL_FLOAT, GL_FALSE, 4 * sizeof(f32), 0);
-	OpenGL.glEnableVertexAttribArray(0);
-	s32 ExpectedAttributeCount = 1;
-	AttributesCheck(ShaderProgram, ExpectedAttributeCount);
-	OpenGL.glBindVertexArray(0);
-}
-
 internal b32 
-OpenGLFrameBufferInit(u32 *FBO, u32 *Texture, u32 *RBO, u32 Width, u32 Height)
+OpenGLFrameBufferInitialize(u32 *FBO, u32 *Texture, u32 *RBO, u32 Width, u32 Height)
 {
 	b32 Result = true;
 
@@ -430,7 +430,6 @@ OpenGLDrawModel(render_buffer *RenderBuffer, model *Model, u32 ShaderProgram)
 
 		OpenGL.glBindVertexArray(Mesh->VA);
 		glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
-		//glDrawElements(GL_LINES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
 		OpenGL.glBindVertexArray(0);
 	}
 }
@@ -599,6 +598,11 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 			case RenderBuffer_render_entry_debug_volume:
 			{
 				render_entry_debug_volume *Entry = (render_entry_debug_volume *)Data;
+				BaseOffset += sizeof(*Entry);
+			} break;
+			case RenderBuffer_render_entry_immediate_debug_volume:
+			{
+				render_entry_immediate_debug_volume *Entry = (render_entry_immediate_debug_volume *)Data;
 				BaseOffset += sizeof(*Entry);
 			} break;
 			case RenderBuffer_render_entry_render_to_texture:
@@ -791,9 +795,9 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				glBindTexture(GL_TEXTURE_2D, Texture->Handle);
 				OpenGL.glBindVertexArray(Mesh->VA);
 				glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
+
 				OpenGL.glBindVertexArray(0);
 				glBindTexture(GL_TEXTURE_2D, 0);
-
 				BaseOffset += sizeof(*Entry);
 			} break;
 			case RenderBuffer_render_entry_text:
@@ -823,21 +827,20 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				Assert(Model);
 
 				OpenGL.glUseProgram(DebugBBoxShader);
-				glDisable(GL_CULL_FACE);
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				UniformMatrixSet(DebugBBoxShader, "Model", Entry->Transform);
 				UniformMatrixSet(DebugBBoxShader, "View", View);
 				UniformMatrixSet(DebugBBoxShader, "Projection", Perspective);
 				UniformV3Set(DebugBBoxShader, "Ambient", Ambient);
 				UniformV4Set(DebugBBoxShader, "Diffuse", V4(Entry->Color, 1.0f));
 
+				glDisable(GL_CULL_FACE);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 				for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 				{
 					mesh *Mesh = Model->Meshes + MeshIndex;
 					OpenGL.glBindVertexArray(Mesh->VA);
 					glDrawElements(GL_LINES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
 				}
-
 				glEnable(GL_CULL_FACE);
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 
@@ -845,10 +848,46 @@ RenderBufferToOutput(render_buffer *RenderBuffer, u32 WindowWidth, u32 WindowHei
 				OpenGL.glBindVertexArray(0);
 				BaseOffset += sizeof(*Entry);
 			} break;
+			case RenderBuffer_render_entry_immediate_debug_volume:
+			{
+				render_entry_immediate_debug_volume *Entry = (render_entry_immediate_debug_volume *)Data;
+
+				u32 VA, VB, IB;
+				OpenGL.glGenVertexArrays(1, &VA);
+				OpenGL.glBindVertexArray(VA);
+				OpenGL.glGenBuffers(1, &VB);
+				OpenGL.glBindBuffer(GL_ARRAY_BUFFER, VB);
+				OpenGL.glBufferData(GL_ARRAY_BUFFER, Entry->VertexCount * sizeof(vertex), Entry->Vertices, GL_STATIC_DRAW);
+				OpenGL.glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), 0);
+				OpenGL.glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)OffsetOf(vertex, N));
+				OpenGL.glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, sizeof(vertex), (void *)OffsetOf(vertex, UV));
+				OpenGL.glEnableVertexAttribArray(0);
+				OpenGL.glEnableVertexAttribArray(1);
+				OpenGL.glEnableVertexAttribArray(2);
+				GLIBOInit(&IB, Entry->Indices, Entry->IndicesCount);
+
+				OpenGL.glUseProgram(DebugBBoxShader);
+				UniformMatrixSet(DebugBBoxShader, "Model", Entry->Transform);
+				UniformMatrixSet(DebugBBoxShader, "View", View);
+				UniformMatrixSet(DebugBBoxShader, "Projection", Perspective);
+				UniformV3Set(DebugBBoxShader, "Ambient", Ambient);
+				UniformV4Set(DebugBBoxShader, "Diffuse", V4(Entry->Color, 1.0f));
+				glDisable(GL_CULL_FACE);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				glDrawElements(GL_LINES, Entry->IndicesCount, GL_UNSIGNED_INT, 0);
+				glEnable(GL_CULL_FACE);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+
+				OpenGL.glBindVertexArray(0);
+				OpenGL.glDeleteBuffers(1, &IB);
+				OpenGL.glDeleteBuffers(1, &VB);
+				OpenGL.glDeleteVertexArrays(1, &VA);
+
+				BaseOffset += sizeof(*Entry);
+			} break;
 			case RenderBuffer_render_entry_render_to_texture:
 			{
 				render_entry_render_to_texture *Entry = (render_entry_render_to_texture *)Data;
-
 				OpenGL.glUseProgram(DebugShadowMapShader);
 				OpenGL.glActiveTexture(GL_TEXTURE0);
 				UniformBoolSet(DebugShadowMapShader, "Texture", 0);

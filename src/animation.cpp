@@ -774,6 +774,8 @@ ModelJointsUpdate(entity *Entity)
 
 		// TODO(Justin): Store transform.
 		// TODO(Justin): Handle root motion case.
+		// TODO(Justin): Remove hardcoded index.
+
 		mat4 Transform	= EntityTransform(Entity, Entity->VisualScale);
 
 		mat4 LeftFootT	= Model->Meshes[0].JointTransforms[Model->LeftFootJointIndex];
@@ -816,12 +818,28 @@ AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *Anim
 
 	animation_graph_node *Node = &Graph->CurrentNode;
 	animation_graph_arc Arc = Node->WhenDone;
+
+	if(Node->Collidert0 != 0.0f)
+	{
+		f32 t = MostRecent->CurrentTime;
+		if((t >= Node->Collidert0) && (t <= Node->Collidert1))
+		{
+			AnimationPlayer->SpawnAttackCollider = true;
+		}
+		else
+		{
+			AnimationPlayer->SpawnAttackCollider = false;
+		}
+	}
+
 	if((Arc.Destination.Size != 0) && (RemainingTime <= Arc.RemainingTimeBeforeCrossFade))
 	{
 		f32 BlendDuration = Clamp01(RemainingTime);
 		DefaultTimeOffset = Arc.StartTime;
 		SwitchToNode(AssetManager, AnimationPlayer, Graph, Arc.Destination, BlendDuration, DefaultTimeOffset);
 	}
+
+
 }
 
 internal animation_graph_node * 
@@ -873,6 +891,13 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 		return;
 	}
 
+	G->Path = StringCopy(&G->Arena, FileName);
+
+	char Name[256];
+	MemoryZero(Name, sizeof(Name));
+	FileNameFromFullPath(FileName, Name);
+	G->Name = StringCopy(&G->Arena, Name);
+
 	u8 *Content = (u8 *)File.Content;
 
 	u8 LineBuffer_[4096];
@@ -882,8 +907,6 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 	u8 Word_[4096];
 	MemoryZero(Word_, sizeof(Word_));
 	u8 *Word = &Word_[0];
-
-	G->Path = StringCopy(&G->Arena, FileName);
 
 	b32 ProcessingNode = false;
 	while(*Content)
@@ -1018,6 +1041,16 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 				EatSpaces(&Line);
 				BufferNextWord(&Line, Word);
 				Node->TimeScale = F32FromASCII(Word);
+			}
+			else if(StringsAreSame(Word, "collider_interval"))
+			{
+				EatSpaces(&Line);
+				BufferNextWord(&Line, Word);
+				Node->Collidert0 = F32FromASCII(Word);
+
+				EatSpaces(&Line);
+				BufferNextWord(&Line, Word);
+				Node->Collidert1 = F32FromASCII(Word);
 			}
 			else if(StringsAreSame(Word, "controls_position"))
 			{

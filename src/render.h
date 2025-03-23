@@ -31,6 +31,7 @@ enum render_buffer_entry_type
 	RenderBuffer_render_entry_mesh,
 	RenderBuffer_render_entry_text,
 	RenderBuffer_render_entry_debug_volume,
+	RenderBuffer_render_entry_immediate_debug_volume,
 	RenderBuffer_render_entry_render_to_texture,
 };
 
@@ -92,6 +93,7 @@ enum render_entry_debug_volume_type
 	DebugVolumeType_Circle,
 	DebugVolumeType_Capsule,
 	DebugVolumeType_Line,
+	DebugVolumeType_Immediate,
 };
 
 struct render_entry_debug_volume
@@ -99,6 +101,16 @@ struct render_entry_debug_volume
 	render_entry_debug_volume_type VolumeType;
 	mat4 Transform;
 	model *Model;
+	v3 Color;
+};
+
+struct render_entry_immediate_debug_volume
+{
+	u32 VertexCount;
+	vertex *Vertices;
+	u32 IndicesCount;
+	u32 *Indices;
+	mat4 Transform;
 	v3 Color;
 };
 

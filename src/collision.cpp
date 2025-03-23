@@ -1,4 +1,36 @@
 
+inline capsule
+CapsuleGet(collision_group *CollisionGroup)
+{
+	capsule Result;
+
+	Assert(CollisionGroup->VolumeCount != 0);
+	collision_volume Volume = CollisionGroup->Volumes[0];
+	Assert(Volume.Type == CollisionVolumeType_Capsule);
+
+	Result = CapsuleMinMaxRadius(Volume.Min, Volume.Max, Volume.Radius);
+	return(Result);
+}
+
+inline obb
+OrientedBoundingBoxGet(collision_group *CollisionGroup)
+{
+	obb Result;
+
+	Assert(CollisionGroup->VolumeCount != 0);
+	collision_volume Volume = CollisionGroup->Volumes[0];
+	Assert(Volume.Type == CollisionVolumeType_OBB);
+
+	collision_volume TestVolume = CollisionGroup->Volumes[0];
+	Result.Center = TestVolume.Center;
+	Result.X = TestVolume.X;
+	Result.Y = TestVolume.Y;
+	Result.Z = TestVolume.Z;
+	Result.Dim = TestVolume.Dim;
+
+	return(Result);
+}
+
 internal void
 CollisionRuleAdd(game_state *GameState, u32 A, u32 B, b32 ShouldCollide, collision_type CollisionType)
 {

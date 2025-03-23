@@ -162,6 +162,21 @@ PushDebugVolume(render_buffer *RenderBuffer, model *Model, mat4 Transform, v3 Co
 }
 
 inline void
+PushImmediateDebugVolume(render_buffer *RenderBuffer, vertex *Vertices, u32 VertexCount, u32 *Indices, u32 IndicesCount, mat4 Transform, v3 Color)
+{
+	render_entry_immediate_debug_volume *Entry = (render_entry_immediate_debug_volume *)PushRenderElement(RenderBuffer, render_entry_immediate_debug_volume);
+	if(Entry)
+	{
+		Entry->Vertices = Vertices;
+		Entry->VertexCount = VertexCount;
+		Entry->Indices = Indices;
+		Entry->IndicesCount = IndicesCount;
+		Entry->Transform = Transform;
+		Entry->Color = Color;
+	}
+}
+
+inline void
 PushRenderToTexture(render_buffer *RenderBuffer, f32 *Vertices)
 {
 	render_entry_render_to_texture *Entry = PushRenderElement(RenderBuffer, render_entry_render_to_texture);

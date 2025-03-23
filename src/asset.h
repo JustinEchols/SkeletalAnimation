@@ -107,7 +107,6 @@ struct asset_manager
 	platform_file_info BruteGraphFileInfo;
 	platform_file_info LevelFileInfo;
 
-	model Capsule;
 	model Cube;
 	model Sphere;
 };

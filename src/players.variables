@@ -9,4 +9,35 @@ model XBot
 graph XBot_AnimationGraph
 animation XBot_IdleLeft
 
-player
+player YBot
+height 1.8
+acceleration 50.0
+drag 10.0
+angular_speed 15.0
+visual_scale 0.011
+capsule_radius 0.4
+model YBot 
+graph YBot_AnimationGraph
+animation YBot_FightIdleLeft
+
+player PaladinWithProp 
+height 1.8
+acceleration 50.0
+drag 10.0
+angular_speed 15.0
+visual_scale 0.011
+capsule_radius 0.4
+model PaladinWithProp 
+graph Paladin_AnimationGraph
+animation Paladin_SwordAndShieldIdle_00
+
+player Brute 
+height 1.8
+acceleration 40.0
+drag 10.0
+angular_speed 10.0
+visual_scale 0.01
+capsule_radius 0.4
+model Brute 
+graph Brute_AnimationGraph
+animation Brute_Idle 

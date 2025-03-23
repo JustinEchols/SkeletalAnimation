@@ -2,6 +2,7 @@
 
 struct texture
 {
+	string Path;
 	string Name;
 	//GLint StoredFormat;
 	//GLenum SrcFormat;
