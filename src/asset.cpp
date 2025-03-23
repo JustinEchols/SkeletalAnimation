@@ -49,7 +49,6 @@ ObjLoad(memory_arena *Arena, char *FileName)
 			} break;
 			case 'v':
 			{
-				// NOTE(Justin): This is a hack to workaround unix 
 				if(Word[1] == 'n')
 				{
 					NormalCount++;
@@ -176,6 +175,7 @@ ObjLoad(memory_arena *Arena, char *FileName)
 
 					PositionIndex++;
 				}
+
 			} break;
 			case 'f':
 			{
@@ -239,7 +239,6 @@ ObjLoad(memory_arena *Arena, char *FileName)
 						EatSpaces(&Line);
 						BufferNextWord(&Line, Word);
 						Mesh->Name = StringCopy(Arena, Word);
-
 					}
 				}
 			} break;
@@ -251,7 +250,6 @@ ObjLoad(memory_arena *Arena, char *FileName)
 	Assert(PositionCount == PositionIndex);
 	Assert(NormalCount == NormalIndex);
 	Assert(UVCount == UVIndex);
-
 
 	//
 	// NOTE(Justin): Initialze model
@@ -266,7 +264,6 @@ ObjLoad(memory_arena *Arena, char *FileName)
 
 		for(u32 Index = 0; Index < Mesh->VertexCount; ++Index)
 		{
-			// TODO(Justin): Index the "correct" way.
 			u32 IP = IndicesP[IndexOffsetForMesh + Index];
 			u32 IN = IndicesN[IndexOffsetForMesh + Index];
 			u32 IUV = IndicesUV[IndexOffsetForMesh + Index];
@@ -432,7 +429,6 @@ ModelLoad(memory_arena *Arena, char *FileName)
 		   (SubStringExists(CString(Mesh->Name), "Shield")))
 		{
 			Mesh->Flags |= MeshFlag_Weapon;
-			joint *Joint = Mesh->Joints + Model.WeaponJointIndex;
 			// TODO(Justin): Need to compute an offset from the weapon joint index
 			// to correctly center the aabb when using the weapon joint as the position of
 			// the aabb
