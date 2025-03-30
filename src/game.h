@@ -3,6 +3,7 @@
 /*
  * Animation
  *	- Remove duplicated joints in multiple meshes 
+ *		[x] Skeleton now at model level and shared between all meshes of a model
  *	- Multiple controls turning animations
  *	- How to relate an attack state duration to an animations duration/time scale?
  *	- Fix stutter when root motion animation is blending out
@@ -41,6 +42,50 @@
 
 #include "platform.h"
 #include "memory.h"
+#include "intrinsics.h"
+#include "math.h"
+
+enum movement_state
+{
+	MovementState_Idle,
+	MovementState_Run,
+	MovementState_Sprint,
+	MovementState_Jump,
+	MovementState_InAir,
+	MovementState_Land,
+	MovementState_Crouch,
+	MovementState_Sliding,
+	MovementState_Attack,
+};
+
+#include "strings.h"
+#include "texture.h"
+#include "font.h"
+#include "mesh.h"
+#include "animation.h"
+#include "ui.h"
+#include "asset.h"
+#include "render.h"
+#include "collision.h"
+
+struct move_info
+{
+	b32 AnyAction;
+	b32 StandingStill;
+	b32 CanSprint;
+	b32 CanJump;
+	b32 JumpPressed;
+	b32 Crouching;
+	b32 Attacking;
+	b32 CanStrongAttack;
+	b32 NoVelocity;
+	b32 Accelerating;
+
+	f32 Speed;
+
+	v3 ddP;
+	v2 StickDelta;
+};
 
 enum attack_type
 {
@@ -65,42 +110,25 @@ struct attack
 };
 
 #if 0
-enum move_flags
+enum entity_member_variable_type
 {
-	Move_InputControlled = (1 << 0),
-	Move_AnimationControlled = (1 << 1),
+	entity_member_variable_type_none,
+	entity_member_variable_type_u32,
+	entity_member_variable_type_f32,
+	entity_member_variable_type_v3,
+	entity_member_variable_type_quaternion,
+	entity_member_variable_type_struct,
+	entity_member_variable_type_enum,
 };
 
-enum move_type
+struct entity_member_data
 {
-	MoveType_Idle,
-	MoveType_Run,
-	MoveType_Sprint,
-	MoveType_Jump,
-	MoveType_InAir,
-	MoveType_Land,
-	MoveType_Crouch,
-	MoveType_Sliding,
-	MoveType_Attack,
-};
-
-struct move_state 
-{
-	move_type Type;
-	move_flags Flags;
-};
-#else
-enum movement_state
-{
-	MovementState_Idle,
-	MovementState_Run,
-	MovementState_Sprint,
-	MovementState_Jump,
-	MovementState_InAir,
-	MovementState_Land,
-	MovementState_Crouch,
-	MovementState_Sliding,
-	MovementState_Attack,
+	entity_member_variable_type Type;
+	b32 Initialize;
+	memory_index Size;
+	umm Offset;
+	umm ArrayOffset;
+	//u32 EnumValue;
 };
 #endif
 
@@ -112,6 +140,7 @@ enum entity_type
 	EntityType_Sphere,
 	EntityType_WalkableRegion,
 	EntityType_Elevator,
+	EntityType_Light,
 };
 
 // NOTE(Justin) Determine a convention for when/where certain flags get updated. For example the animation system
@@ -133,93 +162,6 @@ enum entity_flag
 	EntityFlag_AnimationControlling = (1 << 11),
 	EntityFlag_AttackCollisionCheck = (1 << 12),
 	EntityFlag_Attacked = (1 << 13),
-};
-
-#include "intrinsics.h"
-#include "math.h"
-#include "strings.h"
-#include "texture.h"
-#include "font.h"
-#include "mesh.h"
-#include "animation.h"
-#include "ui.h"
-#include "asset.h"
-#include "render.h"
-
-struct move_info
-{
-	b32 AnyAction;
-	b32 StandingStill;
-	b32 CanSprint;
-	b32 CanJump;
-	b32 JumpPressed;
-	b32 Crouching;
-	b32 Attacking;
-	b32 CanStrongAttack;
-	b32 NoVelocity;
-	b32 Accelerating;
-
-	f32 Speed;
-
-	v3 ddP;
-	v2 StickDelta;
-};
-
-enum collision_type
-{
-	CollisionType_None,
-	CollisionType_MovingCapsuleOBB,
-	CollisionType_MovingCapsuleMovingCapsule,
-};
-
-enum collision_volume_type
-{
-	CollisionVolumeType_AABB,
-	CollisionVolumeType_OBB,
-	CollisionVolumeType_Sphere,
-	CollisionVolumeType_Capsule,
-};
-
-struct collision_info
-{
-	v3 PlaneNormal;
-	v3 PointOnPlane;
-	v3 PointOfIntersection;
-	f32 tResult;
-};
-
-struct collision_result
-{
-	collision_info Info[6];
-};
-
-struct pairwise_collision_rule
-{
-	u32 IDA;
-	u32 IDB;
-	b32 ShouldCollide;
-	collision_type CollisionType;
-	pairwise_collision_rule *NextInHash;
-};
-
-struct collision_volume
-{
-	collision_volume_type Type;
-	v3 Offset;
-	v3 Center;
-	v3 Dim;
-	v3 X;
-	v3 Y;
-	v3 Z;
-	v3 Min;
-	v3 Max;
-	f32 Radius;
-};
-
-struct collision_group
-{
-	u32 VolumeCount;
-	collision_volume *Volumes;
 };
 
 struct entity
@@ -266,6 +208,31 @@ struct entity
 	v3 VisualScale;
 };
 
+enum light_type
+{
+	LightType_None,
+	LightType_Directional,
+
+	LightType_Count,
+};
+
+struct light : public entity
+{
+	light_type Type;
+
+	f32 Left;
+	f32 Right;
+	f32 Bottom;
+	f32 Top;
+	f32 Near;
+	f32 Far;
+	f32 Time;
+
+	v3 Dir;
+	mat4 Ortho;
+	mat4 View;
+};
+
 struct camera
 {
 	b32 IsFree;
@@ -303,6 +270,28 @@ struct audio_state
 	sound *FreeChannels;
 };
 
+enum game_variable_type
+{
+	game_state_variable_type_none,
+	game_state_variable_type_u32,
+	game_state_variable_type_s32,
+	game_state_variable_type_f32,
+	game_state_variable_type_v3,
+	game_state_variable_type_quaternion,
+	game_state_variable_type_struct,
+	game_state_variable_type_enum,
+};
+
+struct game_variable_data
+{
+	game_variable_type Type;
+	b32 Initialize;
+	memory_index Size;
+	umm Offset;
+	umm ArrayOffset;
+	//u32 EnumValue;
+};
+
 struct game_state
 {
 	memory_arena Arena;
@@ -310,6 +299,7 @@ struct game_state
 	u32 PlayerEntityIndex;
 	u32 EntityCount;
 	entity Entities[4096];
+	light Lights[8];
 
 	pairwise_collision_rule *CollisionRuleHash[256];
 	pairwise_collision_rule *CollisionRuleFirstFree;

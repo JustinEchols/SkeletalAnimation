@@ -3,14 +3,17 @@ type null
 next
 
 entity
-type walkable_region
-flags 262
-position 0.0 0.0 -20.0
-axis_angle 0.0 1.0 0.0 0.0
-movement_collider_count 1
-movement_collider_type obb
-dim 40.0 40.0 40.0
-visual_scale 0.5
+type light 
+flags 256
+position -10.0 10.0 0.0
+light_type directional
+direction 1.0 -1.0 -1.0
+left -30.0
+right 30.0
+bottom -20.0
+top 20.0
+near game_state_znear
+far game_state_zfar
 next
 
 entity
@@ -21,6 +24,17 @@ axis_angle 0.0 1.0 0.0 0.0
 movement_collider_count 1
 movement_collider_type obb
 dim 2.0 1.0 10.0
+visual_scale 0.5
+next
+
+entity
+type walkable_region
+flags 262
+P 0.0 0.0 -20.0
+axis_angle 0.0 1.0 0.0 0.0
+movement_collider_count 1
+movement_collider_type obb
+dim 40.0 40.0 40.0
 visual_scale 0.5
 next
 

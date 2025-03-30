@@ -36,8 +36,10 @@ JointIndexGet(string *JointNames, u32 JointCount, string JointName)
 	return(Result);
 }
 
+// TODO(Justin): Test this..
+#if 0
 internal mat4
-ModelSpaceTransformOfJoint(joint *Joints, joint Joint)
+JointTransformInModelSpace(joint *Joints, joint Joint)
 {
 	mat4 Result = Joint.Transform;
 
@@ -50,6 +52,77 @@ ModelSpaceTransformOfJoint(joint *Joints, joint Joint)
 
 	return(Result);
 }
+#endif
+
+
+//
+// NOTE(Justin): Both ways of computing the inverse bind transform work.
+// The first way is a product of inverses. The second is the inverse of a product.
+//
+
+#if 1
+internal mat4
+JointInverseBindTransform(joint *Joints, joint Joint)
+{
+	mat4 Result = Mat4Identity();
+
+	if(Joint.ParentIndex == -1)
+	{
+		Inverse(Joint.Transform, &Result);
+		return(Result);
+	}
+
+	while(Joint.ParentIndex != -1)
+	{
+		mat4 Inv;
+		Inverse(Joint.Transform, &Inv);
+		Result = Result*Inv;
+
+		joint *Parent = Joints + Joint.ParentIndex;
+		Joint = *Parent;
+	}
+
+	mat4 Inv;
+	Inverse(Joint.Transform, &Inv);
+	Result = Result*Inv;
+
+	return(Result);
+}
+#else
+internal mat4
+JointInverseBindTransform(mat4 *JointTransforms, joint *Joints, u32 JointCount, joint Source)
+{
+	mat4 Result = Mat4Identity();
+
+	if(Source.ParentIndex == -1)
+	{
+		mat4 Inv;
+		Inverse(Source.Transform, &Inv);
+		Result = Inv;
+		return(Result);
+	}
+
+	JointTransforms[0] = Joints->Transform;
+	mat4 T = Mat4Identity();
+	for(u32 JointIndex = 1; JointIndex < JointCount; ++JointIndex)
+	{
+		joint *Joint = Joints + JointIndex;
+		mat4 ParentModelSpace = JointTransforms[Joint->ParentIndex];
+		JointTransforms[JointIndex] = ParentModelSpace * Joint->Transform;
+		if(StringsAreSame(Joint->Name, Source.Name))
+		{
+			T = JointTransforms[JointIndex];
+			break;
+		}
+	}
+
+	mat4 Inv;
+	Inverse(T, &Inv);
+	Result = Inv;
+
+	return(Result);
+}
+#endif
 
 internal f32
 ModelHeight(model *Model)

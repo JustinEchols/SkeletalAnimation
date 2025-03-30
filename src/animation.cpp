@@ -21,21 +21,21 @@ FlagIsSet(animation *Animation, u32 Flag)
 inline b32
 Playing(animation *Animation)
 {
-	b32 Result = FlagIsSet(Animation, AnimationFlags_Playing);
+	b32 Result = FlagIsSet(Animation, AnimationFlag_Playing);
 	return(Result);
 }
 
 inline b32
 Finished(animation *Animation)
 {
-	b32 Result = FlagIsSet(Animation, AnimationFlags_Finished);
+	b32 Result = FlagIsSet(Animation, AnimationFlag_Finished);
 	return(Result);
 }
 
 inline b32
 Looping(animation *Animation)
 {
-	b32 Result = FlagIsSet(Animation, AnimationFlags_Looping);
+	b32 Result = FlagIsSet(Animation, AnimationFlag_Looping);
 	return(Result);
 }
 
@@ -49,28 +49,28 @@ BlendingInOrOut(animation *Animation)
 inline b32
 RemoveLocomotion(animation *Animation)
 {
-	b32 Result = FlagIsSet(Animation, AnimationFlags_RemoveLocomotion);
+	b32 Result = FlagIsSet(Animation, AnimationFlag_RemoveLocomotion);
 	return(Result);
 }
 
 inline b32
 ControlsPosition(animation *Animation)
 {
-	b32 Result = FlagIsSet(Animation, AnimationFlags_ControlsPosition);
+	b32 Result = FlagIsSet(Animation, AnimationFlag_ControlsPosition);
 	return(Result);
 }
 
 inline b32
 ControlsTurning(animation *Animation)
 {
-	b32 Result = FlagIsSet(Animation, AnimationFlags_ControlsTurning);
+	b32 Result = FlagIsSet(Animation, AnimationFlag_ControlsTurning);
 	return(Result);
 }
 
 inline b32
 CompletedPlayback(animation *Animation)
 {
-	b32 Result = FlagIsSet(Animation, AnimationFlags_CompletedCycle);
+	b32 Result = FlagIsSet(Animation, AnimationFlag_CompletedCycle);
 	return(Result);
 }
 
@@ -137,14 +137,9 @@ AnimationPlayerInitialize(animation_player *AnimationPlayer, model *Model, memor
 	AnimationPlayer->CurrentTime = 0.0f;
 	AnimationPlayer->dt = 0.0f;
 
-	AnimationPlayer->FinalPose = PushArray(AnimationPlayer->Arena, Model->MeshCount, key_frame);
-	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
-	{
-		key_frame *FinalPose = AnimationPlayer->FinalPose + MeshIndex;
-		mesh *Mesh = Model->Meshes + MeshIndex;
-		AllocateJointXforms(AnimationPlayer->Arena, FinalPose, Mesh->JointCount);
-	}
-
+	Assert(Model->Version == 2);
+	AnimationPlayer->FinalPose = PushArray(AnimationPlayer->Arena, 1, key_frame);
+	AllocateJointXforms(AnimationPlayer->Arena, AnimationPlayer->FinalPose, Model->JointCount);
 	AnimationPlayer->Model = Model;
 	AnimationPlayer->IsInitialized = true;
 }
@@ -212,7 +207,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	}
 
 	Animation->Name = SampledAnimation->Name;
-	Animation->Flags = (AnimationFlags | AnimationFlags_Playing);
+	Animation->Flags = (AnimationFlags | AnimationFlag_Playing);
 	Animation->Duration = SampledAnimation->Duration;
 	Animation->CurrentTime = StartTime;
 	Animation->TimeScale = TimeScale;
@@ -250,7 +245,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 	{
 		if(!Looping(Animation))
 		{
-			FlagAdd(Animation, AnimationFlags_Finished);
+			FlagAdd(Animation, AnimationFlag_Finished);
 			Animation->CurrentTime = Samples->Duration;
 		}
 
@@ -265,7 +260,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 		{
 			if(Animation->BlendingOut)
 			{
-				FlagAdd(Animation, AnimationFlags_Finished);
+				FlagAdd(Animation, AnimationFlag_Finished);
 				Animation->BlendingOut = false;
 			}
 
@@ -357,7 +352,7 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer, ani
 		}
 	}
 
-	asset_entry Entry = LookupSampledAnimation(AssetManager, CString(DestNode.Tag));
+	asset_entry Entry = FindAnimation(AssetManager, CString(DestNode.Tag));
 	if(Entry.SampledAnimation)
 	{
 		AnimationPlay(AnimationPlayer, Entry.SampledAnimation, Entry.Index, DestNode.AnimationFlags, ArcBlendDuration, ArcTimeOffset, DestNode.TimeScale);
@@ -568,7 +563,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 		Animation->RootMotionDeltaPerFrame = NewP - OldP;
 		Animation->RootVelocityDeltaPerFrame = dt * Animation->RootMotionDeltaPerFrame;
 
-		if(Animation->Flags & AnimationFlags_IgnoreYMotion)
+		if(Animation->Flags & AnimationFlag_IgnoreYMotion)
 		{
 			Animation->RootMotionDeltaPerFrame.y = 0.0f;
 			Animation->RootVelocityDeltaPerFrame.y = 0.0f;
@@ -594,17 +589,13 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	//
 
 	model *Model = AnimationPlayer->Model;
-	key_frame *TempPose = PushArray(TempArena, Model->MeshCount, key_frame);
+	Assert(Model->Version == 2);
 
-	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
-	{
-		key_frame *Pose = TempPose + MeshIndex;
-		mesh *Mesh = Model->Meshes + MeshIndex;
-		AllocateJointXforms(TempArena, Pose, Mesh->JointCount);
-		MemoryZero(Pose->Positions, Mesh->JointCount * sizeof(v3));
-		MemoryZero(Pose->Orientations, Mesh->JointCount * sizeof(quaternion));
-		MemoryZero(Pose->Scales, Mesh->JointCount * sizeof(v3));
-	}
+	key_frame *TempPose = PushArray(TempArena, 1, key_frame);
+	AllocateJointXforms(TempArena, TempPose, Model->JointCount);
+	MemoryZero(TempPose->Positions, Model->JointCount * sizeof(v3));
+	MemoryZero(TempPose->Orientations, Model->JointCount * sizeof(quaternion));
+	MemoryZero(TempPose->Scales, Model->JointCount * sizeof(v3));
 
 	f32 FactorSum = 0.0f;
 	for(animation *Animation = AnimationPlayer->Channels; Animation; Animation = Animation->Next)
@@ -616,34 +607,29 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 
 		f32 Factor = Animation->BlendFactor;
 		FactorSum += Factor;
-		for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+		for(u32 Index = 0; Index < Model->JointCount; ++Index)
 		{
-			key_frame *FinalPose = TempPose + MeshIndex;
-			mesh *Mesh = Model->Meshes + MeshIndex;
-			for(u32 Index = 0; Index < Mesh->JointCount; ++Index)
+			joint *Joint = Model->Joints + Index;
+			s32 JointIndex = JointIndexGet(Samples->JointNames, Samples->JointCount, Joint->Name);
+			if(JointIndex != -1)
 			{
-				joint *Joint = Mesh->Joints + Index;
-				s32 JointIndex = JointIndexGet(Samples->JointNames, Samples->JointCount, Joint->Name);
-				if(JointIndex != -1)
+				v3 P = Factor * BlendedPose->Positions[JointIndex];
+				if(ControlsPosition(Animation) && Animation->BlendingOut && (JointIndex == 0))
 				{
-					v3 P = Factor * BlendedPose->Positions[JointIndex];
-					if(ControlsPosition(Animation) && Animation->BlendingOut && (JointIndex == 0))
-					{
-						P = Factor*V3(0.0f, BlendedPose->Positions[JointIndex].y, 0.0f);
-					}
-
-					FinalPose->Positions[Index]	+= P;
-					FinalPose->Scales[Index]	+= Factor * BlendedPose->Scales[JointIndex];
-
-					// TODO(Justin): Pre-process the animations so that the orientations are in the known correct neighborhood.
-					quaternion Scaled = Factor * BlendedPose->Orientations[JointIndex];
-					if(Dot(Scaled, FinalPose->Orientations[Index]) < 0.0f)
-					{
-						Scaled *= -1.0f;
-					}
-
-					FinalPose->Orientations[Index] += Scaled;
+					P = Factor*V3(0.0f, BlendedPose->Positions[JointIndex].y, 0.0f);
 				}
+
+				TempPose->Positions[Index]	+= P;
+				TempPose->Scales[Index]	+= Factor * BlendedPose->Scales[JointIndex];
+
+				// TODO(Justin): Pre-process the animations so that the orientations are in the known correct neighborhood.
+				quaternion Scaled = Factor * BlendedPose->Orientations[JointIndex];
+				if(Dot(Scaled, TempPose->Orientations[Index]) < 0.0f)
+				{
+					Scaled *= -1.0f;
+				}
+
+				TempPose->Orientations[Index] += Scaled;
 			}
 		}
 
@@ -670,51 +656,44 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	// NOTE(Justin): Scale the mixed channels, then copy.
 	//
 
-	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+	key_frame *SrcPose = TempPose;
+	key_frame *DestPose = AnimationPlayer->FinalPose;
+	for(u32 JointIndex = 0; JointIndex < Model->JointCount; ++JointIndex)
 	{
-		key_frame *SrcPose = TempPose + MeshIndex;
-		key_frame *DestPose = AnimationPlayer->FinalPose + MeshIndex;
-		mesh *Mesh = Model->Meshes + MeshIndex;
-		for(u32 JointIndex = 0; JointIndex < Mesh->JointCount; ++JointIndex)
-		{
-			SrcPose->Positions[JointIndex]		*= Scale;
-			SrcPose->Orientations[JointIndex]	*= Scale;
-			SrcPose->Scales[JointIndex]			*= Scale;
-			SrcPose->Orientations[JointIndex]	= NormalizeOrIdentity(SrcPose->Orientations[JointIndex]);
+		SrcPose->Positions[JointIndex]		*= Scale;
+		SrcPose->Orientations[JointIndex]	*= Scale;
+		SrcPose->Scales[JointIndex]			*= Scale;
+		SrcPose->Orientations[JointIndex]	= NormalizeOrIdentity(SrcPose->Orientations[JointIndex]);
 
-			DestPose->Positions[JointIndex]		= SrcPose->Positions[JointIndex];
-			DestPose->Orientations[JointIndex]	= SrcPose->Orientations[JointIndex];
-			DestPose->Scales[JointIndex]		= SrcPose->Scales[JointIndex];
-		}
+		DestPose->Positions[JointIndex]		= SrcPose->Positions[JointIndex];
+		DestPose->Orientations[JointIndex]	= SrcPose->Orientations[JointIndex];
+		DestPose->Scales[JointIndex]		= SrcPose->Scales[JointIndex];
 	}
 }
 
 internal void
 ModelTPose(model *Model)
 {
-	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+	Assert(Model->Version == 2);
+
+	joint RootJoint = Model->Joints[0];
+	mat4 RootJointT = RootJoint.Transform;
+	mat4 RootInvBind = Model->InvBindTransforms[0];
+
+	Model->JointTransforms[0] = RootJointT;
+	Model->ModelSpaceTransforms[0] = RootJointT * RootInvBind;
+
+	for(u32 JointIndex = 1; JointIndex < Model->JointCount; ++JointIndex)
 	{
-		mesh *Mesh = Model->Meshes + MeshIndex;
+		joint *Joint = Model->Joints + JointIndex;
+		mat4 JointTransform = Joint->Transform;
 
-		joint RootJoint = Mesh->Joints[0];
-		mat4 RootJointT = RootJoint.Transform;
-		mat4 RootInvBind = Mesh->InvBindTransforms[0];
+		mat4 ParentTransform = Model->JointTransforms[Joint->ParentIndex];
+		JointTransform = ParentTransform * JointTransform;
+		mat4 InvBind = Model->InvBindTransforms[JointIndex];
 
-		Mesh->JointTransforms[0] = RootJointT;
-		Mesh->ModelSpaceTransforms[0] = RootJointT * RootInvBind;
-
-		for(u32 JointIndex = 1; JointIndex < Mesh->JointCount; ++JointIndex)
-		{
-			joint *Joint = Mesh->Joints + JointIndex;
-			mat4 JointTransform = Joint->Transform;
-
-			mat4 ParentTransform = Mesh->JointTransforms[Joint->ParentIndex];
-			JointTransform = ParentTransform * JointTransform;
-			mat4 InvBind = Mesh->InvBindTransforms[JointIndex];
-
-			Mesh->JointTransforms[JointIndex] = JointTransform;
-			Mesh->ModelSpaceTransforms[JointIndex] = JointTransform * InvBind;
-		}
+		Model->JointTransforms[JointIndex] = JointTransform;
+		Model->ModelSpaceTransforms[JointIndex] = JointTransform * InvBind;
 	}
 }
 
@@ -725,64 +704,60 @@ ModelJointsUpdate(entity *Entity)
 	if(AnimationPlayer && AnimationPlayer->Model)
 	{
 		model *Model = AnimationPlayer->Model;
-		for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+		Assert(Model->Version == 2);
+
+		key_frame *FinalPose = AnimationPlayer->FinalPose;
+		joint RootJoint = Model->Joints[0];
+		mat4 RootJointT = RootJoint.Transform;
+		mat4 RootInvBind = Model->InvBindTransforms[0];
+
+		sqt Xform;
+		Xform.Position		= FinalPose->Positions[0];
+		Xform.Orientation	= FinalPose->Orientations[0];
+		Xform.Scale			= FinalPose->Scales[0];
+
+		if(!Equal(Xform.Position, V3(0.0f)) &&
+				!Equal(Xform.Scale, V3(0.0f)))
 		{
-			key_frame *FinalPose = AnimationPlayer->FinalPose + MeshIndex;
+			RootJointT = JointTransformFromSQT(Xform);
+		}
 
-			mesh *Mesh = Model->Meshes + MeshIndex;
-			joint RootJoint = Mesh->Joints[0];
-			mat4 RootJointT = RootJoint.Transform;
-			mat4 RootInvBind = Mesh->InvBindTransforms[0];
+		Model->JointTransforms[0] = RootJointT;
+		Model->ModelSpaceTransforms[0] = RootJointT * RootInvBind;
 
-			sqt Xform;
-			Xform.Position		= FinalPose->Positions[0];
-			Xform.Orientation	= FinalPose->Orientations[0];
-			Xform.Scale			= FinalPose->Scales[0];
+		for(u32 JointIndex = 1; JointIndex < Model->JointCount; ++JointIndex)
+		{
+			joint *Joint = Model->Joints + JointIndex;
+			mat4 JointTransform = Joint->Transform;
+
+			Xform.Position		= FinalPose->Positions[JointIndex];
+			Xform.Orientation	= FinalPose->Orientations[JointIndex];
+			Xform.Scale			= FinalPose->Scales[JointIndex];
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
-			   !Equal(Xform.Scale, V3(0.0f)))
+					!Equal(Xform.Scale, V3(0.0f)))
 			{
-				RootJointT = JointTransformFromSQT(Xform);
+				JointTransform = JointTransformFromSQT(Xform);
 			}
 
-			Mesh->JointTransforms[0] = RootJointT;
-			Mesh->ModelSpaceTransforms[0] = RootJointT * RootInvBind;
+			mat4 ParentTransform = Model->JointTransforms[Joint->ParentIndex];
+			JointTransform = ParentTransform * JointTransform;
+			mat4 InvBind = Model->InvBindTransforms[JointIndex];
 
-			for(u32 JointIndex = 1; JointIndex < Mesh->JointCount; ++JointIndex)
-			{
-				joint *Joint = Mesh->Joints + JointIndex;
-				mat4 JointTransform = Joint->Transform;
-
-				Xform.Position		= FinalPose->Positions[JointIndex];
-				Xform.Orientation	= FinalPose->Orientations[JointIndex];
-				Xform.Scale			= FinalPose->Scales[JointIndex];
-
-				if(!Equal(Xform.Position, V3(0.0f)) &&
-				   !Equal(Xform.Scale, V3(0.0f)))
-				{
-					JointTransform = JointTransformFromSQT(Xform);
-				}
-
-				mat4 ParentTransform = Mesh->JointTransforms[Joint->ParentIndex];
-				JointTransform = ParentTransform * JointTransform;
-				mat4 InvBind = Mesh->InvBindTransforms[JointIndex];
-
-				Mesh->JointTransforms[JointIndex] = JointTransform;
-				Mesh->ModelSpaceTransforms[JointIndex] = JointTransform * InvBind;
-			}
+			Model->JointTransforms[JointIndex] = JointTransform;
+			Model->ModelSpaceTransforms[JointIndex] = JointTransform * InvBind;
 		}
 
 		// TODO(Justin): Store transform.
 		// TODO(Justin): Handle root motion case.
-		// TODO(Justin): Remove hardcoded index.
 
 		mat4 Transform	= EntityTransform(Entity, Entity->VisualScale);
 
-		mat4 LeftFootT	= Model->Meshes[0].JointTransforms[Model->LeftFootJointIndex];
-		mat4 RightFootT = Model->Meshes[0].JointTransforms[Model->RightFootJointIndex];
+		mat4 LeftFootT	= Model->JointTransforms[Model->LeftFootJointIndex];
+		mat4 RightFootT = Model->JointTransforms[Model->RightFootJointIndex];
 
-		mat4 LeftHandT	= Model->Meshes[0].JointTransforms[Model->LeftHandJointIndex];
-		mat4 RightHandT = Model->Meshes[0].JointTransforms[Model->RightHandJointIndex];
+		mat4 LeftHandT	= Model->JointTransforms[Model->LeftHandJointIndex];
+		mat4 RightHandT = Model->JointTransforms[Model->RightHandJointIndex];
 
 		v3 LeftFootModelP	= Mat4ColumnGet(LeftFootT, 3);
 		v3 RightFootModelP	= Mat4ColumnGet(RightFootT, 3);
@@ -1054,23 +1029,23 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 			}
 			else if(StringsAreSame(Word, "controls_position"))
 			{
-				Node->AnimationFlags |= AnimationFlags_ControlsPosition;
+				Node->AnimationFlags |= AnimationFlag_ControlsPosition;
 			}
 			else if(StringsAreSame(Word, "controls_turning"))
 			{
-				Node->AnimationFlags |= AnimationFlags_ControlsTurning;
+				Node->AnimationFlags |= AnimationFlag_ControlsTurning;
 			}
 			else if(StringsAreSame(Word, "looping"))
 			{
-				Node->AnimationFlags |= AnimationFlags_Looping;
+				Node->AnimationFlags |= AnimationFlag_Looping;
 			}
 			else if(StringsAreSame(Word, "remove_locomotion"))
 			{
-				Node->AnimationFlags |= AnimationFlags_RemoveLocomotion;
+				Node->AnimationFlags |= AnimationFlag_RemoveLocomotion;
 			}
 			else if(StringsAreSame(Word, "ignore_y_motion"))
 			{
-				Node->AnimationFlags |= AnimationFlags_IgnoreYMotion;
+				Node->AnimationFlags |= AnimationFlag_IgnoreYMotion;
 			}
 			else if(*Word == '#')
 			{
@@ -1089,7 +1064,7 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 internal void
 AnimationGraphReload(asset_manager *AssetManager, char *GraphName)
 {
-	animation_graph *G = LookupGraph(AssetManager, GraphName).Graph;
+	animation_graph *G = FindGraph(AssetManager, GraphName).Graph;
 	string Path = G->Path;
 	ArenaClear(&G->Arena);
 	G->NodeCount = 0;

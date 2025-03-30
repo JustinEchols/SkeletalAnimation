@@ -33,6 +33,8 @@ PushClear(render_buffer *RenderBuffer, v4 Color)
 	}
 }
 
+// NOTE(Justin): All the textures are loaded into one array in the asset manager. Each one
+// has a unique index
 inline void
 PushTexture(render_buffer *RenderBuffer, texture *Texture, s32 Index)
 {
@@ -86,7 +88,7 @@ PushQuad2D(render_buffer *RenderBuffer, f32 *Vertices, v4 Color)
 inline void
 PushModel(render_buffer *RenderBuffer, char *ModelName, mat4 Transform)
 {
-	model *Model = LookupModel(RenderBuffer->Assets, ModelName).Model;
+	model *Model = FindModel(RenderBuffer->Assets, ModelName).Model;
 	if(Model)
 	{
 		for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
@@ -120,6 +122,21 @@ PushModel(render_buffer *RenderBuffer, char *ModelName, mat4 Transform)
 		}
 	}
 }
+
+inline void
+PushModel(render_buffer *RenderBuffer, model *Model, mat4 Transform)
+{
+	if(Model)
+	{
+		render_entry_model *Entry = PushRenderElement(RenderBuffer, render_entry_model);
+		if(Entry)
+		{
+			Entry->Model = Model;
+			Entry->Transform = Transform;
+		}
+	}
+}
+
 
 // NOTE(Justin): Testing a different push buffer call
 inline void
@@ -187,6 +204,7 @@ PushRenderToTexture(render_buffer *RenderBuffer, f32 *Vertices)
 	}
 }
 
+#if 0
 internal render_buffer * 
 RenderBufferAllocate(memory_arena *Arena, u32 MaxSize,
 		mat4 View, mat4 Perspective, mat4 LightTransform,
@@ -213,4 +231,32 @@ RenderBufferAllocate(memory_arena *Arena, u32 MaxSize,
 
 	return(Result);
 }
+#else
+internal render_buffer * 
+RenderBufferAllocate(memory_arena *Arena, u32 MaxSize, mat4 View, mat4 Perspective, asset_manager *Assets,
+																						v3 CameraP,
+																						u32 OutputTargetIndex = 0)
+{
+	render_buffer *Result = (render_buffer *)PushStruct(Arena, render_buffer);
+
+	Result->Base = (u8 *)PushSize_(Arena, MaxSize);
+	Result->Size = 0;
+	Result->MaxSize = MaxSize;
+	Result->OutputTargetIndex = OutputTargetIndex;
+	Result->View = View;
+	Result->Perspective = Perspective;
+	//Result->LightTransform = LightTransform;
+	Result->Assets = Assets;
+	Result->CameraP = CameraP;
+	//Result->LightDir = LightDir;
+
+	Result->TextureCount = 0;
+	Result->MaxTextureCount = 32;
+	Result->Textures = PushArray(Arena, Result->MaxTextureCount, texture *);
+
+	return(Result);
+}
+
+#endif
+
 

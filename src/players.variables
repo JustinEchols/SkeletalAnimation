@@ -1,4 +1,4 @@
-player XBot
+player_type XBot
 height 1.8
 acceleration 50.0
 drag 10.0
@@ -9,7 +9,7 @@ model XBot
 graph XBot_AnimationGraph
 animation XBot_IdleLeft
 
-player YBot
+player_type YBot
 height 1.8
 acceleration 50.0
 drag 10.0
@@ -20,7 +20,7 @@ model YBot
 graph YBot_AnimationGraph
 animation YBot_FightIdleLeft
 
-player PaladinWithProp 
+player_type PaladinWithProp 
 height 1.8
 acceleration 50.0
 drag 10.0
@@ -31,7 +31,7 @@ model PaladinWithProp
 graph Paladin_AnimationGraph
 animation Paladin_SwordAndShieldIdle_00
 
-player Brute 
+player_type Brute 
 height 1.8
 acceleration 40.0
 drag 10.0

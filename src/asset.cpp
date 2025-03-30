@@ -187,21 +187,21 @@ ObjLoad(memory_arena *Arena, char *FileName)
 				{
 					EatSpaces(&Line);
 					BufferNextWord(&Line, Word);
-					u8 *FacePointer = Word;
+					u8 *IndicesPointer = Word;
 
 					u8 Number[256];
 					MemoryZero(Number, sizeof(Number));
 
-					BufferNumber(&FacePointer, Number);
-					FacePointer++;
+					BufferNumber(&IndicesPointer, Number);
+					IndicesPointer++;
 					IndicesP[IndexP++] = U32FromASCII(Number) - 1;
 
-					BufferNumber(&FacePointer, Number);
-					FacePointer++;
+					BufferNumber(&IndicesPointer, Number);
+					IndicesPointer++;
 					IndicesUV[IndexUV++] = U32FromASCII(Number) - 1;
 
-					BufferNumber(&FacePointer, Number);
-					FacePointer++;
+					BufferNumber(&IndicesPointer, Number);
+					IndicesPointer++;
 					IndicesN[IndexN++] = U32FromASCII(Number) - 1;
 
 					Mesh->VertexCount++;
@@ -289,6 +289,282 @@ ObjLoad(memory_arena *Arena, char *FileName)
 	return(Result);
 }
 
+
+internal model
+TestLoadModel(memory_arena *Arena, char *FileName)
+{
+	model Model = {};
+
+	debug_file File = Platform.DebugFileReadEntire(FileName);
+	if(File.Size == 0)
+	{
+		Assert(0);
+	}
+
+	u8 *Content = (u8 *)File.Content;
+
+	u8 LineBuffer_[4096];
+	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
+	u8 *LineBuffer = LineBuffer_;
+
+	u8 Word_[4096];
+	MemoryZero(Word_, sizeof(Word_));
+	u8 *Word = Word_;
+
+	BufferLine(&Content, LineBuffer);
+	u8 *Line = LineBuffer;
+	BufferNextWord(&Line, Word);
+	Assert(StringsAreSame(Word, "mesh_count"));
+
+	EatSpaces(&Line);
+	BufferNextWord(&Line, Word);
+
+	Model.Version = 2;
+	Model.HasSkeleton = true;
+	Model.MeshCount = U32FromASCII(Word);
+	Model.Meshes = PushArray(Arena, Model.MeshCount, mesh);
+	mesh *Mesh = Model.Meshes;
+
+	AdvanceLine(&Content);
+	while(*Content)
+	{
+		BufferLine(&Content, LineBuffer);
+		Line = LineBuffer;
+		BufferNextWord(&Line, Word);
+
+		if(StringsAreSame(Word, "mesh"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			Mesh->Name = StringCopy(Arena, Word);
+		}
+		else if(StringsAreSame(Word, "vertex_count"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+			Mesh->VertexCount = U32FromASCII(Word);
+			Mesh->IndicesCount = Mesh->VertexCount;
+			Mesh->Vertices = PushArray(Arena, Mesh->VertexCount, vertex);
+			Mesh->Indices = PushArray(Arena, Mesh->IndicesCount, u32);
+		}
+		else if(StringsAreSame(Word, "vertices"))
+		{
+			AdvanceLine(&Content);
+			for(u32 VertexIndex = 0; VertexIndex < Mesh->VertexCount; ++VertexIndex)
+			{
+				vertex *V = Mesh->Vertices + VertexIndex;
+
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
+				BufferNextWord(&Line, Word);
+				Assert(StringsAreSame(Word, "p"));
+
+				{
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					V->P.x = F32FromASCII(Word);
+
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					V->P.y = F32FromASCII(Word);
+
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					V->P.z = F32FromASCII(Word);
+				}
+
+				AdvanceLine(&Content);
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
+				BufferNextWord(&Line, Word);
+				Assert(StringsAreSame(Word, "n"));
+
+				{
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					V->N.x = F32FromASCII(Word);
+
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					V->N.y = F32FromASCII(Word);
+
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					V->N.z = F32FromASCII(Word);
+				}
+
+				AdvanceLine(&Content);
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
+				BufferNextWord(&Line, Word);
+				Assert(StringsAreSame(Word, "uv"));
+
+				{
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					V->UV.x = F32FromASCII(Word);
+
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					V->UV.y = F32FromASCII(Word);
+				}
+
+				AdvanceLine(&Content);
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
+				BufferNextWord(&Line, Word);
+				Assert(StringsAreSame(Word, "joint_count"));
+
+				{
+
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					V->JointInfo.Count = U32FromASCII(Word);
+				}
+
+				AdvanceLine(&Content);
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
+				BufferNextWord(&Line, Word);
+				Assert(StringsAreSame(Word, "joint_indices"));
+
+				{
+					for(u32 Index = 0; Index < V->JointInfo.Count; ++Index)
+					{
+						EatSpaces(&Line);
+						BufferNextWord(&Line, Word);
+						V->JointInfo.JointIndex[Index] = U32FromASCII(Word);
+					}
+				}
+
+				AdvanceLine(&Content);
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
+				BufferNextWord(&Line, Word);
+				Assert(StringsAreSame(Word, "joint_weights"));
+
+				{
+					for(u32 Index = 0; Index < V->JointInfo.Count; ++Index)
+					{
+						EatSpaces(&Line);
+						BufferNextWord(&Line, Word);
+						V->JointInfo.Weights[Index] = F32FromASCII(Word);
+					}
+				}
+
+				AdvanceLine(&Content);
+			}
+		}
+		else if(StringsAreSame(Word, "indices"))
+		{
+			AdvanceLine(&Content);
+			for(u32 Index = 0; Index < Mesh->IndicesCount; ++Index)
+			{
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
+				BufferNextWord(&Line, Word);
+
+				Mesh->Indices[Index] = U32FromASCII(Word);
+
+				AdvanceLine(&Content);
+			}
+		}
+		else if(StringsAreSame(Word, "Armature"))
+		{
+			AdvanceLine(&Content);
+			BufferLine(&Content, LineBuffer);
+			Line = LineBuffer;
+			BufferNextWord(&Line, Word);
+			Assert(StringsAreSame(Word, "joint_count"));
+
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+
+			Model.JointCount = U32FromASCII(Word);
+			Model.Joints = PushArray(Arena, Model.JointCount, joint);
+			Model.BindTransform = Mat4Identity();
+			Model.InvBindTransforms = PushArray(Arena, Model.JointCount, mat4);
+			Model.JointTransforms = PushArray(Arena, Model.JointCount, mat4);
+			Model.ModelSpaceTransforms = PushArray(Arena, Model.JointCount, mat4);
+
+			AdvanceLine(&Content);
+			for(u32 JointIndex = 0; JointIndex < Model.JointCount; ++JointIndex)
+			{
+				joint *Joint = Model.Joints + JointIndex;
+
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
+				BufferNextWord(&Line, Word);
+
+				{
+					Joint->Name = StringCopy(Arena, Word);
+				}
+
+				AdvanceLine(&Content);
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
+				BufferNextWord(&Line, Word);
+				Assert(StringsAreSame(Word, "parent_index"));
+
+				{
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					Joint->ParentIndex = S32FromASCII(Word);
+				}
+
+				AdvanceLine(&Content);
+				BufferLine(&Content, LineBuffer);
+				Line = LineBuffer;
+
+				for(u32 i = 0; i < 16; ++i)
+				{
+					EatSpaces(&Line);
+					BufferNextWord(&Line, Word);
+					Joint->Transform.I[i] = F32FromASCII(Word);
+				}
+
+				AdvanceLine(&Content);
+			}
+		}
+		else if(StringsAreSame(Word, "next"))
+		{
+			Mesh++;
+		}
+
+		AdvanceLine(&Content);
+	}
+
+	mat4 I = Mat4Identity();
+	for(u32 JointIndex = 0; JointIndex < Model.JointCount; ++JointIndex)
+	{
+		Model.InvBindTransforms[JointIndex] = JointInverseBindTransform(Model.Joints, Model.Joints[JointIndex]);
+		Model.JointTransforms[JointIndex] = I;
+		Model.ModelSpaceTransforms[JointIndex] = I;
+	}
+
+	Model.Meshes[0].MaterialSpec.Ambient = V4(0.000000, 0.000000, 0.000000, 1.000000); 
+	Model.Meshes[0].MaterialSpec.Diffuse = V4(0.266667, 0.099623, 0.080812, 1.000000);
+	Model.Meshes[0].MaterialSpec.Specular = V4(0.299138, 0.299138, 0.299138, 1.000000);
+	Model.Meshes[0].MaterialSpec.Shininess = 2.000000;
+
+	Model.Meshes[1].MaterialSpec.Ambient = V4(0.0f, 0.0f, 0.0f, 1.0f);
+	Model.Meshes[1].MaterialSpec.Diffuse = V4(0.669600, 0.241846, 0.210924, 1.000000);
+	Model.Meshes[1].MaterialSpec.Specular = V4(0.487175, 0.487175, 0.487175, 1.000000);
+	Model.Meshes[1].MaterialSpec.Shininess = 3.675214;
+
+	//
+	// NOTE(Justin): Header
+	//
+
+	//
+	// NOTE(Justin): Mesh data 
+	//
+
+	Platform.DebugFileFree(File.Content);
+
+	return(Model);
+}
+
 internal model 
 ModelLoad(memory_arena *Arena, char *FileName)
 {
@@ -324,6 +600,7 @@ ModelLoad(memory_arena *Arena, char *FileName)
 
 		Mesh->Indices = (u32 *)(Content + MeshSource->OffsetToIndices);
 		Mesh->Vertices = (vertex *)(Content + MeshSource->OffsetToVertices);
+		// TODO(Justin): Think about removing these from the file format? (since we can compute the inverse bind transform..)
 		Mesh->InvBindTransforms = (mat4 *)(Content + MeshSource->OffsetToInvBindXForms);
 
 		// TODO(Justin): Figure out best way to handle strings and joints
@@ -347,6 +624,13 @@ ModelLoad(memory_arena *Arena, char *FileName)
 			Mesh->ModelSpaceTransforms[JointIndex] = I;
 
 			JointSource++;
+
+
+			//
+			// NOTE(Justin): The inverse bind transforms are part of the file format. This was to test to see if we could compute them
+			//
+
+			Mesh->InvBindTransforms[JointIndex] = JointInverseBindTransform(Mesh->Joints, *Dest);
 
 			// TODO(Justin): Remove hardcoded values!
 			if(MeshIndex == 0)
@@ -425,6 +709,8 @@ ModelLoad(memory_arena *Arena, char *FileName)
 		v3 Max = V3(Xmax, Ymax, Zmax);
 		Mesh->BoundingBox = AABBMinMax(Min, Max);
 
+		Model.BoundingBox = AABBUnion(Model.BoundingBox, Mesh->BoundingBox);
+
 		if((SubStringExists(CString(Mesh->Name), "Axe")) ||
 		   (SubStringExists(CString(Mesh->Name), "Shield")))
 		{
@@ -436,6 +722,28 @@ ModelLoad(memory_arena *Arena, char *FileName)
 
 		MeshSource++;
 	}
+
+	//
+	// HACK TESTING VERSION 2
+	//
+
+	//
+	// NOTE(Justin): Model/mesh data structure revision to 2 moves skeleton to model level.
+	// The mesh bin file format has not been updated so we have to hack the version here..
+	// The current file format DUPLICATES THE SKELTON FOR EACH MESH. When first learning
+	// I thought this was required. But it is not. Each vertex of the mesh knows what joints
+	// affect it so there is no need to duplicate the skeleton. We send the all the runtime
+	// transforms to the gpu and each vertex of each mesh can index into the array to read
+	// which transforms affect it 
+	//
+
+	Model.Version = 2;
+	mesh *Mesh = Model.Meshes;
+	Model.JointCount = Mesh->JointCount;
+	Model.Joints = Mesh->Joints;
+	Model.InvBindTransforms = Mesh->InvBindTransforms;
+	Model.JointTransforms = Mesh->JointTransforms;
+	Model.ModelSpaceTransforms = Mesh->ModelSpaceTransforms;
 
 	return(Model);
 }
@@ -510,7 +818,7 @@ char *FontFiles[] =
 };
 
 internal asset_entry 
-LookupTexture(asset_manager *AssetManager, char *TextureName)
+FindTexture(asset_manager *AssetManager, char *TextureName)
 {
 	asset_entry Result = {};
 
@@ -529,7 +837,7 @@ LookupTexture(asset_manager *AssetManager, char *TextureName)
 }
 
 internal asset_entry
-LookupModel(asset_manager *AssetManager, char *ModelName)
+FindModel(asset_manager *AssetManager, char *ModelName)
 {
 	asset_entry Result = {};
 
@@ -548,7 +856,7 @@ LookupModel(asset_manager *AssetManager, char *ModelName)
 }
 
 internal asset_entry
-LookupSampledAnimation(asset_manager *AssetManager, char *AnimationName)
+FindAnimation(asset_manager *AssetManager, char *AnimationName)
 {
 	asset_entry Result = {};
 
@@ -566,7 +874,7 @@ LookupSampledAnimation(asset_manager *AssetManager, char *AnimationName)
 }
 
 internal asset_entry 
-LookupGraph(asset_manager *AssetManager, char *AnimationGraphName)
+FindGraph(asset_manager *AssetManager, char *AnimationGraphName)
 {
 	asset_entry Result = {};
 
@@ -658,20 +966,30 @@ AssetManagerInitialize(asset_manager *Manager)
 
 		if(StringsAreSame(ExtBuffer, "mesh"))
 		{
-			*Model = ModelLoad(&Manager->Arena, Buffer);
+			//
+			// NOTE(Justin): Testing blender exported file format...
+			//
+
+			//if(StringsAreSame(AssetName, "XBot"))
+			//{
+			//	*Model = TestLoadModel(&Manager->Arena, "test/Beta_JointsMesh.mesh");
+			//}
+			//else
+			{
+				*Model = ModelLoad(&Manager->Arena, Buffer);
+			}
 
 			if(StringsAreSame(AssetName, "Cube"))
 			{
-				asset_entry Entry = LookupTexture(Manager, "orange_texture_02");
+				asset_entry Entry = FindTexture(Manager, "orange_texture_02");
 				Assert(Entry.Texture);
 				Model->Meshes[0].DiffuseTexture = Entry.Index;
 				Model->Meshes[0].MaterialFlags |= MaterialFlag_Diffuse;
 			}
-
 			if(StringsAreSame(AssetName, "PaladinWithProp"))
 			{
-				asset_entry Diffuse = LookupTexture(Manager, "Paladin_diffuse");
-				asset_entry Specular = LookupTexture(Manager, "Paladin_specular");
+				asset_entry Diffuse = FindTexture(Manager, "Paladin_diffuse");
+				asset_entry Specular = FindTexture(Manager, "Paladin_specular");
 				Assert(Diffuse.Texture);
 				Assert(Specular.Texture);
 
@@ -680,7 +998,7 @@ AssetManagerInitialize(asset_manager *Manager)
 					mesh *Mesh = Model->Meshes + MeshIndex;
 					Mesh->DiffuseTexture = Diffuse.Index;
 					Mesh->SpecularTexture = Specular.Index;
-					Model->Meshes[0].MaterialFlags |= (MaterialFlag_Diffuse | MaterialFlag_Specular);
+					Mesh->MaterialFlags |= (MaterialFlag_Diffuse | MaterialFlag_Specular);
 				}
 			}
 			if(StringsAreSame(AssetName, "Erika_ArcherWithBowArrow"))
@@ -712,12 +1030,12 @@ AssetManagerInitialize(asset_manager *Manager)
 
 
 				//0
-				asset_entry Diffuse = LookupTexture(Manager, "FemaleFitA_eyelash_diffuse");
+				asset_entry Diffuse = FindTexture(Manager, "FemaleFitA_eyelash_diffuse");
 				Model->Meshes[0].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[0].MaterialFlags = (MaterialFlag_Diffuse);
 
 				//1
-				Diffuse = LookupTexture(Manager, "FemaleFitA_Body_diffuse");
+				Diffuse = FindTexture(Manager, "FemaleFitA_Body_diffuse");
 				Model->Meshes[1].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[1].MaterialFlags = (MaterialFlag_Diffuse);
 
@@ -726,63 +1044,64 @@ AssetManagerInitialize(asset_manager *Manager)
 				Model->Meshes[2].MaterialFlags = (MaterialFlag_Diffuse);
 
 				//3
-				Diffuse = LookupTexture(Manager, "Bow_diffuse");
+				Diffuse = FindTexture(Manager, "Bow_diffuse");
 				Model->Meshes[3].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[3].MaterialFlags = (MaterialFlag_Diffuse);
 				
 				//4
-				Diffuse = LookupTexture(Manager, "Arrow_diffuse");
+				Diffuse = FindTexture(Manager, "Arrow_diffuse");
 				Model->Meshes[4].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[4].MaterialFlags = (MaterialFlag_Diffuse);
 				Model->Meshes[4].Flags |= MeshFlag_DontDraw;
 				
 				//5
-				Diffuse = LookupTexture(Manager, "Erika_Archer_Clothes_diffuse");
+				Diffuse = FindTexture(Manager, "Erika_Archer_Clothes_diffuse");
 				Model->Meshes[5].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[5].MaterialFlags = (MaterialFlag_Diffuse);
 			}
 
 			if(StringsAreSame(AssetName, "Brute"))
 			{
-				asset_entry Diffuse = LookupTexture(Manager, "axe_diffuse");
-				asset_entry Specular = LookupTexture(Manager, "axe_specular");
+				asset_entry Diffuse = FindTexture(Manager, "axe_diffuse");
+				asset_entry Specular = FindTexture(Manager, "axe_specular");
+
 				Model->Meshes[0].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[0].SpecularTexture = Specular.Index;
 				Model->Meshes[0].MaterialFlags = (MaterialFlag_Diffuse | MaterialFlag_Specular);
 
-				Diffuse = LookupTexture(Manager, "MaleBruteA_Hair_diffuse");
-				Specular = LookupTexture(Manager, "MaleBruteA_Hair_specular");
+				Diffuse = FindTexture(Manager, "MaleBruteA_Hair_diffuse");
+				Specular = FindTexture(Manager, "MaleBruteA_Hair_specular");
 				Model->Meshes[1].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[1].SpecularTexture = Specular.Index;
 				Model->Meshes[1].MaterialFlags = (MaterialFlag_Diffuse | MaterialFlag_Specular);
 
-				Diffuse = LookupTexture(Manager, "MaleBruteA_Bottom_diffuse1");
-				Specular = LookupTexture(Manager, "MaleBruteA_Bottom_specular");
+				Diffuse = FindTexture(Manager, "MaleBruteA_Bottom_diffuse1");
+				Specular = FindTexture(Manager, "MaleBruteA_Bottom_specular");
 				Model->Meshes[2].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[2].SpecularTexture = Specular.Index;
 				Model->Meshes[2].MaterialFlags = (MaterialFlag_Diffuse | MaterialFlag_Specular);
 
-				Diffuse = LookupTexture(Manager, "MaleBruteA_Shoes_diffuse1");
-				Specular = LookupTexture(Manager, "MaleBruteA_Shoes_specular");
+				Diffuse = FindTexture(Manager, "MaleBruteA_Shoes_diffuse1");
+				Specular = FindTexture(Manager, "MaleBruteA_Shoes_specular");
 				Model->Meshes[3].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[3].SpecularTexture = Specular.Index;
 				Model->Meshes[3].MaterialFlags = (MaterialFlag_Diffuse | MaterialFlag_Specular);
 
-				Diffuse = LookupTexture(Manager, "MaleBruteA_Moustache_diffuse");
-				Specular = LookupTexture(Manager, "MaleBruteA_Moustache_specular");
+				Diffuse = FindTexture(Manager, "MaleBruteA_Moustache_diffuse");
+				Specular = FindTexture(Manager, "MaleBruteA_Moustache_specular");
 				Model->Meshes[4].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[4].SpecularTexture = Specular.Index;
 				Model->Meshes[4].MaterialFlags = (MaterialFlag_Diffuse | MaterialFlag_Specular);
 
-				Diffuse = LookupTexture(Manager, "MaleBruteA_Body_diffuse1");
+				Diffuse = FindTexture(Manager, "MaleBruteA_Body_diffuse1");
 				Model->Meshes[5].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[5].MaterialFlags = (MaterialFlag_Diffuse);
 
-				Diffuse = LookupTexture(Manager, "MaleBruteA_Body_diffuse");
+				Diffuse = FindTexture(Manager, "MaleBruteA_Body_diffuse");
 				Model->Meshes[6].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[6].MaterialFlags = (MaterialFlag_Diffuse);
 
-				Diffuse = LookupTexture(Manager, "MaleBruteA_Body_diffuse1");
+				Diffuse = FindTexture(Manager, "MaleBruteA_Body_diffuse1");
 				Model->Meshes[7].DiffuseTexture = Diffuse.Index;
 				Model->Meshes[7].MaterialFlags = (MaterialFlag_Diffuse);
 			}
@@ -790,8 +1109,8 @@ AssetManagerInitialize(asset_manager *Manager)
 		else if(StringsAreSame(ExtBuffer, "obj"))
 		{
 			*Model = ObjLoad(&Manager->Arena, Buffer);
-			asset_entry Diffuse1 = LookupTexture(Manager, "barrel");
-			asset_entry Diffuse2 = LookupTexture(Manager, "planks");
+			asset_entry Diffuse1 = FindTexture(Manager, "barrel");
+			asset_entry Diffuse2 = FindTexture(Manager, "planks");
 
 			for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 			{

@@ -50,6 +50,16 @@ struct mesh_weapon_info
 	s32 JointIndex;
 };
 
+// NOTE(Justin): A meshes vertices in Tpose are defined in relation to 1 or more model space joint transforms
+// During a calculation of an animation pose we calculate joint transforms for the current pose. If we
+// apply the joint transforms then we would be adding in 
+//
+// The inverse bind transform of a joint is just the inverse of the model space joint transform. We need
+// to use this when updating the final transforms in order not to apply the original model space joint transform
+// twice. The vertices of a mesh in Tpose are defined in relation to the model space transform of one or more joints.
+// So in a sense the vertices in Tpose have already been transformed by these model space joint transforms.
+// In order to calculate the new position, orientation, scale of a vertex we need to apply a delta to it
+// So we take runtime model space joint transform and multiply it by the inverse bind transform.
 struct mesh
 {
 	string Name;
@@ -91,6 +101,7 @@ struct model
 {
 	string Name;
 
+	u32 Version;
 	u32 MeshCount;
 	mesh *Meshes;
 
@@ -107,7 +118,19 @@ struct model
 
 	// TODO(Justin): Mesh contains material index into array of textures
 	u32 MaterialCount;
-	texture *Materials;
+	//texture Materials[32];
+	texture *Materials[32];
+
+	//
+	// TEST NEW SKELETON
+	//
+	// Skeleton 
+	u32 JointCount;
+	joint *Joints;
+	mat4 BindTransform;
+	mat4 *InvBindTransforms;
+	mat4 *JointTransforms;
+	mat4 *ModelSpaceTransforms;
 };
 
 #define MESH_H

@@ -68,8 +68,84 @@ IsNumber(u8 *S)
 	return(Result);
 }
 
+inline s32
+S32FromASCII(char *S)
+{
+	s32 Result = atoi(S);
+	return(Result);
+}
+
+inline s32
+S32FromASCII(u8 *S)
+{
+	s32 Result = S32FromASCII((char *)S);
+	return(Result);
+}
+
+inline u32
+U32FromASCII(char *S)
+{
+	u32 Result = (u32)atoi(S);
+	return(Result);
+}
+
+inline u32
+U32FromASCII(u8 *S)
+{
+	u32 Result = (u32)atoi((char *)S);
+	return(Result);
+}
+
+inline u32
+U32FromASCII(string S)
+{
+	u32 Result = U32FromASCII(S.Data);
+	return(Result);
+}
+
+inline f32
+F32FromASCII(char *S)
+{
+	f32 Result = (f32)atof(S);
+	return(Result);
+}
+
+inline f32
+F32FromASCII(u8 *S)
+{
+	f32 Result = (f32)atof((char *)S);
+	return(Result);
+}
+
+inline f32
+F32FromASCII(string S)
+{
+	f32 Result = F32FromASCII(S.Data);
+	return(Result);
+}
+
+inline void 
+F32ToString(char *Dest, char *Format, f32 F32)
+{
+	sprintf(Dest, Format, F32);
+}
+
+
+//
+// NOTE(Justin): Simple text file format routines
+//
+
 inline void
 EatSpaces(u8 **Buff)
+{
+	while(**Buff == ' ')
+	{
+		(*Buff)++;
+	}
+}
+
+inline void
+EatSpaces(char **Buff)
 {
 	while(**Buff == ' ')
 	{
@@ -86,15 +162,8 @@ EatUntilSpace(u8 **Buff)
 	}
 }
 
-inline void
-EatSpaces(char **Buff)
-{
-	while(**Buff == ' ')
-	{
-		(*Buff)++;
-	}
-}
-
+// TODO(Justin): This is dangerous as if the arguements get passed in the incorrect order
+// then bad things can happen... Also there is no size checking on the buffer
 inline void
 BufferNextWord(u8 **C, u8 *Buff)
 {
@@ -121,9 +190,8 @@ BufferNumber(u8 **C, u8 *Buff)
 	Buff[Index] = 0;
 }
 
-// TODO(Justin): This is dangerous as if the arguements get passed in the incorrect order
-// then bad things can happen... Also there is no size checking on the buffer
-internal void
+
+inline void
 BufferLine(u8 **Content, u8 *Buffer)
 {
 	u32 At = 0;
@@ -135,7 +203,7 @@ BufferLine(u8 **Content, u8 *Buffer)
 	Buffer[At] = '\0';
 }
 
-internal void
+inline void
 AdvanceLine(u8 **Content)
 {
 	while(IsNewLine(**Content))
@@ -144,9 +212,81 @@ AdvanceLine(u8 **Content)
 	}
 }
 
+inline void
+ParseUnsignedInt(u8 **AddressOfLinePtr, u8 *Buffer, u32 *Dest)
+{
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	*Dest = U32FromASCII(Buffer); 
+}
 
+inline void
+ParseInt(u8 **AddressOfLinePtr, u8 *Buffer, s32 *Dest)
+{
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	*Dest = S32FromASCII(Buffer); 
+}
 
-internal string
+inline void
+ParseFloat(u8 **AddressOfLinePtr, u8 *Buffer, f32 *Dest)
+{
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	*Dest = F32FromASCII(Buffer); 
+}
+
+inline void
+ParseV2(u8 **AddressOfLinePtr, u8 *Buffer, v2 *Dest)
+{
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	Dest->x = F32FromASCII(Buffer);
+
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	Dest->y = F32FromASCII(Buffer);
+}
+
+inline void
+ParseV3(u8 **AddressOfLinePtr, u8 *Buffer, v3 *Dest)
+{
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	Dest->x = F32FromASCII(Buffer);
+
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	Dest->y = F32FromASCII(Buffer);
+
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	Dest->z = F32FromASCII(Buffer);
+}
+
+inline void
+ParseQuaternion(u8 **AddressOfLinePtr, u8 *Buffer, quaternion *Dest)
+{
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	f32 X = F32FromASCII(Buffer);
+
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	f32 Y = F32FromASCII(Buffer);
+
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	f32 Z = F32FromASCII(Buffer);
+
+	EatSpaces(AddressOfLinePtr);
+	BufferNextWord(AddressOfLinePtr, Buffer);
+	f32 Angle = F32FromASCII(Buffer);
+
+	*Dest = Quaternion(V3(X, Y , Z), DegreeToRad(Angle));
+}
+
+inline string
 StringFromRange(u8 *First, u8 *Last)
 {
 	string Result = {First, (u64)(Last - First)};
@@ -296,69 +436,6 @@ StringSearchFor(string S, char C)
 
 	return(Result);
 
-}
-
-inline s32
-S32FromASCII(char *S)
-{
-	s32 Result = atoi(S);
-	return(Result);
-}
-
-inline s32
-S32FromASCII(u8 *S)
-{
-	s32 Result = S32FromASCII((char *)S);
-	return(Result);
-}
-
-inline u32
-U32FromASCII(char *S)
-{
-	u32 Result = (u32)atoi(S);
-	return(Result);
-}
-
-
-inline u32
-U32FromASCII(u8 *S)
-{
-	u32 Result = (u32)atoi((char *)S);
-	return(Result);
-}
-
-inline u32
-U32FromASCII(string S)
-{
-	u32 Result = U32FromASCII(S.Data);
-	return(Result);
-}
-
-inline f32
-F32FromASCII(char *S)
-{
-	f32 Result = (f32)atof(S);
-	return(Result);
-}
-
-inline f32
-F32FromASCII(u8 *S)
-{
-	f32 Result = (f32)atof((char *)S);
-	return(Result);
-}
-
-inline f32
-F32FromASCII(string S)
-{
-	f32 Result = F32FromASCII(S.Data);
-	return(Result);
-}
-
-inline void 
-F32ToString(char *Dest, char *Format, f32 F32)
-{
-	sprintf(Dest, Format, F32);
 }
 
 internal string

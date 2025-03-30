@@ -74,9 +74,10 @@ struct mat3
 	f32 E[3][3];
 };
 
-struct mat4
+union mat4
 {
 	f32 E[4][4];
+	f32 I[16];
 };
 
 struct basis
@@ -1105,9 +1106,6 @@ Mat4OrthographicProjection(f32 Left, f32 Right, f32 Bottom, f32 Top, f32 Near, f
 	return(Result);
 }
 
-
-
-
 inline affine_decomposition
 Mat4AffineDecomposition(mat4 M)
 {
@@ -1128,6 +1126,59 @@ Mat4AffineDecomposition(mat4 M)
 	Result.R = Mat4(Normalize(X), Normalize(Y), Normalize(Z), V3(0.0f, 0.0f, 0.0f));
 
 	return(Result);
+}
+
+inline b32 
+Inverse(mat4 M, mat4 *Result)
+{
+	f32 Inv[16], Det;
+
+	    Inv[0] =   M.I[5]*M.I[10]*M.I[15] - M.I[5]*M.I[11]*M.I[14] - M.I[9]*M.I[6]*M.I[15]
+        + M.I[9]*M.I[7]*M.I[14] + M.I[13]*M.I[6]*M.I[11] - M.I[13]*M.I[7]*M.I[10];
+    Inv[4] =  -M.I[4]*M.I[10]*M.I[15] + M.I[4]*M.I[11]*M.I[14] + M.I[8]*M.I[6]*M.I[15]
+        - M.I[8]*M.I[7]*M.I[14] - M.I[12]*M.I[6]*M.I[11] + M.I[12]*M.I[7]*M.I[10];
+    Inv[8] =   M.I[4]*M.I[9]*M.I[15] - M.I[4]*M.I[11]*M.I[13] - M.I[8]*M.I[5]*M.I[15]
+        + M.I[8]*M.I[7]*M.I[13] + M.I[12]*M.I[5]*M.I[11] - M.I[12]*M.I[7]*M.I[9];
+    Inv[12] = -M.I[4]*M.I[9]*M.I[14] + M.I[4]*M.I[10]*M.I[13] + M.I[8]*M.I[5]*M.I[14]
+        - M.I[8]*M.I[6]*M.I[13] - M.I[12]*M.I[5]*M.I[10] + M.I[12]*M.I[6]*M.I[9];
+    Inv[1] =  -M.I[1]*M.I[10]*M.I[15] + M.I[1]*M.I[11]*M.I[14] + M.I[9]*M.I[2]*M.I[15]
+        - M.I[9]*M.I[3]*M.I[14] - M.I[13]*M.I[2]*M.I[11] + M.I[13]*M.I[3]*M.I[10];
+    Inv[5] =   M.I[0]*M.I[10]*M.I[15] - M.I[0]*M.I[11]*M.I[14] - M.I[8]*M.I[2]*M.I[15]
+        + M.I[8]*M.I[3]*M.I[14] + M.I[12]*M.I[2]*M.I[11] - M.I[12]*M.I[3]*M.I[10];
+    Inv[9] =  -M.I[0]*M.I[9]*M.I[15] + M.I[0]*M.I[11]*M.I[13] + M.I[8]*M.I[1]*M.I[15]
+        - M.I[8]*M.I[3]*M.I[13] - M.I[12]*M.I[1]*M.I[11] + M.I[12]*M.I[3]*M.I[9];
+    Inv[13] =  M.I[0]*M.I[9]*M.I[14] - M.I[0]*M.I[10]*M.I[13] - M.I[8]*M.I[1]*M.I[14]
+        + M.I[8]*M.I[2]*M.I[13] + M.I[12]*M.I[1]*M.I[10] - M.I[12]*M.I[2]*M.I[9];
+    Inv[2] =   M.I[1]*M.I[6]*M.I[15] - M.I[1]*M.I[7]*M.I[14] - M.I[5]*M.I[2]*M.I[15]
+        + M.I[5]*M.I[3]*M.I[14] + M.I[13]*M.I[2]*M.I[7] - M.I[13]*M.I[3]*M.I[6];
+    Inv[6] =  -M.I[0]*M.I[6]*M.I[15] + M.I[0]*M.I[7]*M.I[14] + M.I[4]*M.I[2]*M.I[15]
+        - M.I[4]*M.I[3]*M.I[14] - M.I[12]*M.I[2]*M.I[7] + M.I[12]*M.I[3]*M.I[6];
+    Inv[10] =  M.I[0]*M.I[5]*M.I[15] - M.I[0]*M.I[7]*M.I[13] - M.I[4]*M.I[1]*M.I[15]
+        + M.I[4]*M.I[3]*M.I[13] + M.I[12]*M.I[1]*M.I[7] - M.I[12]*M.I[3]*M.I[5];
+    Inv[14] = -M.I[0]*M.I[5]*M.I[14] + M.I[0]*M.I[6]*M.I[13] + M.I[4]*M.I[1]*M.I[14]
+        - M.I[4]*M.I[2]*M.I[13] - M.I[12]*M.I[1]*M.I[6] + M.I[12]*M.I[2]*M.I[5];
+    Inv[3] =  -M.I[1]*M.I[6]*M.I[11] + M.I[1]*M.I[7]*M.I[10] + M.I[5]*M.I[2]*M.I[11]
+        - M.I[5]*M.I[3]*M.I[10] - M.I[9]*M.I[2]*M.I[7] + M.I[9]*M.I[3]*M.I[6];
+    Inv[7] =   M.I[0]*M.I[6]*M.I[11] - M.I[0]*M.I[7]*M.I[10] - M.I[4]*M.I[2]*M.I[11]
+        + M.I[4]*M.I[3]*M.I[10] + M.I[8]*M.I[2]*M.I[7] - M.I[8]*M.I[3]*M.I[6];
+    Inv[11] = -M.I[0]*M.I[5]*M.I[11] + M.I[0]*M.I[7]*M.I[9] + M.I[4]*M.I[1]*M.I[11]
+        - M.I[4]*M.I[3]*M.I[9] - M.I[8]*M.I[1]*M.I[7] + M.I[8]*M.I[3]*M.I[5];
+    Inv[15] =  M.I[0]*M.I[5]*M.I[10] - M.I[0]*M.I[6]*M.I[9] - M.I[4]*M.I[1]*M.I[10]
+        + M.I[4]*M.I[2]*M.I[9] + M.I[8]*M.I[1]*M.I[6] - M.I[8]*M.I[2]*M.I[5];
+    
+    Det = M.I[0]*Inv[0] + M.I[1]*Inv[4] + M.I[2]*Inv[8] + M.I[3]*Inv[12];
+    if (Det == 0)
+	{
+        return(false);
+	}
+    
+    Det = 1.0f / Det;
+    for(s32 i = 0; i < 16; i++)
+	{
+		Result->I[i] = Inv[i] * Det;
+	}
+    
+    return(true);
 }
 
 inline quaternion
@@ -1617,6 +1668,25 @@ InAABB(aabb AABB, v3 P)
 	return(Result);
 }
 
+inline aabb
+AABBUnion(aabb A, aabb B)
+{
+	aabb Result = {};
+
+	f32 MinX = Min(A.Min.x, B.Min.x);
+	f32 MinY = Min(A.Min.y, B.Min.y);
+	f32 MinZ = Min(A.Min.z, B.Min.z);
+
+	f32 MaxX = Max(A.Max.x, B.Max.x);
+	f32 MaxY = Max(A.Max.y, B.Max.y);
+	f32 MaxZ = Max(A.Max.z, B.Max.z);
+
+	Result.Min = V3(MinX, MinY, MinZ);
+	Result.Max = V3(MaxX, MaxY, MaxZ);
+
+	return(Result);
+}
+
 inline capsule
 CapsuleMinMaxRadius(v3 Min, v3 Max, f32 Radius)
 {
@@ -1652,7 +1722,6 @@ OBBCenterDimOrientation(v3 Center, v3 Dim, quaternion Q)
 
 	return(Result);
 }
-
 
 inline b32
 InOBB(obb OBB, v3 P)

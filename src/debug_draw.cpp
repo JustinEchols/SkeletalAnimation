@@ -129,9 +129,9 @@ DebugDrawAxes(entity *Entity)
 	mat4 R = QuaternionToMat4(Entity->Orientation);
 	mat4 S = Mat4Scale(0.5f);
 
-	model *ZArrow = LookupModel(Ui.Assets, "Arrow").Model;
-	model *XArrow = LookupModel(Ui.Assets, "XArrow").Model;
-	model *YArrow = LookupModel(Ui.Assets, "YArrow").Model;
+	model *ZArrow = FindModel(Ui.Assets, "Arrow").Model;
+	model *XArrow = FindModel(Ui.Assets, "XArrow").Model;
+	model *YArrow = FindModel(Ui.Assets, "YArrow").Model;
 
 	obb OBB = Entity->MovementColliders.Volumes[0].OBB;
 	v3 Offset = Entity->MovementColliders.Volumes[0].Offset;
@@ -148,6 +148,15 @@ DebugDrawAxes(entity *Entity)
 #endif
 
 internal void
+DebugDrawAABB(render_buffer *RenderBuffer, model *DebugCube, v3 P, v3 Offset, v3 Dim, v3 Color)
+{
+	mat4 T = Mat4Translate(P + Offset);
+	mat4 R = Mat4Identity();
+	mat4 S = Mat4Scale(Dim);
+	PushDebugVolume(RenderBuffer, DebugCube, T*R*S, Color);
+}
+
+internal void
 DebugDrawOBB(render_buffer *RenderBuffer, model *DebugCube, obb OBB, v3 P, v3 Offset, v3 Color)
 {
 	mat4 T = Mat4Translate(P + Offset);
@@ -155,6 +164,8 @@ DebugDrawOBB(render_buffer *RenderBuffer, model *DebugCube, obb OBB, v3 P, v3 Of
 	mat4 S = Mat4Scale(OBB.Dim);
 	PushDebugVolume(RenderBuffer, DebugCube, T*R*S, Color);
 }
+
+
 
 internal void
 DebugDrawCapsule(v3 P, v3 Offset, mat4 R, mat4 S, capsule Capsule)
@@ -183,7 +194,7 @@ DebugDrawGroundArrow(entity *Entity, quad Quad)
 	mat4 R = QuaternionToMat4(Entity->Orientation);
 	mat4 S = Mat4Scale(V3(0.5f));
 
-	asset_entry Entry = LookupTexture(Ui.Assets, "left_arrow");
+	asset_entry Entry = FindTexture(Ui.Assets, "left_arrow");
 	PushTexture(Ui.RenderBuffer, Entry.Texture, Entry.Index);
 	PushQuad3D(Ui.RenderBuffer, Quad.Vertices, T*R*S, Entry.Index);
 }
@@ -426,10 +437,8 @@ DebugRenderToTexture(game_state *GameState)
 	render_buffer *RenderToTextureBuffer = RenderBufferAllocate(Ui.TempArena, Megabyte(64),
 			GameState->CameraTransform,
 			Persp,
-			Mat4Identity(),
 			Ui.Assets,
 			GameState->Camera.P,
-			V3(0.0f),
 			2);
 
 
@@ -462,7 +471,7 @@ DebugRenderToTexture(game_state *GameState)
 internal void
 DebugDrawTexture(char *TextureName, f32 Width = 128.0f, f32 Height = 128.0f)
 {
-	asset_entry Entry = LookupTexture(Ui.Assets, TextureName);
+	asset_entry Entry = FindTexture(Ui.Assets, TextureName);
 	if(!Entry.Texture)
 	{
 		return;

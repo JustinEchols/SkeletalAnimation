@@ -109,12 +109,13 @@ struct asset_manager
 
 	model Cube;
 	model Sphere;
+	model TestModel;
 };
 
-internal asset_entry LookupTexture(asset_manager *AssetManager, char *TextureName);
-internal asset_entry LookupModel(asset_manager *AssetManager, char *ModelName);
-internal asset_entry LookupSampledAnimation(asset_manager *AssetManager, char *AnimationName);
-internal asset_entry LookupGraph(asset_manager *AssetManager, char *AnimationGraphName);
+internal asset_entry FindTexture(asset_manager *AssetManager, char *TextureName);
+internal asset_entry FindModel(asset_manager *AssetManager, char *ModelName);
+internal asset_entry FindAnimation(asset_manager *AssetManager, char *AnimationName);
+internal asset_entry FindGraph(asset_manager *AssetManager, char *AnimationGraphName);
 
 #define ASSET_H
 #endif

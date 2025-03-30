@@ -31,17 +31,17 @@ struct animation_id
 	u32 Value;
 };
 
-enum animation_flags
+enum animation_flag
 {
-	AnimationFlags_Playing = (1 << 1),
-	AnimationFlags_Finished = (1 << 2), // Non-looping animation finished
-	AnimationFlags_Looping = (1 << 3),
-	AnimationFlags_RemoveLocomotion = (1 << 4),
-	AnimationFlags_JointMask = (1 << 5),
-	AnimationFlags_ControlsPosition = (1 << 6),
-	AnimationFlags_ControlsTurning = (1 << 7),
-	AnimationFlags_CompletedCycle = (1 << 8), // Notifies animation player that animation controlling movement has completed a single playback
-	AnimationFlags_IgnoreYMotion = (1 << 9),
+	AnimationFlag_Playing = (1 << 1),
+	AnimationFlag_Finished = (1 << 2), // Non-looping animation finished
+	AnimationFlag_Looping = (1 << 3),
+	AnimationFlag_RemoveLocomotion = (1 << 4),
+	AnimationFlag_JointMask = (1 << 5),
+	AnimationFlag_ControlsPosition = (1 << 6),
+	AnimationFlag_ControlsTurning = (1 << 7),
+	AnimationFlag_CompletedCycle = (1 << 8), // Notifies animation player that animation controlling movement has completed a single playback
+	AnimationFlag_IgnoreYMotion = (1 << 9),
 };
 
 // NOTE(Justin): Animation channel 
@@ -135,13 +135,15 @@ struct animation_graph_node
 
 struct animation_graph
 {
-	string Path;
-	string Name;
 	memory_arena Arena;
 	u32 NodeCount;
 	u32 Index;
 	animation_graph_node CurrentNode;
 	animation_graph_node Nodes[64];
+
+	// Members needed for hot reloading
+	string Path;
+	string Name;
 };
 
 #define ANIMATION_H

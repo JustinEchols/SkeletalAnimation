@@ -7,4 +7,5 @@ fov 45.0
 z_near 0.2
 z_far 200.0
 gravity 80.0
-texture_dim 256 256
+texture_width 256
+texture_height 256
