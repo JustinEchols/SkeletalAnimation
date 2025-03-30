@@ -392,96 +392,49 @@ OpenGLDrawModel(render_buffer *RenderBuffer, model *Model, u32 ShaderProgram)
 	UniformBoolSet(ShaderProgram, "OverRideTexture", false);
 	UniformBoolSet(ShaderProgram, "UsingDiffuse", false);
 	UniformBoolSet(ShaderProgram, "UsingSpecular", false);
+	Assert(Model->Version == 2);
 
-	if(Model->Version != 2)
+	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 	{
-		for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
+		mesh *Mesh = Model->Meshes + MeshIndex;
+
+		if(Mesh->Flags & MeshFlag_DontDraw) continue;
+
+		if(!(Mesh->MaterialFlags & MaterialFlag_Diffuse))
 		{
-			mesh *Mesh = Model->Meshes + MeshIndex;
-
-			if(Mesh->Flags & MeshFlag_DontDraw) continue;
-
-			if(!(Mesh->MaterialFlags & MaterialFlag_Diffuse))
-			{
-				UniformBoolSet(ShaderProgram, "OverRideTexture", true);
-				UniformV4Set(ShaderProgram, "Diffuse", Mesh->MaterialSpec.Diffuse);
-				UniformV4Set(ShaderProgram, "Specular", Mesh->MaterialSpec.Specular);
-				UniformF32Set(ShaderProgram, "Shininess", Mesh->MaterialSpec.Shininess);
-			}
-
-			if(Mesh->MaterialFlags & MaterialFlag_Diffuse)
-			{
-				OpenGL.glActiveTexture(GL_TEXTURE1);
-				UniformBoolSet(ShaderProgram, "UsingDiffuse", true);
-				UniformBoolSet(ShaderProgram, "DiffuseTexture", 1);
-				glBindTexture(GL_TEXTURE_2D, RenderBuffer->Textures[Mesh->DiffuseTexture]->Handle);
-			}
-
-			if(Mesh->MaterialFlags & MaterialFlag_Specular)
-			{
-				OpenGL.glActiveTexture(GL_TEXTURE2);
-				UniformBoolSet(ShaderProgram, "UsingSpecular", true);
-				UniformBoolSet(ShaderProgram, "SpecularTexture", 2);
-				glBindTexture(GL_TEXTURE_2D, RenderBuffer->Textures[Mesh->SpecularTexture]->Handle);
-			}
-
-			if(Model->HasSkeleton)
-			{
-				UniformBoolSet(ShaderProgram, "UsingRig", true);
-				UniformMatrixArraySet(ShaderProgram, "Transforms", Mesh->ModelSpaceTransforms, Mesh->JointCount);
-			}
-
-			OpenGL.glBindVertexArray(Mesh->VA);
-			glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
-			//glDrawElements(GL_LINES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
-			OpenGL.glBindVertexArray(0);
-		}
-	}
-	else
-	{
-		for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
-		{
-			mesh *Mesh = Model->Meshes + MeshIndex;
-
-			if(Mesh->Flags & MeshFlag_DontDraw) continue;
-
-			if(!(Mesh->MaterialFlags & MaterialFlag_Diffuse))
-			{
-				UniformBoolSet(ShaderProgram, "OverRideTexture", true);
-				UniformV4Set(ShaderProgram, "Diffuse", Mesh->MaterialSpec.Diffuse);
-				UniformV4Set(ShaderProgram, "Specular", Mesh->MaterialSpec.Specular);
-				UniformF32Set(ShaderProgram, "Shininess", Mesh->MaterialSpec.Shininess);
-			}
-
-			if(Mesh->MaterialFlags & MaterialFlag_Diffuse)
-			{
-				OpenGL.glActiveTexture(GL_TEXTURE1);
-				UniformBoolSet(ShaderProgram, "UsingDiffuse", true);
-				UniformBoolSet(ShaderProgram, "DiffuseTexture", 1);
-				glBindTexture(GL_TEXTURE_2D, RenderBuffer->Textures[Mesh->DiffuseTexture]->Handle);
-			}
-
-			if(Mesh->MaterialFlags & MaterialFlag_Specular)
-			{
-				OpenGL.glActiveTexture(GL_TEXTURE2);
-				UniformBoolSet(ShaderProgram, "UsingSpecular", true);
-				UniformBoolSet(ShaderProgram, "SpecularTexture", 2);
-				glBindTexture(GL_TEXTURE_2D, RenderBuffer->Textures[Mesh->SpecularTexture]->Handle);
-			}
-
-			if(Model->HasSkeleton)
-			{
-				UniformBoolSet(ShaderProgram, "UsingRig", true);
-				UniformMatrixArraySet(ShaderProgram, "Transforms", Model->ModelSpaceTransforms, Model->JointCount);
-			}
-
-			OpenGL.glBindVertexArray(Mesh->VA);
-			glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
-			//glDrawElements(GL_LINES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
-			OpenGL.glBindVertexArray(0);
+			UniformBoolSet(ShaderProgram, "OverRideTexture", true);
+			UniformV4Set(ShaderProgram, "Diffuse", Mesh->MaterialSpec.Diffuse);
+			UniformV4Set(ShaderProgram, "Specular", Mesh->MaterialSpec.Specular);
+			UniformF32Set(ShaderProgram, "Shininess", Mesh->MaterialSpec.Shininess);
 		}
 
+		if(Mesh->MaterialFlags & MaterialFlag_Diffuse)
+		{
+			OpenGL.glActiveTexture(GL_TEXTURE1);
+			UniformBoolSet(ShaderProgram, "UsingDiffuse", true);
+			UniformBoolSet(ShaderProgram, "DiffuseTexture", 1);
+			glBindTexture(GL_TEXTURE_2D, RenderBuffer->Textures[Mesh->DiffuseTexture]->Handle);
+		}
+
+		if(Mesh->MaterialFlags & MaterialFlag_Specular)
+		{
+			OpenGL.glActiveTexture(GL_TEXTURE2);
+			UniformBoolSet(ShaderProgram, "UsingSpecular", true);
+			UniformBoolSet(ShaderProgram, "SpecularTexture", 2);
+			glBindTexture(GL_TEXTURE_2D, RenderBuffer->Textures[Mesh->SpecularTexture]->Handle);
+		}
+
+		if(Model->HasSkeleton)
+		{
+			UniformBoolSet(ShaderProgram, "UsingRig", true);
+			UniformMatrixArraySet(ShaderProgram, "Transforms", Model->ModelSpaceTransforms, Model->JointCount);
+		}
+
+		OpenGL.glBindVertexArray(Mesh->VA);
+		glDrawElements(GL_TRIANGLES, Mesh->IndicesCount, GL_UNSIGNED_INT, 0);
+		OpenGL.glBindVertexArray(0);
 	}
+
 }
 
 internal void

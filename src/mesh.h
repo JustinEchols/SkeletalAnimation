@@ -73,6 +73,7 @@ struct mesh
 	u32 VertexCount;
 	vertex *Vertices;
 
+	// TODO(Justin): Remove this from the mesh! It is now at the model level.
 	// Skeleton 
 	u32 JointCount;
 	joint *Joints;

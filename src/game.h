@@ -109,29 +109,6 @@ struct attack
 	f32 Power;
 };
 
-#if 0
-enum entity_member_variable_type
-{
-	entity_member_variable_type_none,
-	entity_member_variable_type_u32,
-	entity_member_variable_type_f32,
-	entity_member_variable_type_v3,
-	entity_member_variable_type_quaternion,
-	entity_member_variable_type_struct,
-	entity_member_variable_type_enum,
-};
-
-struct entity_member_data
-{
-	entity_member_variable_type Type;
-	b32 Initialize;
-	memory_index Size;
-	umm Offset;
-	umm ArrayOffset;
-	//u32 EnumValue;
-};
-#endif
-
 enum entity_type
 {
 	EntityType_Null,
@@ -324,8 +301,6 @@ struct game_state
 	u32 CharacterIDs[6];
 	u32 PlayerIDForController[ArrayCount(((game_input *)0)->Controllers)];
 
-	// TODO(Justin): Move this out of the game state!
-	asset_manager AssetManager;
 	texture Texture;
 
 	audio_state AudioState;
@@ -335,6 +310,7 @@ struct temp_state
 {
 	b32 IsInitialized;
 	memory_arena Arena;
+	asset_manager AssetManager;
 };
 
 global_variable platform_api Platform;

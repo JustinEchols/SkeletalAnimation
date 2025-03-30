@@ -40,7 +40,7 @@ enum animation_flag
 	AnimationFlag_JointMask = (1 << 5),
 	AnimationFlag_ControlsPosition = (1 << 6),
 	AnimationFlag_ControlsTurning = (1 << 7),
-	AnimationFlag_CompletedCycle = (1 << 8), // Notifies animation player that animation controlling movement has completed a single playback
+	AnimationFlag_CompletedCycle = (1 << 8),
 	AnimationFlag_IgnoreYMotion = (1 << 9),
 };
 

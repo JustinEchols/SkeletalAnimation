@@ -84,7 +84,7 @@ PlayerAdd(game_state *GameState, v3 P, f32 Height, f32 Radius)
 }
 
 internal entity * 
-XBotAdd(game_state *GameState, v3 P)
+XBotAdd(game_state *GameState, asset_manager *AssetManager, v3 P)
 {
 	entity *Player = PlayerAdd(GameState, P, 1.8f, 0.4f);
 	Player->Acceleration = 50.0f;
@@ -92,9 +92,9 @@ XBotAdd(game_state *GameState, v3 P)
 	Player->AngularSpeed = 15.0f;
 	Player->VisualScale = V3(0.01f);
 
-	model *Model		= FindModel(&GameState->AssetManager, "XBot").Model;
-	animation_graph *G  = FindGraph(&GameState->AssetManager, "XBot_AnimationGraph").Graph;
-	asset_entry Entry	= FindAnimation(&GameState->AssetManager, "XBot_IdleLeft");
+	model *Model		= FindModel(AssetManager, "XBot").Model;
+	animation_graph *G  = FindGraph(AssetManager, "XBot_AnimationGraph").Graph;
+	asset_entry Entry	= FindAnimation(AssetManager, "XBot_IdleLeft");
 
 	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
 	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
@@ -107,7 +107,7 @@ XBotAdd(game_state *GameState, v3 P)
 }
 
 internal entity *
-YBotAdd(game_state *GameState, v3 P)
+YBotAdd(game_state *GameState, asset_manager *AssetManager, v3 P)
 {
 	entity *Player = PlayerAdd(GameState, P, 1.8f, 0.4f);
 	Player->Acceleration = 50.0f;
@@ -132,9 +132,9 @@ YBotAdd(game_state *GameState, v3 P)
 	Player->Attacks[AttackType_Neutral2].Duration = 0.3f;
 	Player->Attacks[AttackType_Neutral2].Power = 0.07f;
 
-	model *Model = FindModel(&GameState->AssetManager, "YBot").Model;
-	animation_graph *G  = FindGraph(&GameState->AssetManager, "YBot_AnimationGraph").Graph;
-	asset_entry Entry = FindAnimation(&GameState->AssetManager, "YBot_FightIdleLeft");
+	model *Model = FindModel(AssetManager, "YBot").Model;
+	animation_graph *G  = FindGraph(AssetManager, "YBot_AnimationGraph").Graph;
+	asset_entry Entry = FindAnimation(AssetManager, "YBot_FightIdleLeft");
 
 	Assert(Model);
 	Assert(G);
@@ -151,7 +151,7 @@ YBotAdd(game_state *GameState, v3 P)
 }
 
 internal entity * 
-KnightAdd(game_state *GameState, v3 P)
+KnightAdd(game_state *GameState, asset_manager *AssetManager, v3 P)
 {
 	entity *Player = PlayerAdd(GameState, P, 1.8f, 0.4f);
 	Player->Acceleration = 50.0f;
@@ -188,9 +188,9 @@ KnightAdd(game_state *GameState, v3 P)
 	Player->Attacks[AttackType_Sprint].Duration = 0.7f;
 	Player->Attacks[AttackType_Sprint].Power = 12.0f;
 
-	model *Model = FindModel(&GameState->AssetManager, "PaladinWithProp").Model;
-	animation_graph *G  = FindGraph(&GameState->AssetManager, "Paladin_AnimationGraph").Graph;
-	asset_entry Entry = FindAnimation(&GameState->AssetManager, "Paladin_SwordAndShieldIdle_00");
+	model *Model = FindModel(AssetManager, "PaladinWithProp").Model;
+	animation_graph *G  = FindGraph(AssetManager, "Paladin_AnimationGraph").Graph;
+	asset_entry Entry = FindAnimation(AssetManager, "Paladin_SwordAndShieldIdle_00");
 
 	Assert(Model);
 	Assert(G);
@@ -207,7 +207,7 @@ KnightAdd(game_state *GameState, v3 P)
 }
 
 internal entity * 
-BruteAdd(game_state *GameState, v3 P)
+BruteAdd(game_state *GameState, asset_manager *AssetManager, v3 P)
 {
 	entity *Player = PlayerAdd(GameState, P, 2.3f, 0.5f);
 	Player->Acceleration = 40.0f;
@@ -215,9 +215,9 @@ BruteAdd(game_state *GameState, v3 P)
 	Player->AngularSpeed = 10.0f;
 	Player->VisualScale = V3(0.01f);
 
-	model *Model = FindModel(&GameState->AssetManager, "Brute").Model;
-	animation_graph *G  = FindGraph(&GameState->AssetManager, "Brute_AnimationGraph").Graph;
-	asset_entry Entry = FindAnimation(&GameState->AssetManager, "Brute_Idle");
+	model *Model = FindModel(AssetManager, "Brute").Model;
+	animation_graph *G  = FindGraph(AssetManager, "Brute_AnimationGraph").Graph;
+	asset_entry Entry = FindAnimation(AssetManager, "Brute_Idle");
 
 	Assert(Model);
 	Assert(G);
@@ -575,6 +575,7 @@ EntityMove(game_state *GameState, entity *Entity, v3 ddP, f32 dt)
 		GroundP += tGround * GroundDelta;
 
 		Assert(EntityBelow);
+
 		if(Collided)
 		{
 			Entity->dP = Entity->dP - Dot(Normal, Entity->dP) * Normal;
@@ -676,6 +677,60 @@ GameStateVariableData(u8 *VariableName)
 	return(Result);
 }
 
+//
+// NOTE(Justin): Text file handler experiment..
+//
+
+struct text_file_handler
+{
+	u8 *FileContent;
+
+	u8 LineBuffer_[4096];
+	u8 *LineBuffer;
+	u8 *Line;
+
+	u8 Word_[4096];
+	u8 *Word;
+};
+
+inline text_file_handler
+TextFileHandlerInitialize(void *FileContent)
+{
+	text_file_handler Result = {};
+
+	Result.FileContent = (u8 *)FileContent;
+	MemoryZero(Result.LineBuffer_, sizeof(Result.LineBuffer_));
+	MemoryZero(Result.Word_, sizeof(Result.Word_));
+
+	Result.LineBuffer = &Result.LineBuffer_[0];
+	Result.Word = &Result.Word_[0];
+
+	return(Result);
+}
+
+inline b32
+IsValid(text_file_handler *Handler)
+{
+	b32 Result = (*Handler->FileContent != 0);
+	return(Result);
+}
+
+inline void
+BufferAndAdvanceALine(text_file_handler *Handler)
+{
+	BufferLine(&Handler->FileContent, Handler->LineBuffer);
+	Handler->Line = Handler->LineBuffer;
+	BufferNextWord(&Handler->Line, Handler->Word);
+	AdvanceLine(&Handler->FileContent);
+}
+
+inline void
+BufferAndAdvanceAWord(text_file_handler *Handler)
+{
+	EatSpaces(&Handler->Line);
+	BufferNextWord(&Handler->Line, Handler->Word);
+}
+
 internal void
 GameStateVariablesLoad(game_state *GameState, char *FileName)
 {
@@ -685,45 +740,32 @@ GameStateVariablesLoad(game_state *GameState, char *FileName)
 		Assert(0);
 	}
 
-	u8 *Content = (u8 *)File.Content;
-
-	u8 LineBuffer_[4096];
-	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
-	u8 *LineBuffer = &LineBuffer_[0];
-
-	u8 Word_[4096];
-	MemoryZero(Word_, sizeof(Word_));
-	u8 *Word = &Word_[0];
-
-	while(*Content)
+	text_file_handler Handler = TextFileHandlerInitialize(File.Content);
+	while(IsValid(&Handler))
 	{
-		BufferLine(&Content, LineBuffer);
-		u8 *Line = LineBuffer;
-		BufferNextWord(&Line, Word);
+		BufferAndAdvanceALine(&Handler);
 
-		game_variable_data VariableData = GameStateVariableData(Word);
+		game_variable_data VariableData = GameStateVariableData(Handler.Word);
 		u8 *VariablePtr = (u8 *)GameState + VariableData.Offset;
 		switch(VariableData.Type)
 		{
 			case game_state_variable_type_u32:
 			{
-				ParseUnsignedInt(&Line, Word, (u32 *)VariablePtr);
+				ParseUnsignedInt(&Handler.Line, Handler.Word, (u32 *)VariablePtr);
 			} break;
 			case game_state_variable_type_s32:
 			{
-				ParseInt(&Line, Word, (s32 *)VariablePtr);
+				ParseInt(&Handler.Line, Handler.Word, (s32 *)VariablePtr);
 			} break;
 			case game_state_variable_type_f32:
 			{
-				ParseFloat(&Line, Word, (f32 *)VariablePtr);
+				ParseFloat(&Handler.Line, Handler.Word, (f32 *)VariablePtr);
 			} break;
 			case game_state_variable_type_v3:
 			{
-				ParseV3(&Line, Word, (v3 *)VariablePtr);
+				ParseV3(&Handler.Line, Handler.Word, (v3 *)VariablePtr);
 			} break;
 		}
-
-		AdvanceLine(&Content);
 	}
 
 	GameState->Quad = QuadDefault();
@@ -732,19 +774,16 @@ GameStateVariablesLoad(game_state *GameState, char *FileName)
 }
 
 // TODO(Justin): Parse entity by type?
-#if 1
 internal void
 LevelLoad(game_state *GameState, char *FileName)
 {
 	debug_file File = Platform.DebugFileReadEntire(FileName);
-	//debug_file PlayerFile = Platform.DebugFileReadEntire("../src/players.variables");
-	if(File.Size == 0)//k || PlayerFile.Size == 0)
+	if(File.Size == 0)
 	{
 		Assert(0);
 	}
 
 	u8 *Content = (u8 *)File.Content;
-	//u8 *PlayerContent = (u8 *)PlayerFile.Content;
 
 	u8 LineBuffer_[4096];
 	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
@@ -894,311 +933,10 @@ LevelLoad(game_state *GameState, char *FileName)
 	}
 
 	Platform.DebugFileFree(File.Content);
-	//Platform.DebugFileFree(PlayerFile.Content);
 }
-#else
-
-internal entity_member_data
-EntityMemberData(u8 *MemberName)
-{
-	entity_member_data Result = {};
-
-	if(StringsAreSame(MemberName, "flags"))
-	{
-		Result.Type = entity_member_variable_type_u32;
-		Result.Offset = OffsetOf(entity, Flags);
-	}
-	else if(StringsAreSame(MemberName, "position"))
-	{
-		Result.Type = entity_member_variable_type_v3;
-		Result.Offset = OffsetOf(entity, P);
-	}
-	else if(StringsAreSame(MemberName, "axis_angle"))
-	{
-		Result.Type = entity_member_variable_type_quaternion;
-		Result.Offset = OffsetOf(entity, Orientation);
-	}
-	else if(StringsAreSame(MemberName, "movement_collider_count"))
-	{
-		Result.Type = entity_member_variable_type_u32;
-		Result.Offset = OffsetOf(entity, MovementColliders) + OffsetOf(collision_group, VolumeCount);
-		Result.ArrayOffset = OffsetOf(entity, MovementColliders) + OffsetOf(collision_group, Volumes);
-		Result.Initialize = true;
-		Result.Size = sizeof(collision_volume);
-	}
-	else if(StringsAreSame(MemberName, "movement_collider_type"))
-	{
-		Result.Type = entity_member_variable_type_enum;
-	}
-	else if(StringsAreSame(MemberName, "dim"))
-	{
-		Result.Type = entity_member_variable_type_v3;
-		Result.Offset = OffsetOf(entity, MovementColliders) + OffsetOf(collision_group, Volumes) + OffsetOf(collision_volume, Dim);
-	}
-	else if(StringsAreSame(MemberName, "dim"))
-	{
-		Result.Type = entity_member_variable_type_v3;
-		Result.Offset = OffsetOf(entity, MovementColliders) + OffsetOf(collision_group, Volumes) + OffsetOf(collision_volume, Dim);
-	}
-	else if(StringsAreSame(MemberName, "visual_scale"))
-	{
-		Result.Type = entity_member_variable_type_f32;
-		Result.Offset = 
-	}
-
-	return(Result);
-}
-
 
 internal void
-LevelLoad(game_state *GameState, char *FileName)
-{
-	debug_file File = Platform.DebugFileReadEntire(FileName);
-	//debug_file PlayerFile = Platform.DebugFileReadEntire("../src/players.variables");
-	if(File.Size == 0)//k || PlayerFile.Size == 0)
-	{
-		Assert(0);
-	}
-
-	u8 *Content = (u8 *)File.Content;
-	//u8 *PlayerContent = (u8 *)PlayerFile.Content;
-
-	u8 LineBuffer_[4096];
-	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
-	u8 *LineBuffer = &LineBuffer_[0];
-
-	u8 Word_[4096];
-	MemoryZero(Word_, sizeof(Word_));
-	u8 *Word = &Word_[0];
-
-	entity *Current = GameState->Entities + GameState->EntityCount;
-	while(*Content)
-	{
-		BufferLine(&Content, LineBuffer);
-		u8 *Line = LineBuffer;
-		BufferNextWord(&Line, Word);
-
-		if(StringsAreSame(Word, "entity"))
-		{
-			Current->ID = GameState->EntityCount;
-
-			AdvanceLine(&Content);
-			BufferLine(&Content, LineBuffer);
-			Line = LineBuffer;
-			BufferNextWord(&Line, Word);
-			Assert(StringsAreSame(Word, "type"))
-
-			EatSpaces(&Line);
-			BufferNextWord(&Line, Word);
-
-			if(StringsAreSame(Word, "null"))
-			{
-				Current->Type = EntityType_Null;
-			}
-			else if(StringsAreSame(Word, "walkable_region"))
-			{
-				Current->Type = EntityType_WalkableRegion;
-			}
-			else if(StringsAreSame(Word, "cube"))
-			{
-				Current->Type = EntityType_Cube;
-			}
-			else if(StringsAreSame(Word, "player"))
-			{
-				Current->Type = EntityType_Player;
-			}
-			else if(StringsAreSame(Word, "light"))
-			{
-				Current->Type = EntityType_Light;
-			}
-
-			// TODO(Justin): Figure out a way to handle this in the parsing code.. 
-			Current->MovementColliders.Volumes = PushArray(&GameState->Arena, 1, collision_volume);
-		}
-
-		AdvanceLine(&Content);
-		BufferLine(&Content, LineBuffer);
-		Line = LineBuffer;
-		BufferNextWord(&Line, Word);
-
-		switch(Current->Type)
-		{
-			case EntityType_Null:
-			{
-				while(*Content && !StringsAreSame(Word, "next"))
-				{
-					AdvanceLine(&Content);
-					BufferLine(&Content, LineBuffer);
-					Line = LineBuffer;
-					BufferNextWord(&Line, Word);
-				}
-
-				GameState->EntityCount++;
-				Current = GameState->Entities + GameState->EntityCount;
-			} break;
-			case EntityType_Player:
-			{
-			} break;
-			case EntityType_Cube:
-			case EntityType_WalkableRegion:
-			{
-				while(*Content && !StringsAreSame(Word, "next"))
-				{
-					entity_member_data Data = EntityMemberData(Word);
-					u8 *Ptr = (u8 *)Current + Data.Offset;
-
-					switch(Data.Type)
-					{
-						case entity_member_variable_type_u32:
-						{
-							ParseUnsignedInt(&Line, Word, (u32 *)Ptr);
-						} break;
-						case entity_member_variable_type_f32:
-						{
-							ParseFloat(&Line, Word, (f32 *)Ptr);
-						} break;
-						case entity_member_variable_type_v3:
-						{
-							ParseV3(&Line, Word, (v3 *)Ptr);
-						} break;
-						case entity_member_variable_type_quaternion:
-						{
-							ParseQuaternion(&Line, Word, (quaternion *)Ptr);
-						} break;
-						case entity_member_variable_type_enum:
-						{
-						} break;
-					}
-
-					AdvanceLine(&Content);
-					BufferLine(&Content, LineBuffer);
-					Line = LineBuffer;
-					BufferNextWord(&Line, Word);
-				}
-
-				Current->MovementColliders.Volumes[0].Type = CollisionVolumeType_OBB;
-
-				GameState->EntityCount++;
-				Current = GameState->Entities + GameState->EntityCount;
-			} break;
-			case EntityType_Light:
-			{
-
-			} break;
-		}
-
-
-
-
-#if 0
-		else if(StringsAreSame(Word, "flags"))
-		{
-			ParseUnsignedInt(&Line, Word, &Current->Flags);
-		}
-		else if(StringsAreSame(Word, "position"))
-		{
-			ParseV3(&Line, Word, &Current->P);
-		}
-		else if(StringsAreSame(Word, "axis_angle"))
-		{
-			ParseQuaternion(&Line, Word, &Current->Orientation);
-		}
-		else if(StringsAreSame(Word, "movement_collider_count"))
-		{
-			ParseUnsignedInt(&Line, Word, &Current->MovementColliders.VolumeCount);
-			Current->MovementColliders.Volumes = PushArray(&GameState->Arena, Current->MovementColliders.VolumeCount, collision_volume);
-		}
-		else if(StringsAreSame(Word, "movement_collider_type"))
-		{
-			EatSpaces(&Line);
-			BufferNextWord(&Line, Word);
-
-			if(StringsAreSame(Word, "obb"))
-			{
-				Current->MovementColliders.Volumes[0].Type = CollisionVolumeType_OBB; 
-			}
-		}
-		else if(StringsAreSame(Word, "dim"))
-		{
-			v3 Dim = {};
-			ParseV3(&Line, Word, &Dim);
-			collision_volume *Volume = Current->MovementColliders.Volumes;
-			OBBInitialize(Volume, Dim, Current->Orientation);
-		}
-		else if(StringsAreSame(Word, "visual_scale"))
-		{
-			// TODO(Justin): Check this.
-			f32 Scale = 0.0f;
-			ParseFloat(&Line, Word, &Scale);
-			Current->VisualScale = Scale * Current->MovementColliders.Volumes[0].Dim;
-		}
-		else if(StringsAreSame(Word, "light_type"))
-		{
-			EatSpaces(&Line);
-			BufferNextWord(&Line, Word);
-
-			light *Light = GameState->Lights + Current->ID;
-			if(StringsAreSame(Word, "directional"))
-			{
-				Light->Type = LightType_Directional;
-			}
-		}
-		else if(StringsAreSame(Word, "direction"))
-		{
-			light *Light = GameState->Lights + Current->ID;
-			ParseV3(&Line, Word, &Light->Dir);
-		}
-		else if(StringsAreSame(Word, "left"))
-		{
-			light *Light = GameState->Lights + Current->ID;
-			ParseFloat(&Line, Word, &Light->Left);
-		}
-		else if(StringsAreSame(Word, "right"))
-		{
-			light *Light = GameState->Lights + Current->ID;
-			ParseFloat(&Line, Word, &Light->Right);
-		}
-		else if(StringsAreSame(Word, "bottom"))
-		{
-			light *Light = GameState->Lights + Current->ID;
-			ParseFloat(&Line, Word, &Light->Bottom);
-		}
-		else if(StringsAreSame(Word, "top"))
-		{
-			light *Light = GameState->Lights + Current->ID;
-			ParseFloat(&Line, Word, &Light->Top);
-		}
-		else if(StringsAreSame(Word, "near"))
-		{
-			light *Light = GameState->Lights + Current->ID;
-			Light->Near = GameState->ZNear;
-		}
-		else if(StringsAreSame(Word, "far"))
-		{
-			light *Light = GameState->Lights + Current->ID;
-			Light->Far = GameState->ZFar;
-
-			Light->Ortho = Mat4OrthographicProjection(Light->Left, Light->Right, Light->Bottom, Light->Top, Light->Near, Light->Far);
-			Light->View = Mat4Camera(Current->P, Light->Dir);
-		}
-		else if(StringsAreSame(Word, "next"))
-		{
-			// TODO(Justin): Should we compute per entity final information here? E.g. the lights mat4's?
-			GameState->EntityCount++;
-			Current = GameState->Entities + GameState->EntityCount;
-		}
-#endif
-
-		AdvanceLine(&Content);
-	}
-
-	Platform.DebugFileFree(File.Content);
-	//Platform.DebugFileFree(PlayerFile.Content);
-}
-#endif
-
-internal void
-LevelReload(game_state *GameState)
+LevelReload(game_state *GameState, asset_manager *AssetManager)
 {
 	v3 PlayerP = GameState->Entities[GameState->PlayerEntityIndex].P;
 
@@ -1207,10 +945,10 @@ LevelReload(game_state *GameState)
 	MemoryZero(GameState->Entities, ArrayCount(GameState->Entities) * sizeof(entity));
 	LevelLoad(GameState, "../src/test.level");
 
-	entity *Player = XBotAdd(GameState, PlayerP);
-	entity *YBot = YBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
-	entity *Knight = KnightAdd(GameState, V3(0.0f, 0.01f, -5.0f));
-	entity *Brute = BruteAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+	entity *Player = XBotAdd(GameState, AssetManager, PlayerP);
+	entity *YBot = YBotAdd(GameState, AssetManager, V3(0.0f, 0.01f, -5.0f));
+	entity *Knight = KnightAdd(GameState, AssetManager, V3(0.0f, 0.01f, -5.0f));
+	entity *Brute = BruteAdd(GameState, AssetManager, V3(0.0f, 0.01f, -5.0f));
 
 	GameState->PlayerIDForController[1] = Player->ID;
 	GameState->CharacterIDs[GameState->CurrentCharacter] = Player->ID;
@@ -1226,35 +964,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	Platform = GameMemory->PlatformAPI;
 	if(!GameMemory->IsInitialized)
 	{
-		//
-		// NOTE(Justin): Arena.
-		//
-
 		ArenaInitialize(&GameState->Arena, (u8 *)GameMemory->PermanentStorage + sizeof(game_state),
 												 GameMemory->PermanentStorageSize - sizeof(game_state)); 
-
-		//
-		// NOTE(Justin): Assets.
-		//
-
-		//model TestModel = TestLoadModel(&GameState->Arena, "test/Beta_JointsMesh.mesh");
-		//Platform.UploadAnimatedModelToGPU(&TestModel);
-
-		ArenaSubset(&GameState->Arena, &GameState->AssetManager.Arena, Megabyte(16));
-		AssetManagerInitialize(&GameState->AssetManager);
-		asset_manager *Assets = &GameState->AssetManager;
-		//Assets->TestModel = TestModel;
-
-
-		GameStateVariablesLoad(GameState, "../src/all.variables");
-		LevelLoad(GameState, "../src/test.level");
-
-		CameraSet(&GameState->Camera, GameState->Camera.P + GameState->CameraOffsetFromPlayer, GameState->Camera.DefaultYaw, GameState->Camera.DefaultPitch);
-		CameraTransformUpdate(GameState);
-		GameState->TimeScale = 1.0f;
-		GameState->Aspect = (f32)GameInput->BackBufferWidth / (f32)GameInput->BackBufferHeight;
-		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
-
 		GameMemory->IsInitialized = true;
 	}
 
@@ -1265,6 +976,19 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		ArenaInitialize(&TempState->Arena,
 				(u8 *)GameMemory->TemporaryStorage + sizeof(temp_state),
 					  GameMemory->TemporaryStorageSize - sizeof(temp_state));
+
+		ArenaSubset(&TempState->Arena, &TempState->AssetManager.Arena, Megabyte(16));
+		AssetManagerInitialize(&TempState->AssetManager);
+		asset_manager *Assets = &TempState->AssetManager;
+
+		GameStateVariablesLoad(GameState, "../src/all.variables");
+		LevelLoad(GameState, "../src/test.level");
+
+		CameraSet(&GameState->Camera, GameState->Camera.P + GameState->CameraOffsetFromPlayer, GameState->Camera.DefaultYaw, GameState->Camera.DefaultPitch);
+		CameraTransformUpdate(GameState);
+		GameState->TimeScale = 1.0f;
+		GameState->Aspect = (f32)GameInput->BackBufferWidth / (f32)GameInput->BackBufferHeight;
+		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 
 		TempState->IsInitialized = true;
 
@@ -1282,12 +1006,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			if(Controller->Space.EndedDown || Controller->Start.EndedDown)
 			{
-				entity *Player = XBotAdd(GameState, V3(0.0f, 0.01f, -5.0f));
+				entity *Player = XBotAdd(GameState, &TempState->AssetManager, V3(0.0f, 0.01f, -5.0f));
 				GameState->PlayerIDForController[ControllerIndex] = Player->ID;
 
-				entity *YBot = YBotAdd(GameState, V3(-10.0f, 0.01f, -2.0f));
-				entity *Knight = KnightAdd(GameState, V3(-5.0f, 0.01f, -2.0f));
-				entity *Brute = BruteAdd(GameState, V3(5.0f, 0.01f, -2.0f));
+				entity *YBot = YBotAdd(GameState, &TempState->AssetManager, V3(-10.0f, 0.01f, -2.0f));
+				entity *Knight = KnightAdd(GameState, &TempState->AssetManager, V3(-5.0f, 0.01f, -2.0f));
+				entity *Brute = BruteAdd(GameState, &TempState->AssetManager, V3(5.0f, 0.01f, -2.0f));
 
 				GameState->CurrentCharacter = 0;
 				GameState->CharacterIDs[GameState->CurrentCharacter] = Player->ID;
@@ -1487,7 +1211,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		}
 	}
 
-	asset_manager *Assets = &GameState->AssetManager;
+	asset_manager *Assets = &TempState->AssetManager;
 	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	camera *Camera = &GameState->Camera;
 
@@ -1562,7 +1286,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 					FlagClear(Entity, EntityFlag_AttackCollisionCheck);
 				}
 
-				//ModelTPose(AnimationPlayer->Model);
 				PushModel(RenderBuffer, CString(AnimationPlayer->Model->Name), T*R*S);
 			} break;
 			case EntityType_Cube:
@@ -1610,40 +1333,40 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	// NOTE(Justin): Asset reload
 	//
 
-	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.LevelFileInfo))
+	if(!GameInput->ReloadingGame && ShouldReload(&TempState->AssetManager.LevelFileInfo))
 	{
-		LevelReload(GameState);
+		LevelReload(GameState, &TempState->AssetManager);
 	}
 
-	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.XBotGraphFileInfo))
+	if(!GameInput->ReloadingGame && ShouldReload(&TempState->AssetManager.XBotGraphFileInfo))
 	{
 		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		AnimationGraphReload(&GameState->AssetManager, "XBot_AnimationGraph");
-		animation_graph *G = FindGraph(&GameState->AssetManager, "XBot_AnimationGraph").Graph;
+		AnimationGraphReload(&TempState->AssetManager, "XBot_AnimationGraph");
+		animation_graph *G = FindGraph(&TempState->AssetManager, "XBot_AnimationGraph").Graph;
 		Entity->AnimationGraph = G;
 	}
 
-	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.YBotGraphFileInfo))
+	if(!GameInput->ReloadingGame && ShouldReload(&TempState->AssetManager.YBotGraphFileInfo))
 	{
 		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		AnimationGraphReload(&GameState->AssetManager, "YBot_AnimationGraph");
-		animation_graph *G = FindGraph(&GameState->AssetManager, "YBot_AnimationGraph").Graph;
+		AnimationGraphReload(&TempState->AssetManager, "YBot_AnimationGraph");
+		animation_graph *G = FindGraph(&TempState->AssetManager, "YBot_AnimationGraph").Graph;
 		Entity->AnimationGraph = G;
 	}
 
-	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.PaladinGraphFileInfo))
+	if(!GameInput->ReloadingGame && ShouldReload(&TempState->AssetManager.PaladinGraphFileInfo))
 	{
 		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		AnimationGraphReload(&GameState->AssetManager, "Paladin_AnimationGraph");
-		animation_graph *G = FindGraph(&GameState->AssetManager, "Paladin_AnimationGraph").Graph;
+		AnimationGraphReload(&TempState->AssetManager, "Paladin_AnimationGraph");
+		animation_graph *G = FindGraph(&TempState->AssetManager, "Paladin_AnimationGraph").Graph;
 		Entity->AnimationGraph = G;
 	}
 
-	if(!GameInput->ReloadingGame && ShouldReload(&GameState->AssetManager.BruteGraphFileInfo))
+	if(!GameInput->ReloadingGame && ShouldReload(&TempState->AssetManager.BruteGraphFileInfo))
 	{
 		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		AnimationGraphReload(&GameState->AssetManager, "Brute_AnimationGraph");
-		animation_graph *G = FindGraph(&GameState->AssetManager, "Brute_AnimationGraph").Graph;
+		AnimationGraphReload(&TempState->AssetManager, "Brute_AnimationGraph");
+		animation_graph *G = FindGraph(&TempState->AssetManager, "Brute_AnimationGraph").Graph;
 		Entity->AnimationGraph = G;
 	}
 
@@ -1795,6 +1518,7 @@ extern "C" GAME_AUDIO_UPDATE(GameAudioUpdate)
 {
 	game_state *GameState = (game_state *)GameMemory->PermanentStorage;
 	temp_state *TempState = (temp_state *)GameMemory->TemporaryStorage;
-	SoundToOutput(&GameState->AudioState, SoundBuffer, &GameState->AssetManager, &TempState->Arena);
+	//SoundToOutput(&GameState->AudioState, SoundBuffer, &GameState->AssetManager, &TempState->Arena);
+	SoundToOutput(&GameState->AudioState, SoundBuffer, &TempState->AssetManager, &TempState->Arena);
 }
 
