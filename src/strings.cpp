@@ -165,37 +165,36 @@ EatUntilSpace(u8 **Buff)
 // TODO(Justin): This is dangerous as if the arguements get passed in the incorrect order
 // then bad things can happen... Also there is no size checking on the buffer
 inline void
-BufferNextWord(u8 **C, u8 *Buff)
+BufferNextWord(u8 **Content, u8 *Buffer)
 {
-	u32 Index = 0;
-	while(!IsNewLine(*C) && !IsSpace(*C) && !IsNull(*C))
+	u32 At = 0;
+	while(!IsNewLine(*Content) && !IsSpace(*Content) && !IsNull(*Content))
 	{
-		Buff[Index++] = **C;
-		(*C)++;
+		Buffer[At++] = **Content;
+		(*Content)++;
 
 	}
-	Buff[Index] = 0;
+	Buffer[At] = '\0';
 }
 
 inline void
-BufferNumber(u8 **C, u8 *Buff)
+BufferNumber(u8 **Content, u8 *Buffer)
 {
-	u32 Index = 0;
-	while(IsNumber(*C))
+	u32 At = 0;
+	while(IsNumber(*Content))
 	{
-		Buff[Index++] = **C;
-		(*C)++;
+		Buffer[At++] = **Content;
+		(*Content)++;
 
 	}
-	Buff[Index] = 0;
+	Buffer[At] = '\0';
 }
-
 
 inline void
 BufferLine(u8 **Content, u8 *Buffer)
 {
 	u32 At = 0;
-	while(!IsNewLine(**Content))
+	while((**Content) && !IsNewLine(**Content))
 	{
 		Buffer[At++] = **Content;
 		(*Content)++;
@@ -365,6 +364,17 @@ StringsAreSame(char *Str1, char *Str2)
 {
 	string S1 = String((u8 *)Str1);
 	string S2 = String((u8 *)Str2);
+
+	b32 Result = StringsAreSame(S1, S2);
+
+	return(Result);
+}
+
+internal b32
+StringsAreSame(u8 *Str1, u8 *Str2)
+{
+	string S1 = String(Str1);
+	string S2 = String(Str2);
 
 	b32 Result = StringsAreSame(S1, S2);
 

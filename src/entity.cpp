@@ -121,6 +121,36 @@ EntityTransform(entity *Entity, v3 Scale = V3(1.0f))
 }
 
 inline void
+EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
+{
+	v3 FacingDirection = Entity->dP;
+
+	f32 TargetAngleInRad = DirectionToEuler(FacingDirection).yaw;
+	Entity->ThetaTarget = RadToDegrees(TargetAngleInRad);
+	if(Entity->Theta != Entity->ThetaTarget)
+	{
+		// TODO(Justin): Simplify this!
+		f32 TargetAngleInDegrees = RadToDegrees(TargetAngleInRad);
+		quaternion QTarget;
+		if((TargetAngleInDegrees == 0.0f) ||
+		   (TargetAngleInDegrees == -0.0f) ||
+		   (TargetAngleInDegrees == 180.0f) ||
+		   (TargetAngleInDegrees == -180.0f))
+		{
+			QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), TargetAngleInRad);
+		}
+		else
+		{
+			QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), -1.0f*TargetAngleInRad);
+		}
+
+		quaternion QCurrent = Entity->Orientation;
+		Entity->Orientation = RotateTowards(QCurrent, QTarget, dt, AngularSpeed);
+		Entity->Theta = -1.0f*RadToDegrees(YawFromQuaternion(Entity->Orientation));
+	}
+}
+
+inline void
 ApplyAcceleration(entity *Entity, f32 Scale = 1.0f)
 {
 	f32 a = Entity->Acceleration;

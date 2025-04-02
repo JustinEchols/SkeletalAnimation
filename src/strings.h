@@ -40,5 +40,6 @@ struct string_hash
 	memory_arena Arena;
 };
 
+
 #define STRINGS_H
 #endif

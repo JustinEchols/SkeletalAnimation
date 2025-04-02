@@ -21,12 +21,11 @@ OrientedBoundingBoxGet(collision_group *CollisionGroup)
 	collision_volume Volume = CollisionGroup->Volumes[0];
 	Assert(Volume.Type == CollisionVolumeType_OBB);
 
-	collision_volume TestVolume = CollisionGroup->Volumes[0];
-	Result.Center = TestVolume.Center;
-	Result.X = TestVolume.X;
-	Result.Y = TestVolume.Y;
-	Result.Z = TestVolume.Z;
-	Result.Dim = TestVolume.Dim;
+	Result.Center = Volume.Center;
+	Result.X = Volume.X;
+	Result.Y = Volume.Y;
+	Result.Z = Volume.Z;
+	Result.Dim = Volume.Dim;
 
 	return(Result);
 }

@@ -11,6 +11,60 @@
 #include "ui.cpp"
 #include "collision.cpp"
 
+//
+// NOTE(Justin): Text file handler experiment..
+//
+
+struct text_file_handler
+{
+	u8 *FileContent;
+
+	u8 LineBuffer_[4096];
+	u8 *LineBuffer;
+	u8 *Line;
+
+	u8 Word_[4096];
+	u8 *Word;
+};
+
+inline text_file_handler
+TextFileHandlerInitialize(void *FileContent)
+{
+	text_file_handler Result = {};
+
+	Result.FileContent = (u8 *)FileContent;
+	MemoryZero(Result.LineBuffer_, sizeof(Result.LineBuffer_));
+	MemoryZero(Result.Word_, sizeof(Result.Word_));
+
+	Result.LineBuffer = &Result.LineBuffer_[0];
+	Result.Word = &Result.Word_[0];
+
+	return(Result);
+}
+
+inline b32
+IsValid(text_file_handler *Handler)
+{
+	b32 Result = (*Handler->FileContent != 0);
+	return(Result);
+}
+
+inline void
+BufferAndAdvanceALine(text_file_handler *Handler)
+{
+	BufferLine(&Handler->FileContent, Handler->LineBuffer);
+	Handler->Line = Handler->LineBuffer;
+	BufferNextWord(&Handler->Line, Handler->Word);
+	AdvanceLine(&Handler->FileContent);
+}
+
+inline void
+BufferAndAdvanceAWord(text_file_handler *Handler)
+{
+	EatSpaces(&Handler->Line);
+	BufferNextWord(&Handler->Line, Handler->Word);
+}
+
 internal void
 AudioInitialize(audio_state *AudioState, memory_arena *Arena)
 {
@@ -46,246 +100,6 @@ OBBInitialize(collision_volume *Volume, v3 Dim, quaternion Orientation)
 	Volume->X = Q * XAxis();
 	Volume->Y = Q * YAxis();
 	Volume->Z = Q * (-1.0f*ZAxis());
-}
-
-internal entity * 
-PlayerAdd(game_state *GameState, v3 P, f32 Height, f32 Radius)
-{
-	entity *Entity = EntityAdd(GameState, EntityType_Player);
-
-	FlagAdd(Entity, EntityFlag_YSupported);
-	FlagAdd(Entity, EntityFlag_Collides);
-	FlagAdd(Entity, EntityFlag_Moveable);
-	FlagAdd(Entity, EntityFlag_Visible);
-
-	Entity->P = P;
-	Entity->dP = {};
-	Entity->ddP = {};
-
-	DefaultOrientationSet(Entity);
-
-	Entity->MovementState = MovementState_Idle;
-	Entity->Height = Height;
-	Entity->MovementColliders.VolumeCount = 1;
-	Entity->MovementColliders.Volumes = PushArray(&GameState->Arena, 1, collision_volume);
-
-	collision_volume *Volume = Entity->MovementColliders.Volumes;
-	Volume->Type = CollisionVolumeType_Capsule;
-	Volume->Min = V3(0.0f, Radius, 0.0f);
-	Volume->Max = V3(0.0f, Entity->Height - Radius, 0.0f);
-	Volume->Radius = Radius;
-
-	if(GameState->PlayerEntityIndex == 0)
-	{
-		GameState->PlayerEntityIndex = Entity->ID;
-	}
-
-	return(Entity);
-}
-
-internal entity * 
-XBotAdd(game_state *GameState, asset_manager *AssetManager, v3 P)
-{
-	entity *Player = PlayerAdd(GameState, P, 1.8f, 0.4f);
-	Player->Acceleration = 50.0f;
-	Player->Drag = 10.0f;
-	Player->AngularSpeed = 15.0f;
-	Player->VisualScale = V3(0.01f);
-
-	model *Model		= FindModel(AssetManager, "XBot").Model;
-	animation_graph *G  = FindGraph(AssetManager, "XBot_AnimationGraph").Graph;
-	asset_entry Entry	= FindAnimation(AssetManager, "XBot_IdleLeft");
-
-	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
-	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
-
-	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
-	Player->AnimationGraph = G;
-	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlag_Looping, 0.2f);
-
-	return(Player);
-}
-
-internal entity *
-YBotAdd(game_state *GameState, asset_manager *AssetManager, v3 P)
-{
-	entity *Player = PlayerAdd(GameState, P, 1.8f, 0.4f);
-	Player->Acceleration = 50.0f;
-	Player->Drag = 10.0f;
-	Player->AngularSpeed = 15.0f;
-	Player->VisualScale = V3(0.011f);
-
-	collision_group *Group = &Player->CombatColliders;
-	Group->VolumeCount = 4;
-	Group->Volumes = PushArray(&GameState->Arena, Group->VolumeCount, collision_volume);
-	for(u32 VolumeIndex = 0; VolumeIndex < Group->VolumeCount; ++VolumeIndex)
-	{
-		collision_volume *Volume = Group->Volumes + VolumeIndex;
-		Volume->Dim = V3(0.2f);
-	}
-
-	Player->Attacks[AttackType_Neutral1].Type = AttackType_Neutral1;
-	Player->Attacks[AttackType_Neutral1].Duration = 0.2f;
-	Player->Attacks[AttackType_Neutral1].Power = 0.07f;
-
-	Player->Attacks[AttackType_Neutral2].Type = AttackType_Neutral2;
-	Player->Attacks[AttackType_Neutral2].Duration = 0.3f;
-	Player->Attacks[AttackType_Neutral2].Power = 0.07f;
-
-	model *Model = FindModel(AssetManager, "YBot").Model;
-	animation_graph *G  = FindGraph(AssetManager, "YBot_AnimationGraph").Graph;
-	asset_entry Entry = FindAnimation(AssetManager, "YBot_FightIdleLeft");
-
-	Assert(Model);
-	Assert(G);
-	Assert(Entry.SampledAnimation);
-
-	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
-	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
-
-	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
-	Player->AnimationGraph = G;
-	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlag_Looping, 0.2f);
-
-	return(Player);
-}
-
-internal entity * 
-KnightAdd(game_state *GameState, asset_manager *AssetManager, v3 P)
-{
-	entity *Player = PlayerAdd(GameState, P, 1.8f, 0.4f);
-	Player->Acceleration = 50.0f;
-	Player->Drag = 10.0f;
-	Player->AngularSpeed = 15.0f;
-	Player->VisualScale = V3(0.011f);
-
-	collision_group *Group = &Player->CombatColliders;
-	Group->VolumeCount = 4;
-	Group->Volumes = PushArray(&GameState->Arena, Group->VolumeCount, collision_volume);
-	for(u32 VolumeIndex = 0; VolumeIndex < Group->VolumeCount; ++VolumeIndex)
-	{
-		collision_volume *Volume = Group->Volumes + VolumeIndex;
-		Volume->Dim = V3(0.2f);
-	}
-
-	Player->Attacks[AttackType_Neutral1].Type = AttackType_Neutral1;
-	Player->Attacks[AttackType_Neutral1].Duration = 0.4f;
-	Player->Attacks[AttackType_Neutral1].Power = 3.0f;
-
-	Player->Attacks[AttackType_Neutral2].Type = AttackType_Neutral2;
-	Player->Attacks[AttackType_Neutral2].Duration = 0.5f;
-	Player->Attacks[AttackType_Neutral2].Power = 5.0f;
-
-	Player->Attacks[AttackType_Neutral3].Type = AttackType_Neutral3;
-	Player->Attacks[AttackType_Neutral3].Duration = 0.5f;
-	Player->Attacks[AttackType_Neutral3].Power = 7.0f;
-
-	Player->Attacks[AttackType_Forward].Type = AttackType_Forward;
-	Player->Attacks[AttackType_Forward].Duration = 0.7f;
-	Player->Attacks[AttackType_Forward].Power = 12.0f;
-
-	Player->Attacks[AttackType_Sprint].Type = AttackType_Sprint;
-	Player->Attacks[AttackType_Sprint].Duration = 0.7f;
-	Player->Attacks[AttackType_Sprint].Power = 12.0f;
-
-	model *Model = FindModel(AssetManager, "PaladinWithProp").Model;
-	animation_graph *G  = FindGraph(AssetManager, "Paladin_AnimationGraph").Graph;
-	asset_entry Entry = FindAnimation(AssetManager, "Paladin_SwordAndShieldIdle_00");
-
-	Assert(Model);
-	Assert(G);
-	Assert(Entry.SampledAnimation);
-
-	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
-	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
-
-	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
-	Player->AnimationGraph = G;
-	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlag_Looping, 0.2f);
-
-	return(Player);
-}
-
-internal entity * 
-BruteAdd(game_state *GameState, asset_manager *AssetManager, v3 P)
-{
-	entity *Player = PlayerAdd(GameState, P, 2.3f, 0.5f);
-	Player->Acceleration = 40.0f;
-	Player->Drag = 10.0f;
-	Player->AngularSpeed = 10.0f;
-	Player->VisualScale = V3(0.01f);
-
-	model *Model = FindModel(AssetManager, "Brute").Model;
-	animation_graph *G  = FindGraph(AssetManager, "Brute_AnimationGraph").Graph;
-	asset_entry Entry = FindAnimation(AssetManager, "Brute_Idle");
-
-	Assert(Model);
-	Assert(G);
-	Assert(Entry.SampledAnimation);
-
-	Player->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
-	Player->AnimationGraph	= PushStruct(&GameState->Arena, animation_graph);
-
-	AnimationPlayerInitialize(Player->AnimationPlayer, Model, &GameState->Arena);
-	Player->AnimationGraph = G;
-	AnimationPlay(Player->AnimationPlayer, Entry.SampledAnimation, Entry.Index, AnimationFlag_Looping, 0.2f);
-
-	collision_group *Group = &Player->CombatColliders;
-	Group->VolumeCount = 1;
-	Group->Volumes = PushArray(&GameState->Arena, Group->VolumeCount, collision_volume);
-	collision_volume *Volume = Group->Volumes;
-
-	Player->Attacks[AttackType_Neutral1].Type = AttackType_Neutral1;
-	Player->Attacks[AttackType_Neutral1].Duration = 0.4f;
-	Player->Attacks[AttackType_Neutral1].Power = 3.0f;
-
-	Player->Attacks[AttackType_Neutral2].Type = AttackType_Neutral2;
-	Player->Attacks[AttackType_Neutral2].Duration = 0.3f;
-	Player->Attacks[AttackType_Neutral2].Power = 5.0f;
-
-	Player->Attacks[AttackType_Neutral3].Type = AttackType_Neutral3;
-	Player->Attacks[AttackType_Neutral3].Duration = 0.4f;
-	Player->Attacks[AttackType_Neutral3].Power = 7.0f;
-
-	Player->Attacks[AttackType_Strong].Type = AttackType_Strong;
-	Player->Attacks[AttackType_Strong].Duration = 0.5f;
-	Player->Attacks[AttackType_Strong].Power = 18.0f;
-
-	Player->Attacks[AttackType_Sprint].Type = AttackType_Sprint;
-	Player->Attacks[AttackType_Sprint].Duration = 2.0f;
-	Player->Attacks[AttackType_Sprint].Power = 3.0f;
-
-	return(Player);
-}
-
-inline void
-EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
-{
-	v3 FacingDirection = Entity->dP;
-
-	f32 TargetAngleInRad = DirectionToEuler(FacingDirection).yaw;
-	Entity->ThetaTarget = RadToDegrees(TargetAngleInRad);
-	if(Entity->Theta != Entity->ThetaTarget)
-	{
-		// TODO(Justin): Simplify this!
-		f32 TargetAngleInDegrees = RadToDegrees(TargetAngleInRad);
-		quaternion QTarget;
-		if((TargetAngleInDegrees == 0.0f) ||
-		   (TargetAngleInDegrees == -0.0f) ||
-		   (TargetAngleInDegrees == 180.0f) ||
-		   (TargetAngleInDegrees == -180.0f))
-		{
-			QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), TargetAngleInRad);
-		}
-		else
-		{
-			QTarget	= Quaternion(V3(0.0f, 1.0f, 0.0f), -1.0f*TargetAngleInRad);
-		}
-
-		quaternion QCurrent = Entity->Orientation;
-		Entity->Orientation = RotateTowards(QCurrent, QTarget, dt, AngularSpeed);
-		Entity->Theta = -1.0f*RadToDegrees(YawFromQuaternion(Entity->Orientation));
-	}
 }
 
 internal quad
@@ -677,60 +491,6 @@ GameStateVariableData(u8 *VariableName)
 	return(Result);
 }
 
-//
-// NOTE(Justin): Text file handler experiment..
-//
-
-struct text_file_handler
-{
-	u8 *FileContent;
-
-	u8 LineBuffer_[4096];
-	u8 *LineBuffer;
-	u8 *Line;
-
-	u8 Word_[4096];
-	u8 *Word;
-};
-
-inline text_file_handler
-TextFileHandlerInitialize(void *FileContent)
-{
-	text_file_handler Result = {};
-
-	Result.FileContent = (u8 *)FileContent;
-	MemoryZero(Result.LineBuffer_, sizeof(Result.LineBuffer_));
-	MemoryZero(Result.Word_, sizeof(Result.Word_));
-
-	Result.LineBuffer = &Result.LineBuffer_[0];
-	Result.Word = &Result.Word_[0];
-
-	return(Result);
-}
-
-inline b32
-IsValid(text_file_handler *Handler)
-{
-	b32 Result = (*Handler->FileContent != 0);
-	return(Result);
-}
-
-inline void
-BufferAndAdvanceALine(text_file_handler *Handler)
-{
-	BufferLine(&Handler->FileContent, Handler->LineBuffer);
-	Handler->Line = Handler->LineBuffer;
-	BufferNextWord(&Handler->Line, Handler->Word);
-	AdvanceLine(&Handler->FileContent);
-}
-
-inline void
-BufferAndAdvanceAWord(text_file_handler *Handler)
-{
-	EatSpaces(&Handler->Line);
-	BufferNextWord(&Handler->Line, Handler->Word);
-}
-
 internal void
 GameStateVariablesLoad(game_state *GameState, char *FileName)
 {
@@ -775,15 +535,17 @@ GameStateVariablesLoad(game_state *GameState, char *FileName)
 
 // TODO(Justin): Parse entity by type?
 internal void
-LevelLoad(game_state *GameState, char *FileName)
+LevelLoad(game_state *GameState, asset_manager *AssetManager, char *FileName)
 {
 	debug_file File = Platform.DebugFileReadEntire(FileName);
-	if(File.Size == 0)
+	debug_file PlayerFile = Platform.DebugFileReadEntire("../src/players.variables");
+	if(File.Size == 0 || PlayerFile.Size == 0)
 	{
 		Assert(0);
 	}
 
 	u8 *Content = (u8 *)File.Content;
+	u8 *PlayerContent = (u8 *)PlayerFile.Content;
 
 	u8 LineBuffer_[4096];
 	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
@@ -794,7 +556,7 @@ LevelLoad(game_state *GameState, char *FileName)
 	u8 *Word = &Word_[0];
 
 	b32 ParsingEntity = false;
-	entity *Current = GameState->Entities + GameState->EntityCount;
+	entity *Current = 0;
 	while(*Content)
 	{
 		BufferLine(&Content, LineBuffer);
@@ -803,7 +565,9 @@ LevelLoad(game_state *GameState, char *FileName)
 
 		if(StringsAreSame(Word, "entity"))
 		{
+			Current = GameState->Entities + GameState->EntityCount;
 			Current->ID = GameState->EntityCount;
+			GameState->EntityCount++;
 		}
 		else if(StringsAreSame(Word, "type"))
 		{
@@ -857,6 +621,10 @@ LevelLoad(game_state *GameState, char *FileName)
 			if(StringsAreSame(Word, "obb"))
 			{
 				Current->MovementColliders.Volumes[0].Type = CollisionVolumeType_OBB; 
+			}
+			else if(StringsAreSame(Word, "capsule"))
+			{
+				Current->MovementColliders.Volumes[0].Type = CollisionVolumeType_Capsule; 
 			}
 		}
 		else if(StringsAreSame(Word, "dim"))
@@ -922,39 +690,142 @@ LevelLoad(game_state *GameState, char *FileName)
 			Light->Ortho = Mat4OrthographicProjection(Light->Left, Light->Right, Light->Bottom, Light->Top, Light->Near, Light->Far);
 			Light->View = Mat4Camera(Current->P, Light->Dir);
 		}
+		else if(StringsAreSame(Word, "player_type"))
+		{
+			EatSpaces(&Line);
+			BufferNextWord(&Line, Word);
+
+			text_file_handler Handler = TextFileHandlerInitialize(PlayerContent);
+			while(IsValid(&Handler))
+			{
+				// Seek to the player
+				BufferAndAdvanceALine(&Handler);
+				if(StringsAreSame(Word, Handler.Word))
+				{
+					break;
+				}
+			}
+
+			BufferAndAdvanceALine(&Handler);
+			BufferAndAdvanceAWord(&Handler);
+			Current->Height = F32FromASCII(Handler.Word);
+
+			BufferAndAdvanceALine(&Handler);
+			BufferAndAdvanceAWord(&Handler);
+			Current->Acceleration = F32FromASCII(Handler.Word);
+
+			BufferAndAdvanceALine(&Handler);
+			BufferAndAdvanceAWord(&Handler);
+			Current->Drag = F32FromASCII(Handler.Word);
+
+			BufferAndAdvanceALine(&Handler);
+			BufferAndAdvanceAWord(&Handler);
+			Current->AngularSpeed = F32FromASCII(Handler.Word);
+
+			BufferAndAdvanceALine(&Handler);
+			BufferAndAdvanceAWord(&Handler);
+			f32 Scale = F32FromASCII(Handler.Word);
+			Current->VisualScale = V3(Scale);
+
+			BufferAndAdvanceALine(&Handler);
+			BufferAndAdvanceAWord(&Handler);
+			collision_volume *Volume = &Current->MovementColliders.Volumes[0];
+			Volume->Radius = F32FromASCII(Handler.Word);
+			Volume->Min = V3(0.0f, Volume->Radius, 0.0f);
+			Volume->Max = V3(0.0f, Current->Height - Volume->Radius, 0.0f);
+
+			Current->AnimationPlayer = PushStruct(&GameState->Arena, animation_player);
+			Current->AnimationGraph = PushStruct(&GameState->Arena, animation_graph);
+
+			BufferAndAdvanceALine(&Handler);
+			BufferAndAdvanceAWord(&Handler);
+			model *Model = FindModel(AssetManager, (char *)Handler.Word).Model;
+
+			AnimationPlayerInitialize(Current->AnimationPlayer, Model, &GameState->Arena);
+
+			BufferAndAdvanceALine(&Handler);
+			BufferAndAdvanceAWord(&Handler);
+			Current->AnimationGraph = FindGraph(AssetManager, (char *)Handler.Word).Graph;
+
+			BufferAndAdvanceALine(&Handler);
+			BufferAndAdvanceAWord(&Handler);
+			asset_entry AnimationAsset = FindAnimation(AssetManager, (char *)Handler.Word);
+
+			AnimationPlay(Current->AnimationPlayer, AnimationAsset.SampledAnimation, AnimationAsset.Index, AnimationFlag_Looping, 0.2f);
+
+			while(IsValid(&Handler))
+			{
+				BufferAndAdvanceALine(&Handler);
+
+				if(!StringsAreSame(Handler.Word, "attack"))
+				{
+					break;
+				}
+				else
+				{
+					BufferAndAdvanceAWord(&Handler);
+					attack_type Type = AttackType_None;
+					if(StringsAreSame(Handler.Word, "neutral_1"))
+					{
+						Type = AttackType_Neutral1;
+					}
+					else if(StringsAreSame(Handler.Word, "neutral_2"))
+					{
+						Type = AttackType_Neutral2;
+					}
+					else if(StringsAreSame(Handler.Word, "neutral_3"))
+					{
+						Type = AttackType_Neutral3;
+					}
+					else if(StringsAreSame(Handler.Word, "forward"))
+					{
+						Type = AttackType_Forward;
+					}
+					else if(StringsAreSame(Handler.Word, "sprint"))
+					{
+						Type = AttackType_Sprint;
+					}
+					else if(StringsAreSame(Handler.Word, "strong"))
+					{
+						Type = AttackType_Strong;
+					}
+
+					attack *Attack = &Current->Attacks[Type];
+					Attack->Type = Type;
+
+					BufferAndAdvanceAWord(&Handler);
+					Attack->Duration = F32FromASCII(Handler.Word);
+
+					BufferAndAdvanceAWord(&Handler);
+					Attack->Power = F32FromASCII(Handler.Word);
+				}
+			}
+
+			DefaultOrientationSet(Current);
+			GameState->PlayerEntityIndex = Current->ID;
+		}
 		else if(StringsAreSame(Word, "next"))
 		{
-			// TODO(Justin): Should we compute per entity final information here? E.g. the lights mat4's?
-			GameState->EntityCount++;
-			Current = GameState->Entities + GameState->EntityCount;
+			//GameState->EntityCount++;
+			//Current = GameState->Entities + GameState->EntityCount;
 		}
 
 		AdvanceLine(&Content);
 	}
 
 	Platform.DebugFileFree(File.Content);
+	Platform.DebugFileFree(PlayerFile.Content);
 }
 
 internal void
 LevelReload(game_state *GameState, asset_manager *AssetManager)
 {
-	v3 PlayerP = GameState->Entities[GameState->PlayerEntityIndex].P;
-
 	GameState->EntityCount = 0;
 	GameState->PlayerEntityIndex = 0;
 	MemoryZero(GameState->Entities, ArrayCount(GameState->Entities) * sizeof(entity));
-	LevelLoad(GameState, "../src/test.level");
-
-	entity *Player = XBotAdd(GameState, AssetManager, PlayerP);
-	entity *YBot = YBotAdd(GameState, AssetManager, V3(0.0f, 0.01f, -5.0f));
-	entity *Knight = KnightAdd(GameState, AssetManager, V3(0.0f, 0.01f, -5.0f));
-	entity *Brute = BruteAdd(GameState, AssetManager, V3(0.0f, 0.01f, -5.0f));
-
+	LevelLoad(GameState, AssetManager, "../src/test.level");
+	entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 	GameState->PlayerIDForController[1] = Player->ID;
-	GameState->CharacterIDs[GameState->CurrentCharacter] = Player->ID;
-	GameState->CharacterIDs[GameState->CurrentCharacter + 1] = YBot->ID;
-	GameState->CharacterIDs[GameState->CurrentCharacter + 2] = Knight->ID;
-	GameState->CharacterIDs[GameState->CurrentCharacter + 3] = Brute->ID;
 }
 
 extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
@@ -982,7 +853,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		asset_manager *Assets = &TempState->AssetManager;
 
 		GameStateVariablesLoad(GameState, "../src/all.variables");
-		LevelLoad(GameState, "../src/test.level");
+		LevelLoad(GameState, &TempState->AssetManager, "../src/test.level");
 
 		CameraSet(&GameState->Camera, GameState->Camera.P + GameState->CameraOffsetFromPlayer, GameState->Camera.DefaultYaw, GameState->Camera.DefaultPitch);
 		CameraTransformUpdate(GameState);
@@ -991,7 +862,6 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		GameState->Perspective = Mat4Perspective(GameState->FOV, GameState->Aspect, GameState->ZNear, GameState->ZFar);
 
 		TempState->IsInitialized = true;
-
 	}
 
 	//
@@ -1006,44 +876,12 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 		{
 			if(Controller->Space.EndedDown || Controller->Start.EndedDown)
 			{
-				entity *Player = XBotAdd(GameState, &TempState->AssetManager, V3(0.0f, 0.01f, -5.0f));
+				entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 				GameState->PlayerIDForController[ControllerIndex] = Player->ID;
-
-				entity *YBot = YBotAdd(GameState, &TempState->AssetManager, V3(-10.0f, 0.01f, -2.0f));
-				entity *Knight = KnightAdd(GameState, &TempState->AssetManager, V3(-5.0f, 0.01f, -2.0f));
-				entity *Brute = BruteAdd(GameState, &TempState->AssetManager, V3(5.0f, 0.01f, -2.0f));
-
-				GameState->CurrentCharacter = 0;
-				GameState->CharacterIDs[GameState->CurrentCharacter] = Player->ID;
-				GameState->CharacterIDs[GameState->CurrentCharacter + 1] = YBot->ID;
-				GameState->CharacterIDs[GameState->CurrentCharacter + 2] = Knight->ID;
-				GameState->CharacterIDs[GameState->CurrentCharacter + 3] = Brute->ID;
 			}
 		}
 		else
 		{
-			// Debug swap character by pressing start
-
-#if 1
-			if((WasPressed(Controller->Start) || WasPressed(Controller->Enter)))
-			{
-
-				u32 CurrentID = GameState->PlayerEntityIndex;
-				entity *Current = GameState->Entities + CurrentID;
-
-				GameState->CurrentCharacter++;
-				if(GameState->CurrentCharacter > 3)
-				{
-					GameState->CurrentCharacter = 0;
-				}
-
-				CurrentID = GameState->CharacterIDs[GameState->CurrentCharacter];
-				GameState->PlayerIDForController[ControllerIndex] = CurrentID;
-				GameState->PlayerEntityIndex = CurrentID;
-				Current = GameState->Entities + GameState->PlayerEntityIndex;
-			}
-#else
-#endif
 			entity *Entity = GameState->Entities + GameState->PlayerIDForController[ControllerIndex];
 			move_info *MoveInfo = &Entity->MoveInfo;
 			*MoveInfo = {};
@@ -1155,9 +993,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	//
 
 	f32 dt = GameInput->DtForFrame;
-#if DEVELOPER
-	dt *= GameState->TimeScale;
-#endif
+
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
 		entity *Entity = GameState->Entities + EntityIndex;
@@ -1328,6 +1164,14 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			};
 		};
 	}
+
+	//
+	// Debug 
+	//
+
+#if DEVELOPER
+	dt *= GameState->TimeScale;
+#endif
 
 	//
 	// NOTE(Justin): Asset reload

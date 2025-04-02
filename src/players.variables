@@ -1,4 +1,4 @@
-player_type XBot
+XBot
 height 1.8
 acceleration 50.0
 drag 10.0
@@ -9,7 +9,7 @@ model XBot
 graph XBot_AnimationGraph
 animation XBot_IdleLeft
 
-player_type YBot
+YBot
 height 1.8
 acceleration 50.0
 drag 10.0
@@ -19,8 +19,10 @@ capsule_radius 0.4
 model YBot 
 graph YBot_AnimationGraph
 animation YBot_FightIdleLeft
+attack neutral_1 0.2 0.07
+attack neutral_2 0.3 0.07
 
-player_type PaladinWithProp 
+Paladin
 height 1.8
 acceleration 50.0
 drag 10.0
@@ -30,8 +32,13 @@ capsule_radius 0.4
 model PaladinWithProp 
 graph Paladin_AnimationGraph
 animation Paladin_SwordAndShieldIdle_00
+attack neutral_1 0.4 3.0
+attack neutral_2 0.5 5.0
+attack neutral_3 0.5 7.0
+attack forward 0.7 12.0
+attack sprint 0.7 12.0
 
-player_type Brute 
+Brute 
 height 1.8
 acceleration 40.0
 drag 10.0
@@ -41,3 +48,8 @@ capsule_radius 0.4
 model Brute 
 graph Brute_AnimationGraph
 animation Brute_Idle 
+attack neutral_1 0.4 3.0
+attack neutral_2 0.3 5.0
+attack neutral_3 0.4 7.0
+attack strong 0.5 18.0
+attack sprint 2.0 20.0
