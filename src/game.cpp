@@ -430,57 +430,57 @@ GameStateVariableData(u8 *VariableName)
 
 	if(StringsAreSame(VariableName, "camera_speed"))
 	{
-		Result.Type = game_state_variable_type_f32;
+		Result.Type = game_variable_type_f32;
 		Result.Offset = OffsetOf(game_state, Camera) + OffsetOf(camera, Speed);
 	}
 	else if(StringsAreSame(VariableName, "camera_yaw"))
 	{
-		Result.Type = game_state_variable_type_f32;
+		Result.Type = game_variable_type_f32;
 		Result.Offset = OffsetOf(game_state, Camera) + OffsetOf(camera, DefaultYaw);
 	}
 	else if(StringsAreSame(VariableName, "camera_pitch"))
 	{
-		Result.Type = game_state_variable_type_f32;
+		Result.Type = game_variable_type_f32;
 		Result.Offset = OffsetOf(game_state, Camera) + OffsetOf(camera, DefaultPitch);
 	}
 	else if(StringsAreSame(VariableName, "camera_position"))
 	{
-		Result.Type = game_state_variable_type_v3;
+		Result.Type = game_variable_type_v3;
 		Result.Offset = OffsetOf(game_state, Camera) + OffsetOf(camera, P);
 	}
 	else if(StringsAreSame(VariableName, "camera_offset_from_player"))
 	{
-		Result.Type = game_state_variable_type_v3;
+		Result.Type = game_variable_type_v3;
 		Result.Offset = OffsetOf(game_state, CameraOffsetFromPlayer);
 	}
 	else if(StringsAreSame(VariableName, "fov"))
 	{
-		Result.Type = game_state_variable_type_f32;
+		Result.Type = game_variable_type_f32;
 		Result.Offset = OffsetOf(game_state, FOV);
 	}
 	else if(StringsAreSame(VariableName, "z_near"))
 	{
-		Result.Type = game_state_variable_type_f32;
+		Result.Type = game_variable_type_f32;
 		Result.Offset = OffsetOf(game_state, ZNear);
 	}
 	else if(StringsAreSame(VariableName, "z_far"))
 	{
-		Result.Type = game_state_variable_type_f32;
+		Result.Type = game_variable_type_f32;
 		Result.Offset = OffsetOf(game_state, ZFar);
 	}
 	else if(StringsAreSame(VariableName, "gravity"))
 	{
-		Result.Type = game_state_variable_type_f32;
+		Result.Type = game_variable_type_f32;
 		Result.Offset = OffsetOf(game_state, Gravity);
 	}
 	else if(StringsAreSame(VariableName, "texture_width"))
 	{
-		Result.Type = game_state_variable_type_s32;
+		Result.Type = game_variable_type_s32;
 		Result.Offset = OffsetOf(game_state, Texture) + OffsetOf(texture, Width);
 	}
 	else if(StringsAreSame(VariableName, "texture_width"))
 	{
-		Result.Type = game_state_variable_type_s32;
+		Result.Type = game_variable_type_s32;
 		Result.Offset = OffsetOf(game_state, Texture) + OffsetOf(texture, Height);
 	}
 	else
@@ -509,19 +509,19 @@ GameStateVariablesLoad(game_state *GameState, char *FileName)
 		u8 *VariablePtr = (u8 *)GameState + VariableData.Offset;
 		switch(VariableData.Type)
 		{
-			case game_state_variable_type_u32:
+			case game_variable_type_u32:
 			{
 				ParseUnsignedInt(&Handler.Line, Handler.Word, (u32 *)VariablePtr);
 			} break;
-			case game_state_variable_type_s32:
+			case game_variable_type_s32:
 			{
 				ParseInt(&Handler.Line, Handler.Word, (s32 *)VariablePtr);
 			} break;
-			case game_state_variable_type_f32:
+			case game_variable_type_f32:
 			{
 				ParseFloat(&Handler.Line, Handler.Word, (f32 *)VariablePtr);
 			} break;
-			case game_state_variable_type_v3:
+			case game_variable_type_v3:
 			{
 				ParseV3(&Handler.Line, Handler.Word, (v3 *)VariablePtr);
 			} break;
@@ -534,6 +534,7 @@ GameStateVariablesLoad(game_state *GameState, char *FileName)
 }
 
 // TODO(Justin): Parse entity by type?
+// TODO(Justin): This works but is really ugly. Can we do something better?
 internal void
 LevelLoad(game_state *GameState, asset_manager *AssetManager, char *FileName)
 {
@@ -555,7 +556,6 @@ LevelLoad(game_state *GameState, asset_manager *AssetManager, char *FileName)
 	MemoryZero(Word_, sizeof(Word_));
 	u8 *Word = &Word_[0];
 
-	b32 ParsingEntity = false;
 	entity *Current = 0;
 	while(*Content)
 	{
@@ -804,11 +804,6 @@ LevelLoad(game_state *GameState, asset_manager *AssetManager, char *FileName)
 			DefaultOrientationSet(Current);
 			GameState->PlayerEntityIndex = Current->ID;
 		}
-		else if(StringsAreSame(Word, "next"))
-		{
-			//GameState->EntityCount++;
-			//Current = GameState->Entities + GameState->EntityCount;
-		}
 
 		AdvanceLine(&Content);
 	}
@@ -820,6 +815,7 @@ LevelLoad(game_state *GameState, asset_manager *AssetManager, char *FileName)
 internal void
 LevelReload(game_state *GameState, asset_manager *AssetManager)
 {
+	// TODO(Justin): How to handle memory allocations? Reset all arenas..
 	GameState->EntityCount = 0;
 	GameState->PlayerEntityIndex = 0;
 	MemoryZero(GameState->Entities, ArrayCount(GameState->Entities) * sizeof(entity));
@@ -848,7 +844,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 				(u8 *)GameMemory->TemporaryStorage + sizeof(temp_state),
 					  GameMemory->TemporaryStorageSize - sizeof(temp_state));
 
-		ArenaSubset(&TempState->Arena, &TempState->AssetManager.Arena, Megabyte(16));
+		ArenaSubset(&TempState->Arena, &TempState->AssetManager.Arena, Megabyte(32));
 		AssetManagerInitialize(&TempState->AssetManager);
 		asset_manager *Assets = &TempState->AssetManager;
 
@@ -878,6 +874,7 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			{
 				entity *Player = GameState->Entities + GameState->PlayerEntityIndex;
 				GameState->PlayerIDForController[ControllerIndex] = Player->ID;
+				GameState->ControllerIndex = ControllerIndex;
 			}
 		}
 		else
@@ -1177,41 +1174,29 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	// NOTE(Justin): Asset reload
 	//
 
-	if(!GameInput->ReloadingGame && ShouldReload(&TempState->AssetManager.LevelFileInfo))
+	if(!GameInput->ReloadingGame)
 	{
-		LevelReload(GameState, &TempState->AssetManager);
-	}
+		if(ShouldReload(&TempState->AssetManager.LevelFileInfo))
+		{
+			LevelReload(GameState, &TempState->AssetManager);
+		}
 
-	if(!GameInput->ReloadingGame && ShouldReload(&TempState->AssetManager.XBotGraphFileInfo))
-	{
-		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		AnimationGraphReload(&TempState->AssetManager, "XBot_AnimationGraph");
-		animation_graph *G = FindGraph(&TempState->AssetManager, "XBot_AnimationGraph").Graph;
-		Entity->AnimationGraph = G;
-	}
-
-	if(!GameInput->ReloadingGame && ShouldReload(&TempState->AssetManager.YBotGraphFileInfo))
-	{
-		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		AnimationGraphReload(&TempState->AssetManager, "YBot_AnimationGraph");
-		animation_graph *G = FindGraph(&TempState->AssetManager, "YBot_AnimationGraph").Graph;
-		Entity->AnimationGraph = G;
-	}
-
-	if(!GameInput->ReloadingGame && ShouldReload(&TempState->AssetManager.PaladinGraphFileInfo))
-	{
-		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		AnimationGraphReload(&TempState->AssetManager, "Paladin_AnimationGraph");
-		animation_graph *G = FindGraph(&TempState->AssetManager, "Paladin_AnimationGraph").Graph;
-		Entity->AnimationGraph = G;
-	}
-
-	if(!GameInput->ReloadingGame && ShouldReload(&TempState->AssetManager.BruteGraphFileInfo))
-	{
-		entity *Entity = GameState->Entities + GameState->PlayerIDForController[0];
-		AnimationGraphReload(&TempState->AssetManager, "Brute_AnimationGraph");
-		animation_graph *G = FindGraph(&TempState->AssetManager, "Brute_AnimationGraph").Graph;
-		Entity->AnimationGraph = G;
+		entity *Entity = GameState->Entities + GameState->PlayerIDForController[GameState->ControllerIndex];
+		if(Entity->AnimationGraph)
+		{
+			string GraphName = Entity->AnimationGraph->Name;
+			s32 Index = StringHashLookup(&TempState->AssetManager.ReloadableNames, CString(GraphName));
+			if(Index != -1)
+			{
+				platform_file_info *FileInfo = TempState->AssetManager.FileInfos + Index;
+				if(ShouldReload(FileInfo))
+				{
+					AnimationGraphReload(&TempState->AssetManager, CString(GraphName));
+					animation_graph *G = FindGraph(&TempState->AssetManager, CString(GraphName)).Graph;
+					Entity->AnimationGraph = G;
+				}
+			}
+		}
 	}
 
 	//

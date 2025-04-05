@@ -521,7 +521,7 @@ StringHashIndex(char *String, u32 EntryCount)
 
 #define INVALID_DEFAULT_VALUE -1
 internal void
-StringHashInit(string_hash *StringHash)
+StringHashInitialize(string_hash *StringHash)
 {
 	StringHash->Count = 0;
 	for(u32 Index = 0; Index < ArrayCount(StringHash->Entries); ++Index)
@@ -603,7 +603,7 @@ FileNameFromFullPath(char *FullPath, char *Dest)
 	u64 OPLSlash = 0;
 	for(char *C = FullPath; *C; ++C)
 	{
-		if(*C == '/')
+		if((*C == '/') || (*C == '\\'))
 		{
 			OPLSlash = (C - FullPath) + 1;
 		}

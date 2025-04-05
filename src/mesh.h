@@ -101,6 +101,7 @@ struct mesh
 struct model
 {
 	string Name;
+	string Path;
 
 	u32 Version;
 	u32 MeshCount;

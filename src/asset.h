@@ -84,27 +84,33 @@ struct asset_manager
 	memory_arena Arena;
 
 	string_hash TextureNames;
+	u32 TextureCount;
 	texture Textures[64];
 
 	string_hash ModelNames;
+	u32 ModelCount;
 	model Models[16];
 
 	// TODO(Justin): Clean this up
 	string_hash AnimationNames;
+	u32 AnimationCount;
 	animation_info *SampledAnimations;
 
 	string_hash GraphNames;
+	u32 GraphCount;
 	animation_graph Graphs[8];
 
 	font Font;
 
 	// File infos for hot reloading changes when they occur
 
-	platform_file_info XBotGraphFileInfo;
-	platform_file_info YBotGraphFileInfo;
-	platform_file_info PaladinGraphFileInfo;
-	platform_file_info ArcherGraphFileInfo;
-	platform_file_info BruteGraphFileInfo;
+	string_hash ReloadableNames;
+	platform_file_info FileInfos[8];
+	platform_file_info PlayerGraphFileInfo;
+	//platform_file_info YBotGraphFileInfo;
+	//platform_file_info PaladinGraphFileInfo;
+	//platform_file_info ArcherGraphFileInfo;
+	//platform_file_info BruteGraphFileInfo;
 	platform_file_info LevelFileInfo;
 
 	model Cube;

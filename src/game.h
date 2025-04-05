@@ -249,14 +249,14 @@ struct audio_state
 
 enum game_variable_type
 {
-	game_state_variable_type_none,
-	game_state_variable_type_u32,
-	game_state_variable_type_s32,
-	game_state_variable_type_f32,
-	game_state_variable_type_v3,
-	game_state_variable_type_quaternion,
-	game_state_variable_type_struct,
-	game_state_variable_type_enum,
+	game_variable_type_none,
+	game_variable_type_u32,
+	game_variable_type_s32,
+	game_variable_type_f32,
+	game_variable_type_v3,
+	game_variable_type_quaternion,
+	game_variable_type_struct,
+	game_variable_type_enum,
 };
 
 struct game_variable_data
@@ -297,8 +297,7 @@ struct game_state
 	f32 ZFar;
 	f32 Gravity;
 
-	u32 CurrentCharacter;
-	u32 CharacterIDs[6];
+	u32 ControllerIndex;
 	u32 PlayerIDForController[ArrayCount(((game_input *)0)->Controllers)];
 
 	texture Texture;

@@ -371,6 +371,7 @@ SwitchToNode(asset_manager *AssetManager, animation_player *AnimationPlayer, ani
 	}
 }
 
+
 // NOTE(Justin): Determine the next animation and when/how to start playing it
 internal void
 MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, animation_graph *Graph, char *Message)
@@ -393,6 +394,8 @@ MessageSend(asset_manager *AssetManager, animation_player *AnimationPlayer, anim
 				if(!Animation)
 				{
 					// TODO(Justin): This should never happen in production
+					// There are no animations currently playing so default to the idle node.
+
 					SwitchToNode(AssetManager, AnimationPlayer, Graph, Graph->Nodes[0].Name, DefaultBlendDuration, DefaultTimeOffset);
 					return;
 				}

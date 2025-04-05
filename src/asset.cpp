@@ -319,6 +319,7 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 	EatSpaces(&Line);
 	BufferNextWord(&Line, Word);
 
+	Model.Path = StringCopy(Arena, FileName);
 	Model.Version = 2;
 	Model.HasSkeleton = true;
 	Model.MeshCount = U32FromASCII(Word);
@@ -534,6 +535,18 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 		AdvanceLine(&Content);
 	}
 
+#if 0
+	for(u32 JointIndex = Model.JointCount - 1; JointIndex > 0; --JointIndex)
+	{
+		joint *Joint = Model.Joints + JointIndex;
+		joint *Parent = Model.Joints + Joint->ParentIndex;
+		v3 B = Mat4ColumnGet(Joint->Transform, 3);
+		v3 A = Mat4ColumnGet(Parent->Transform, 3);
+		v3 D = B - A;
+		Joint->Transform = Mat4ColumnSet(Joint->Transform, V4(D.x, D.y, D.z, 1.0f), 3);
+	}
+#endif
+
 	mat4 I = Mat4Identity();
 	for(u32 JointIndex = 0; JointIndex < Model.JointCount; ++JointIndex)
 	{
@@ -583,6 +596,7 @@ ModelLoad(memory_arena *Arena, char *FileName)
 	Assert(Header->Version == MODEL_FILE_VERSION);
 	Assert(Header->MeshCount != 0);
 
+	Model.Path = StringCopy(Arena, FileName);
 	Model.MeshCount = Header->MeshCount;
 	Model.HasSkeleton = Header->HasSkeleton;
 	Model.Meshes = PushArray(Arena, Model.MeshCount, mesh);
@@ -746,6 +760,42 @@ ModelLoad(memory_arena *Arena, char *FileName)
 	Model.ModelSpaceTransforms = Mesh->ModelSpaceTransforms;
 
 	return(Model);
+}
+
+internal void
+ModelSaveJoints(model *Model, char *FileName)
+{
+	FILE *Test = fopen(FileName, "w");
+	char Buffer[256];
+	MemoryZero(Buffer, sizeof(Buffer));
+
+	char *Fmt = "%f %f %f %f";
+	f32 A[4];
+	for(u32 JointIndex = 0; JointIndex < Model->JointCount; ++JointIndex)
+	{
+		joint *Joint = Model->Joints + JointIndex;
+		sprintf(Buffer, "%s\n", CString(Joint->Name));
+		u32 Length = StringLen(Buffer);
+		fwrite(Buffer, sizeof(u8), Length, Test);
+		for(u32 Row = 0; Row < 4; ++Row)
+		{
+			for(u32 Col = 0; Col < 4; ++Col)
+			{
+				A[Col] = Joint->Transform.E[Row][Col];
+			}
+
+			MemoryZero(Buffer, sizeof(Buffer));
+			sprintf(Buffer, Fmt, A[0], A[1], A[2], A[3]);
+			Length = StringLen(Buffer);
+			fwrite(Buffer, sizeof(u8), Length, Test);
+
+			Buffer[0] = '\n';
+			fwrite(Buffer, sizeof(u8), 1, Test);
+		}
+		fwrite(Buffer, sizeof(u8), 1, Test);
+	}
+
+	fclose(Test);
 }
 
 internal animation_info 
@@ -913,7 +963,7 @@ AssetManagerInitialize(asset_manager *Manager)
 	//
 
 	ArenaSubset(&Manager->Arena, &Manager->TextureNames.Arena, Kilobyte(2));
-	StringHashInit(&Manager->TextureNames);
+	StringHashInitialize(&Manager->TextureNames);
 	StringHashAdd(&Manager->TextureNames, "(null)", 0);
 
 	file_group_info TextureGroup = Platform.DebugFileGroupLoad(TexturesDirectoryAndWildCard);
@@ -937,6 +987,8 @@ AssetManagerInitialize(asset_manager *Manager)
 		Texture->Path = StringCopy(&Manager->Arena, Buffer);
 		Texture->Name = StringCopy(&Manager->Arena, (char *)AssetName);
 		*Texture = TextureLoad(Buffer);
+
+		Manager->TextureCount++;
 	}
 
 	//
@@ -944,7 +996,7 @@ AssetManagerInitialize(asset_manager *Manager)
 	//
 
 	ArenaSubset(&Manager->Arena, &Manager->ModelNames.Arena, Kilobyte(2));
-	StringHashInit(&Manager->ModelNames);
+	StringHashInitialize(&Manager->ModelNames);
 
 	file_group_info ModelGroup = Platform.DebugFileGroupLoad(ModelsDirectoryAndWildCard);
 	for(u32 FileIndex = 0; FileIndex < ModelGroup.Count; ++FileIndex)
@@ -970,11 +1022,17 @@ AssetManagerInitialize(asset_manager *Manager)
 			// NOTE(Justin): Testing blender exported file format...
 			//
 
-			//if(StringsAreSame(AssetName, "XBot"))
-			//{
-			//	*Model = TestLoadModel(&Manager->Arena, "test/Beta_JointsMesh.mesh");
-			//}
-			//else
+			if(StringsAreSame(AssetName, "XBot"))
+			{
+#if 1
+				*Model = TestLoadModel(&Manager->Arena, "test/Beta_JointsMesh.mesh");
+				ModelSaveJoints(Model, "test_joints.txt");
+#else
+				*Model = ModelLoad(&Manager->Arena, Buffer);
+				ModelSaveJoints(Model, "actual_joints.txt");
+#endif
+			}
+			else
 			{
 				*Model = ModelLoad(&Manager->Arena, Buffer);
 			}
@@ -1138,6 +1196,8 @@ AssetManagerInitialize(asset_manager *Manager)
 		{
 			Platform.UploadModelToGPU(Model);
 		}
+
+		Manager->ModelCount++;
 	}
 
 	//
@@ -1146,7 +1206,7 @@ AssetManagerInitialize(asset_manager *Manager)
 
 	file_group_info AnimationFileGroup = Platform.DebugFileGroupLoad(AnimationDirectoryAndWildCard);
 	ArenaSubset(&Manager->Arena, &Manager->AnimationNames.Arena, Kilobyte(2));
-	StringHashInit(&Manager->AnimationNames);
+	StringHashInitialize(&Manager->AnimationNames);
 	Manager->SampledAnimations = PushArray(&Manager->Arena, AnimationFileGroup.Count, animation_info);
 	for(u32 FileIndex = 0; FileIndex < AnimationFileGroup.Count; ++FileIndex)
 	{
@@ -1176,6 +1236,8 @@ AssetManagerInitialize(asset_manager *Manager)
 			key_frame *ReservedForChannel = SampledAnimation->ReservedForChannel;
 			AllocateJointXforms(&Manager->Arena, ReservedForChannel, SampledAnimation->JointCount);
 		}
+
+		Manager->AnimationCount++;
 	}
 
 	//
@@ -1184,7 +1246,7 @@ AssetManagerInitialize(asset_manager *Manager)
 
 	file_group_info GraphFileGroup = Platform.DebugFileGroupLoad(GraphDirectoryAndWildCard);
 	ArenaSubset(&Manager->Arena, &Manager->GraphNames.Arena, Kilobyte(2));
-	StringHashInit(&Manager->GraphNames);
+	StringHashInitialize(&Manager->GraphNames);
 	for(u32 FileIndex = 0; FileIndex < GraphFileGroup.Count; ++FileIndex)
 	{
 		char *FileName = GraphFileGroup.FileNames[FileIndex];
@@ -1205,6 +1267,8 @@ AssetManagerInitialize(asset_manager *Manager)
 		animation_graph *G = Manager->Graphs + Index;
 		ArenaSubset(&Manager->Arena, &G->Arena, Kilobyte(4));
 		AnimationGraphInitialize(G, Buffer);
+
+		Manager->GraphCount++;
 	}
 
 	//
@@ -1220,6 +1284,7 @@ AssetManagerInitialize(asset_manager *Manager)
 	//
 
 	// For hot reloading animation graph files
+#if 0
 	Manager->XBotGraphFileInfo = {};
 	Manager->XBotGraphFileInfo.Path = "../data/graphs/XBot_AnimationGraph.animation_graph";
 	Platform.DebugFileIsDirty(Manager->XBotGraphFileInfo.Path, &Manager->XBotGraphFileInfo.FileDate);
@@ -1239,6 +1304,25 @@ AssetManagerInitialize(asset_manager *Manager)
 	Manager->BruteGraphFileInfo = {};
 	Manager->BruteGraphFileInfo.Path = "../data/graphs/Brute_AnimationGraph.animation_graph";
 	Platform.DebugFileIsDirty(Manager->BruteGraphFileInfo.Path, &Manager->BruteGraphFileInfo.FileDate);
+#else
+
+	ArenaSubset(&Manager->Arena, &Manager->ReloadableNames.Arena, Kilobyte(2));
+	StringHashInitialize(&Manager->ReloadableNames);
+	for(u32 GraphIndex = 0; GraphIndex < ArrayCount(Manager->Graphs); ++GraphIndex)
+	{
+		animation_graph *G = Manager->Graphs + GraphIndex;
+		if(G->NodeCount == 0) continue;
+
+		StringHashAdd(&Manager->ReloadableNames, CString(G->Name), GraphIndex);
+		s32 Index = StringHashLookup(&Manager->ReloadableNames, CString(G->Name));
+		Assert((Index >= 0) && (Index < ArrayCount(Manager->FileInfos)));
+
+		platform_file_info *FileInfo = Manager->FileInfos + Index;
+		*FileInfo = {};
+		FileInfo->Path = CString(G->Path);
+		Platform.DebugFileIsDirty(FileInfo->Path, &FileInfo->FileDate);
+	}
+#endif
 
 	Manager->LevelFileInfo = {};
 	Manager->LevelFileInfo.Path = "../src/test.level";
