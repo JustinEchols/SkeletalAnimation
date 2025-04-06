@@ -20,7 +20,7 @@ flags 270
 position 0.0 0.01 -5.0
 movement_collider_count 1
 movement_collider_type capsule
-player_type Brute 
+player_type Brute
 
 entity
 type cube 

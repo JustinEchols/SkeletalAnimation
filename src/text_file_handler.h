@@ -2,22 +2,25 @@
 
 //
 // NOTE(Justin): Text file handler experiment. This is only to be used for simple text file formats
-// that have short lines that look like:
+// that have short lines that ~look like:
 //
 // name value
+
+#define TEXT_HANDLER_BUFFER_SIZE 4096
 
 struct text_file_handler
 {
 	u8 *FileContent;
 
-	u8 LineBuffer_[4096];
+	u8 LineBuffer_[TEXT_HANDLER_BUFFER_SIZE];
 	u8 *LineBuffer;
 	u8 *Line;
 
-	u8 Word_[4096];
+	u8 Word_[TEXT_HANDLER_BUFFER_SIZE];
 	u8 *Word;
 
 	u32 LineNumber;
+	u32 ColNumber;
 };
 
 inline void BufferNextWord(u8 **Content, u8 *Buffer);

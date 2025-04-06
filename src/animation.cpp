@@ -881,31 +881,19 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 		return;
 	}
 
-	G->Path = StringCopy(&G->Arena, FileName);
-
 	char Name[256];
 	MemoryZero(Name, sizeof(Name));
 	FileNameFromFullPath(FileName, Name);
 	G->Name = StringCopy(&G->Arena, Name);
+	G->Path = StringCopy(&G->Arena, FileName);
 
-	u8 *Content = (u8 *)File.Content;
-
-	u8 LineBuffer_[4096];
-	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
-	u8 *LineBuffer = &LineBuffer_[0];
-
-	u8 Word_[4096];
-	MemoryZero(Word_, sizeof(Word_));
-	u8 *Word = &Word_[0];
-
+	text_file_handler Handler_ = TextFileHandlerInitialize(File.Content);
+	text_file_handler *Handler = &Handler_;
 	b32 ProcessingNode = false;
-	while(*Content)
+	while(IsValid(Handler))
 	{
-		BufferLine(&Content, LineBuffer);
-		u8 *Line = LineBuffer;
-		BufferNextWord(&Line, Word);
-
-		switch(Word[0])
+		BufferAndAdvanceALine(Handler);
+		switch(Handler->Word[0])
 		{
 			case ' ':
 			case '\r':
@@ -917,7 +905,7 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 			} break;
 			case '[':
 			{
-				u32 Version = U32FromASCII(&Word[1]);
+				u32 Version = U32FromASCII(&Handler->Word[1]);
 			} break;
 			case ':':
 			{
@@ -927,152 +915,122 @@ AnimationGraphInitialize(animation_graph *G, char *FileName)
 					ProcessingNode = false;
 				}
 
-				EatUntilSpace(&Line);
-				EatSpaces(&Line);
-				NodeBegin(G, (char *)Line);
+				EatUntilSpace(&Handler->Line);
+				EatSpaces(&Handler->Line);
+				NodeBegin(G, (char *)Handler->Line);
 				ProcessingNode = true;
-				BufferLine(&Content, LineBuffer);
-				Line = LineBuffer;
+				BufferLine(&Handler->FileContent, Handler->LineBuffer);
+				Handler->Line = Handler->LineBuffer;
+				BufferAndAdvanceAWord(Handler);
 			} break;
 		}
 
 		if(ProcessingNode)
 		{
 			animation_graph_node *Node = &G->Nodes[G->Index];
-			if(StringsAreSame(Word, "message"))
+			if(StringsAreSame(Handler->Word, "message"))
 			{
 				Assert(Node->ArcCount < ArrayCount(Node->Arcs));
 				animation_graph_arc *Arc = Node->Arcs + Node->ArcCount++;
 
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Arc->Message = StringCopy(&G->Arena, Word);
+				BufferAndAdvanceAWord(Handler);
+				Arc->Message = StringCopy(&G->Arena, Handler->Word);
 
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Arc->Destination = StringCopy(&G->Arena, Word);
+				BufferAndAdvanceAWord(Handler);
+				Arc->Destination = StringCopy(&G->Arena, Handler->Word);
 
 				Arc->Type = ArcType_None;
 
-				while(*Line)
+				while(LineIsValid(Handler))
 				{
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
+					BufferAndAdvanceAWord(Handler);
 
-					if(StringsAreSame("t_start", Word))
+					if(StringsAreSame("t_start", Handler->Word))
 					{
-						EatSpaces(&Line);
-						BufferNextWord(&Line, Word);
-						Arc->StartTime = F32FromASCII(Word);
+						ParseFloat(&Handler->Line, Handler->Word, &Arc->StartTime);
 					}
-					else if(StringsAreSame("t_blend", Word))
+					else if(StringsAreSame("t_blend", Handler->Word))
 					{
-						EatSpaces(&Line);
-						BufferNextWord(&Line, Word);
-						Arc->BlendDuration = F32FromASCII(Word);
+						ParseFloat(&Handler->Line, Handler->Word, &Arc->BlendDuration);
 						Arc->BlendDurationSet = true;
 					}
-					else if(StringsAreSame("t_interval", Word))
+					else if(StringsAreSame("t_interval", Handler->Word))
 					{
-						EatSpaces(&Line);
-						BufferNextWord(&Line, Word);
-						Arc->t0 = F32FromASCII(Word);
-
-						EatSpaces(&Line);
-						BufferNextWord(&Line, Word);
-						Arc->t1 = F32FromASCII(Word);
-
+						ParseFloat(&Handler->Line, Handler->Word, &Arc->t0);
+						ParseFloat(&Handler->Line, Handler->Word, &Arc->t1);
 						Arc->Type = ArcType_TimeInterval;
 					}
 				}
 			}
-			else if(StringsAreSame(Word, "when_done"))
+			else if(StringsAreSame(Handler->Word, "when_done"))
 			{
 				animation_graph_arc *Arc = &Node->WhenDone;
 
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Arc->Message = StringCopy(&G->Arena, Word);
+				BufferAndAdvanceAWord(Handler);
+				Arc->Message = StringCopy(&G->Arena, Handler->Word);
 
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Arc->Destination = StringCopy(&G->Arena, Word);
+				BufferAndAdvanceAWord(Handler);
+				Arc->Destination = StringCopy(&G->Arena, Handler->Word);
 
 				Arc->Type = ArcType_WhenDone;
 
-				while(*Line)
+				while(LineIsValid(Handler))
 				{
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
+					BufferAndAdvanceAWord(Handler);
 
-					if(StringsAreSame("t_remaining", Word))
+					if(StringsAreSame("t_remaining", Handler->Word))
 					{
-						EatSpaces(&Line);
-						BufferNextWord(&Line, Word);
-						Arc->RemainingTimeBeforeCrossFade = F32FromASCII(Word);
+						ParseFloat(&Handler->Line, Handler->Word, &Arc->RemainingTimeBeforeCrossFade);
 					}
-					if(StringsAreSame("t_start", Word))
+					if(StringsAreSame("t_start", Handler->Word))
 					{
-						EatSpaces(&Line);
-						BufferNextWord(&Line, Word);
-						Arc->StartTime = F32FromASCII(Word);
+						ParseFloat(&Handler->Line, Handler->Word, &Arc->StartTime);
 					}
 				}
 			}
 			// TODO(Justin): This should be a tag. E.g. idle not the actual name of the animaation?
-			else if(StringsAreSame(Word, "animation"))
+			else if(StringsAreSame(Handler->Word, "animation"))
 			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Node->Tag = StringCopy(&G->Arena, Word);
+				BufferAndAdvanceAWord(Handler);
+				Node->Tag = StringCopy(&G->Arena, Handler->Word);
 			}
-			else if(StringsAreSame(Word, "t_scale"))
+			else if(StringsAreSame(Handler->Word, "t_scale"))
 			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Node->TimeScale = F32FromASCII(Word);
+				ParseFloat(&Handler->Line, Handler->Word, &Node->TimeScale);
 			}
-			else if(StringsAreSame(Word, "collider_interval"))
+			else if(StringsAreSame(Handler->Word, "collider_interval"))
 			{
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Node->Collidert0 = F32FromASCII(Word);
-
-				EatSpaces(&Line);
-				BufferNextWord(&Line, Word);
-				Node->Collidert1 = F32FromASCII(Word);
+				ParseFloat(&Handler->Line, Handler->Word, &Node->Collidert0);
+				ParseFloat(&Handler->Line, Handler->Word, &Node->Collidert1);
 			}
-			else if(StringsAreSame(Word, "controls_position"))
+			else if(StringsAreSame(Handler->Word, "controls_position"))
 			{
 				Node->AnimationFlags |= AnimationFlag_ControlsPosition;
 			}
-			else if(StringsAreSame(Word, "controls_turning"))
+			else if(StringsAreSame(Handler->Word, "controls_turning"))
 			{
 				Node->AnimationFlags |= AnimationFlag_ControlsTurning;
 			}
-			else if(StringsAreSame(Word, "looping"))
+			else if(StringsAreSame(Handler->Word, "looping"))
 			{
 				Node->AnimationFlags |= AnimationFlag_Looping;
 			}
-			else if(StringsAreSame(Word, "remove_locomotion"))
+			else if(StringsAreSame(Handler->Word, "remove_locomotion"))
 			{
 				Node->AnimationFlags |= AnimationFlag_RemoveLocomotion;
 			}
-			else if(StringsAreSame(Word, "ignore_y_motion"))
+			else if(StringsAreSame(Handler->Word, "ignore_y_motion"))
 			{
 				Node->AnimationFlags |= AnimationFlag_IgnoreYMotion;
 			}
-			else if(*Word == '#')
+			else if(Handler->Word[0] == '#')
 			{
 				// Comment, do nothing.
 			}
 		}
-
-		AdvanceLine(&Content);
 	}
 
 	NodeEnd(G);
-
 	Platform.DebugFileFree(File.Content);
 }
 

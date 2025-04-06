@@ -61,9 +61,15 @@ BufferNextWord(u8 **Content, u8 *Buffer)
 	u32 At = 0;
 	while(!IsNewLine(*Content) && !IsSpace(*Content) && !IsNull(*Content))
 	{
-		Buffer[At++] = **Content;
+		Buffer[At] = **Content;
 		(*Content)++;
+		At++;
 
+		if(At >= TEXT_HANDLER_BUFFER_SIZE)
+		{
+			// TODO(Justin): Log print
+			Assert(0);
+		}
 	}
 	Buffer[At] = '\0';
 }
@@ -72,11 +78,17 @@ inline void
 BufferNumber(u8 **Content, u8 *Buffer)
 {
 	u32 At = 0;
-	while(IsNumber(*Content))
+	while((**Content) && IsNumber(*Content))
 	{
-		Buffer[At++] = **Content;
+		Buffer[At] = **Content;
 		(*Content)++;
+		At++;
 
+		if(At >= TEXT_HANDLER_BUFFER_SIZE)
+		{
+			// TODO(Justin): Log print
+			Assert(0);
+		}
 	}
 	Buffer[At] = '\0';
 }
@@ -87,8 +99,15 @@ BufferLine(u8 **Content, u8 *Buffer)
 	u32 At = 0;
 	while((**Content) && !IsNewLine(**Content))
 	{
-		Buffer[At++] = **Content;
+		Buffer[At] = **Content;
 		(*Content)++;
+		At++;
+
+		if(At >= TEXT_HANDLER_BUFFER_SIZE)
+		{
+			// TODO(Justin): Log print
+			Assert(0);
+		}
 	}
 	Buffer[At] = '\0';
 }
@@ -96,7 +115,7 @@ BufferLine(u8 **Content, u8 *Buffer)
 inline void
 AdvanceLine(u8 **Content)
 {
-	while(IsNewLine(**Content))
+	while((**Content ) && IsNewLine(**Content))
 	{
 		(*Content)++;
 	}

@@ -165,8 +165,6 @@ DebugDrawOBB(render_buffer *RenderBuffer, model *DebugCube, obb OBB, v3 P, v3 Of
 	PushDebugVolume(RenderBuffer, DebugCube, T*R*S, Color);
 }
 
-
-
 internal void
 DebugDrawCapsule(v3 P, v3 Offset, mat4 R, mat4 S, capsule Capsule)
 {
