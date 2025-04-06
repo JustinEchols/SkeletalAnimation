@@ -162,129 +162,6 @@ EatUntilSpace(u8 **Buff)
 	}
 }
 
-// TODO(Justin): This is dangerous as if the arguements get passed in the incorrect order
-// then bad things can happen... Also there is no size checking on the buffer
-inline void
-BufferNextWord(u8 **Content, u8 *Buffer)
-{
-	u32 At = 0;
-	while(!IsNewLine(*Content) && !IsSpace(*Content) && !IsNull(*Content))
-	{
-		Buffer[At++] = **Content;
-		(*Content)++;
-
-	}
-	Buffer[At] = '\0';
-}
-
-inline void
-BufferNumber(u8 **Content, u8 *Buffer)
-{
-	u32 At = 0;
-	while(IsNumber(*Content))
-	{
-		Buffer[At++] = **Content;
-		(*Content)++;
-
-	}
-	Buffer[At] = '\0';
-}
-
-inline void
-BufferLine(u8 **Content, u8 *Buffer)
-{
-	u32 At = 0;
-	while((**Content) && !IsNewLine(**Content))
-	{
-		Buffer[At++] = **Content;
-		(*Content)++;
-	}
-	Buffer[At] = '\0';
-}
-
-inline void
-AdvanceLine(u8 **Content)
-{
-	while(IsNewLine(**Content))
-	{
-		(*Content)++;
-	}
-}
-
-inline void
-ParseUnsignedInt(u8 **AddressOfLinePtr, u8 *Buffer, u32 *Dest)
-{
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	*Dest = U32FromASCII(Buffer); 
-}
-
-inline void
-ParseInt(u8 **AddressOfLinePtr, u8 *Buffer, s32 *Dest)
-{
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	*Dest = S32FromASCII(Buffer); 
-}
-
-inline void
-ParseFloat(u8 **AddressOfLinePtr, u8 *Buffer, f32 *Dest)
-{
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	*Dest = F32FromASCII(Buffer); 
-}
-
-inline void
-ParseV2(u8 **AddressOfLinePtr, u8 *Buffer, v2 *Dest)
-{
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	Dest->x = F32FromASCII(Buffer);
-
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	Dest->y = F32FromASCII(Buffer);
-}
-
-inline void
-ParseV3(u8 **AddressOfLinePtr, u8 *Buffer, v3 *Dest)
-{
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	Dest->x = F32FromASCII(Buffer);
-
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	Dest->y = F32FromASCII(Buffer);
-
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	Dest->z = F32FromASCII(Buffer);
-}
-
-inline void
-ParseQuaternion(u8 **AddressOfLinePtr, u8 *Buffer, quaternion *Dest)
-{
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	f32 X = F32FromASCII(Buffer);
-
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	f32 Y = F32FromASCII(Buffer);
-
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	f32 Z = F32FromASCII(Buffer);
-
-	EatSpaces(AddressOfLinePtr);
-	BufferNextWord(AddressOfLinePtr, Buffer);
-	f32 Angle = F32FromASCII(Buffer);
-
-	*Dest = Quaternion(V3(X, Y , Z), DegreeToRad(Angle));
-}
-
 inline string
 StringFromRange(u8 *First, u8 *Last)
 {
@@ -478,6 +355,11 @@ StringCopy(memory_arena *Arena, u8 *Str)
 	return(Result);
 }
 
+inline void
+StringConcat(char *Dest, u8 *String)
+{
+	strcat(Dest, (char *)String);
+}
 
 internal void
 ParseStringArray(memory_arena *Arena, string *Dest, u32 DestCount, string Str)

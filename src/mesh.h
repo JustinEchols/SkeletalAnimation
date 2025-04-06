@@ -126,12 +126,21 @@ struct model
 	//
 	// TEST NEW SKELETON
 	//
+
+	//
+	// NOTE(Justin): This does not work in general if meshes uses different skeleton 
+	// The XBot has two meshes with slightly different skeletons the "joint mesh"
+	// has 64 joints and the surface mesh has "65". The easy thing to do, and which was done before,
+	// is to use two different skeletons, one for each mesh. But this is wastefule
+	// The result is that the joint indices for each vertex of the second mesh is off by, in this case, 1
+	//
+
 	// Skeleton 
 	u32 JointCount;
 	joint *Joints;
 	mat4 BindTransform;
 	mat4 *InvBindTransforms;
-	mat4 *JointTransforms;
+	mat4 *JointTransforms; // Current pose in armature/rig space, used for physics
 	mat4 *ModelSpaceTransforms;
 };
 

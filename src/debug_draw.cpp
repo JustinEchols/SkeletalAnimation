@@ -225,7 +225,7 @@ DebugDrawJoints(entity *Entity)
 	}
 
 	model *Model = Entity->AnimationPlayer->Model;
-	mat4 Transform	= EntityTransform(Entity, Entity->VisualScale);
+	mat4 Transform	= ModelToWorldTransform(Entity->P, Entity->Orientation, Entity->VisualScale);
 	for(u32 MeshIndex = 0; MeshIndex < Model->MeshCount; ++MeshIndex)
 	{
 		mesh *Mesh = Model->Meshes + MeshIndex;
@@ -408,7 +408,7 @@ DebugDrawAnimationPlayer(animation_player *AnimationPlayer)
 internal void
 DebugDrawHandAndFoot(entity *Entity)
 {
-	mat4 T = EntityTransform(Entity, Entity->VisualScale);
+	mat4 T = ModelToWorldTransform(Entity->P, Entity->Orientation, Entity->VisualScale);
 	mat4 R = Mat4Identity();
 	mat4 S = Mat4Scale(0.2f);
 

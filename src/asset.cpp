@@ -6,19 +6,12 @@ ObjLoad(memory_arena *Arena, char *FileName)
 	debug_file File = Platform.DebugFileReadEntire(FileName);
 	if(File.Size == 0)
 	{
-		//TODO(Justin): Exit gracefully
+		//TODO(Justin): Log error. 
 		Assert(0);
 	}
 
-	u8 *Content = (u8 *)File.Content;
-
-	u8 LineBuffer_[4096];
-	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
-	u8 *LineBuffer = &LineBuffer_[0];
-
-	u8 Word_[4096];
-	MemoryZero(Word_, sizeof(Word_));
-	u8 *Word = &Word_[0];
+	text_file_handler Handler_ = TextFileHandlerInitialize(File.Content);
+	text_file_handler *Handler = &Handler_;
 
 	char MaterialFileName[256];
 	MemoryZero(MaterialFileName, sizeof(MaterialFileName));
@@ -29,31 +22,28 @@ ObjLoad(memory_arena *Arena, char *FileName)
 	u32 UVCount = 0;
 	u32 FaceCount = 0;
 
-	while(*Content)
+	while(IsValid(Handler))
 	{
-		BufferLine(&Content, LineBuffer);
-		u8 *Line = LineBuffer;
-		BufferNextWord(&Line, Word);
+		BufferAndAdvanceALine(Handler);
 
-		switch(Word[0])
+		switch(Handler->Word[0])
 		{
 			case 'm':
 			{
-				if(StringsAreSame(Word, "mtllib"))
+				if(StringsAreSame(Handler->Word, "mtllib"))
 				{
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					strcat(MaterialFileName, (char *)Word);
+					BufferAndAdvanceAWord(Handler);
+					StringConcat(MaterialFileName, Handler->Word);
 					Assert(StringLen(MaterialFileName) != 0);
 				}
 			} break;
 			case 'v':
 			{
-				if(Word[1] == 'n')
+				if(Handler->Word[1] == 'n')
 				{
 					NormalCount++;
 				}
-				else if(Word[1] == 't')
+				else if(Handler->Word[1] == 't')
 				{
 					UVCount++;
 				}
@@ -65,25 +55,29 @@ ObjLoad(memory_arena *Arena, char *FileName)
 			} break;
 			case 'f':
 			{
-				while(*Line)
+				while(LineIsValid(Handler))
 				{
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
+					BufferAndAdvanceAWord(Handler);
 					FaceCount++; //A face is made up of three of these, choose a better name
 				}
 			} break;
 			case 'u':
 			{
-				if(StringsAreSame(Word, "usemtl"))
+				//
+				// NOTE(Justin): Assume that anytime a usemtl is visited this is a material for a new mesh which
+				// also means that another mesh exists.
+				// TODO(Justin): Determine if this is actually the case.
+				//
+
+				if(StringsAreSame(Handler->Word, "usemtl"))
 				{
 					MeshCount++;
 				}
 			} break;
 		}
-
-		AdvanceLine(&Content);
 	}
 
+	Result.Version = 2;
 	Result.MeshCount = MeshCount;
 	Result.Meshes	= PushArray(Arena, Result.MeshCount, mesh);
 
@@ -107,75 +101,36 @@ ObjLoad(memory_arena *Arena, char *FileName)
 	// NOTE(Justin): Reset file pointer, clear buffers, parse data
 	//
 
-	Content = (u8 *)File.Content;
-	MemoryZero(LineBuffer_, sizeof(LineBuffer_));
-	MemoryZero(Word_, sizeof(Word_));
-	mesh *Mesh = Result.Meshes;
-	while(*Content)
-	{
-		BufferLine(&Content, LineBuffer);
-		u8 *Line = LineBuffer;
-		BufferNextWord(&Line, Word);
+	TextFileHandlerReset(Handler, File.Content);
 
-		switch(Word[0])
+	// TODO(Justin): Maybe seek to the data then parse since we have counts of everything.
+
+	mesh *Mesh = Result.Meshes;
+	while(IsValid(Handler))
+	{
+		BufferAndAdvanceALine(Handler);
+		switch(Handler->Word[0])
 		{
 			case 'v':
 			{
-				//
-				// NOTE(Justin): Vertex attribute
-				//
-
-				if(Word[1] == 'n')
+				if(Handler->Word[1] == 'n')
 				{
 					v3 *N = Normals + NormalIndex;
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					N->x = F32FromASCII(Word);
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					N->y = F32FromASCII(Word);
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					N->z = F32FromASCII(Word);
-
+					ParseV3(&Handler->Line, Handler->Word, N);
 					NormalIndex++;
 				}
-				else if(Word[1] == 't')
+				else if(Handler->Word[1] == 't')
 				{
 					v2 *UV = UVs + UVIndex;
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					UV->x = F32FromASCII(Word);
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					UV->y = F32FromASCII(Word);
-
+					ParseV2(&Handler->Line, Handler->Word, UV);
 					UVIndex++;
 				}
 				else
 				{
 					v3 *P = Positions + PositionIndex;
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					P->x = F32FromASCII(Word);
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					P->y = F32FromASCII(Word);
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					P->z = F32FromASCII(Word);
-
+					ParseV3(&Handler->Line, Handler->Word, P);
 					PositionIndex++;
 				}
-
 			} break;
 			case 'f':
 			{
@@ -183,13 +138,12 @@ ObjLoad(memory_arena *Arena, char *FileName)
 				// NOTE(Justin): Face/triangle, v/vt/vn, 1 - indexed
 				//
 
-				while(*Line)
+				while(LineIsValid(Handler))
 				{
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					u8 *IndicesPointer = Word;
+					BufferAndAdvanceAWord(Handler);
+					u8 *IndicesPointer = Handler->Word;
 
-					u8 Number[256];
+					u8 Number[64];
 					MemoryZero(Number, sizeof(Number));
 
 					BufferNumber(&IndicesPointer, Number);
@@ -210,41 +164,31 @@ ObjLoad(memory_arena *Arena, char *FileName)
 			} break;
 			case 'u':
 			{
-				if(StringsAreSame(Word, "usemtl"))
+				if(StringsAreSame(Handler->Word, "usemtl"))
 				{
+					BufferAndAdvanceAWord(Handler);
 					if(MeshIndex == 0)
 					{
-						if(Mesh->VertexCount != 0)
+						if(Mesh->VertexCount == 0)
 						{
-							MeshIndex++;
-							Mesh = Result.Meshes + MeshIndex;
-
-							EatSpaces(&Line);
-							BufferNextWord(&Line, Word);
-							Mesh->Name = StringCopy(Arena, Word);
-
+							Mesh->Name = StringCopy(Arena, Handler->Word);
 						}
 						else
 						{
-							EatSpaces(&Line);
-							BufferNextWord(&Line, Word);
-							Mesh->Name = StringCopy(Arena, Word);
+							MeshIndex++;
+							Mesh = Result.Meshes + MeshIndex;
+							Mesh->Name = StringCopy(Arena, Handler->Word);
 						}
 					}
 					else
 					{
 						MeshIndex++;
 						Mesh = Result.Meshes + MeshIndex;
-
-						EatSpaces(&Line);
-						BufferNextWord(&Line, Word);
-						Mesh->Name = StringCopy(Arena, Word);
+						Mesh->Name = StringCopy(Arena, Handler->Word);
 					}
 				}
 			} break;
 		}
-
-		AdvanceLine(&Content);
 	}
 
 	Assert(PositionCount == PositionIndex);
@@ -252,7 +196,8 @@ ObjLoad(memory_arena *Arena, char *FileName)
 	Assert(UVCount == UVIndex);
 
 	//
-	// NOTE(Justin): Initialze model
+	// NOTE(Justin): Initialze model. Also the indices of all the meshes are stored in one array.
+	// We compute an offset into the array (IndexOffsetForMesh) after copying data to the mesh.
 	//
 
 	u32 IndexOffsetForMesh = 0;
@@ -289,7 +234,6 @@ ObjLoad(memory_arena *Arena, char *FileName)
 	return(Result);
 }
 
-
 internal model
 TestLoadModel(memory_arena *Arena, char *FileName)
 {
@@ -324,9 +268,11 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 	Model.HasSkeleton = true;
 	Model.MeshCount = U32FromASCII(Word);
 	Model.Meshes = PushArray(Arena, Model.MeshCount, mesh);
-	mesh *Mesh = Model.Meshes;
+
 
 	AdvanceLine(&Content);
+	u32 MeshCount = 0;
+	mesh *Mesh = 0;
 	while(*Content)
 	{
 		BufferLine(&Content, LineBuffer);
@@ -337,6 +283,8 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 		{
 			EatSpaces(&Line);
 			BufferNextWord(&Line, Word);
+
+			Mesh = Model.Meshes + MeshCount++;
 			Mesh->Name = StringCopy(Arena, Word);
 		}
 		else if(StringsAreSame(Word, "vertex_count"))
@@ -347,6 +295,18 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 			Mesh->IndicesCount = Mesh->VertexCount;
 			Mesh->Vertices = PushArray(Arena, Mesh->VertexCount, vertex);
 			Mesh->Indices = PushArray(Arena, Mesh->IndicesCount, u32);
+		}
+		else if(StringsAreSame(Word, "diffuse"))
+		{
+			ParseV4(&Line, Word, &Mesh->MaterialSpec.Diffuse);
+		}
+		else if(StringsAreSame(Word, "specular"))
+		{
+			ParseV4(&Line, Word, &Mesh->MaterialSpec.Specular);
+		}
+		else if(StringsAreSame(Word, "specular_intensity"))
+		{
+			ParseFloat(&Line, Word, &Mesh->MaterialSpec.Shininess);
 		}
 		else if(StringsAreSame(Word, "vertices"))
 		{
@@ -527,25 +487,9 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 				AdvanceLine(&Content);
 			}
 		}
-		else if(StringsAreSame(Word, "next"))
-		{
-			Mesh++;
-		}
 
 		AdvanceLine(&Content);
 	}
-
-#if 0
-	for(u32 JointIndex = Model.JointCount - 1; JointIndex > 0; --JointIndex)
-	{
-		joint *Joint = Model.Joints + JointIndex;
-		joint *Parent = Model.Joints + Joint->ParentIndex;
-		v3 B = Mat4ColumnGet(Joint->Transform, 3);
-		v3 A = Mat4ColumnGet(Parent->Transform, 3);
-		v3 D = B - A;
-		Joint->Transform = Mat4ColumnSet(Joint->Transform, V4(D.x, D.y, D.z, 1.0f), 3);
-	}
-#endif
 
 	mat4 I = Mat4Identity();
 	for(u32 JointIndex = 0; JointIndex < Model.JointCount; ++JointIndex)
@@ -555,6 +499,7 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 		Model.ModelSpaceTransforms[JointIndex] = I;
 	}
 
+#if 0
 	Model.Meshes[0].MaterialSpec.Ambient = V4(0.000000, 0.000000, 0.000000, 1.000000); 
 	Model.Meshes[0].MaterialSpec.Diffuse = V4(0.266667, 0.099623, 0.080812, 1.000000);
 	Model.Meshes[0].MaterialSpec.Specular = V4(0.299138, 0.299138, 0.299138, 1.000000);
@@ -564,6 +509,7 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 	Model.Meshes[1].MaterialSpec.Diffuse = V4(0.669600, 0.241846, 0.210924, 1.000000);
 	Model.Meshes[1].MaterialSpec.Specular = V4(0.487175, 0.487175, 0.487175, 1.000000);
 	Model.Meshes[1].MaterialSpec.Shininess = 3.675214;
+#endif
 
 	//
 	// NOTE(Justin): Header
@@ -763,7 +709,7 @@ ModelLoad(memory_arena *Arena, char *FileName)
 }
 
 internal void
-ModelSaveJoints(model *Model, char *FileName)
+SaveModelJointTransforms(model *Model, char *FileName)
 {
 	FILE *Test = fopen(FileName, "w");
 	char Buffer[256];
@@ -797,6 +743,55 @@ ModelSaveJoints(model *Model, char *FileName)
 
 	fclose(Test);
 }
+
+internal void
+SaveModelJointTransformsInModelSpace(model *Model, char *FileName)
+{
+	FILE *Test = fopen(FileName, "w");
+	char Buffer[256];
+	MemoryZero(Buffer, sizeof(Buffer));
+
+	char *Fmt = "%f %f %f %f";
+	f32 A[4];
+	for(u32 JointIndex = 0; JointIndex < Model->JointCount; ++JointIndex)
+	{
+		joint *Joint = Model->Joints + JointIndex;
+		if(JointIndex == 0)
+		{
+			Model->JointTransforms[JointIndex] = Joint->Transform;
+		}
+		else
+		{
+			mat4 ParentT = Model->JointTransforms[Joint->ParentIndex];
+			Model->JointTransforms[JointIndex] = ParentT * Joint->Transform;
+		}
+		mat4 JointTransform = Model->JointTransforms[JointIndex];
+
+		sprintf(Buffer, "%s\n", CString(Joint->Name));
+		u32 Length = StringLen(Buffer);
+		fwrite(Buffer, sizeof(u8), Length, Test);
+		for(u32 Row = 0; Row < 4; ++Row)
+		{
+			for(u32 Col = 0; Col < 4; ++Col)
+			{
+				//A[Col] = Joint->Transform.E[Row][Col];
+				A[Col] = JointTransform.E[Row][Col];
+			}
+
+			MemoryZero(Buffer, sizeof(Buffer));
+			sprintf(Buffer, Fmt, A[0], A[1], A[2], A[3]);
+			Length = StringLen(Buffer);
+			fwrite(Buffer, sizeof(u8), Length, Test);
+
+			Buffer[0] = '\n';
+			fwrite(Buffer, sizeof(u8), 1, Test);
+		}
+		fwrite(Buffer, sizeof(u8), 1, Test);
+	}
+
+	fclose(Test);
+}
+
 
 internal animation_info 
 AnimationLoad(memory_arena *Arena, char *FileName)
@@ -1025,11 +1020,9 @@ AssetManagerInitialize(asset_manager *Manager)
 			if(StringsAreSame(AssetName, "XBot"))
 			{
 #if 1
-				*Model = TestLoadModel(&Manager->Arena, "test/Beta_JointsMesh.mesh");
-				ModelSaveJoints(Model, "test_joints.txt");
+				*Model = TestLoadModel(&Manager->Arena, "test/Beta_Joints.mesh");
 #else
 				*Model = ModelLoad(&Manager->Arena, Buffer);
-				ModelSaveJoints(Model, "actual_joints.txt");
 #endif
 			}
 			else
@@ -1059,65 +1052,6 @@ AssetManagerInitialize(asset_manager *Manager)
 					Mesh->MaterialFlags |= (MaterialFlag_Diffuse | MaterialFlag_Specular);
 				}
 			}
-			if(StringsAreSame(AssetName, "Erika_ArcherWithBowArrow"))
-			{
-				/*
-				//0
-				FemaleFitA_eyelash_diffuse.png
-
-				//1
-				FemaleFitA_Body_diffuse.png
-				FemaleFitA_normal.png
-
-				//2
-				FemaleFitA_Body_diffuse.png
-				Erika_Archer_Clothes_normal.png
-
-				//3
-				Bow_diffuse.jpg
-				Bow_normal.jpg
-
-				//4
-				Arrow_diffuse.png
-				Arrow_normal.jpg
-
-				//5
-				Erika_Archer_Clothes_diffuse.png
-				Erika_Archer_Clothes_normal.png
-				*/
-
-
-				//0
-				asset_entry Diffuse = FindTexture(Manager, "FemaleFitA_eyelash_diffuse");
-				Model->Meshes[0].DiffuseTexture = Diffuse.Index;
-				Model->Meshes[0].MaterialFlags = (MaterialFlag_Diffuse);
-
-				//1
-				Diffuse = FindTexture(Manager, "FemaleFitA_Body_diffuse");
-				Model->Meshes[1].DiffuseTexture = Diffuse.Index;
-				Model->Meshes[1].MaterialFlags = (MaterialFlag_Diffuse);
-
-				//2
-				Model->Meshes[2].DiffuseTexture = Diffuse.Index;
-				Model->Meshes[2].MaterialFlags = (MaterialFlag_Diffuse);
-
-				//3
-				Diffuse = FindTexture(Manager, "Bow_diffuse");
-				Model->Meshes[3].DiffuseTexture = Diffuse.Index;
-				Model->Meshes[3].MaterialFlags = (MaterialFlag_Diffuse);
-				
-				//4
-				Diffuse = FindTexture(Manager, "Arrow_diffuse");
-				Model->Meshes[4].DiffuseTexture = Diffuse.Index;
-				Model->Meshes[4].MaterialFlags = (MaterialFlag_Diffuse);
-				Model->Meshes[4].Flags |= MeshFlag_DontDraw;
-				
-				//5
-				Diffuse = FindTexture(Manager, "Erika_Archer_Clothes_diffuse");
-				Model->Meshes[5].DiffuseTexture = Diffuse.Index;
-				Model->Meshes[5].MaterialFlags = (MaterialFlag_Diffuse);
-			}
-
 			if(StringsAreSame(AssetName, "Brute"))
 			{
 				asset_entry Diffuse = FindTexture(Manager, "axe_diffuse");

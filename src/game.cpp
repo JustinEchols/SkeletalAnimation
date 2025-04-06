@@ -1,5 +1,6 @@
 #include "game.h"
 #include "strings.cpp"
+#include "text_file_handler.cpp"
 #include "texture.cpp"
 #include "font.cpp"
 #include "mesh.cpp"
@@ -10,60 +11,6 @@
 #include "debug_draw.cpp"
 #include "ui.cpp"
 #include "collision.cpp"
-
-//
-// NOTE(Justin): Text file handler experiment..
-//
-
-struct text_file_handler
-{
-	u8 *FileContent;
-
-	u8 LineBuffer_[4096];
-	u8 *LineBuffer;
-	u8 *Line;
-
-	u8 Word_[4096];
-	u8 *Word;
-};
-
-inline text_file_handler
-TextFileHandlerInitialize(void *FileContent)
-{
-	text_file_handler Result = {};
-
-	Result.FileContent = (u8 *)FileContent;
-	MemoryZero(Result.LineBuffer_, sizeof(Result.LineBuffer_));
-	MemoryZero(Result.Word_, sizeof(Result.Word_));
-
-	Result.LineBuffer = &Result.LineBuffer_[0];
-	Result.Word = &Result.Word_[0];
-
-	return(Result);
-}
-
-inline b32
-IsValid(text_file_handler *Handler)
-{
-	b32 Result = (*Handler->FileContent != 0);
-	return(Result);
-}
-
-inline void
-BufferAndAdvanceALine(text_file_handler *Handler)
-{
-	BufferLine(&Handler->FileContent, Handler->LineBuffer);
-	Handler->Line = Handler->LineBuffer;
-	BufferNextWord(&Handler->Line, Handler->Word);
-	AdvanceLine(&Handler->FileContent);
-}
-
-inline void
-BufferAndAdvanceAWord(text_file_handler *Handler)
-{
-	EatSpaces(&Handler->Line);
-	BufferNextWord(&Handler->Line, Handler->Word);
-}
 
 internal void
 AudioInitialize(audio_state *AudioState, memory_arena *Arena)
@@ -704,6 +651,8 @@ LevelLoad(game_state *GameState, asset_manager *AssetManager, char *FileName)
 				{
 					break;
 				}
+
+				printf("Line number %d\n", Handler.LineNumber);
 			}
 
 			BufferAndAdvanceALine(&Handler);
@@ -989,7 +938,11 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 	// NOTE(Justin): Simulate
 	//
 
+#if DEVELOPER
+	f32 dt = GameState->TimeScale*GameInput->DtForFrame;
+#else
 	f32 dt = GameInput->DtForFrame;
+#endif
 
 	for(u32 EntityIndex = 0; EntityIndex < GameState->EntityCount; ++EntityIndex)
 	{
@@ -1125,10 +1078,8 @@ extern "C" GAME_UPDATE_AND_RENDER(GameUpdateAndRender)
 			{
 				v3 EntityP = Entity->P;
 				EntityP.y += Entity->VisualScale.y;
-				T = Mat4Translate(EntityP);
-				R = QuaternionToMat4(Entity->Orientation);
-				S = Mat4Scale(Entity->VisualScale);
-				PushModel(RenderBuffer, "Cube", T*R*S);
+				mat4 Transform = ModelToWorldTransform(EntityP, Entity->Orientation, Entity->VisualScale);
+				PushModel(RenderBuffer, "Cube", Transform);
 			} break;
 			case EntityType_WalkableRegion:
 			{

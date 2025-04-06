@@ -92,34 +92,6 @@ AnimationControlling(entity *Entity)
 	return(Result);
 }
 
-inline mat4
-EntityTransform(entity *Entity, f32 Scale = 1.0f)
-{
-	mat4 Result = Mat4Identity();
-
-	mat4 R = QuaternionToMat4(Entity->Orientation);
-	Result = Mat4(Scale * Mat4ColumnGet(R, 0),
-				  Scale * Mat4ColumnGet(R, 1),
-				  Scale * Mat4ColumnGet(R, 2),
-				  Entity->P);
-
-	return(Result);
-}
-
-inline mat4
-EntityTransform(entity *Entity, v3 Scale = V3(1.0f))
-{
-	mat4 Result = Mat4Identity();
-
-	mat4 R = QuaternionToMat4(Entity->Orientation);
-	Result = Mat4(Scale.x * Mat4ColumnGet(R, 0),
-				  Scale.y * Mat4ColumnGet(R, 1),
-				  Scale.z * Mat4ColumnGet(R, 2),
-				  Entity->P);
-
-	return(Result);
-}
-
 inline void
 EntityOrientationUpdate(entity *Entity, f32 dt, f32 AngularSpeed)
 {

@@ -1,7 +1,9 @@
 #if !defined(ANIMATION_H)
 
 // NOTE(Justin): There are JointCount number of positions, quaternions, and scales
-// where JointCount is the # of joints that the animation affects.
+// where JointCount is the # of joints that the animation affects _not_ the number of joints
+// in the skeleton.
+
 struct key_frame
 {
 	v3 *Positions;
@@ -9,8 +11,11 @@ struct key_frame
 	v3 *Scales;
 };
 
-// NOTE(Justin): Sampled animation
-// TODO(Justin): Remove current time 
+// NOTE(Justin): animation_info is a sampled/keyframed animation.
+// JointNames an array of all the names of the joints that this sampled animation affects.
+// KeyFrames an array of the actual samples of the animation.
+// ReservedForChannel is memory reserved for the interpolated pose (output) of a channel. This is allocated at animation load time.
+
 struct animation_info
 {
 	string Name;
@@ -21,9 +26,9 @@ struct animation_info
 	f32 Duration;
 	f32 FrameRate;
 
-	string *JointNames; // Names of all the joints that this sampled animation affects
-	key_frame *KeyFrames; // Actual samples of the animation
-	key_frame *ReservedForChannel; // Memory reserved for blended pose (output) of animation channel 
+	string *JointNames;
+	key_frame *KeyFrames;
+	key_frame *ReservedForChannel;
 };
 
 struct animation_id
@@ -34,7 +39,7 @@ struct animation_id
 enum animation_flag
 {
 	AnimationFlag_Playing = (1 << 1),
-	AnimationFlag_Finished = (1 << 2), // Non-looping animation finished
+	AnimationFlag_Finished = (1 << 2), // Notifies that a non-looping animation has completed.
 	AnimationFlag_Looping = (1 << 3),
 	AnimationFlag_RemoveLocomotion = (1 << 4),
 	AnimationFlag_JointMask = (1 << 5),
@@ -44,7 +49,10 @@ enum animation_flag
 	AnimationFlag_IgnoreYMotion = (1 << 9),
 };
 
-// NOTE(Justin): Animation channel 
+// NOTE(Justin): Animation channel/sampler
+// InterpolatedPose is the output of a channel computed by interpolating between two key frames.
+// It is used in the n-way blend calculation of the final pose
+
 struct animation
 {
 	string Name;
@@ -63,11 +71,16 @@ struct animation
 	animation_info *Info;
 	animation *Next;
 
-	key_frame *BlendedPose;
+	key_frame *InterpolatedPose;
 
 	v3 RootMotionDeltaPerFrame;
 	v3 RootVelocityDeltaPerFrame;
 };
+
+// NOTE(Justin): animation_player 
+// FinalPose is the output of the animation player used in the calculation of a model's current pose
+// The input is an animation and each animation playing (>= 1) is responsible for computing an interpolated pose
+// which is then used to compute FinalPose as a weighted blend.
 
 struct animation_player
 {

@@ -1033,6 +1033,9 @@ ModelTransformFromBasis(basis *B)
 	return(R);
 }
 
+
+
+
 inline mat4
 Mat4Camera(v3 P, v3 Target)
 {
@@ -1133,38 +1136,38 @@ Inverse(mat4 M, mat4 *Result)
 {
 	f32 Inv[16], Det;
 
-	    Inv[0] =   M.I[5]*M.I[10]*M.I[15] - M.I[5]*M.I[11]*M.I[14] - M.I[9]*M.I[6]*M.I[15]
-        + M.I[9]*M.I[7]*M.I[14] + M.I[13]*M.I[6]*M.I[11] - M.I[13]*M.I[7]*M.I[10];
-    Inv[4] =  -M.I[4]*M.I[10]*M.I[15] + M.I[4]*M.I[11]*M.I[14] + M.I[8]*M.I[6]*M.I[15]
-        - M.I[8]*M.I[7]*M.I[14] - M.I[12]*M.I[6]*M.I[11] + M.I[12]*M.I[7]*M.I[10];
-    Inv[8] =   M.I[4]*M.I[9]*M.I[15] - M.I[4]*M.I[11]*M.I[13] - M.I[8]*M.I[5]*M.I[15]
-        + M.I[8]*M.I[7]*M.I[13] + M.I[12]*M.I[5]*M.I[11] - M.I[12]*M.I[7]*M.I[9];
-    Inv[12] = -M.I[4]*M.I[9]*M.I[14] + M.I[4]*M.I[10]*M.I[13] + M.I[8]*M.I[5]*M.I[14]
-        - M.I[8]*M.I[6]*M.I[13] - M.I[12]*M.I[5]*M.I[10] + M.I[12]*M.I[6]*M.I[9];
-    Inv[1] =  -M.I[1]*M.I[10]*M.I[15] + M.I[1]*M.I[11]*M.I[14] + M.I[9]*M.I[2]*M.I[15]
-        - M.I[9]*M.I[3]*M.I[14] - M.I[13]*M.I[2]*M.I[11] + M.I[13]*M.I[3]*M.I[10];
-    Inv[5] =   M.I[0]*M.I[10]*M.I[15] - M.I[0]*M.I[11]*M.I[14] - M.I[8]*M.I[2]*M.I[15]
-        + M.I[8]*M.I[3]*M.I[14] + M.I[12]*M.I[2]*M.I[11] - M.I[12]*M.I[3]*M.I[10];
-    Inv[9] =  -M.I[0]*M.I[9]*M.I[15] + M.I[0]*M.I[11]*M.I[13] + M.I[8]*M.I[1]*M.I[15]
-        - M.I[8]*M.I[3]*M.I[13] - M.I[12]*M.I[1]*M.I[11] + M.I[12]*M.I[3]*M.I[9];
-    Inv[13] =  M.I[0]*M.I[9]*M.I[14] - M.I[0]*M.I[10]*M.I[13] - M.I[8]*M.I[1]*M.I[14]
-        + M.I[8]*M.I[2]*M.I[13] + M.I[12]*M.I[1]*M.I[10] - M.I[12]*M.I[2]*M.I[9];
-    Inv[2] =   M.I[1]*M.I[6]*M.I[15] - M.I[1]*M.I[7]*M.I[14] - M.I[5]*M.I[2]*M.I[15]
-        + M.I[5]*M.I[3]*M.I[14] + M.I[13]*M.I[2]*M.I[7] - M.I[13]*M.I[3]*M.I[6];
-    Inv[6] =  -M.I[0]*M.I[6]*M.I[15] + M.I[0]*M.I[7]*M.I[14] + M.I[4]*M.I[2]*M.I[15]
-        - M.I[4]*M.I[3]*M.I[14] - M.I[12]*M.I[2]*M.I[7] + M.I[12]*M.I[3]*M.I[6];
-    Inv[10] =  M.I[0]*M.I[5]*M.I[15] - M.I[0]*M.I[7]*M.I[13] - M.I[4]*M.I[1]*M.I[15]
-        + M.I[4]*M.I[3]*M.I[13] + M.I[12]*M.I[1]*M.I[7] - M.I[12]*M.I[3]*M.I[5];
-    Inv[14] = -M.I[0]*M.I[5]*M.I[14] + M.I[0]*M.I[6]*M.I[13] + M.I[4]*M.I[1]*M.I[14]
-        - M.I[4]*M.I[2]*M.I[13] - M.I[12]*M.I[1]*M.I[6] + M.I[12]*M.I[2]*M.I[5];
-    Inv[3] =  -M.I[1]*M.I[6]*M.I[11] + M.I[1]*M.I[7]*M.I[10] + M.I[5]*M.I[2]*M.I[11]
-        - M.I[5]*M.I[3]*M.I[10] - M.I[9]*M.I[2]*M.I[7] + M.I[9]*M.I[3]*M.I[6];
-    Inv[7] =   M.I[0]*M.I[6]*M.I[11] - M.I[0]*M.I[7]*M.I[10] - M.I[4]*M.I[2]*M.I[11]
-        + M.I[4]*M.I[3]*M.I[10] + M.I[8]*M.I[2]*M.I[7] - M.I[8]*M.I[3]*M.I[6];
-    Inv[11] = -M.I[0]*M.I[5]*M.I[11] + M.I[0]*M.I[7]*M.I[9] + M.I[4]*M.I[1]*M.I[11]
-        - M.I[4]*M.I[3]*M.I[9] - M.I[8]*M.I[1]*M.I[7] + M.I[8]*M.I[3]*M.I[5];
-    Inv[15] =  M.I[0]*M.I[5]*M.I[10] - M.I[0]*M.I[6]*M.I[9] - M.I[4]*M.I[1]*M.I[10]
-        + M.I[4]*M.I[2]*M.I[9] + M.I[8]*M.I[1]*M.I[6] - M.I[8]*M.I[2]*M.I[5];
+	Inv[0] =   M.I[5]*M.I[10]*M.I[15] - M.I[5]*M.I[11]*M.I[14] - M.I[9]*M.I[6]*M.I[15]
+		+ M.I[9]*M.I[7]*M.I[14] + M.I[13]*M.I[6]*M.I[11] - M.I[13]*M.I[7]*M.I[10];
+	Inv[4] =  -M.I[4]*M.I[10]*M.I[15] + M.I[4]*M.I[11]*M.I[14] + M.I[8]*M.I[6]*M.I[15]
+		- M.I[8]*M.I[7]*M.I[14] - M.I[12]*M.I[6]*M.I[11] + M.I[12]*M.I[7]*M.I[10];
+	Inv[8] =   M.I[4]*M.I[9]*M.I[15] - M.I[4]*M.I[11]*M.I[13] - M.I[8]*M.I[5]*M.I[15]
+		+ M.I[8]*M.I[7]*M.I[13] + M.I[12]*M.I[5]*M.I[11] - M.I[12]*M.I[7]*M.I[9];
+	Inv[12] = -M.I[4]*M.I[9]*M.I[14] + M.I[4]*M.I[10]*M.I[13] + M.I[8]*M.I[5]*M.I[14]
+		- M.I[8]*M.I[6]*M.I[13] - M.I[12]*M.I[5]*M.I[10] + M.I[12]*M.I[6]*M.I[9];
+	Inv[1] =  -M.I[1]*M.I[10]*M.I[15] + M.I[1]*M.I[11]*M.I[14] + M.I[9]*M.I[2]*M.I[15]
+		- M.I[9]*M.I[3]*M.I[14] - M.I[13]*M.I[2]*M.I[11] + M.I[13]*M.I[3]*M.I[10];
+	Inv[5] =   M.I[0]*M.I[10]*M.I[15] - M.I[0]*M.I[11]*M.I[14] - M.I[8]*M.I[2]*M.I[15]
+		+ M.I[8]*M.I[3]*M.I[14] + M.I[12]*M.I[2]*M.I[11] - M.I[12]*M.I[3]*M.I[10];
+	Inv[9] =  -M.I[0]*M.I[9]*M.I[15] + M.I[0]*M.I[11]*M.I[13] + M.I[8]*M.I[1]*M.I[15]
+		- M.I[8]*M.I[3]*M.I[13] - M.I[12]*M.I[1]*M.I[11] + M.I[12]*M.I[3]*M.I[9];
+	Inv[13] =  M.I[0]*M.I[9]*M.I[14] - M.I[0]*M.I[10]*M.I[13] - M.I[8]*M.I[1]*M.I[14]
+		+ M.I[8]*M.I[2]*M.I[13] + M.I[12]*M.I[1]*M.I[10] - M.I[12]*M.I[2]*M.I[9];
+	Inv[2] =   M.I[1]*M.I[6]*M.I[15] - M.I[1]*M.I[7]*M.I[14] - M.I[5]*M.I[2]*M.I[15]
+		+ M.I[5]*M.I[3]*M.I[14] + M.I[13]*M.I[2]*M.I[7] - M.I[13]*M.I[3]*M.I[6];
+	Inv[6] =  -M.I[0]*M.I[6]*M.I[15] + M.I[0]*M.I[7]*M.I[14] + M.I[4]*M.I[2]*M.I[15]
+		- M.I[4]*M.I[3]*M.I[14] - M.I[12]*M.I[2]*M.I[7] + M.I[12]*M.I[3]*M.I[6];
+	Inv[10] =  M.I[0]*M.I[5]*M.I[15] - M.I[0]*M.I[7]*M.I[13] - M.I[4]*M.I[1]*M.I[15]
+		+ M.I[4]*M.I[3]*M.I[13] + M.I[12]*M.I[1]*M.I[7] - M.I[12]*M.I[3]*M.I[5];
+	Inv[14] = -M.I[0]*M.I[5]*M.I[14] + M.I[0]*M.I[6]*M.I[13] + M.I[4]*M.I[1]*M.I[14]
+		- M.I[4]*M.I[2]*M.I[13] - M.I[12]*M.I[1]*M.I[6] + M.I[12]*M.I[2]*M.I[5];
+	Inv[3] =  -M.I[1]*M.I[6]*M.I[11] + M.I[1]*M.I[7]*M.I[10] + M.I[5]*M.I[2]*M.I[11]
+		- M.I[5]*M.I[3]*M.I[10] - M.I[9]*M.I[2]*M.I[7] + M.I[9]*M.I[3]*M.I[6];
+	Inv[7] =   M.I[0]*M.I[6]*M.I[11] - M.I[0]*M.I[7]*M.I[10] - M.I[4]*M.I[2]*M.I[11]
+		+ M.I[4]*M.I[3]*M.I[10] + M.I[8]*M.I[2]*M.I[7] - M.I[8]*M.I[3]*M.I[6];
+	Inv[11] = -M.I[0]*M.I[5]*M.I[11] + M.I[0]*M.I[7]*M.I[9] + M.I[4]*M.I[1]*M.I[11]
+		- M.I[4]*M.I[3]*M.I[9] - M.I[8]*M.I[1]*M.I[7] + M.I[8]*M.I[3]*M.I[5];
+	Inv[15] =  M.I[0]*M.I[5]*M.I[10] - M.I[0]*M.I[6]*M.I[9] - M.I[4]*M.I[1]*M.I[10]
+		+ M.I[4]*M.I[2]*M.I[9] + M.I[8]*M.I[1]*M.I[6] - M.I[8]*M.I[2]*M.I[5];
     
     Det = M.I[0]*Inv[0] + M.I[1]*Inv[4] + M.I[2]*Inv[8] + M.I[3]*Inv[12];
     if (Det == 0)
@@ -1752,6 +1755,34 @@ SphereCenterRadius(v3 Center, f32 Radius)
 
 	Result.Center = Center;
 	Result.Radius = Radius;
+
+	return(Result);
+}
+
+inline mat4
+ModelToWorldTransform(v3 P, quaternion Orientation, f32 Scale = 1.0f)
+{
+	mat4 Result = Mat4Identity();
+
+	mat4 R = QuaternionToMat4(Orientation);
+	Result = Mat4(Scale * Mat4ColumnGet(R, 0),
+				  Scale * Mat4ColumnGet(R, 1),
+				  Scale * Mat4ColumnGet(R, 2),
+				  P);
+
+	return(Result);
+}
+
+inline mat4
+ModelToWorldTransform(v3 P, quaternion Orientation, v3 Scale = V3(1.0f))
+{
+	mat4 Result = Mat4Identity();
+
+	mat4 R = QuaternionToMat4(Orientation);
+	Result = Mat4(Scale.x * Mat4ColumnGet(R, 0),
+				  Scale.y * Mat4ColumnGet(R, 1),
+				  Scale.z * Mat4ColumnGet(R, 2),
+				  P);
 
 	return(Result);
 }

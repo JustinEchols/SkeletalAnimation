@@ -1,0 +1,13 @@
+
+:/GameState
+CameraSpeed 10.0
+CameraYaw -90.0
+CameraPitch -10.0
+CameraPosition 0.0 0.0 -10.0
+CameraOffsetFromPlayer 0.0 2.0 5.0
+FOV 45.0
+ZNear 0.2
+ZFar 200.0
+Gravity 80.0
+TextureWidth 256
+TextureHeight 256

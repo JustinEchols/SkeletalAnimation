@@ -59,6 +59,7 @@ enum movement_state
 };
 
 #include "strings.h"
+#include "text_file_handler.h"
 #include "texture.h"
 #include "font.h"
 #include "mesh.h"

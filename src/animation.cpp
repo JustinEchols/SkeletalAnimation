@@ -67,12 +67,22 @@ ControlsTurning(animation *Animation)
 	return(Result);
 }
 
+#if 0
 inline b32
 CompletedPlayback(animation *Animation)
 {
 	b32 Result = FlagIsSet(Animation, AnimationFlag_CompletedCycle);
 	return(Result);
 }
+#else
+inline b32
+CompletedPlayback(animation *Animation)
+{
+	b32 Result = (Animation->CurrentTime >= Animation->Info->Duration);
+	return(Result);
+}
+#endif
+
 
 inline mat4
 JointTransformFromSQT(sqt SQT)
@@ -95,17 +105,17 @@ InterpolatedSQT(key_frame *Current, f32 t, key_frame *Next, u32 JointIndex)
 {
 	sqt Result;
 
-	v3 P1 = Current->Positions[JointIndex];
-	quaternion Q1 = Current->Orientations[JointIndex];
-	v3 Scale1 = Current->Scales[JointIndex];
+	v3 P1			= Current->Positions[JointIndex];
+	quaternion Q1	= Current->Orientations[JointIndex];
+	v3 Scale1		= Current->Scales[JointIndex];
 
-	v3 P2 = Next->Positions[JointIndex];
-	quaternion Q2 = Next->Orientations[JointIndex];
-	v3 Scale2 = Next->Scales[JointIndex];
+	v3 P2			= Next->Positions[JointIndex];
+	quaternion Q2	= Next->Orientations[JointIndex];
+	v3 Scale2		= Next->Scales[JointIndex];
 
-	v3 P = Lerp(P1, t, P2);
-	quaternion Q = LerpShortest(Q1, t, Q2);
-	v3 Scale = Lerp(Scale1, t, Scale2);
+	v3 P			= Lerp(P1, t, P2);
+	quaternion Q	= LerpShortest(Q1, t, Q2);
+	v3 Scale		= Lerp(Scale1, t, Scale2);
 
 	Result.Position = P;
 	Result.Orientation = Q;
@@ -153,7 +163,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	Assert(AnimationPlayer->IsInitialized);
 
 	//
-	// NOTE(Justin): Do not repeatedly play the same animation
+	// NOTE(Justin): Do not repeatedly play the same animation.
 	//
 
 	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
@@ -165,7 +175,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	}
 
 	//
-	// NOTE(Justin): Allocate a new channel 
+	// NOTE(Justin): Allocate a new channel.
 	//
 
 	if(!AnimationPlayer->FreeChannels)
@@ -178,20 +188,20 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	AnimationPlayer->FreeChannels = Animation->Next;
 
 	//
-	// NOTE(Justin): Clear previous blended pose. This is required for root motion to work properly
+	// NOTE(Justin): Clear previous blended pose. This is required for root motion to work properly.
 	//
 
 	// TODO(Justin): Should we use temporary memory to allocate the blended pose that is the output
 	// of a channel? Or keep it pre-allocated when a sample animation is loaded and then once the animation
 	// is finished playing, clear the blended pose?
 
-	key_frame *BlendedPoseOutput = SampledAnimation->ReservedForChannel;
-	MemoryZero(BlendedPoseOutput->Positions, SampledAnimation->JointCount * sizeof(v3));
-	MemoryZero(BlendedPoseOutput->Orientations, SampledAnimation->JointCount * sizeof(quaternion));
-	MemoryZero(BlendedPoseOutput->Scales, SampledAnimation->JointCount * sizeof(v3));
+	key_frame *InterpolatedPoseOutput = SampledAnimation->ReservedForChannel;
+	MemoryZero(InterpolatedPoseOutput->Positions, SampledAnimation->JointCount * sizeof(v3));
+	MemoryZero(InterpolatedPoseOutput->Orientations, SampledAnimation->JointCount * sizeof(quaternion));
+	MemoryZero(InterpolatedPoseOutput->Scales, SampledAnimation->JointCount * sizeof(v3));
 
 	//
-	// NOTE(Justin): Set all current channels to start blending out
+	// NOTE(Justin): Set all current channels to start blending out.
 	//
 
 	for(animation *Current = AnimationPlayer->Channels; Current; Current = Current->Next)
@@ -206,6 +216,10 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 		}
 	}
 
+	//
+	// NOTE(Justin): Initialize new animation and add it to the list.
+	//
+
 	Animation->Name = SampledAnimation->Name;
 	Animation->Flags = (AnimationFlags | AnimationFlag_Playing);
 	Animation->Duration = SampledAnimation->Duration;
@@ -218,7 +232,7 @@ AnimationPlay(animation_player *AnimationPlayer, animation_info *SampledAnimatio
 	Animation->BlendingOut = false;
 	Animation->ID.Value = ID;
 	Animation->Info = SampledAnimation;
-	Animation->BlendedPose = SampledAnimation->ReservedForChannel;
+	Animation->InterpolatedPose = SampledAnimation->ReservedForChannel;
 
 	Animation->Next = AnimationPlayer->Channels;
 	AnimationPlayer->Channels = Animation;
@@ -273,7 +287,7 @@ AnimationUpdate(animation *Animation, f32 dt)
 
 	if(!Finished(Animation))
 	{
-		key_frame *BlendedPose = Animation->BlendedPose;
+		key_frame *InterpolatedPose = Animation->InterpolatedPose;
 
 		f32 t01 = Animation->CurrentTime / Samples->Duration;
 		u32 LastKeyFrameIndex = Samples->KeyFrameCount - 1;
@@ -296,16 +310,16 @@ AnimationUpdate(animation *Animation, f32 dt)
 			RootTransform.Position.z = RootStartP.z;
 		}
 
-		BlendedPose->Positions[0]	 = RootTransform.Position;
-		BlendedPose->Orientations[0] = RootTransform.Orientation;
-		BlendedPose->Scales[0]		 = RootTransform.Scale;
+		InterpolatedPose->Positions[0]	 = RootTransform.Position;
+		InterpolatedPose->Orientations[0] = RootTransform.Orientation;
+		InterpolatedPose->Scales[0]		 = RootTransform.Scale;
 
 		for(u32 JointIndex = 1; JointIndex < Samples->JointCount; ++JointIndex)
 		{
 			sqt Transform = InterpolatedSQT(KeyFrame, t, NextKeyFrame, JointIndex);
-			BlendedPose->Positions[JointIndex]	  = Transform.Position;
-			BlendedPose->Orientations[JointIndex] = Transform.Orientation;
-			BlendedPose->Scales[JointIndex]		  = Transform.Scale;
+			InterpolatedPose->Positions[JointIndex]	  = Transform.Position;
+			InterpolatedPose->Orientations[JointIndex] = Transform.Orientation;
+			InterpolatedPose->Scales[JointIndex]		  = Transform.Scale;
 		}
 	}
 
@@ -555,14 +569,14 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			}
 		}
 
-		v3 OldP = Animation->BlendedPose->Positions[0];
+		v3 OldP = Animation->InterpolatedPose->Positions[0];
 		if(Equal(OldP, V3(0.0f)))
 		{
 			OldP = Animation->Info->KeyFrames[0].Positions[0];
 		}
 
 		AnimationUpdate(Animation, AnimationPlayer->dt);
-		v3 NewP = Animation->BlendedPose->Positions[0];
+		v3 NewP = Animation->InterpolatedPose->Positions[0];
 		Animation->RootMotionDeltaPerFrame = NewP - OldP;
 		Animation->RootVelocityDeltaPerFrame = dt * Animation->RootMotionDeltaPerFrame;
 
@@ -605,7 +619,7 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 	{
 		Assert(!Finished(Animation));
 
-		key_frame *BlendedPose = Animation->BlendedPose;
+		key_frame *InterpolatedPose = Animation->InterpolatedPose;
 		animation_info *Samples = Animation->Info;
 
 		f32 Factor = Animation->BlendFactor;
@@ -616,17 +630,17 @@ AnimationPlayerUpdate(animation_player *AnimationPlayer, memory_arena *TempArena
 			s32 JointIndex = JointIndexGet(Samples->JointNames, Samples->JointCount, Joint->Name);
 			if(JointIndex != -1)
 			{
-				v3 P = Factor * BlendedPose->Positions[JointIndex];
+				v3 P = Factor * InterpolatedPose->Positions[JointIndex];
 				if(ControlsPosition(Animation) && Animation->BlendingOut && (JointIndex == 0))
 				{
-					P = Factor*V3(0.0f, BlendedPose->Positions[JointIndex].y, 0.0f);
+					P = Factor*V3(0.0f, InterpolatedPose->Positions[JointIndex].y, 0.0f);
 				}
 
 				TempPose->Positions[Index]	+= P;
-				TempPose->Scales[Index]	+= Factor * BlendedPose->Scales[JointIndex];
+				TempPose->Scales[Index]	+= Factor * InterpolatedPose->Scales[JointIndex];
 
 				// TODO(Justin): Pre-process the animations so that the orientations are in the known correct neighborhood.
-				quaternion Scaled = Factor * BlendedPose->Orientations[JointIndex];
+				quaternion Scaled = Factor * InterpolatedPose->Orientations[JointIndex];
 				if(Dot(Scaled, TempPose->Orientations[Index]) < 0.0f)
 				{
 					Scaled *= -1.0f;
@@ -720,7 +734,7 @@ ModelJointsUpdate(entity *Entity)
 		Xform.Scale			= FinalPose->Scales[0];
 
 		if(!Equal(Xform.Position, V3(0.0f)) &&
-				!Equal(Xform.Scale, V3(0.0f)))
+		   !Equal(Xform.Scale, V3(0.0f)))
 		{
 			RootJointT = JointTransformFromSQT(Xform);
 		}
@@ -738,7 +752,7 @@ ModelJointsUpdate(entity *Entity)
 			Xform.Scale			= FinalPose->Scales[JointIndex];
 
 			if(!Equal(Xform.Position, V3(0.0f)) &&
-					!Equal(Xform.Scale, V3(0.0f)))
+			   !Equal(Xform.Scale, V3(0.0f)))
 			{
 				JointTransform = JointTransformFromSQT(Xform);
 			}
@@ -754,7 +768,7 @@ ModelJointsUpdate(entity *Entity)
 		// TODO(Justin): Store transform.
 		// TODO(Justin): Handle root motion case.
 
-		mat4 Transform	= EntityTransform(Entity, Entity->VisualScale);
+		mat4 Transform	= ModelToWorldTransform(Entity->P, Entity->Orientation, Entity->VisualScale);
 
 		mat4 LeftFootT	= Model->JointTransforms[Model->LeftFootJointIndex];
 		mat4 RightFootT = Model->JointTransforms[Model->RightFootJointIndex];
@@ -816,8 +830,6 @@ AnimationGraphPerFrameUpdate(asset_manager *AssetManager, animation_player *Anim
 		DefaultTimeOffset = Arc.StartTime;
 		SwitchToNode(AssetManager, AnimationPlayer, Graph, Arc.Destination, BlendDuration, DefaultTimeOffset);
 	}
-
-
 }
 
 internal animation_graph_node * 
