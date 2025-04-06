@@ -190,8 +190,6 @@ enum light_type
 {
 	LightType_None,
 	LightType_Directional,
-
-	LightType_Count,
 };
 
 struct light : public entity

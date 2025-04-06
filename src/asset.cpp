@@ -283,7 +283,6 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 		{
 			EatSpaces(&Line);
 			BufferNextWord(&Line, Word);
-
 			Mesh = Model.Meshes + MeshCount++;
 			Mesh->Name = StringCopy(Arena, Word);
 		}
@@ -321,17 +320,7 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 				Assert(StringsAreSame(Word, "p"));
 
 				{
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					V->P.x = F32FromASCII(Word);
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					V->P.y = F32FromASCII(Word);
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					V->P.z = F32FromASCII(Word);
+					ParseV3(&Line, Word, &V->P);
 				}
 
 				AdvanceLine(&Content);
@@ -341,17 +330,8 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 				Assert(StringsAreSame(Word, "n"));
 
 				{
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					V->N.x = F32FromASCII(Word);
 
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					V->N.y = F32FromASCII(Word);
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					V->N.z = F32FromASCII(Word);
+					ParseV3(&Line, Word, &V->N);
 				}
 
 				AdvanceLine(&Content);
@@ -361,13 +341,7 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 				Assert(StringsAreSame(Word, "uv"));
 
 				{
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					V->UV.x = F32FromASCII(Word);
-
-					EatSpaces(&Line);
-					BufferNextWord(&Line, Word);
-					V->UV.y = F32FromASCII(Word);
+					ParseV2(&Line, Word, &V->UV);
 				}
 
 				AdvanceLine(&Content);
@@ -424,9 +398,7 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 				BufferLine(&Content, LineBuffer);
 				Line = LineBuffer;
 				BufferNextWord(&Line, Word);
-
 				Mesh->Indices[Index] = U32FromASCII(Word);
-
 				AdvanceLine(&Content);
 			}
 		}
@@ -498,26 +470,6 @@ TestLoadModel(memory_arena *Arena, char *FileName)
 		Model.JointTransforms[JointIndex] = I;
 		Model.ModelSpaceTransforms[JointIndex] = I;
 	}
-
-#if 0
-	Model.Meshes[0].MaterialSpec.Ambient = V4(0.000000, 0.000000, 0.000000, 1.000000); 
-	Model.Meshes[0].MaterialSpec.Diffuse = V4(0.266667, 0.099623, 0.080812, 1.000000);
-	Model.Meshes[0].MaterialSpec.Specular = V4(0.299138, 0.299138, 0.299138, 1.000000);
-	Model.Meshes[0].MaterialSpec.Shininess = 2.000000;
-
-	Model.Meshes[1].MaterialSpec.Ambient = V4(0.0f, 0.0f, 0.0f, 1.0f);
-	Model.Meshes[1].MaterialSpec.Diffuse = V4(0.669600, 0.241846, 0.210924, 1.000000);
-	Model.Meshes[1].MaterialSpec.Specular = V4(0.487175, 0.487175, 0.487175, 1.000000);
-	Model.Meshes[1].MaterialSpec.Shininess = 3.675214;
-#endif
-
-	//
-	// NOTE(Justin): Header
-	//
-
-	//
-	// NOTE(Justin): Mesh data 
-	//
 
 	Platform.DebugFileFree(File.Content);
 
@@ -708,6 +660,7 @@ ModelLoad(memory_arena *Arena, char *FileName)
 	return(Model);
 }
 
+#if 0
 internal void
 SaveModelJointTransforms(model *Model, char *FileName)
 {
@@ -774,7 +727,6 @@ SaveModelJointTransformsInModelSpace(model *Model, char *FileName)
 		{
 			for(u32 Col = 0; Col < 4; ++Col)
 			{
-				//A[Col] = Joint->Transform.E[Row][Col];
 				A[Col] = JointTransform.E[Row][Col];
 			}
 
@@ -791,6 +743,7 @@ SaveModelJointTransformsInModelSpace(model *Model, char *FileName)
 
 	fclose(Test);
 }
+#endif
 
 
 internal animation_info 
@@ -1218,27 +1171,6 @@ AssetManagerInitialize(asset_manager *Manager)
 	//
 
 	// For hot reloading animation graph files
-#if 0
-	Manager->XBotGraphFileInfo = {};
-	Manager->XBotGraphFileInfo.Path = "../data/graphs/XBot_AnimationGraph.animation_graph";
-	Platform.DebugFileIsDirty(Manager->XBotGraphFileInfo.Path, &Manager->XBotGraphFileInfo.FileDate);
-
-	Manager->YBotGraphFileInfo = {};
-	Manager->YBotGraphFileInfo.Path = "../data/graphs/YBot_AnimationGraph.animation_graph";
-	Platform.DebugFileIsDirty(Manager->YBotGraphFileInfo.Path, &Manager->YBotGraphFileInfo.FileDate);
-
-	Manager->PaladinGraphFileInfo = {};
-	Manager->PaladinGraphFileInfo.Path = "../data/graphs/Paladin_AnimationGraph.animation_graph";
-	Platform.DebugFileIsDirty(Manager->PaladinGraphFileInfo.Path, &Manager->PaladinGraphFileInfo.FileDate);
-
-	Manager->ArcherGraphFileInfo = {};
-	Manager->ArcherGraphFileInfo.Path = "../data/graphs/Archer_AnimationGraph.animation_graph";
-	Platform.DebugFileIsDirty(Manager->ArcherGraphFileInfo.Path, &Manager->ArcherGraphFileInfo.FileDate);
-
-	Manager->BruteGraphFileInfo = {};
-	Manager->BruteGraphFileInfo.Path = "../data/graphs/Brute_AnimationGraph.animation_graph";
-	Platform.DebugFileIsDirty(Manager->BruteGraphFileInfo.Path, &Manager->BruteGraphFileInfo.FileDate);
-#else
 
 	ArenaSubset(&Manager->Arena, &Manager->ReloadableNames.Arena, Kilobyte(2));
 	StringHashInitialize(&Manager->ReloadableNames);
@@ -1256,7 +1188,6 @@ AssetManagerInitialize(asset_manager *Manager)
 		FileInfo->Path = CString(G->Path);
 		Platform.DebugFileIsDirty(FileInfo->Path, &FileInfo->FileDate);
 	}
-#endif
 
 	Manager->LevelFileInfo = {};
 	Manager->LevelFileInfo.Path = "../src/test.level";
